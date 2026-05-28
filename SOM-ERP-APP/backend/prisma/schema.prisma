@@ -146,13 +146,14 @@ model ContainerMaster {
 }
 
 model RecipeDb {
-  id          String @id @default(cuid())
-  productCode String @map("product_code")
-  productName String @map("product_name")
-  rmCode      String @map("rm_code")
-  rmName      String @map("rm_name")
-  qtyPerUnit  Float  @map("qty_per_unit")
+  id          String  @id @default(cuid())
+  productCode String  @map("product_code")
+  productName String  @map("product_name")
+  rmCode      String  @map("rm_code")
+  rmName      String  @map("rm_name")
+  qtyPerUnit  Float   @map("qty_per_unit")
   uom         String
+  roleType    String  @default("INGREDIENT") @map("role_type") // INGREDIENT | CARRIER | BASE
   @@unique([productCode, rmCode])
   @@map("recipe_db")
 }
@@ -395,4 +396,252 @@ model InventoryHandover {
   sfgUpdated        Boolean   @default(false) @map("sfg_updated")
   batch             ProductionBatch @relation(fields: [batchId], references: [id])
   @@map("inventory_handover")
+}
+
+// ─── EMPLOYEE & ACCESS CONTROL ───────────────────────────────────────────────
+
+model CompanyMaster {
+  id          String   @id @default(cuid())
+  code        String   @unique  // DVS, SOM, AL-IPL, AL-PTE
+  name        String
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  @@map("company_master")
+}
+
+model EmployeeMaster {
+  id          String   @id @default(cuid())
+  empCode     String   @unique @map("emp_code")
+  name        String
+  email       String?  @unique
+  phone       String?
+  role        String   // ADMIN | SALES | PRODUCTION | QC | DISPATCH | PLANNING | ACCOUNTS
+  section     String?  // NANO | BOTANICAL | LIQUID | POWDER | GRANULES (for PRODUCTION role)
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  @@map("employee_master")
+}
+
+model RolePermission {
+  id        String @id @default(cuid())
+  role      String
+  pagePath  String @map("page_path")
+  pageLabel String @map("page_label")
+  @@unique([role, pagePath])
+  @@map("role_permission")
+}
+
+// ─── SALES ORDER ─────────────────────────────────────────────────────────────
+
+model SalesOrder {
+  id                    String           @id @default(cuid())
+  soId                  String           @unique @map("so_id")   // auto: SO-2026-0001
+  company               String           // DVS | SOM | AL-IPL | AL-PTE
+  diNo                  String           @map("di_no")
+  customerName          String           @map("customer_name")
+  orderType             String           @map("order_type")      // DOMESTIC | EXPORT | SAMPLE
+  orderReceivedDate     DateTime         @map("order_received_date")
+  priority              String           @default("MODERATE")    // URGENT | VERY_URGENT | MODERATE
+  estimatedDispatchDate DateTime         @map("estimated_dispatch_date")
+  invoiceNo             String?          @map("invoice_no")
+  invoiceDate           DateTime?        @map("invoice_date")
+  transportName         String?          @map("transport_name")
+  salesStaff            String?          @map("sales_staff")
+  dispatchedBy          String?          @map("dispatched_by")
+  remarks               String?
+  createdAt             DateTime         @default(now()) @map("created_at")
+  updatedAt             DateTime         @updatedAt @map("updated_at")
+  items                 SalesOrderItem[]
+  @@map("sales_order")
+}
+
+model SalesOrderItem {
+  id                  String     @id @default(cuid())
+  salesOrderId        String     @map("sales_order_id")
+  salesOrder          SalesOrder @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+  lineNo              Int        @map("line_no")                 // 1, 2, 3…
+  customerProductName String     @map("customer_product_name")
+  inhouseProductName  String     @map("inhouse_product_name")
+  inhouseProductCode  String?    @map("inhouse_product_code")
+  activeSpecs         String?    @map("active_specs")
+  activeIngredient    String?    @map("active_ingredient")
+  carrier             String?
+  batchNo             String?    @map("batch_no")
+  sectionName         String?    @map("section_name")            // NANO|BOTANICAL|LIQUID|POWDER|GRANULES
+  totalQty            Float      @map("total_qty")
+  totalUom            String     @default("KG") @map("total_uom")
+  unitQty             Float?     @map("unit_qty")
+  unitUom             String?    @map("unit_uom")
+  unitPackType        String?    @map("unit_pack_type")           // Primary packing: e.g. Pouch, Bottle, Sachet
+  packingType         String?    @map("packing_type")             // Secondary packing: Cartons | OMB30 | OMB50 | etc.
+  totalCS             Int?       @map("total_cs")                 // Total no. of final packs
+  labelType           String?    @map("label_type")               // CUSTOMER | PACKING_SLIP | COMPUTER_LABELS
+  mrp                 Float?
+  mfgDate             DateTime?  @map("mfg_date")
+  expDate             DateTime?  @map("exp_date")
+  status              String     @default("PENDING")
+  // PENDING | PLANNED | UNDER_PRODUCTION | PACKED | IN_INVENTORY | READY_TO_DISPATCH | DISPATCHED
+  createdAt           DateTime   @default(now()) @map("created_at")
+  updatedAt           DateTime   @updatedAt @map("updated_at")
+  @@map("sales_order_item")
+}
+
+model SoSequence {
+  year  Int  @id
+  seq   Int  @default(0)
+  @@map("so_sequence")
+}
+
+// ─── PRODUCTION PLANNING ENGINE ───────────────────────────────────────────────
+
+model ProductionPlan {
+  id               String   @id @default(cuid())
+  planId           String   @unique @map("plan_id")       // PP-2026-0001
+  salesOrderId     String?  @map("sales_order_id")
+  salesOrderItemId String?  @map("sales_order_item_id")
+  diNo             String   @map("di_no")
+  customerName     String?  @map("customer_name")
+  sectionType      String   @map("section_type")          // NANO|BOTANICAL|LIQUID|POWDER|GRANULES
+  plannedDate      DateTime @map("planned_date")
+  shift            String?                                 // A|G|B|C
+  batchIncharge    String?  @map("batch_incharge")
+  noOfCycles       Int?     @map("no_of_cycles")
+  cycleBatchSize   Float?   @map("cycle_batch_size")
+  equipment        String?
+  location         String?
+  productCode      String?  @map("product_code")
+  productName      String   @map("product_name")
+  batchCode        String?  @map("batch_code")
+  totalQty         Float    @map("total_qty")
+  uom              String   @default("KG")
+  carrier          String?
+  specs            String?
+  process          String?
+  stageInfo        String?  @map("stage_info")            // BOTANICAL: days/hours
+  // Packing
+  unitPackQty      Float?   @map("unit_pack_qty")
+  noOfUnits        Int?     @map("no_of_units")
+  pp1              String?
+  pp2              String?
+  sp1              String?
+  noOfSp           Int?     @map("no_of_sp")
+  labels           String?
+  packingSpec      String?  @map("packing_spec")
+  perDayCompletion Int?     @map("per_day_completion")
+  femaleWorkers    Int?     @map("female_workers")
+  maleWorkers      Int?     @map("male_workers")
+  // Status & checks
+  status           String   @default("DRAFT")             // DRAFT|REVIEWED|IN_PROGRESS|COMPLETED|CANCELLED
+  rmCheckStatus    String?  @map("rm_check_status")       // GREEN|AMBER|RED
+  eqpCheckStatus   String?  @map("eqp_check_status")      // AVAILABLE|BUSY|UNKNOWN
+  rmCheckDetails   Json?    @map("rm_check_details")      // [{rmCode, required, available, status}]
+  autoGenerated    Boolean  @default(false) @map("auto_generated")
+  remarks          String?
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+  @@map("production_plan")
+}
+
+model PlanSequence {
+  year Int @id
+  seq  Int @default(0)
+  @@map("plan_sequence")
+}
+
+model PlannerLog {
+  id        String   @id @default(cuid())
+  runAt     DateTime @default(now()) @map("run_at")
+  trigger   String                                         // MANUAL|SCHEDULED
+  plansCreated Int   @default(0) @map("plans_created")
+  ordersProcessed Int @default(0) @map("orders_processed")
+  errors    String?
+  @@map("planner_log")
+}
+
+// ─── GOOGLE SHEET SYNC LOG ────────────────────────────────────────────────────
+model SheetSyncLog {
+  id         String   @id @default(cuid())
+  trigger    String   @default("WEBHOOK")   // WEBHOOK | MANUAL | SCHEDULED
+  rowsIn     Int      @default(0) @map("rows_in")
+  imported   Int      @default(0)
+  skipped    Int      @default(0)
+  errors     Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+  @@map("sheet_sync_log")
+}
+
+// ─── CUSTOMER PROFILE (memory layer — auto-fill on Sales Orders) ─────────────
+model CustomerProfile {
+  id           String   @id @default(cuid())
+  customerName String   @unique @map("customer_name")
+  company      String   @default("")
+  orderType    String   @default("DOMESTIC") @map("order_type")
+  orderCount   Int      @default(1) @map("order_count")
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
+  @@map("customer_profile")
+}
+
+// ─── CUSTOMER-PRODUCT PROFILE (deep memory — auto-fill all SO line fields) ───
+// Key: (customerName, productName) where productName = customer-facing product name
+model CustomerProductProfile {
+  id            String   @id @default(cuid())
+  customerName  String   @map("customer_name")
+  productName   String   @map("product_name")          // customer-facing product name (PRIMARY KEY)
+  productCode   String?  @map("product_code")          // inhouse product code (optional, linked later)
+  inhouseName   String?  @map("inhouse_name")          // inhouse product name (optional)
+
+  // Specs & process
+  activeSpecs   String?  @map("active_specs")
+  carrier       String?
+  sectionName   String?  @map("section_name")
+
+  // Packing — unit level
+  unitQty       Float?   @map("unit_qty")              // e.g. 1.0 (from "1KG", "0.5L")
+  unitUom       String?  @map("unit_uom")              // KG / LTR / GM / ML
+  unitPackType  String?  @map("unit_pack_type")        // free-text description
+  primaryPack   String?  @map("primary_pack")          // LD Pouch / AL Pouch / Bottle etc.
+  secondaryPack String?  @map("secondary_pack")        // B-CBB / W-CBB / Drum etc.
+  unitsPerCS    Int?     @map("units_per_cs")           // how many primary packs per secondary pack
+  totalUom      String?  @default("KG") @map("total_uom")
+
+  // Label
+  labelType     String?  @map("label_type")
+  mrp           Float?
+
+  // Batch memory — last batch no + inferred shelf life
+  lastBatchNo   String?  @map("last_batch_no")
+  shelfLifeDays Int?     @map("shelf_life_days")       // EXP minus MFG in days, learned from past
+
+  // Confidence
+  orderCount    Int      @default(1) @map("order_count")
+  lastOrderedAt DateTime @default(now()) @map("last_ordered_at")
+
+  @@unique([customerName, productName])
+  @@map("customer_product_profile")
+}
+
+// ── BOM Send Requests (planner → store) ──────────────────────────────────────
+// Created by planner when they want store to prepare materials.
+// Formulation BOM and Packing BOM are sent as separate records.
+model BomSend {
+  id          String   @id @default(cuid())
+  sendId      String   @unique @map("send_id")         // e.g. BOM-2605-001
+  indentId    String?  @map("indent_id")               // linked indent (if RM BOM)
+  planId      String   @map("plan_id")
+  productCode String   @map("product_code")
+  productName String   @map("product_name")
+  batchNo     String   @map("batch_no")
+  diNo        String   @map("di_no")
+  sectionType String?  @map("section_type")
+  bomType     String   @map("bom_type")                // 'FORMULATION' | 'PACKING'
+  totalQty    Float    @map("total_qty")
+  uom         String   @default("KG")
+  status      String   @default("PENDING")             // PENDING | PICKED | READY_TO_ISSUE | ISSUED
+  remarks     String?
+  sentBy      String?  @map("sent_by")
+  sentAt      DateTime @default(now()) @map("sent_at")
+  pickedAt    DateTime? @map("picked_at")
+  issuedAt    DateTime? @map("issued_at")
+  @@map("bom_send")
 }

@@ -167,3 +167,97 @@ export const bulkApi = {
   // Stock summary
   stockSummary:     () => api.get('/bulk/stock/summary'),
 }
+
+// ── Microbial SFG API ─────────────────────────────────────────────────────────
+export const microbialSfgApi = {
+  // Microbe master
+  listMicrobes:       ()       => api.get('/microbial-sfg/masters/microbes'),
+  createMicrobe:      (data)   => api.post('/microbial-sfg/masters/microbes', data),
+  updateMicrobe:      (id, d)  => api.put(`/microbial-sfg/masters/microbes/${id}`, d),
+  deleteMicrobe:      (id)     => api.delete(`/microbial-sfg/masters/microbes/${id}`),
+  importMicrobes:     (rows)   => api.post('/microbial-sfg/masters/microbes/import', { rows }),
+
+  // Containers
+  listContainers:     (params) => api.get('/microbial-sfg/inward/containers', { params }),
+  availableContainers:(params) => api.get('/microbial-sfg/inward/containers/available', { params }),
+  nextContainerCode:  (params) => api.get('/microbial-sfg/inward/containers/next-code', { params }),
+  containerBatches:   (id)     => api.get(`/microbial-sfg/inward/containers/${id}/batches`),
+
+  // Inward
+  listInward:         (params) => api.get('/microbial-sfg/inward', { params }),
+  createInward:       (data)   => api.post('/microbial-sfg/inward', data),
+  updateInward:       (id, d)  => api.put(`/microbial-sfg/inward/${id}`, d),
+  importInward:       (rows)   => api.post('/microbial-sfg/inward/import', { rows }),
+  inwardSummary:      ()       => api.get('/microbial-sfg/inward/summary'),
+
+  // Planning integration
+  checkPlanMicrobes:  (planId, mf) =>
+    api.get(`/microbial-sfg/planning/check/${planId}`, { params: { multiplication_factor: mf } }),
+  allocate:           (data)   => api.post('/microbial-sfg/planning/allocate', data),
+  listAllocations:    (planId) => api.get(`/microbial-sfg/planning/allocations/${planId}`),
+  cancelAllocation:   (id)     => api.delete(`/microbial-sfg/planning/allocations/${id}`),
+}
+
+export const employeeApi = {
+  list:             (params) => api.get('/erp/employees', { params }),
+  get:              (id) => api.get(`/erp/employees/${id}`),
+  create:           (data) => api.post('/erp/employees', data),
+  update:           (id, data) => api.put(`/erp/employees/${id}`, data),
+  remove:           (id) => api.delete(`/erp/employees/${id}`),
+  listPages:        () => api.get('/erp/employees/pages'),
+  roleDefaults:     () => api.get('/erp/employees/role-defaults'),
+  getPermissions:   (role) => api.get(`/erp/employees/permissions/${role}`),
+  savePermissions:  (role, pagePaths) => api.post('/erp/employees/permissions/save', { role, pagePaths }),
+  seedDefaults:     () => api.post('/erp/employees/permissions/seed-defaults'),
+  listCompanies:    () => api.get('/erp/employees/companies/list'),
+  addCompany:       (data) => api.post('/erp/employees/companies', data),
+}
+
+export const salesOrderApi = {
+  list:          (params) => api.get('/erp/sales-orders', { params }),
+  get:           (id) => api.get(`/erp/sales-orders/${id}`),
+  create:        (data) => api.post('/erp/sales-orders', data),
+  update:        (id, data) => api.put(`/erp/sales-orders/${id}`, data),
+  patchDispatch: (id, data) => api.patch(`/erp/sales-orders/dispatch/${id}`, data),
+  remove:        (id) => api.delete(`/erp/sales-orders/${id}`),
+  updateItem:    (itemId, data) => api.patch(`/erp/sales-orders/item/${itemId}`, data),
+  removeItem:    (itemId) => api.delete(`/erp/sales-orders/item/${itemId}`),
+  companies:     () => api.get('/erp/sales-orders/companies'),
+  addCompany:    (code, name) => api.post('/erp/sales-orders/companies', { code, name }),
+  dashboard:     () => api.get('/erp/sales-orders/summary/dashboard'),
+  syncLog:       () => api.get('/erp/sales-orders/sync-log'),
+  sheetImport:   (rows, trigger = 'MANUAL') => api.post('/erp/sales-orders/sheet-import', {
+    secret: import.meta.env.VITE_SHEET_WEBHOOK_SECRET || 'som-sheet-sync-2024',
+    trigger,
+    rows,
+  }),
+}
+
+export const planningApi = {
+  run:           () => api.post('/erp/plan-engine/run'),
+  listPlans:     (params) => api.get('/erp/plan-engine/plans', { params }),
+  getPlan:       (id) => api.get(`/erp/plan-engine/plans/${id}`),
+  updatePlan:    (id, data) => api.patch(`/erp/plan-engine/plans/${id}`, data),
+  cancelPlan:    (id) => api.delete(`/erp/plan-engine/plans/${id}`),
+  dashboard:     () => api.get('/erp/plan-engine/dashboard'),
+  pendingOrders: () => api.get('/erp/plan-engine/pending-orders'),
+  logs:          () => api.get('/erp/plan-engine/logs'),
+}
+
+export const customerProfileApi = {
+  list:   ()     => api.get('/customer-profiles'),
+  upsert: (data) => api.post('/customer-profiles/upsert', data),
+  seed:   (profiles) => api.post('/customer-profiles/seed', { profiles }),
+}
+
+export const cpProfileApi = {
+  forCustomer:  (customer) => api.get('/cp-profiles', { params: { customer } }),
+  upsertMany:   (customerName, items) => api.post('/cp-profiles/upsert-many', { customerName, items }),
+}
+
+export const bomSendApi = {
+  list:         (params) => api.get('/bom-sends', { params }),
+  create:       (data)   => api.post('/bom-sends', data),
+  updateStatus: (id, status, remarks) => api.patch(`/bom-sends/${id}/status`, { status, remarks }),
+  remove:       (id)     => api.delete(`/bom-sends/${id}`),
+}

@@ -31,6 +31,43 @@ function parseDate(val) {
   return isNaN(d) ? null : d
 }
 
+// Map equipment location strings → ERP section codes
+// Sections: NANO | BOTANICAL | LIQUID | POWDER | GRANULES | MICROBIAL (separate — to be defined)
+// MPFU (recipe) = Microbial Powder Formulations Unit → POWDER (blending step)
+// "Microbial Production" (fermentors/centrifuges) → MICROBIAL (own separate section, TBD)
+function normalizeEquipSection(loc) {
+  if (!loc) return ''
+  const l = String(loc).toLowerCase().trim()
+  if (l.includes('botanical'))                              return 'BOTANICAL'
+  if (l.includes('liquid'))                                 return 'LIQUID'
+  if (l.includes('granule'))                                return 'GRANULES'
+  if (l.includes('microbial') || l.includes('production'))  return 'MICROBIAL'  // separate section — TBD
+  if (l === 'nano' || l.includes('nano'))                   return 'NANO'
+  if (l.includes('powder') || l.includes('formulation'))    return 'POWDER'
+  return String(loc).toUpperCase().trim()
+}
+
+// Map recipe PLANT column → ERP section codes
+function normalizeRecipePlant(plant) {
+  if (!plant) return ''
+  const p = String(plant).toUpperCase().trim()
+  if (p.startsWith('MPFU'))       return 'POWDER'   // Microbial Production Formulation Unit → Powder section
+  if (p === 'BOTANICAL')          return 'BOTANICAL'
+  if (p === 'NANO')               return 'NANO'
+  if (p === 'LIQUID')             return 'LIQUID'
+  if (p === 'GRANULES')           return 'GRANULES'
+  if (p === 'POWDER')             return 'POWDER'
+  return p
+}
+
+// Determine roleType from CONC/CFU column — non-empty, non-NA = MICROBE
+function getRoleType(concCfu) {
+  if (!concCfu) return null
+  const v = String(concCfu).trim().toUpperCase()
+  if (['NA', 'N/A', 'NIL', '-', '', 'NONE'].includes(v)) return null
+  return 'MICROBE'
+}
+
 // Auto-generate next product code: PROD-001, PROD-002, ...
 async function nextProductCode(existingCodes) {
   const allCodes = await prisma.productMaster.findMany({ select: { productCode: true } })
@@ -144,8 +181,11 @@ export default async function importRoutes(fastify) {
         const rows = XLSX.utils.sheet_to_json(wb.Sheets[equipSheet], { defval: '' })
         for (const row of rows) {
           try {
-            const equipName = col(row, 'equipname', 'equip name', 'equipment name', 'name', 'equipment')
-            const plant = col(row, 'plant', 'location', 'unit') || ''
+            const equipName = col(row, 'equipname', 'equip name', 'equipment name', 'name', 'equipment', 'work center')
+            // Normalize location/plant → ERP section code (POWDER, NANO, BOTANICAL, etc.)
+            const locationRaw = col(row, 'plant', 'location', 'unit', 'designated')
+            const plant = normalizeEquipSection(locationRaw)
+            // Working volume may include units ("50 Kg", "2500 L") — parseFloat handles this
             const workingVolumeRaw = col(row, 'workingvolume', 'working volume', 'volume', 'capacity', 'vol')
             const workingVolume = workingVolumeRaw ? parseFloat(workingVolumeRaw) || null : null
             const operation = col(row, 'operation', 'operations', 'process', 'type') || ''
@@ -215,19 +255,27 @@ export default async function importRoutes(fastify) {
         for (const row of rows) {
           try {
             const productName = col(row, 'productname', 'product name', 'product', 'finished good', 'fg name')
-            const rmName = col(row, 'rawmaterial', 'raw material', 'rm name', 'material name', 'ingredient', 'rm')
-            const qtyPerUnit = safeNum(col(row, 'qty', 'qtyperunit', 'qty per unit', 'quantity', 'qty/unit'))
+            // 'COMPONENT NAME' is the RM in this file — added 'component' to search keys
+            const rmName = col(row, 'rawmaterial', 'raw material', 'rm name', 'material name',
+                                  'ingredient', 'component name', 'component', 'rm')
+            const qtyPerUnit = safeNum(col(row, 'qty', 'qtyperunit', 'qty per unit', 'quantity', 'qty/unit', 'qty per kg'))
             const uom = col(row, 'uom', 'unit', 'unit of measure') || 'KG'
+            // PLANT column → maps to ERP section
+            const plantRaw = col(row, 'plant', 'location', 'section', 'unit')
+            const section  = normalizeRecipePlant(plantRaw)
+            // CONC/CFU column — non-NA value means this component is a microbe
+            const concCfu  = col(row, 'conc', 'cfu', 'concentration', 'conccfu', 'concfcu')
+            const roleType = getRoleType(concCfu)
 
             if (!productName || !rmName || qtyPerUnit <= 0) continue
 
-            // Resolve or create product
+            // Resolve or create product — store ERP section as plant
             let product = productsByName[productName.toLowerCase()]
             if (!product) {
               const newCode = await nextProductCode(newProductCodes)
               newProductCodes.push(newCode)
               product = await prisma.productMaster.create({
-                data: { productCode: newCode, productName, plant: '' }
+                data: { productCode: newCode, productName, plant: section }
               })
               productsByName[productName.toLowerCase()] = product
             }
@@ -256,7 +304,7 @@ export default async function importRoutes(fastify) {
               }
             }
 
-            // Upsert recipe row
+            // Upsert recipe row — includes roleType (MICROBE if CONC/CFU is not NA)
             await prisma.recipeDb.upsert({
               where: { productCode_rmCode: { productCode: product.productCode, rmCode: rm.itemCode } },
               create: {
@@ -265,9 +313,10 @@ export default async function importRoutes(fastify) {
                 rmCode: rm.itemCode,
                 rmName: rm.itemName,
                 qtyPerUnit,
-                uom
+                uom,
+                roleType,
               },
-              update: { qtyPerUnit, uom, productName: product.productName, rmName: rm.itemName }
+              update: { qtyPerUnit, uom, productName: product.productName, rmName: rm.itemName, roleType }
             })
             results.recipeBom++
           } catch (e) { results.errors.push(`Recipe row: ${e.message}`) }
@@ -403,10 +452,53 @@ export default async function importRoutes(fastify) {
         }
       }
 
+
+      // ── CUSTOMER PROFILE ───────────────────────────────────────────────────
+      // Matches sheet: CUSTOMER PROFILE, customers, client list
+      const cpSheet = wb.SheetNames.find(s =>
+        /customer.?profile|customer.?master|client.?list|customers/i.test(s)
+      )
+      if (cpSheet) {
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets[cpSheet], { defval: '' })
+        // Build deduplicated profiles: most-frequent company+orderType per customer
+        const profileMap = {}
+        for (const row of rows) {
+          const name = col(row, 'customer name', 'customername', 'customer', 'name')
+          if (!name) continue
+          const key = name.trim().toUpperCase()
+          const co  = col(row, 'company', 'co', 'firm') || ''
+          const ot  = col(row, 'order type', 'ordertype', 'type') || 'DOMESTIC'
+          if (!profileMap[key]) profileMap[key] = { co: {}, ot: {} }
+          profileMap[key].co[co] = (profileMap[key].co[co] || 0) + 1
+          profileMap[key].ot[ot] = (profileMap[key].ot[ot] || 0) + 1
+        }
+        for (const [name, counts] of Object.entries(profileMap)) {
+          try {
+            const company   = Object.entries(counts.co).sort((a, b) => b[1] - a[1])[0]?.[0] || ''
+            const orderType = Object.entries(counts.ot).sort((a, b) => b[1] - a[1])[0]?.[0] || 'DOMESTIC'
+            const orderCount = Object.values(counts.co).reduce((a, b) => a + b, 0)
+            const existing = await prisma.customerProfile.findUnique({ where: { customerName: name } })
+            if (existing) {
+              if (orderCount > existing.orderCount) {
+                await prisma.customerProfile.update({
+                  where: { customerName: name },
+                  data: { company, orderType, orderCount }
+                })
+              }
+            } else {
+              await prisma.customerProfile.create({
+                data: { customerName: name, company, orderType, orderCount }
+              })
+              results.customerProfiles = (results.customerProfiles || 0) + 1
+            }
+          } catch (e) { results.errors.push(`CustomerProfile: ${e.message}`) }
+        }
+      }
+
       return {
         success: true,
         data: results,
-        message: `Import complete — Products: ${results.productMaster}, Equipment: ${results.equipmentMaster}, RM: ${results.rmMaster}, Recipe/BOM: ${results.recipeBom}, Packs: ${results.printMaster}, Inward: ${results.inward}, Outward: ${results.outward}`
+        message: `Import complete — Products: ${results.productMaster}, Equipment: ${results.equipmentMaster}, RM: ${results.rmMaster}, Recipe/BOM: ${results.recipeBom}, Customer Profiles: ${results.customerProfiles || 0}, Packs: ${results.printMaster}, Inward: ${results.inward}, Outward: ${results.outward}`
       }
     } catch (e) {
       fastify.log.error(e)

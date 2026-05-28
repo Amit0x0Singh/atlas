@@ -8,7 +8,13 @@ const CONFIDENCE_STYLES = {
   red:     'bg-red-100 text-red-700 border-red-200',
 }
 
-const EMPTY_ROW = () => ({ id: null, rmCode: '', rmName: '', qtyPerUnit: '', uom: 'KG', _dirty: true })
+const EMPTY_ROW = () => ({ id: null, rmCode: '', rmName: '', qtyPerUnit: '', uom: 'KG', roleType: 'INGREDIENT', _dirty: true })
+
+const ROLE_TYPE_STYLE = {
+  INGREDIENT: 'bg-gray-100 text-gray-600',
+  CARRIER:    'bg-purple-100 text-purple-700',
+  BASE:       'bg-blue-100 text-blue-700',
+}
 
 export default function RecipeDB() {
   const [productList, setProductList] = useState([])
@@ -104,7 +110,8 @@ export default function RecipeDB() {
         productCode: selectedProduct.productCode,
         productName: selectedProduct.productName,
         rmCode: r.rmCode, rmName: r.rmName,
-        qtyPerUnit: r.qtyPerUnit, uom: r.uom
+        qtyPerUnit: r.qtyPerUnit, uom: r.uom,
+        roleType: r.roleType || 'INGREDIENT',
       }))
       const res = await recipeApi.bulkSave(payload)
       setMsg({ type: 'success', text: `✅ ${res.saved} rows saved` })
@@ -280,12 +287,16 @@ export default function RecipeDB() {
                         <span className="ml-1 text-amber-300 text-xs font-normal">↗ per kg product</span>
                       </th>
                       <th className="text-left px-3 py-3 font-semibold w-20">UOM</th>
+                      <th className="text-left px-3 py-3 font-semibold w-28">
+                        Role
+                        <span className="ml-1 text-purple-300 text-xs font-normal">🔄 carrier?</span>
+                      </th>
                       <th className="text-left px-3 py-3 font-semibold w-14">Del</th>
                     </tr>
                   </thead>
                   <tbody>
                     {bomRows.map((row, idx) => (
-                      <tr key={idx} className={`border-b border-gray-100 ${row._dirty ? 'bg-yellow-50' : 'hover:bg-gray-50'}`}>
+                      <tr key={idx} className={`border-b border-gray-100 ${row.roleType === 'CARRIER' ? 'bg-purple-50' : row._dirty ? 'bg-yellow-50' : 'hover:bg-gray-50'}`}>
                         <td className="px-3 py-2 text-gray-400 text-xs">{idx + 1}</td>
 
                         {/* Item Name with dropdown */}
@@ -338,6 +349,17 @@ export default function RecipeDB() {
                             className="w-full border border-gray-200 rounded px-2 py-1.5 text-sm outline-none focus:ring-1 focus:ring-blue-400" />
                         </td>
 
+                        {/* Role Type */}
+                        <td className="px-2 py-1">
+                          <select value={row.roleType || 'INGREDIENT'}
+                            onChange={e => updateRow(idx, 'roleType', e.target.value)}
+                            className={`w-full border rounded px-2 py-1.5 text-xs font-semibold outline-none focus:ring-1 focus:ring-purple-400 ${ROLE_TYPE_STYLE[row.roleType] || ROLE_TYPE_STYLE.INGREDIENT} border-current`}>
+                            <option value="INGREDIENT">Ingredient</option>
+                            <option value="CARRIER">Carrier 🔄</option>
+                            <option value="BASE">Base</option>
+                          </select>
+                        </td>
+
                         <td className="px-2 py-1 text-center">
                           <button onClick={() => removeRow(idx)} className="text-red-400 hover:text-red-600 text-xl font-bold leading-none">×</button>
                         </td>
@@ -367,7 +389,7 @@ export default function RecipeDB() {
                             <div key={uom}>{qty.toFixed(4)} <span className="text-xs text-amber-700">{uom}</span></div>
                           ))}
                         </td>
-                        <td colSpan={2} />
+                        <td colSpan={3} />
                       </tr>
                     </tfoot>
                   )

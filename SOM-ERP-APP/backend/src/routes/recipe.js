@@ -33,10 +33,12 @@ export default async function recipeRoutes(fastify) {
           productCode: r.productCode, productName: r.productName,
           rmCode: r.rmCode, rmName: r.rmName,
           qtyPerUnit: parseFloat(r.qtyPerUnit), uom: r.uom,
+          roleType: r.roleType || 'INGREDIENT',
         },
         update: {
           productName: r.productName, rmName: r.rmName,
           qtyPerUnit: parseFloat(r.qtyPerUnit), uom: r.uom,
+          roleType: r.roleType || 'INGREDIENT',
         }
       })
       saved++
