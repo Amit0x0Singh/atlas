@@ -1,8 +1,18 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { salesOrderApi, productApi, customerProfileApi, cpProfileApi } from '../api/client'
+import { STATIC_CUSTOMER_PROFILES } from '../data/customerProfiles'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-const ORDER_TYPES   = ['DOMESTIC', 'EXPORT', 'SAMPLE']
+// Companies hardcoded from Customer Details.xlsx — no DB needed
+const COMPANIES = [
+  { code: 'SOM',    name: 'SOM Phytopharma' },
+  { code: 'AL-IPL', name: 'Agrilife India (IPL)' },
+  { code: 'AL-LLC', name: 'Agrilife LLC' },
+  { code: 'AL-PTE', name: 'Agrilife PTE' },
+  { code: 'DVS',    name: 'DVS Agri' },
+]
+
+const ORDER_TYPES   = ['DOMESTIC', 'EXPORT', 'ECOM', 'SAMPLE']
 const PRIORITIES    = ['MODERATE', 'URGENT', 'VERY_URGENT']
 const STATUSES      = ['PENDING', 'PLANNED', 'UNDER_PRODUCTION', 'PACKED', 'IN_INVENTORY', 'READY_TO_DISPATCH', 'DISPATCHED']
 const SECTIONS      = ['NANO', 'BOTANICAL', 'LIQUID', 'POWDER', 'GRANULES']
@@ -135,9 +145,15 @@ function InhouseProductPicker({ value, productCode, products, onChange }) {
       {productCode && (
         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-mono text-green-600">{productCode}</span>
       )}
-      {open && filtered.length > 0 && (
+      {open && (
         <div className="absolute z-30 w-full bg-white border border-gray-200 rounded-xl shadow-lg mt-1 max-h-52 overflow-y-auto">
-          {filtered.map(p => (
+          {products.length === 0 ? (
+            <div className="px-4 py-3 text-xs text-amber-600 bg-amber-50">
+              No products in master yet — import recipe data via Data Import page first
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="px-4 py-3 text-xs text-gray-400 italic">No match — type free text or import more recipes</div>
+          ) : filtered.map(p => (
             <button key={p.productCode} type="button" onMouseDown={() => pick(p)}
               className="w-full text-left px-3 py-2 hover:bg-green-50 text-sm flex items-center justify-between gap-2">
               <span className="font-medium text-gray-800">{p.productName}</span>
@@ -498,7 +514,7 @@ const BLANK_ITEM = {
   labelType:'', batchNo:'', mfgDate:'', expDate:'', mrp:'',
 }
 
-function OrderForm({ initial, companies, products, profiles, onSave, onCancel, onAddCompany }) {
+function OrderForm({ initial, products, profiles, onSave, onCancel, onAddCompany }) {
   const today = new Date().toISOString().split('T')[0]
   const [addingCo,  setAddingCo]  = useState(false)
   const [newCoCode, setNewCoCode] = useState('')
@@ -507,7 +523,7 @@ function OrderForm({ initial, companies, products, profiles, onSave, onCancel, o
   const [savingCo,  setSavingCo]  = useState(false)
 
   const [hdr, setHdr] = useState({
-    company: companies[0]?.code || 'SOM',
+    company: COMPANIES[0]?.code || 'SOM',
     diNo: '', customerName: '',
     orderType: 'DOMESTIC', priority: 'MODERATE',
     salesStaff: '',
@@ -529,12 +545,13 @@ function OrderForm({ initial, companies, products, profiles, onSave, onCancel, o
   const [cpProfiles, setCpProfiles] = useState([])   // product profiles for current customer
   const setH = (k, v) => setHdr(h => ({ ...h, [k]: v }))
 
-  // Load product profiles whenever customer changes
+  // Load customer-product profiles whenever customer changes
+  // Backend auto-seeds these on first startup; gracefully empty until then
   useEffect(() => {
     if (!hdr.customerName?.trim()) { setCpProfiles([]); return }
     cpProfileApi.forCustomer(hdr.customerName.trim())
       .then(res => setCpProfiles(res.data || []))
-      .catch(() => setCpProfiles([]))
+      .catch(() => setCpProfiles([]))  // fine if empty — picker shows as free text
   }, [hdr.customerName])
 
   // Apply a memory profile to a line item — shared by both lookup paths
@@ -650,7 +667,7 @@ function OrderForm({ initial, companies, products, profiles, onSave, onCancel, o
               setAddingCo(false); setH('company', e.target.value)
             }}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none">
-              {companies.map(c => <option key={c.code} value={c.code}>{c.code} — {c.name}</option>)}
+              {COMPANIES.map(c => <option key={c.code} value={c.code}>{c.code} — {c.name}</option>)}
               <option value="__ADD__">+ Add New Company…</option>
             </select>
             {addingCo && (
@@ -677,7 +694,7 @@ function OrderForm({ initial, companies, products, profiles, onSave, onCancel, o
                   }} className="bg-green-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-green-800 disabled:opacity-50">
                     {savingCo ? 'Adding…' : 'Add'}
                   </button>
-                  <button type="button" onClick={() => { setAddingCo(false); setH('company', companies[0]?.code || '') }}
+                  <button type="button" onClick={() => { setAddingCo(false); setH('company', COMPANIES[0]?.code || '') }}
                     className="border border-gray-300 px-3 py-1.5 rounded-lg text-xs">Cancel</button>
                 </div>
               </div>
@@ -974,35 +991,49 @@ function DispatchModal({ order, onSave, onDelete, onClose }) {
 // Main page
 // ─────────────────────────────────────────────────────────────────────────────
 export default function SalesOrders() {
-  const [activeTab,     setActiveTab]     = useState('orders')  // 'orders' | 'dispatch' | 'history'
+  const [activeTab,     setActiveTab]     = useState('orders')
   const [orders,        setOrders]        = useState([])
-  const [companies,     setCompanies]     = useState([])
   const [products,      setProducts]      = useState([])
   const [loading,       setLoading]       = useState(true)
   const [showForm,      setShowForm]      = useState(false)
   const [editing,       setEditing]       = useState(null)
-  const [profiles,      setProfiles]      = useState([])
+  // Profiles: start with static data immediately; DB results (if any) merge on top
+  const [profiles,      setProfiles]      = useState(STATIC_CUSTOMER_PROFILES)
   const [dispatchOrder, setDispatchOrder] = useState(null)
   const [err,           setErr]           = useState('')
   const [search,        setSearch]        = useState('')
   const [filterStatus,  setFilterStatus]  = useState('ALL')
   const [filterCompany, setFilterCompany] = useState('ALL')
   const [dispatchFilter,setDispatchFilter]= useState('ALL')
-  const [sfgAlert,      setSfgAlert]      = useState(null)   // [{productCode,productName,sfgQty,orderedQty,uom}]
+  const [sfgAlert,      setSfgAlert]      = useState(null)
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const [ordRes, coRes, prodRes, profRes] = await Promise.all([
+      // Companies come from COMPANIES constant — no DB call needed
+      // Profiles: static data is already loaded; try to get DB extras
+      const [ordRes, prodRes] = await Promise.all([
         salesOrderApi.list({}),
-        salesOrderApi.companies(),
         productApi.list({}),
-        customerProfileApi.list(),
       ])
       setOrders(ordRes.data)
-      setCompanies(coRes.data)
       setProducts(prodRes.data || [])
-      setProfiles(profRes.data || [])
+      // Try to load any extra DB profiles (learned from orders), merge with static
+      try {
+        const profRes = await customerProfileApi.list()
+        if (profRes.data?.length > 0) {
+          // Merge: DB entries take precedence (higher orderCount) over static
+          const dbMap = {}
+          for (const p of profRes.data) dbMap[p.customerName] = p
+          setProfiles(prev => {
+            const merged = [...prev]
+            for (const p of profRes.data) {
+              if (!merged.find(x => x.customerName === p.customerName)) merged.push(p)
+            }
+            return merged.sort((a,b) => (b.orderCount||0) - (a.orderCount||0))
+          })
+        }
+      } catch { /* non-critical — static data is sufficient */ }
     } catch (ex) { setErr(ex.message) }
     finally { setLoading(false) }
   }, [])
@@ -1070,9 +1101,8 @@ export default function SalesOrders() {
   }
 
   async function handleAddCompany(code, name) {
-    await salesOrderApi.addCompany(code, name)
-    const res = await salesOrderApi.companies()
-    setCompanies(res.data)
+    // Persist to DB but COMPANIES constant already has the 5 core ones
+    try { await salesOrderApi.addCompany(code, name) } catch { /* non-critical */ }
   }
 
   // ── Derived ──────────────────────────────────────────────────────────────
@@ -1195,7 +1225,7 @@ export default function SalesOrders() {
               <h2 className="text-base font-bold text-gray-800 mb-5">
                 {editing ? 'Edit — ' + editing.soId : 'New Sales Order'}
               </h2>
-              <OrderForm initial={editing || undefined} companies={companies} products={products} profiles={profiles}
+              <OrderForm initial={editing || undefined} products={products} profiles={profiles}
                 onSave={handleSave}
                 onCancel={() => { setShowForm(false); setEditing(null) }}
                 onAddCompany={handleAddCompany} />
@@ -1225,7 +1255,7 @@ export default function SalesOrders() {
             <select value={filterCompany} onChange={e => setFilterCompany(e.target.value)}
               className="border border-gray-300 rounded-lg px-3 py-2 text-sm">
               <option value="ALL">All Companies</option>
-              {companies.map(c => <option key={c.code} value={c.code}>{c.code}</option>)}
+              {COMPANIES.map(c => <option key={c.code} value={c.code}>{c.code}</option>)}
             </select>
           </div>
 
@@ -1378,7 +1408,7 @@ export default function SalesOrders() {
             <select value={filterCompany} onChange={e => setFilterCompany(e.target.value)}
               className="border border-gray-300 rounded-lg px-3 py-2 text-sm">
               <option value="ALL">All Companies</option>
-              {companies.map(c => <option key={c.code} value={c.code}>{c.code}</option>)}
+              {COMPANIES.map(c => <option key={c.code} value={c.code}>{c.code}</option>)}
             </select>
           </div>
 

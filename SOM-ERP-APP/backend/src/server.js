@@ -8,6 +8,7 @@ import path from 'path'
 import { existsSync } from 'fs'
 import { registerRoutes } from './routes/index.js'
 import { startCronJobs } from './services/cron-jobs.js'
+import { runAutoSeed } from './services/auto-seed.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -62,6 +63,9 @@ const PORT = parseInt(process.env.PORT || '3001', 10)
 try {
   await fastify.listen({ port: PORT, host: '0.0.0.0' })
   console.log(`SOM ERP Backend running on port ${PORT}`)
+
+  // Auto-seed reference tables on first startup (companies, customer profiles, cp profiles)
+  runAutoSeed(msg => console.log(msg))
 
   // Start cron jobs after server is up
   startCronJobs(fastify)
