@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { outwardApi, indentApi, bulkApi, bomSendApi } from '../api/client.js'
+import { outwardApi, indentApi, bulkApi } from '../api/client.js'
 import jsQR from 'jsqr'
 
-const MODES = { BOM: 'BOM_ISSUANCE', REDUCTION: 'PACK_REDUCTION', RECON: 'STOCK_RECON', BULK: 'BULK_ISSUE', BOM_REQUESTS: 'BOM_REQUESTS' }
+const MODES = { BOM: 'BOM_ISSUANCE', REDUCTION: 'PACK_REDUCTION', RECON: 'STOCK_RECON', BULK: 'BULK_ISSUE' }
 
 export default function Outward() {
   const [mode, setMode] = useState(null)
@@ -21,9 +21,6 @@ export default function Outward() {
   const [history, setHistory] = useState([])
   const [histPage, setHistPage] = useState(1)
   const [histTotal, setHistTotal] = useState(0)
-  const [bomRequests, setBomRequests]   = useState([])
-  const [bomReqFilter, setBomReqFilter] = useState('PENDING') // PENDING | ALL
-  const [bomUpdating, setBomUpdating]   = useState(null)      // id being updated
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
   const streamRef = useRef(null)
@@ -34,27 +31,10 @@ export default function Outward() {
   useEffect(() => {
     indentApi.list({ status: 'OPEN' }).then(r => setIndents(r.data || [])).catch(console.error)
     loadHistory()
-    loadBomRequests()
     return () => stopCamera()
   }, [])
 
   useEffect(() => { loadHistory() }, [histPage])
-
-  const loadBomRequests = async () => {
-    try {
-      const res = await bomSendApi.list({})
-      setBomRequests(res.data || [])
-    } catch { /* silent */ }
-  }
-
-  const handleBomStatusUpdate = async (id, status) => {
-    setBomUpdating(id)
-    try {
-      await bomSendApi.updateStatus(id, status)
-      await loadBomRequests()
-    } catch (e) { alert(e.message) }
-    finally { setBomUpdating(null) }
-  }
 
   const loadHistory = async () => {
     try {
@@ -168,32 +148,8 @@ export default function Outward() {
       <div className="p-6">
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Outward — Issue Materials</h1>
         <p className="text-gray-500 text-sm mb-6">Select the type of outward transaction</p>
-        {/* BOM Requests from Planner — prominent if pending */}
-        {(() => {
-          const pending = bomRequests.filter(r => r.status === 'PENDING')
-          return pending.length > 0 ? (
-            <div onClick={() => setMode(MODES.BOM_REQUESTS)}
-              className="mb-5 flex items-center gap-4 bg-amber-50 border-2 border-amber-300 rounded-xl px-5 py-4 cursor-pointer hover:bg-amber-100 transition">
-              <div className="text-3xl">📋</div>
-              <div className="flex-1">
-                <p className="font-bold text-amber-900 text-base">
-                  {pending.length} BOM Request{pending.length > 1 ? 's' : ''} Pending from Planner
-                </p>
-                <p className="text-sm text-amber-700 mt-0.5">
-                  {pending.map(r => `${r.bomType === 'FORMULATION' ? '🧪' : '📦'} ${r.productName} (${r.diNo})`).join(' · ')}
-                </p>
-              </div>
-              <span className="text-sm font-semibold text-amber-800 border border-amber-400 px-3 py-1.5 rounded-lg bg-white">
-                View & Pick →
-              </span>
-            </div>
-          ) : null
-        })()}
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {[
-            { key: MODES.BOM_REQUESTS, label: 'BOM Requests', desc: 'View and pick BOM requests sent by the planner', icon: '📋',
-              badge: bomRequests.filter(r => r.status === 'PENDING').length },
             { key: MODES.BOM,       label: 'BOM Issuance',     desc: 'Issue item against a production indent (scan or manual)', icon: '📤' },
             { key: MODES.BULK,      label: 'Bulk Issue',        desc: 'Issue from a bulk location — scan location QR, select lot', icon: '🗄️' },
             { key: MODES.REDUCTION, label: 'Pack → Container',  desc: 'Move qty from pack to bulk container', icon: '📦' },
@@ -201,11 +157,6 @@ export default function Outward() {
           ].map(m => (
             <button key={m.key} onClick={() => setMode(m.key)}
               className="bg-white border-2 border-gray-200 rounded-xl p-5 text-left hover:border-blue-400 hover:bg-blue-50 transition-all relative">
-              {m.badge > 0 && (
-                <span className="absolute top-3 right-3 bg-amber-400 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                  {m.badge}
-                </span>
-              )}
               <div className="text-3xl mb-2">{m.icon}</div>
               <div className="text-base font-bold text-gray-900 mb-1">{m.label}</div>
               <div className="text-xs text-gray-500">{m.desc}</div>
@@ -275,8 +226,7 @@ export default function Outward() {
       <div className="flex items-center gap-3 mb-4">
         <button onClick={goBack} className="text-gray-500 hover:text-gray-700 font-medium">← Back</button>
         <h1 className="text-xl font-bold">
-          {mode === MODES.BOM_REQUESTS ? '📋 BOM Requests from Planner'
-           : mode === MODES.BOM ? '📤 BOM Issuance'
+          {mode === MODES.BOM ? '📤 BOM Issuance'
            : mode === MODES.BULK ? '🗄️ Bulk Issue'
            : mode === MODES.REDUCTION ? '📦 Pack → Container'
            : '⚖️ Stock Adjustment'}
@@ -468,112 +418,6 @@ export default function Outward() {
         </div>
       )}
 
-      {/* ── BOM REQUESTS FROM PLANNER ─────────────────────────────────── */}
-      {mode === MODES.BOM_REQUESTS && (
-        <div>
-          {/* Filter tabs */}
-          <div className="flex gap-2 mb-4">
-            {['PENDING', 'PICKED', 'READY_TO_ISSUE', 'ISSUED', 'ALL'].map(f => (
-              <button key={f} onClick={() => setBomReqFilter(f)}
-                className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition ${bomReqFilter === f ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-600 border-gray-300 hover:border-gray-500'}`}>
-                {f === 'ALL' ? 'All' : f.replace(/_/g, ' ')}
-                {f !== 'ALL' && (
-                  <span className="ml-1.5 bg-white bg-opacity-20 rounded-full px-1.5">
-                    {bomRequests.filter(r => r.status === f).length}
-                  </span>
-                )}
-              </button>
-            ))}
-            <button onClick={loadBomRequests} className="ml-auto text-xs text-gray-500 hover:text-gray-700 border border-gray-200 px-3 py-1.5 rounded-lg">
-              ↻ Refresh
-            </button>
-          </div>
-
-          {/* Request cards */}
-          {(() => {
-            const filtered = bomReqFilter === 'ALL' ? bomRequests : bomRequests.filter(r => r.status === bomReqFilter)
-            if (filtered.length === 0)
-              return <div className="text-center py-16 text-gray-400">No {bomReqFilter !== 'ALL' ? bomReqFilter.replace(/_/g,' ') + ' ' : ''}requests found.</div>
-            return (
-              <div className="space-y-3">
-                {filtered.map(req => (
-                  <div key={req.id} className={`bg-white rounded-xl border-2 p-5 ${
-                    req.status === 'PENDING'         ? 'border-amber-300' :
-                    req.status === 'PICKED'          ? 'border-blue-300' :
-                    req.status === 'READY_TO_ISSUE'  ? 'border-green-400' :
-                    req.status === 'ISSUED'          ? 'border-gray-200 opacity-60' : 'border-gray-200'}`}>
-                    <div className="flex items-start justify-between gap-3 mb-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-mono text-xs font-bold text-gray-500">{req.sendId}</span>
-                          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                            req.bomType === 'FORMULATION' ? 'bg-emerald-100 text-emerald-700' : 'bg-violet-100 text-violet-700'}`}>
-                            {req.bomType === 'FORMULATION' ? '🧪 Formulation BOM' : '📦 Packing BOM'}
-                          </span>
-                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                            req.status === 'PENDING'        ? 'bg-amber-100 text-amber-700' :
-                            req.status === 'PICKED'         ? 'bg-blue-100 text-blue-700' :
-                            req.status === 'READY_TO_ISSUE' ? 'bg-green-100 text-green-700' :
-                            'bg-gray-100 text-gray-500'}`}>
-                            {req.status.replace(/_/g, ' ')}
-                          </span>
-                        </div>
-                        <p className="text-base font-bold text-gray-900">{req.productName}</p>
-                        <div className="flex gap-4 mt-1 text-xs text-gray-500">
-                          <span>DI: <strong className="text-gray-700">{req.diNo}</strong></span>
-                          <span>Batch: <strong className="text-gray-700">{req.batchNo}</strong></span>
-                          <span>Qty: <strong className="text-gray-700">{req.totalQty} {req.uom}</strong></span>
-                          {req.sectionType && <span>Section: <strong className="text-gray-700">{req.sectionType}</strong></span>}
-                        </div>
-                        <p className="text-xs text-gray-400 mt-1">
-                          Sent {new Date(req.sentAt).toLocaleString('en-IN', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' })}
-                          {req.sentBy ? ` by ${req.sentBy}` : ''}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Action buttons */}
-                    {req.status !== 'ISSUED' && req.status !== 'CANCELLED' && (
-                      <div className="flex flex-wrap gap-2 border-t border-gray-100 pt-3">
-                        {req.status === 'PENDING' && (
-                          <button
-                            onClick={() => handleBomStatusUpdate(req.id, 'PICKED')}
-                            disabled={bomUpdating === req.id}
-                            className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50">
-                            {bomUpdating === req.id ? 'Updating…' : '✓ Mark as Picked'}
-                          </button>
-                        )}
-                        {req.status === 'PICKED' && (
-                          <button
-                            onClick={() => handleBomStatusUpdate(req.id, 'READY_TO_ISSUE')}
-                            disabled={bomUpdating === req.id}
-                            className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-green-600 text-white hover:bg-green-700 disabled:opacity-50">
-                            {bomUpdating === req.id ? 'Updating…' : '✅ BOM Ready to Issue'}
-                          </button>
-                        )}
-                        {req.status === 'READY_TO_ISSUE' && (
-                          <button
-                            onClick={() => handleBomStatusUpdate(req.id, 'ISSUED')}
-                            disabled={bomUpdating === req.id}
-                            className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-gray-700 text-white hover:bg-gray-800 disabled:opacity-50">
-                            {bomUpdating === req.id ? 'Updating…' : '📤 Mark as Issued'}
-                          </button>
-                        )}
-                        <button
-                          onClick={() => handleBomStatusUpdate(req.id, 'CANCELLED')}
-                          disabled={bomUpdating === req.id}
-                          className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-red-200 text-red-500 hover:bg-red-50 disabled:opacity-50">
-                          Cancel
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )
-          })()}
-        </div>
-      )}
     </div>
   )
 }

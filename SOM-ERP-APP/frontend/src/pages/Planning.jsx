@@ -304,6 +304,28 @@ function PlanningDrawer({ plan, pendingItem, onSave, onClose, equipList, employe
   const [multiplicationFactor, setMultiplicationFactor] = useState(1)
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
+  // ── RM Stock Check ────────────────────────────────────────────────────────
+  const [rmCheck, setRmCheck]         = useState(null)   // { allOk, checks[] }
+  const [rmCheckLoading, setRmCheckLoading] = useState(false)
+  const [rmCheckExpanded, setRmCheckExpanded] = useState(true)
+
+  const productCode = plan?.productCode || pendingItem?.productCode || so?.productCode || ''
+  const batchQty    = plan?.totalQty    || item?.totalQty || ''
+
+  useEffect(() => {
+    if (!productCode || !batchQty) return
+    setRmCheckLoading(true)
+    indentApi.stockCheck(productCode, batchQty)
+      .then(res => {
+        const d = res.data || res
+        setRmCheck(d)
+        // Auto-expand if any shortage
+        setRmCheckExpanded(!d.allOk)
+      })
+      .catch(() => setRmCheck(null))
+      .finally(() => setRmCheckLoading(false))
+  }, [productCode, batchQty])
+
   // Section-filtered equipment
   const filteredEquip = equipList.filter(e => !e.plant || e.plant.toUpperCase() === section.toUpperCase())
   const eqpOptions    = filteredEquip.length ? filteredEquip : equipList
@@ -396,6 +418,87 @@ function PlanningDrawer({ plan, pendingItem, onSave, onClose, equipList, employe
             <button onClick={onClose} className="text-white/70 hover:text-white text-2xl leading-none mt-1">×</button>
           </div>
         </div>
+
+        {/* ── RM Stock Check Panel ──────────────────────────────────────────── */}
+        {(rmCheckLoading || rmCheck) && (
+          <div className={`flex-shrink-0 border-b ${
+            rmCheckLoading ? 'bg-gray-50' :
+            rmCheck?.allOk ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+          }`}>
+            <button
+              type="button"
+              onClick={() => setRmCheckExpanded(e => !e)}
+              className="w-full flex items-center justify-between px-5 py-3"
+            >
+              <div className="flex items-center gap-2">
+                {rmCheckLoading ? (
+                  <span className="text-xs text-gray-500 animate-pulse">⏳ Checking RM stock…</span>
+                ) : rmCheck?.allOk ? (
+                  <>
+                    <span className="text-base">✅</span>
+                    <span className="text-sm font-bold text-green-700">All materials available for this batch</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-base">⚠️</span>
+                    <span className="text-sm font-bold text-red-700">
+                      {rmCheck?.checks?.filter(c => !c.ok).length} material{rmCheck?.checks?.filter(c => !c.ok).length > 1 ? 's' : ''} short — check before saving
+                    </span>
+                  </>
+                )}
+              </div>
+              {!rmCheckLoading && <span className="text-xs text-gray-400">{rmCheckExpanded ? '▲ Hide' : '▼ Show'}</span>}
+            </button>
+
+            {rmCheckExpanded && !rmCheckLoading && rmCheck?.checks?.length > 0 && (
+              <div className="px-5 pb-4">
+                <div className="rounded-xl overflow-hidden border border-gray-200">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="bg-gray-100">
+                        <th className="text-left px-3 py-2 font-semibold text-gray-600">Material</th>
+                        <th className="text-right px-3 py-2 font-semibold text-gray-600">Required</th>
+                        <th className="text-right px-3 py-2 font-semibold text-gray-600">Available</th>
+                        <th className="text-right px-3 py-2 font-semibold text-gray-600">Shortfall</th>
+                        <th className="text-center px-3 py-2 font-semibold text-gray-600">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rmCheck.checks.map((c, i) => (
+                        <tr key={c.rmCode} className={`border-t border-gray-100 ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
+                          <td className="px-3 py-2">
+                            <div className="font-semibold text-gray-800">{c.rmName}</div>
+                            <div className="text-gray-400 font-mono">{c.rmCode}</div>
+                          </td>
+                          <td className="px-3 py-2 text-right font-mono text-gray-700">{parseFloat(c.required.toFixed(3))}</td>
+                          <td className={`px-3 py-2 text-right font-mono font-bold ${c.ok ? 'text-green-700' : 'text-red-600'}`}>
+                            {parseFloat(c.available.toFixed(3))}
+                          </td>
+                          <td className="px-3 py-2 text-right font-mono text-red-600 font-bold">
+                            {c.shortfall > 0 ? `−${parseFloat(c.shortfall.toFixed(3))}` : '—'}
+                          </td>
+                          <td className="px-3 py-2 text-center">
+                            {c.ok
+                              ? <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full">OK</span>
+                              : c.available === 0
+                                ? <span className="bg-red-200 text-red-800 text-xs font-bold px-2 py-0.5 rounded-full">NO STOCK</span>
+                                : <span className="bg-orange-100 text-orange-700 text-xs font-bold px-2 py-0.5 rounded-full">SHORT</span>
+                            }
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {!rmCheck.allOk && (
+                  <p className="text-xs text-red-600 mt-2 font-semibold">
+                    ⚠ You can still save the plan — BOM will be sent to stores with shortage flagged. Store person can raise purchase indent from BOM Issuance.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Scrollable form body */}
         <form onSubmit={submit} className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
