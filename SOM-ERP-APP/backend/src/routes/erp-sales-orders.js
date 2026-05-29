@@ -105,7 +105,7 @@ export default async function salesOrderRoutes(fastify) {
         orderType,
         orderReceivedDate: orderReceivedDate ? new Date(orderReceivedDate) : new Date(),
         priority: priority || 'MODERATE',
-        estimatedDispatchDate: estimatedDispatchDate ? new Date(estimatedDispatchDate) : null,
+        estimatedDispatchDate: estimatedDispatchDate ? new Date(estimatedDispatchDate) : (orderReceivedDate ? new Date(orderReceivedDate) : new Date()),
         invoiceNo:    invoiceNo    || null,
         invoiceDate:  invoiceDate  ? new Date(invoiceDate) : null,
         transportName: transportName || null,
