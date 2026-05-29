@@ -637,7 +637,7 @@ model BomSend {
   bomType     String   @map("bom_type")                // 'FORMULATION' | 'PACKING'
   totalQty    Float    @map("total_qty")
   uom         String   @default("KG")
-  status      String   @default("PENDING")             // PENDING | PICKED | READY_TO_ISSUE | ISSUED
+  status      String   @default("PENDING")             // PENDING | PICKED | ISSUED | CANCELLED
   remarks     String?
   sentBy      String?  @map("sent_by")
   sentAt      DateTime @default(now()) @map("sent_at")

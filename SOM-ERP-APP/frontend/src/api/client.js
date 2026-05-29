@@ -256,8 +256,10 @@ export const cpProfileApi = {
 }
 
 export const bomSendApi = {
-  list:         (params) => api.get('/bom-sends', { params }),
-  create:       (data)   => api.post('/bom-sends', data),
+  list:         (params)   => api.get('/bom-sends', { params }),
+  get:          (id)       => api.get(`/bom-sends/${id}`),
+  create:       (data)     => api.post('/bom-sends', data),
+  issuePack:    (id, data) => api.post(`/bom-sends/${id}/issue-pack`, data),
   updateStatus: (id, status, remarks) => api.patch(`/bom-sends/${id}/status`, { status, remarks }),
-  remove:       (id)     => api.delete(`/bom-sends/${id}`),
+  remove:       (id)       => api.delete(`/bom-sends/${id}`),
 }
