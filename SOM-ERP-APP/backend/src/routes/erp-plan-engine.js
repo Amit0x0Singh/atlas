@@ -106,8 +106,17 @@ export async function runPlanningEngine(trigger = 'MANUAL') {
       tomorrow.setDate(tomorrow.getDate() + 1)
       const plannedDate = planTarget > tomorrow ? planTarget : tomorrow
 
+      // Resolve product code — use saved code, or look up by name in ProductMaster
+      let productCode = item.inhouseProductCode || null
+      if (!productCode && item.inhouseProductName) {
+        const pm = await prisma.productMaster.findFirst({
+          where: { productName: { equals: item.inhouseProductName, mode: 'insensitive' } },
+          select: { productCode: true },
+        })
+        if (pm) productCode = pm.productCode
+      }
+
       // RM check
-      const productCode = item.inhouseProductCode || null
       const rmCheck = productCode
         ? await checkRmAvailability(productCode, item.totalQty)
         : { status: 'AMBER', details: [], note: 'No product code linked' }
@@ -128,7 +137,7 @@ export async function runPlanningEngine(trigger = 'MANUAL') {
             customerName:     so.customerName,
             sectionType:      item.sectionName || 'POWDER',
             plannedDate,
-            productCode:      item.inhouseProductCode || null,
+            productCode:      productCode,
             productName:      item.inhouseProductName,
             totalQty:         item.totalQty,
             uom:              item.totalUom || 'KG',
@@ -201,7 +210,24 @@ export default async function planEngineRoutes(fastify) {
       where,
       orderBy: [{ sectionType: 'asc' }, { plannedDate: 'asc' }],
     })
-    return { success: true, data: plans }
+
+    // Resolve productCode for any plans that were saved without one
+    const resolvedPlans = await Promise.all(plans.map(async (plan) => {
+      if (plan.productCode || !plan.productName) return plan
+      const pm = await prisma.productMaster.findFirst({
+        where: { productName: { equals: plan.productName, mode: 'insensitive' } },
+        select: { productCode: true },
+      })
+      if (!pm) return plan
+      // Persist the resolved code so next load is instant
+      await prisma.productionPlan.update({
+        where: { id: plan.id },
+        data:  { productCode: pm.productCode },
+      })
+      return { ...plan, productCode: pm.productCode }
+    }))
+
+    return { success: true, data: resolvedPlans }
   })
 
   // GET /api/erp/plan-engine/plans/:id

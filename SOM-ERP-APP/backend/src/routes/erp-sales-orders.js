@@ -116,7 +116,7 @@ export default async function salesOrderRoutes(fastify) {
           create: items.map((item, idx) => ({
             lineNo:              idx + 1,
             customerProductName: item.customerProductName,
-            inhouseProductName:  item.inhouseProductName,
+            inhouseProductName:  item.inhouseProductName  || null,
             inhouseProductCode:  item.inhouseProductCode  || null,
             activeSpecs:         item.activeSpecs         || null,
             activeIngredient:    item.activeIngredient    || null,

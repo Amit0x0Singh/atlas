@@ -3,14 +3,8 @@ import { salesOrderApi, productApi, customerProfileApi, cpProfileApi } from '../
 import { STATIC_CUSTOMER_PROFILES } from '../data/customerProfiles'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-// Companies hardcoded from Customer Details.xlsx — no DB needed
-const COMPANIES = [
-  { code: 'SOM',    name: 'SOM Phytopharma' },
-  { code: 'AL-IPL', name: 'Agrilife India (IPL)' },
-  { code: 'AL-LLC', name: 'Agrilife LLC' },
-  { code: 'AL-PTE', name: 'Agrilife PTE' },
-  { code: 'DVS',    name: 'DVS Agri' },
-]
+// Fixed company list — exactly 5 entities
+const COMPANIES = ['SOM', 'DVS', 'AL-IPL', 'AL-LLC', 'AL-PTE']
 
 const ORDER_TYPES   = ['DOMESTIC', 'EXPORT', 'ECOM', 'SAMPLE']
 const PRIORITIES    = ['MODERATE', 'URGENT', 'VERY_URGENT']
@@ -279,7 +273,7 @@ function CustomerProductPicker({ value, cpProfiles, onSelect, onChange }) {
         <div className="absolute z-50 top-full left-0 right-0 mt-0.5 bg-white border border-gray-200 rounded-xl shadow-xl max-h-56 overflow-y-auto">
           {filtered.map((p, i) => (
             <button key={i} type="button"
-              onMouseDown={e => { e.preventDefault(); setSearch(p.productName); setOpen(false); onSelect(p) }}
+              onMouseDown={e => { e.preventDefault(); setSearch(p.productName); onChange(p.productName); setOpen(false); onSelect(p) }}
               className="w-full text-left px-3 py-2 text-sm hover:bg-green-50 flex items-center justify-between gap-2">
               <span className="font-medium text-gray-800 truncate">{p.productName}</span>
               <span className="text-xs text-gray-400 shrink-0 flex gap-1">
@@ -339,13 +333,7 @@ function LineItemRow({ item, idx, products, cpProfiles, onChange, onRemove, onPr
       </div>
 
       {/* Specs */}
-      <div className="grid grid-cols-3 gap-3">
-        <div>
-          <label className="block text-xs font-semibold text-gray-500 mb-1">Active Ingredient</label>
-          <input value={item.activeIngredient || ''} onChange={e => set('activeIngredient', e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
-            placeholder="e.g. Bacillus subtilis" />
-        </div>
+      <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-xs font-semibold text-gray-500 mb-1">CFU / Specs</label>
           <input value={item.activeSpecs || ''} onChange={e => set('activeSpecs', e.target.value)}
@@ -430,7 +418,7 @@ function LineItemRow({ item, idx, products, cpProfiles, onChange, onRemove, onPr
             )}
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1">Units / Sec. Pack</label>
+            <label className="block text-xs font-semibold text-gray-500 mb-1">Unit Per Sec. Pack</label>
             <input type="number" value={item.unitsPerCS || ''} onChange={e => {
               const newUPS = e.target.value
               const newCS = calcTotalCS(item.totalQty, item.unitQty, newUPS)
@@ -514,20 +502,16 @@ const BLANK_ITEM = {
   labelType:'', batchNo:'', mfgDate:'', expDate:'', mrp:'',
 }
 
-function OrderForm({ initial, products, profiles, onSave, onCancel, onAddCompany }) {
+function OrderForm({ initial, products, profiles, onSave, onCancel }) {
   const today = new Date().toISOString().split('T')[0]
-  const [addingCo,  setAddingCo]  = useState(false)
-  const [newCoCode, setNewCoCode] = useState('')
-  const [newCoName, setNewCoName] = useState('')
-  const [addCoErr,  setAddCoErr]  = useState('')
-  const [savingCo,  setSavingCo]  = useState(false)
 
   const [hdr, setHdr] = useState({
-    company: COMPANIES[0]?.code || 'SOM',
-    diNo: '', customerName: '',
-    orderType: 'DOMESTIC', priority: 'MODERATE',
+    company: COMPANIES[0] || 'SOM',
+    diNo: '',
+    customerName: '',
+    orderType: 'DOMESTIC',
     salesStaff: '',
-    orderReceivedDate: today, estimatedDispatchDate: '',
+    orderReceivedDate: today,
     remarks: '',
     ...initial,
   })
@@ -613,9 +597,8 @@ function OrderForm({ initial, products, profiles, onSave, onCancel, onAddCompany
     e.preventDefault()
     if (!hdr.diNo.trim())           return setErr('DI No. is required')
     if (!hdr.customerName.trim())   return setErr('Customer Name is required')
-    if (!hdr.estimatedDispatchDate) return setErr('Estimated Dispatch Date is required')
-    if (items.some(it => !it.customerProductName || !it.inhouseProductName || !it.totalQty))
-      return setErr('Each line needs Customer Product Name, Inhouse Product Name and Qty')
+    if (items.some(it => !it.customerProductName || !it.totalQty))
+      return setErr('Each line needs a Customer Product Name and Quantity')
     setSaving(true); setErr('')
     try { await onSave({ ...hdr, items }) }
     catch (ex) { setErr(ex.message) }
@@ -632,7 +615,7 @@ function OrderForm({ initial, products, profiles, onSave, onCancel, onAddCompany
         <div className="grid grid-cols-4 gap-4">
           <div>
             <label className="block text-xs font-semibold text-gray-500 mb-1">DI No. *</label>
-            <input value={hdr.diNo} onChange={e => setH('diNo', e.target.value)}
+            <input value={hdr.diNo || ''} onChange={e => setH('diNo', e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
               placeholder="e.g. DVS/SO-25-001" />
           </div>
@@ -648,63 +631,21 @@ function OrderForm({ initial, products, profiles, onSave, onCancel, onAddCompany
               }}
             />
             {hdr.customerName && profiles.find(p => p.customerName === hdr.customerName.toUpperCase()) && (
-              <p className="mt-1 text-xs text-green-600">
-                Auto-filled from memory
-              </p>
+              <p className="mt-1 text-xs text-green-600">Auto-filled from memory</p>
             )}
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1">Order Type *</label>
+            <label className="block text-xs font-semibold text-gray-500 mb-1">Order Type</label>
             <select value={hdr.orderType} onChange={e => setH('orderType', e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none">
               {ORDER_TYPES.map(t => <option key={t}>{t}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1">Company *</label>
-            <select value={hdr.company} onChange={e => {
-              if (e.target.value === '__ADD__') { setAddingCo(true); return }
-              setAddingCo(false); setH('company', e.target.value)
-            }}
+            <label className="block text-xs font-semibold text-gray-500 mb-1">Company</label>
+            <select value={hdr.company} onChange={e => setH('company', e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none">
-              {COMPANIES.map(c => <option key={c.code} value={c.code}>{c.code} — {c.name}</option>)}
-              <option value="__ADD__">+ Add New Company…</option>
-            </select>
-            {addingCo && (
-              <div className="mt-2 bg-green-50 border border-green-200 rounded-xl p-3 space-y-2">
-                <div className="flex gap-2">
-                  <input value={newCoCode} onChange={e => setNewCoCode(e.target.value.toUpperCase())}
-                    placeholder="Code e.g. DVS" maxLength={20}
-                    className="w-28 border border-gray-300 rounded-lg px-2 py-1.5 text-sm" />
-                  <input value={newCoName} onChange={e => setNewCoName(e.target.value)}
-                    placeholder="Full name"
-                    className="flex-1 border border-gray-300 rounded-lg px-2 py-1.5 text-sm" />
-                </div>
-                {addCoErr && <p className="text-xs text-red-500">{addCoErr}</p>}
-                <div className="flex gap-2">
-                  <button type="button" disabled={savingCo} onClick={async () => {
-                    if (!newCoCode.trim()) return setAddCoErr('Code required')
-                    setSavingCo(true); setAddCoErr('')
-                    try {
-                      await onAddCompany(newCoCode.trim(), newCoName.trim() || newCoCode.trim())
-                      setH('company', newCoCode.trim())
-                      setAddingCo(false); setNewCoCode(''); setNewCoName('')
-                    } catch (ex) { setAddCoErr(ex.message) }
-                    finally { setSavingCo(false) }
-                  }} className="bg-green-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-green-800 disabled:opacity-50">
-                    {savingCo ? 'Adding…' : 'Add'}
-                  </button>
-                  <button type="button" onClick={() => { setAddingCo(false); setH('company', COMPANIES[0]?.code || '') }}
-                    className="border border-gray-300 px-3 py-1.5 rounded-lg text-xs">Cancel</button>
-                </div>
-              </div>
-            )}
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1">Priority</label>
-            <select value={hdr.priority} onChange={e => setH('priority', e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none">
-              {PRIORITIES.map(p => <option key={p}>{p}</option>)}
+              {COMPANIES.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
           <div>
@@ -718,20 +659,15 @@ function OrderForm({ initial, products, profiles, onSave, onCancel, onAddCompany
             <input type="date" value={hdr.orderReceivedDate} onChange={e => setH('orderReceivedDate', e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none" />
           </div>
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1">Est. Dispatch Date *</label>
-            <input type="date" value={hdr.estimatedDispatchDate} onChange={e => setH('estimatedDispatchDate', e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none" />
-          </div>
-          <div className="col-span-4">
+          <div className="col-span-3">
             <label className="block text-xs font-semibold text-gray-500 mb-1">Order Remarks</label>
-            <textarea value={hdr.remarks || ''} onChange={e => setH('remarks', e.target.value)} rows={2}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none resize-none"
+            <input value={hdr.remarks || ''} onChange={e => setH('remarks', e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
               placeholder="Special instructions, delivery notes…" />
           </div>
         </div>
         <div className="mt-3 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 text-xs text-amber-700 flex items-center gap-2">
-          <span>i</span>
+          <span>ℹ</span>
           <span>Invoice, batch details and dispatch info are filled in the <strong>Dispatch</strong> tab once the order reaches the inventory team.</span>
         </div>
       </div>
@@ -756,6 +692,11 @@ function OrderForm({ initial, products, profiles, onSave, onCancel, onAddCompany
         </div>
       </div>
 
+      {err && (
+        <div className="text-sm text-red-600 bg-red-50 px-4 py-3 rounded-lg border border-red-200">
+          ⚠ {err}
+        </div>
+      )}
       <div className="flex gap-3 pt-2">
         <button type="submit" disabled={saving}
           className="flex-1 text-white py-2.5 rounded-lg font-semibold text-sm disabled:opacity-50"
@@ -770,215 +711,241 @@ function OrderForm({ initial, products, profiles, onSave, onCancel, onAddCompany
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Dispatch Modal — inventory/dispatch team fills this
+// Dispatch Modal — verification + dispatch action
+// Read-only: product details. Editable: invoice/transport/dispatched by.
 // ─────────────────────────────────────────────────────────────────────────────
 function DispatchModal({ order, onSave, onDelete, onClose }) {
-  const [saving, setSaving] = useState(false)
-  const setH = (k, v) => setHdr(h => ({ ...h, [k]: v }))
-  const setL = (idx, k, v) => setLines(ls => ls.map((l, i) => i === idx ? { ...l, [k]: v } : l))
+  const today = new Date().toISOString().split('T')[0]
+  const [saving,       setSaving]       = useState(false)
+  const [invoiceNo,    setInvoiceNo]    = useState(order.invoiceNo     || '')
+  const [transportName,setTransportName]= useState(order.transportName || '')
+  const [dispatchedBy, setDispatchedBy] = useState(order.dispatchedBy  || '')
+  const [remarks,      setRemarks]      = useState(order.remarks       || '')
+
+  // Per-line partial dispatch state
+  const [partialToggles, setPartialToggles] = useState({}) // { lineId: bool }
+  const [partialQty,     setPartialQty]     = useState({}) // { lineId: secPacksStr }
 
   const dominantStatus = order.items.every(it => it.status === 'DISPATCHED') ? 'DISPATCHED'
-    : order.items.some(it => it.status === 'READY_TO_DISPATCH') ? 'READY_TO_DISPATCH'
-    : order.items[0]?.status || 'PENDING'
+    : order.items.some(it => ['READY_TO_DISPATCH','IN_INVENTORY','PACKED'].includes(it.status))
+      ? order.items.find(it => ['READY_TO_DISPATCH','IN_INVENTORY','PACKED'].includes(it.status))?.status
+      : order.items[0]?.status || 'PENDING'
 
-  const [hdr, setHdr] = useState({
-    orderStatus:   dominantStatus,
-    dispatchDate:  order.invoiceDate ? new Date(order.invoiceDate).toISOString().split('T')[0] : '',
-    salesStaff:    order.salesStaff    || '',
-    dispatchedBy:  order.dispatchedBy  || '',
-    remarks:       order.remarks       || '',
-    invoiceNo:     order.invoiceNo     || '',
-    transportName: order.transportName || '',
-  })
+  const lines = order.items.map(it => ({
+    id:            it.id,
+    productName:   it.inhouseProductName || it.customerProductName,
+    totalQty:      it.totalQty,
+    totalUom:      it.totalUom   || 'KG',
+    unitQty:       it.unitQty    || '',
+    unitUom:       it.unitUom    || 'KG',
+    batchNo:       it.batchNo    || '—',
+    mrp:           it.mrp        || '—',
+    mfgDate:       it.mfgDate    ? new Date(it.mfgDate).toLocaleDateString('en-IN') : '—',
+    expDate:       it.expDate    ? new Date(it.expDate).toLocaleDateString('en-IN') : '—',
+    primaryPack:   it.unitPackType || '—',
+    secondaryPack: it.packingType  || '—',
+    noOfUnits:     it.unitQty      ? `${it.unitQty} ${it.unitUom || 'KG'}` : '—',
+    noOfSecPacks:  it.totalCS      || '—',
+    labelType:     it.labelType    ? LABEL_TYPES.find(l => l.value === it.labelType)?.label || it.labelType : '—',
+    currentStatus: it.status,
+    totalCSNum:    parseInt(it.totalCS) || 0,
+  }))
 
-  const [lines, setLines] = useState(
-    order.items.map(it => ({
-      id:             it.id,
-      productName:    it.inhouseProductName || it.customerProductName,
-      totalQty:       it.totalQty,
-      totalUom:       it.totalUom || 'KG',
-      batchNo:        it.batchNo        || '',
-      invoiceNo:      it.invoiceNo      || order.invoiceNo     || '',
-      invoiceDate:    it.invoiceDate    ? new Date(it.invoiceDate).toISOString().split('T')[0]
-                      : order.invoiceDate ? new Date(order.invoiceDate).toISOString().split('T')[0] : '',
-      transport:      order.transportName || '',
-      primaryPack:    it.unitPackType   || '',
-      secondaryPack:  it.packingType    || '',
-      noOfSecPacks:   it.totalCS        || '',
-      labelType:      it.labelType      || '',
-      mrp:            it.mrp            || '',
-      mfgDate:        it.mfgDate ? new Date(it.mfgDate).toISOString().split('T')[0] : '',
-      expDate:        it.expDate ? new Date(it.expDate).toISOString().split('T')[0] : '',
-    }))
-  )
-
-  async function save() {
+  async function markDispatched() {
     setSaving(true)
     try {
       await salesOrderApi.patchDispatch(order.id, {
-        invoiceNo:     hdr.invoiceNo,
-        salesStaff:    hdr.salesStaff,
-        dispatchedBy:  hdr.dispatchedBy,
-        transportName: hdr.transportName,
-        remarks:       hdr.remarks,
-        invoiceDate:   hdr.dispatchDate || null,
+        invoiceNo, transportName, dispatchedBy, remarks,
+        invoiceDate: today,
       })
       for (const line of lines) {
-        await salesOrderApi.updateItem(line.id, {
-          status:    hdr.orderStatus,
-          batchNo:   line.batchNo   || null,
-          mrp:       line.mrp       ? parseFloat(line.mrp) : null,
-          totalCS:   line.noOfSecPacks ? parseInt(line.noOfSecPacks) : null,
-          mfgDate:   line.mfgDate   || null,
-          expDate:   line.expDate   || null,
-        })
+        const isPartial = partialToggles[line.id]
+        if (isPartial) {
+          const dispatched = parseInt(partialQty[line.id] || 0)
+          const isFullyDispatched = dispatched >= line.totalCSNum && line.totalCSNum > 0
+          await salesOrderApi.updateItem(line.id, {
+            status: isFullyDispatched ? 'DISPATCHED' : line.currentStatus,
+          })
+        } else {
+          await salesOrderApi.updateItem(line.id, { status: 'DISPATCHED' })
+        }
       }
       onSave()
     } finally { setSaving(false) }
   }
 
+  const ro = 'w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 text-gray-700 font-medium select-none'
   const inp = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none'
+  const isAlreadyDispatched = dominantStatus === 'DISPATCHED'
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[92vh] flex flex-col">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[94vh] flex flex-col">
 
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 rounded-t-2xl text-white" style={{ background: BRAND }}>
-          <h2 className="font-bold text-sm tracking-wide">Order: {order.diNo} — {order.customerName}</h2>
-          <button onClick={onClose} className="text-white/70 hover:text-white text-xl leading-none">x</button>
+          <div>
+            <h2 className="font-bold text-sm tracking-wide">{order.customerName} — {order.company}</h2>
+            <p className="text-xs text-white/70 mt-0.5">{order.items.length} product line{order.items.length !== 1 ? 's' : ''}</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className={'text-xs font-bold px-3 py-1 rounded-full ' + (STATUS_STYLE[dominantStatus] || 'bg-gray-100 text-gray-500')}>
+              {STATUS_LABELS[dominantStatus] || dominantStatus}
+            </span>
+            <button onClick={onClose} className="text-white/70 hover:text-white text-xl leading-none">×</button>
+          </div>
         </div>
 
         <div className="overflow-y-auto flex-1 p-6 space-y-5">
-          {/* Order-level dispatch fields */}
-          <div className="grid grid-cols-5 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1">Order Status</label>
-              <select value={hdr.orderStatus} onChange={e => setH('orderStatus', e.target.value)} className={inp}>
-                {STATUSES.map(s => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1">Dispatch Date</label>
-              <input type="date" value={hdr.dispatchDate} onChange={e => setH('dispatchDate', e.target.value)} className={inp} />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1">Sales Staff</label>
-              <input value={hdr.salesStaff} onChange={e => setH('salesStaff', e.target.value)} className={inp} placeholder="Name" />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1">Dispatched By</label>
-              <input value={hdr.dispatchedBy} onChange={e => setH('dispatchedBy', e.target.value)} className={inp} placeholder="Name" />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1">Remarks</label>
-              <input value={hdr.remarks} onChange={e => setH('remarks', e.target.value)} className={inp} placeholder="Optional" />
-            </div>
-          </div>
 
-          {/* Product lines */}
+          {/* ── Verification section — READ ONLY ── */}
           <div>
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Product Lines</p>
-            <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-3">
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Production Details — Verification</p>
+              <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-semibold">Read Only</span>
+            </div>
+            <div className="space-y-3">
               {lines.map((line, idx) => (
-                <div key={line.id} className="border border-gray-200 rounded-xl p-4 bg-gray-50">
-                  <p className="text-sm font-bold mb-3" style={{ color: BRAND }}>
-                    Line {idx + 1}: {line.productName}
-                  </p>
-                  <div className="grid grid-cols-5 gap-3 mb-3">
+                <div key={line.id} className="border border-gray-200 rounded-xl bg-gray-50 overflow-hidden">
+                  <div className="px-4 py-2.5 flex items-center justify-between" style={{ background: '#f0fdf4' }}>
+                    <p className="text-sm font-bold" style={{ color: BRAND }}>
+                      Line {idx + 1}: {line.productName}
+                    </p>
+                    <span className={'text-xs font-semibold px-2 py-0.5 rounded-full ' + (STATUS_STYLE[line.currentStatus] || 'bg-gray-100 text-gray-600')}>
+                      {STATUS_LABELS[line.currentStatus] || line.currentStatus}
+                    </span>
+                  </div>
+                  <div className="p-4 grid grid-cols-5 gap-3">
                     <div>
-                      <label className="block text-xs font-semibold text-gray-500 mb-1">Total Qty</label>
-                      <input value={line.totalQty + ' ' + line.totalUom} readOnly
-                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white font-semibold text-gray-700" />
+                      <p className="text-xs text-gray-400 mb-0.5">Total Qty</p>
+                      <p className="text-sm font-bold text-gray-800">{line.totalQty} {line.totalUom}</p>
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-gray-500 mb-1">Batch No.</label>
-                      <input value={line.batchNo} onChange={e => setL(idx, 'batchNo', e.target.value)}
-                        className={inp} placeholder="e.g. GAS250601" />
+                      <p className="text-xs text-gray-400 mb-0.5">Batch No.</p>
+                      <p className="text-sm font-semibold text-gray-800">{line.batchNo}</p>
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-gray-500 mb-1">Invoice No.</label>
-                      <input value={line.invoiceNo} onChange={e => setL(idx, 'invoiceNo', e.target.value)}
-                        className={inp} placeholder="INV-001" />
+                      <p className="text-xs text-gray-400 mb-0.5">MRP</p>
+                      <p className="text-sm text-gray-700">{line.mrp}</p>
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-gray-500 mb-1">Invoice Date</label>
-                      <input type="date" value={line.invoiceDate} onChange={e => setL(idx, 'invoiceDate', e.target.value)}
-                        className={inp} />
+                      <p className="text-xs text-gray-400 mb-0.5">Mfg. Date</p>
+                      <p className="text-sm text-gray-700">{line.mfgDate}</p>
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-gray-500 mb-1">Transport</label>
-                      <input value={line.transport} onChange={e => setL(idx, 'transport', e.target.value)}
-                        className={inp} placeholder="Courier / truck" />
+                      <p className="text-xs text-gray-400 mb-0.5">Exp. Date</p>
+                      <p className="text-sm text-gray-700">{line.expDate}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400 mb-0.5">Primary Pack</p>
+                      <p className="text-sm text-gray-700">{line.primaryPack}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400 mb-0.5">Secondary Pack</p>
+                      <p className="text-sm text-gray-700">{line.secondaryPack}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400 mb-0.5">Unit Per Sec. Pack</p>
+                      <p className="text-sm text-gray-700">{line.noOfUnits}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400 mb-0.5">No. of Sec. Packs</p>
+                      <p className="text-sm font-semibold text-gray-800">{line.noOfSecPacks}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400 mb-0.5">Label Type</p>
+                      <p className="text-sm text-gray-700">{line.labelType}</p>
                     </div>
                   </div>
-                  <div className="grid grid-cols-5 gap-3">
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-500 mb-1">Primary Pack</label>
-                      <input value={line.primaryPack} onChange={e => setL(idx, 'primaryPack', e.target.value)}
-                        className={inp} />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-500 mb-1">Secondary Pack</label>
-                      <input value={line.secondaryPack} onChange={e => setL(idx, 'secondaryPack', e.target.value)}
-                        className={inp} />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-500 mb-1">No. of Sec. Packs</label>
-                      <input type="number" value={line.noOfSecPacks} onChange={e => setL(idx, 'noOfSecPacks', e.target.value)}
-                        className={inp} placeholder="e.g. 40" min="0" />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-500 mb-1">Label Type</label>
-                      <select value={line.labelType} onChange={e => setL(idx, 'labelType', e.target.value)} className={inp}>
-                        {LABEL_TYPES.map(lt => <option key={lt.value} value={lt.value}>{lt.label}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-500 mb-1">MRP ()</label>
-                      <input type="number" value={line.mrp} onChange={e => setL(idx, 'mrp', e.target.value)}
-                        className={inp} placeholder="optional" min="0" />
-                    </div>
-                  </div>
-                  {/* Mfg/Exp dates — only if label needs details */}
-                  {LABEL_NEEDS_DETAILS.has(line.labelType) && (
-                    <div className="mt-3 grid grid-cols-2 gap-3 bg-green-50 border border-green-100 rounded-lg p-3">
-                      <div>
-                        <label className="block text-xs font-semibold text-green-800 mb-1">Mfg. Date</label>
-                        <input type="date" value={line.mfgDate} onChange={e => setL(idx, 'mfgDate', e.target.value)}
-                          className="w-full border border-green-200 rounded-lg px-3 py-2 text-sm bg-white" />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-semibold text-green-800 mb-1">Exp. Date</label>
-                        <input type="date" value={line.expDate} onChange={e => setL(idx, 'expDate', e.target.value)}
-                          className="w-full border border-green-200 rounded-lg px-3 py-2 text-sm bg-white" />
-                      </div>
+
+                  {/* Partial dispatch toggle per line */}
+                  {!isAlreadyDispatched && (
+                    <div className="px-4 pb-4">
+                      <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                        <div className="relative">
+                          <input type="checkbox" className="sr-only"
+                            checked={!!partialToggles[line.id]}
+                            onChange={e => setPartialToggles(t => ({ ...t, [line.id]: e.target.checked }))} />
+                          <div className={'w-9 h-5 rounded-full transition-colors ' + (partialToggles[line.id] ? 'bg-green-500' : 'bg-gray-300')} />
+                          <div className={'absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ' + (partialToggles[line.id] ? 'translate-x-4' : '')} />
+                        </div>
+                        <span className="text-xs font-semibold text-gray-600">Partial Dispatch</span>
+                      </label>
+                      {partialToggles[line.id] && (
+                        <div className="mt-2 flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                          <label className="text-xs text-amber-800 font-semibold whitespace-nowrap">Sec. Packs Dispatching Now:</label>
+                          <input type="number" min="0" max={line.totalCSNum || 9999}
+                            value={partialQty[line.id] || ''}
+                            onChange={e => setPartialQty(q => ({ ...q, [line.id]: e.target.value }))}
+                            className="w-24 border border-amber-300 rounded-lg px-2 py-1 text-sm text-center font-bold focus:outline-none focus:ring-2 focus:ring-amber-400"
+                            placeholder="0" />
+                          {line.totalCSNum > 0 && partialQty[line.id] && (
+                            <span className="text-xs text-amber-700">
+                              of {line.totalCSNum} total
+                              {parseInt(partialQty[line.id] || 0) >= line.totalCSNum
+                                ? ' — full dispatch ✓'
+                                : ` — ${line.totalCSNum - parseInt(partialQty[line.id] || 0)} remaining`}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
               ))}
             </div>
           </div>
+
+          {/* ── Dispatch entry fields (editable) ── */}
+          {!isAlreadyDispatched && (
+            <div>
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Dispatch Entry</p>
+              <div className="grid grid-cols-4 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1">Invoice No.</label>
+                  <input value={invoiceNo} onChange={e => setInvoiceNo(e.target.value)} className={inp} placeholder="INV-001" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1">Transport / Courier</label>
+                  <input value={transportName} onChange={e => setTransportName(e.target.value)} className={inp} placeholder="Truck / courier name" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1">Dispatched By</label>
+                  <input value={dispatchedBy} onChange={e => setDispatchedBy(e.target.value)} className={inp} placeholder="Name" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1">Remarks</label>
+                  <input value={remarks} onChange={e => setRemarks(e.target.value)} className={inp} placeholder="Optional" />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {isAlreadyDispatched && (
+            <div className="bg-green-50 border border-green-200 rounded-xl px-5 py-4 text-sm text-green-800 font-semibold text-center">
+              ✅ This order has been dispatched.
+              {order.invoiceNo && <span className="ml-2 font-normal text-green-700">Invoice: {order.invoiceNo}</span>}
+            </div>
+          )}
         </div>
 
         {/* Footer */}
         <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100 bg-gray-50 rounded-b-2xl">
-          <button className="text-sm text-gray-600 border border-gray-300 px-4 py-2 rounded-lg hover:bg-white flex items-center gap-2">
-            View / Print Order
+          <button onClick={() => onDelete(order)}
+            className="text-sm text-red-500 border border-red-200 px-4 py-2 rounded-lg hover:bg-red-50">
+            Delete Order
           </button>
           <div className="flex gap-3">
-            <button onClick={save} disabled={saving}
-              className="text-white px-5 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 disabled:opacity-50"
-              style={{ background: BRAND }}>
-              {saving ? 'Saving…' : 'Save Changes'}
-            </button>
-            <button onClick={() => onDelete(order)}
-              className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-red-700">
-              Delete
-            </button>
+            {!isAlreadyDispatched && (
+              <button onClick={markDispatched} disabled={saving}
+                className="text-white px-6 py-2 rounded-lg text-sm font-bold flex items-center gap-2 disabled:opacity-50 shadow-sm"
+                style={{ background: BRAND }}>
+                {saving ? 'Processing…' : '🚚 Mark as Dispatched'}
+              </button>
+            )}
             <button onClick={onClose}
               className="border border-gray-300 px-4 py-2 rounded-lg text-sm hover:bg-gray-50">
-              Cancel
+              Close
             </button>
           </div>
         </div>
@@ -1146,18 +1113,9 @@ export default function SalesOrders() {
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
       {/* Page header */}
-      <div className="flex items-center justify-between mb-5">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Sales Orders</h1>
-          <p className="text-sm text-gray-500 mt-0.5">SOM Phytopharma — {orders.length} orders total</p>
-        </div>
-        {activeTab === 'orders' && !showForm && (
-          <button onClick={() => { setEditing(null); setShowForm(true) }}
-            className="text-white px-4 py-2 rounded-lg text-sm font-semibold hover:opacity-90"
-            style={{ background: BRAND }}>
-            + New Order
-          </button>
-        )}
+      <div className="mb-5">
+        <h1 className="text-2xl font-bold text-gray-900">Sales Orders</h1>
+        <p className="text-sm text-gray-500 mt-0.5">SOM Phytopharma — {orders.length} orders total</p>
       </div>
 
       {err && <div className="mb-4 text-sm text-red-600 bg-red-50 px-4 py-3 rounded-lg">{err}</div>}
@@ -1227,8 +1185,7 @@ export default function SalesOrders() {
               </h2>
               <OrderForm initial={editing || undefined} products={products} profiles={profiles}
                 onSave={handleSave}
-                onCancel={() => { setShowForm(false); setEditing(null) }}
-                onAddCompany={handleAddCompany} />
+                onCancel={() => { setShowForm(false); setEditing(null) }} />
             </div>
           )}
 
@@ -1247,16 +1204,24 @@ export default function SalesOrders() {
             ))}
           </div>
 
-          {/* Filters */}
-          <div className="flex flex-wrap gap-3 mb-5">
+          {/* Filters + New Order button inline */}
+          <div className="flex flex-wrap gap-3 mb-5 items-center">
             <input value={search} onChange={e => setSearch(e.target.value)}
-              placeholder="Search customer or DI…"
+              placeholder="Search customer or order…"
               className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-52 focus:ring-2 focus:ring-green-500 focus:outline-none" />
             <select value={filterCompany} onChange={e => setFilterCompany(e.target.value)}
               className="border border-gray-300 rounded-lg px-3 py-2 text-sm">
               <option value="ALL">All Companies</option>
-              {COMPANIES.map(c => <option key={c.code} value={c.code}>{c.code}</option>)}
+              {COMPANIES.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
+            <div className="flex-1" />
+            {!showForm && (
+              <button onClick={() => { setEditing(null); setShowForm(true) }}
+                className="text-white px-4 py-2 rounded-lg text-sm font-semibold hover:opacity-90 flex items-center gap-1.5"
+                style={{ background: BRAND }}>
+                + New Order
+              </button>
+            )}
           </div>
 
           {loading ? <div className="text-center py-16 text-gray-400">Loading…</div>
@@ -1278,9 +1243,6 @@ export default function SalesOrders() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap mb-1">
                           <span className="font-bold text-gray-900">{order.diNo}</span>
-                          <span className={'text-xs font-semibold px-2 py-0.5 rounded-full ' + PRIORITY_STYLE[order.priority]}>
-                            {order.priority.replace('_',' ')}
-                          </span>
                           <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">{order.company}</span>
                           <span className="text-xs px-2 py-0.5 rounded-full bg-green-50 text-green-700">{order.orderType}</span>
                         </div>
@@ -1403,12 +1365,12 @@ export default function SalesOrders() {
         <div>
           <div className="flex flex-wrap gap-3 mb-5">
             <input value={search} onChange={e => setSearch(e.target.value)}
-              placeholder="Search customer or DI…"
+              placeholder="Search customer or order…"
               className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-52 focus:ring-2 focus:ring-green-500 focus:outline-none" />
             <select value={filterCompany} onChange={e => setFilterCompany(e.target.value)}
               className="border border-gray-300 rounded-lg px-3 py-2 text-sm">
               <option value="ALL">All Companies</option>
-              {COMPANIES.map(c => <option key={c.code} value={c.code}>{c.code}</option>)}
+              {COMPANIES.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
 

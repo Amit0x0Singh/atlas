@@ -14,6 +14,14 @@ const ROLE_TYPE_STYLE = {
   INGREDIENT: 'bg-gray-100 text-gray-600',
   CARRIER:    'bg-purple-100 text-purple-700',
   BASE:       'bg-blue-100 text-blue-700',
+  MICROBE:    'bg-emerald-100 text-emerald-700',
+}
+
+const ROLE_TYPE_LABEL = {
+  INGREDIENT: 'Ingredient',
+  CARRIER:    'Carrier',
+  BASE:       'Base',
+  MICROBE:    'Microbe / CFU',
 }
 
 export default function RecipeDB() {
@@ -172,7 +180,7 @@ export default function RecipeDB() {
     try {
       const res = await importApi.execute(importFile)
       setImportResult(res)
-      setMsg({ type: 'success', text: `✅ Import done — Recipe/BOM rows: ${res.data?.recipeBom || 0}, Products created: ${res.data?.productMaster || 0}` })
+      setMsg({ type: 'success', text: `✅ Import done — Products: ${res.data?.productMaster || 0}, RM Items: ${res.data?.rmMaster || 0}, Recipe lines: ${res.data?.recipeBom || 0}, Equipment: ${res.data?.equipmentMaster || 0}` })
       await loadAll()
     } catch (e) { setImportResult({ error: e.message }) }
     setImporting(false)
@@ -296,7 +304,7 @@ export default function RecipeDB() {
                   </thead>
                   <tbody>
                     {bomRows.map((row, idx) => (
-                      <tr key={idx} className={`border-b border-gray-100 ${row.roleType === 'CARRIER' ? 'bg-purple-50' : row._dirty ? 'bg-yellow-50' : 'hover:bg-gray-50'}`}>
+                      <tr key={idx} className={`border-b border-gray-100 ${row.roleType === 'CARRIER' ? 'bg-purple-50' : row.roleType === 'MICROBE' ? 'bg-emerald-50' : row._dirty ? 'bg-yellow-50' : 'hover:bg-gray-50'}`}>
                         <td className="px-3 py-2 text-gray-400 text-xs">{idx + 1}</td>
 
                         {/* Item Name with dropdown */}
@@ -355,6 +363,7 @@ export default function RecipeDB() {
                             onChange={e => updateRow(idx, 'roleType', e.target.value)}
                             className={`w-full border rounded px-2 py-1.5 text-xs font-semibold outline-none focus:ring-1 focus:ring-purple-400 ${ROLE_TYPE_STYLE[row.roleType] || ROLE_TYPE_STYLE.INGREDIENT} border-current`}>
                             <option value="INGREDIENT">Ingredient</option>
+                            <option value="MICROBE">Microbe / CFU</option>
                             <option value="CARRIER">Carrier 🔄</option>
                             <option value="BASE">Base</option>
                           </select>
@@ -457,9 +466,10 @@ export default function RecipeDB() {
                 ) : (
                   <div className="space-y-0.5">
                     <p className="font-semibold">Import Complete</p>
-                    <p>Recipe rows: <strong>{importResult.data?.recipeBom || 0}</strong></p>
-                    <p>Products created: <strong>{importResult.data?.productMaster || 0}</strong></p>
-                    <p>RMs created: <strong>{importResult.data?.rmMaster || 0}</strong></p>
+                    <p>Recipe lines: <strong>{importResult.data?.recipeBom || 0}</strong></p>
+                    <p>Products created/updated: <strong>{importResult.data?.productMaster || 0}</strong></p>
+                    <p>RM items created: <strong>{importResult.data?.rmMaster || 0}</strong></p>
+                    <p>Equipment: <strong>{importResult.data?.equipmentMaster || 0}</strong></p>
                     {importResult.data?.fuzzyMatches > 0 && (
                       <p className="text-amber-700 font-medium">
                         🔗 {importResult.data.fuzzyMatches} RM name(s) fuzzy-matched to existing RMs

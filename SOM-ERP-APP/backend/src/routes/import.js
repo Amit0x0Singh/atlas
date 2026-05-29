@@ -1,6 +1,5 @@
 import prisma from '../db.js'
 import * as XLSX from 'xlsx'
-import { findBestRmMatch } from '../utils/fuzzy.js'
 
 // Flexible column finder - matches any variant of expected names
 function col(row, ...keys) {
@@ -278,33 +277,29 @@ export default async function importRoutes(fastify) {
                 data: { productCode: newCode, productName, plant: section }
               })
               productsByName[productName.toLowerCase()] = product
+              results.productMaster++   // ← count products auto-created from recipe
+            } else if (!product.plant && section) {
+              // backfill missing plant on existing product
+              await prisma.productMaster.update({ where: { productCode: product.productCode }, data: { plant: section } })
             }
 
-            // Resolve RM — try exact, then fuzzy, then create new
+            // Resolve RM — exact match only, always create if not found
+            // NO fuzzy matching: Excel ingredient names must be imported verbatim.
+            // Fuzzy matching caused "Acidithiobacillus Ferroxidans" → "Citric Acid" etc.
             let rm = rmsByName[rmName.toLowerCase()]
-            let fuzzyNote = null
             if (!rm) {
-              // Build candidate list from all known RMs (DB + batch)
-              const candidates = Object.values(rmsByName)
-              const fuzzyMatch = findBestRmMatch(rmName, candidates.map(r => ({ itemCode: r.itemCode, itemName: r.itemName })))
-              if (fuzzyMatch && fuzzyMatch.score >= 0.80) {
-                // Use the matched RM — don't create a new one
-                rm = rmsByName[fuzzyMatch.candidate.itemName.toLowerCase()]
-                fuzzyNote = `Fuzzy matched "${rmName}" → "${fuzzyMatch.candidate.itemName}" (${(fuzzyMatch.score * 100).toFixed(0)}%)`
-                results.fuzzyMatches = (results.fuzzyMatches || 0) + 1
-                if (fuzzyNote) results.fuzzyLog = [...(results.fuzzyLog || []), fuzzyNote]
-              } else {
-                // Genuinely new RM — create it
-                const newCode = await nextRmCode(newRmCodes)
-                newRmCodes.push(newCode)
-                rm = await prisma.rmMaster.create({
-                  data: { itemCode: newCode, itemName: rmName, uom }
-                })
-                rmsByName[rmName.toLowerCase()] = rm
-              }
+              const newCode = await nextRmCode(newRmCodes)
+              newRmCodes.push(newCode)
+              rm = await prisma.rmMaster.create({
+                data: { itemCode: newCode, itemName: rmName, uom }
+              })
+              rmsByName[rmName.toLowerCase()] = rm
+              results.rmMaster++    // ← count RMs auto-created from recipe
             }
 
-            // Upsert recipe row — includes roleType (MICROBE if CONC/CFU is not NA)
+            // Upsert recipe row
+            // roleType: MICROBE = has live CFU/concentration; INGREDIENT = carrier/base/chemical
+            const finalRoleType = roleType || 'INGREDIENT'
             await prisma.recipeDb.upsert({
               where: { productCode_rmCode: { productCode: product.productCode, rmCode: rm.itemCode } },
               create: {
@@ -314,9 +309,9 @@ export default async function importRoutes(fastify) {
                 rmName: rm.itemName,
                 qtyPerUnit,
                 uom,
-                roleType,
+                roleType: finalRoleType,
               },
-              update: { qtyPerUnit, uom, productName: product.productName, rmName: rm.itemName, roleType }
+              update: { qtyPerUnit, uom, productName: product.productName, rmName: rm.itemName, roleType: finalRoleType }
             })
             results.recipeBom++
           } catch (e) { results.errors.push(`Recipe row: ${e.message}`) }

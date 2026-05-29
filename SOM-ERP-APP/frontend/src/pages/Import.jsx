@@ -117,14 +117,22 @@ export default function Import() {
         <div className="bg-green-50 border border-green-200 rounded-xl p-5">
           <h2 className="font-bold text-green-900 mb-3">✅ Import Complete</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
-            <ResultCard label="Products Added" value={result.productMaster} color="text-violet-700" />
-            <ResultCard label="Equipment Added" value={result.equipmentMaster} color="text-blue-700" />
+            <ResultCard label="Products" value={result.productMaster} color="text-violet-700" />
             <ResultCard label="RM Items" value={result.rmMaster} color="text-green-700" />
             <ResultCard label="Recipe/BOM Lines" value={result.recipeBom} color="text-teal-700" />
+            <ResultCard label="Equipment" value={result.equipmentMaster} color="text-blue-700" />
             <ResultCard label="Packs Imported" value={result.printMaster} color="text-indigo-700" />
             <ResultCard label="Inward Records" value={result.inward} color="text-orange-700" />
             <ResultCard label="Outward Records" value={result.outward} color="text-red-700" />
+            {result.fuzzyMatches > 0 && <ResultCard label="Fuzzy RM Matches" value={result.fuzzyMatches} color="text-amber-700" />}
           </div>
+          {result.fuzzyLog?.length > 0 && (
+            <div className="mt-3 bg-amber-50 border border-amber-200 rounded-lg p-3">
+              <p className="text-amber-800 text-xs font-medium mb-1">🔗 RM name variations auto-matched:</p>
+              {result.fuzzyLog.slice(0, 8).map((l, i) => <p key={i} className="text-amber-700 text-xs">• {l}</p>)}
+              {result.fuzzyLog.length > 8 && <p className="text-amber-600 text-xs mt-1">…and {result.fuzzyLog.length - 8} more</p>}
+            </div>
+          )}
           {result.errors?.length > 0 && (
             <div className="mt-3 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
               <p className="text-yellow-800 text-sm font-medium mb-1">⚠️ {result.errors.length} row-level warning(s):</p>
