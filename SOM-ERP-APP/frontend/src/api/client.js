@@ -45,8 +45,8 @@ export const packsApi = {
   get: (packId) => api.get(`/packs/${encodeURIComponent(packId)}`),
   nextLot: (itemCode) => api.get(`/packs/next-lot/${itemCode}`),
   pendingInward: () => api.get('/packs/pending/inward'),
-  labelUrl: (packId) => `https://som-erp-backend.onrender.com/api/packs/label/${encodeURIComponent(packId)}`,
-batchLabelsUrl: (itemCode, lotNo) => `https://som-erp-backend.onrender.com/api/packs/labels/lot/${itemCode}/${encodeURIComponent(lotNo)}`,
+  labelUrl: (packId) => `/api/packs/label/${encodeURIComponent(packId)}`,
+  batchLabelsUrl: (itemCode, lotNo) => `/api/packs/labels/lot/${itemCode}/${encodeURIComponent(lotNo)}`,
 }
 
 export const inwardApi = {
@@ -159,7 +159,7 @@ export const bulkApi = {
   getLocation:      (locationId) => api.get(`/bulk/${encodeURIComponent(locationId)}`),
   createLocation:   (data) => api.post('/bulk', data),
   deleteLocation:   (locationId) => api.delete(`/bulk/${encodeURIComponent(locationId)}`),
-  locationLabelUrl: (locationId) => `https://som-erp-backend.onrender.com/api/bulk/${encodeURIComponent(locationId)}/label`,
+  locationLabelUrl: (locationId) => `/api/bulk/${encodeURIComponent(locationId)}/label`,
   // Bulk inward
   bulkInward:       (data) => api.post('/bulk/inward', data),
   // Bulk outward

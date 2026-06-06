@@ -3,18 +3,24 @@
  * Run once:  node apply-migration.js
  * Then:      npx prisma generate  (regenerates client with new fields)
  */
-import { PrismaClient } from '@prisma/client'
-const prisma = new PrismaClient()
+import { PrismaClient } from "@prisma/client";
+const prisma = new PrismaClient();
 
 async function main() {
-  console.log('Applying migrations…\n')
+  console.log("Applying migrations…\n");
 
-  await prisma.$executeRawUnsafe(`ALTER TABLE "equipment_master" ADD COLUMN IF NOT EXISTS "working_volume" DOUBLE PRECISION`)
-  await prisma.$executeRawUnsafe(`ALTER TABLE "equipment_master" ADD COLUMN IF NOT EXISTS "operation" TEXT NOT NULL DEFAULT ''`)
-  console.log('✅ equipment_master columns')
+  await prisma.$executeRawUnsafe(
+    `ALTER TABLE "equipment_master" ADD COLUMN IF NOT EXISTS "working_volume" DOUBLE PRECISION`,
+  );
+  await prisma.$executeRawUnsafe(
+    `ALTER TABLE "equipment_master" ADD COLUMN IF NOT EXISTS "operation" TEXT NOT NULL DEFAULT ''`,
+  );
+  console.log("✅ equipment_master columns");
 
-  await prisma.$executeRawUnsafe(`ALTER TABLE "indent_master" ADD COLUMN IF NOT EXISTS "po_sent_at" TIMESTAMPTZ`)
-  console.log('✅ indent_master.po_sent_at')
+  await prisma.$executeRawUnsafe(
+    `ALTER TABLE "indent_master" ADD COLUMN IF NOT EXISTS "po_sent_at" TIMESTAMPTZ`,
+  );
+  console.log("✅ indent_master.po_sent_at");
 
   await prisma.$executeRawUnsafe(`
     CREATE TABLE IF NOT EXISTS "production_batch" (
@@ -28,8 +34,8 @@ async function main() {
       "sieving_flag" BOOLEAN NOT NULL DEFAULT false, "packing_flag" BOOLEAN NOT NULL DEFAULT false,
       "qc_flag" BOOLEAN NOT NULL DEFAULT false,
       "created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(), "updated_at" TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )`)
-  console.log('✅ production_batch')
+    )`);
+  console.log("✅ production_batch");
 
   await prisma.$executeRawUnsafe(`
     CREATE TABLE IF NOT EXISTS "biomass_input" (
@@ -39,8 +45,8 @@ async function main() {
       "moisture" DOUBLE PRECISION, "form" TEXT NOT NULL DEFAULT '',
       "received_from" TEXT NOT NULL DEFAULT '', "received_date" TEXT NOT NULL DEFAULT '',
       "received_time" TEXT NOT NULL DEFAULT '', "flagged" BOOLEAN NOT NULL DEFAULT false
-    )`)
-  console.log('✅ biomass_input')
+    )`);
+  console.log("✅ biomass_input");
 
   await prisma.$executeRawUnsafe(`
     CREATE TABLE IF NOT EXISTS "technical_detail" (
@@ -51,8 +57,8 @@ async function main() {
       "mg_stearate_qty" DOUBLE PRECISION, "smp_qty" DOUBLE PRECISION,
       "total_technical_qty" DOUBLE PRECISION, "qty_after_sieving" DOUBLE PRECISION,
       "wastage" DOUBLE PRECISION, "flagged" BOOLEAN NOT NULL DEFAULT false
-    )`)
-  console.log('✅ technical_detail')
+    )`);
+  console.log("✅ technical_detail");
 
   await prisma.$executeRawUnsafe(`
     CREATE TABLE IF NOT EXISTS "formulation_cycle" (
@@ -62,8 +68,8 @@ async function main() {
       "no_of_workers" INTEGER, "sfg_used" BOOLEAN NOT NULL DEFAULT false,
       "sfg_id" TEXT, "sfg_di_no" TEXT, "sfg_qty_used" DOUBLE PRECISION,
       "carrier_type" TEXT, "incharge_name" TEXT, "flagged" BOOLEAN NOT NULL DEFAULT false
-    )`)
-  console.log('✅ formulation_cycle')
+    )`);
+  console.log("✅ formulation_cycle");
 
   await prisma.$executeRawUnsafe(`
     CREATE TABLE IF NOT EXISTS "unloading_log" (
@@ -71,8 +77,8 @@ async function main() {
       "start_time" TEXT NOT NULL DEFAULT '', "end_time" TEXT NOT NULL DEFAULT '',
       "weight_after" DOUBLE PRECISION, "no_of_workers" INTEGER,
       "incharge_name" TEXT, "flagged" BOOLEAN NOT NULL DEFAULT false
-    )`)
-  console.log('✅ unloading_log')
+    )`);
+  console.log("✅ unloading_log");
 
   await prisma.$executeRawUnsafe(`
     CREATE TABLE IF NOT EXISTS "sieving_log" (
@@ -80,8 +86,8 @@ async function main() {
       "sieving_done" BOOLEAN NOT NULL DEFAULT false, "mesh_size" TEXT,
       "start_time" TEXT NOT NULL DEFAULT '', "end_time" TEXT NOT NULL DEFAULT '',
       "no_of_workers" INTEGER, "incharge_name" TEXT, "flagged" BOOLEAN NOT NULL DEFAULT false
-    )`)
-  console.log('✅ sieving_log')
+    )`);
+  console.log("✅ sieving_log");
 
   await prisma.$executeRawUnsafe(`
     CREATE TABLE IF NOT EXISTS "packing_log" (
@@ -93,8 +99,8 @@ async function main() {
       "strapping_start" TEXT NOT NULL DEFAULT '', "strapping_end" TEXT NOT NULL DEFAULT '',
       "stretch_wrapping" BOOLEAN NOT NULL DEFAULT false, "no_of_cartons" INTEGER,
       "no_of_workers" INTEGER, "incharge_name" TEXT, "flagged" BOOLEAN NOT NULL DEFAULT false
-    )`)
-  console.log('✅ packing_log')
+    )`);
+  console.log("✅ packing_log");
 
   await prisma.$executeRawUnsafe(`
     CREATE TABLE IF NOT EXISTS "qc_sample" (
@@ -102,20 +108,23 @@ async function main() {
       "sample_collected" BOOLEAN NOT NULL DEFAULT false, "sample_id" TEXT,
       "collected_at_stage" TEXT, "submitted_on" TEXT,
       "rx_attached" BOOLEAN NOT NULL DEFAULT false, "flagged" BOOLEAN NOT NULL DEFAULT false
-    )`)
-  console.log('✅ qc_sample')
+    )`);
+  console.log("✅ qc_sample");
 
   await prisma.$executeRawUnsafe(`
     CREATE TABLE IF NOT EXISTS "inventory_handover" (
       "id" TEXT PRIMARY KEY, "batch_id" TEXT UNIQUE NOT NULL REFERENCES "production_batch"("id"),
       "sent_to_inventory_on" TEXT, "handed_over_to" TEXT,
       "leftover_qty_at" TEXT, "sfg_updated" BOOLEAN NOT NULL DEFAULT false
-    )`)
-  console.log('✅ inventory_handover')
+    )`);
+  console.log("✅ inventory_handover");
 
-  console.log('\n✅ All migrations applied.')
-  console.log('👉 Now run:  npx prisma generate  (in the backend folder)')
-  await prisma.$disconnect()
+  console.log("\n✅ All migrations applied.");
+  console.log("👉 Now run:  npx prisma generate  (in the backend folder)");
+  await prisma.$disconnect();
 }
 
-main().catch(e => { console.error('❌', e.message); process.exit(1) })
+main().catch((e) => {
+  console.error("❌", e.message);
+  process.exit(1);
+});

@@ -27,7 +27,7 @@ export async function writeAudit({ userId, username, action, tableName, recordId
 }
 
 /**
- * Helper to extract user info from Fastify request (populated by authenticate middleware)
+ * Helper to extract user info from Express request (populated by authenticate middleware)
  */
 export function auditUser(request) {
   return {

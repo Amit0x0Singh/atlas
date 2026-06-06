@@ -1,75 +1,83 @@
-import 'dotenv/config'
-import Fastify from 'fastify'
-import cors from '@fastify/cors'
-import multipart from '@fastify/multipart'
-import staticPlugin from '@fastify/static'
-import { fileURLToPath } from 'url'
-import path from 'path'
-import { existsSync } from 'fs'
-import { registerRoutes } from './routes/index.js'
-import { startCronJobs } from './services/cron-jobs.js'
-import { runAutoSeed } from './services/auto-seed.js'
+import "dotenv/config";
+import express from "express";
+import cors from "cors";
+import multer from "multer";
+import path from "path";
+import { fileURLToPath } from "url";
+import { existsSync } from "fs";
+import { startCronJobs } from "./services/cron-jobs.js";
+import { runAutoSeed } from "./services/auto-seed.js";
+import router from "./routers/routers.js";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const fastify = Fastify({
-  logger: {
-    transport: process.env.NODE_ENV === 'development'
-      ? { target: 'pino-pretty', options: { colorize: true } }
-      : undefined,
-  },
-  bodyLimit: 30 * 1024 * 1024,
-})
+const app = express();
 
-// In production, frontend is served from ./public — CORS only needed in dev
-const isDev = process.env.NODE_ENV !== 'production'
-await fastify.register(cors, {
-  origin: isDev ? (process.env.FRONTEND_URL || 'http://localhost:5173') : false,
-  credentials: true,
-})
+// ── Body parsing ───────────────────────────────────────────────────────────────
+// Replaces Fastify's built-in body parser + bodyLimit option
+app.use(express.json({ limit: "30mb" }));
+app.use(express.urlencoded({ extended: true, limit: "30mb" }));
 
-await fastify.register(multipart, {
-  limits: { fileSize: 50 * 1024 * 1024 },
-})
+// ── CORS ───────────────────────────────────────────────────────────────────────
+const isDev = process.env.NODE_ENV !== "production";
+app.use(
+  cors({
+    origin: isDev ? process.env.FRONTEND_URL || "http://localhost:5173" : false,
+    credentials: true,
+  }),
+);
 
-fastify.get('/health', async () => ({ status: 'ok', ts: new Date().toISOString() }))
+// ── File uploads ───────────────────────────────────────────────────────────────
+export const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB
+});
+
+// ── Health check ───────────────────────────────────────────────────────────────
+
+app.get("/health", (req, res) => {
+  res.json({ status: "ok", ts: new Date().toISOString() });
+});
+
+// ── Register all API routes ────────────────────────────────────────────────────
+app.use("/api", router);
 
 // ── Serve built frontend in production ────────────────────────────────────────
-const publicDir = path.join(__dirname, '..', 'public')
+const publicDir = path.join(__dirname, "..", "public");
 if (existsSync(publicDir)) {
-  await fastify.register(staticPlugin, { root: publicDir, prefix: '/' })
-  // SPA catch-all: any non-API route returns index.html
-  fastify.setNotFoundHandler((req, reply) => {
-    if (!req.url.startsWith('/api')) {
-      return reply.sendFile('index.html')
+  app.use(express.static(publicDir));
+
+  app.use((req, res, next) => {
+    if (!req.url.startsWith("/api")) {
+      return res.sendFile(path.join(publicDir, "index.html"));
     }
-    reply.status(404).send({ success: false, error: 'Not found' })
-  })
+    next();
+  });
 }
 
-await registerRoutes(fastify)
+// ── 404 handler ────────────────────────────────────────────────────────────────
+app.use((req, res) => {
+  res.status(404).json({ success: false, error: "Not found" });
+});
 
-fastify.setErrorHandler((error, request, reply) => {
-  fastify.log.error(error)
-  const statusCode = error.statusCode || 500
-  reply.status(statusCode).send({
+// ── Global error handler ───────────────────────────────────────────────────────
+// NOTE: Express requires exactly 4 arguments (err, req, res, next)
+app.use((err, req, res, next) => {
+  console.error(err);
+  const statusCode = err.statusCode || err.status || 500;
+  res.status(statusCode).json({
     success: false,
-    error: error.message || 'Internal Server Error',
-    code: error.code || 'INTERNAL_ERROR',
-  })
-})
+    error: err.message || "Internal Server Error",
+    code: err.code || "INTERNAL_ERROR",
+  });
+});
 
-const PORT = parseInt(process.env.PORT || '3001', 10)
-try {
-  await fastify.listen({ port: PORT, host: '0.0.0.0' })
-  console.log(`SOM ERP Backend running on port ${PORT}`)
+// ── Start server ───────────────────────────────────────────────────────────────
+const PORT = parseInt(process.env.PORT || "3001", 10);
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`SOM ERP Backend running on port ${PORT}`);
+  runAutoSeed((msg) => console.log(msg));
+  startCronJobs(app);
+});
 
-  // Auto-seed reference tables on first startup (companies, customer profiles, cp profiles)
-  runAutoSeed(msg => console.log(msg))
-
-  // Start cron jobs after server is up
-  startCronJobs(fastify)
-} catch (err) {
-  fastify.log.error(err)
-  process.exit(1)
-}
+export default app;
