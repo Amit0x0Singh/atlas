@@ -1,15 +1,15 @@
-import prisma from '../db.js'
+import prisma from "../../../db.js";
 
-export default async function trackerRoutes(fastify) {
+// GET /api/tracker
+export async function listTrackerIndents(req, res) {
+  try {
+    const { diNo, page = 1, limit = 200 } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
 
-  // List indents — returns all when diNo is empty, or filters when diNo is provided
-  fastify.get('/', async (req, reply) => {
-    const { diNo, page = 1, limit = 200 } = req.query
-    const skip = (parseInt(page) - 1) * parseInt(limit)
-
-    const where = diNo && diNo.trim()
-      ? { diNo: { contains: diNo.trim(), mode: 'insensitive' } }
-      : {}
+    const where =
+      diNo && diNo.trim()
+        ? { diNo: { contains: diNo.trim(), mode: "insensitive" } }
+        : {};
 
     const [indents, total] = await Promise.all([
       prisma.indentMaster.findMany({
@@ -26,59 +26,63 @@ export default async function trackerRoutes(fastify) {
           equipment: true,
           createdAt: true,
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
         skip,
         take: parseInt(limit),
       }),
-      prisma.indentMaster.count({ where })
-    ])
+      prisma.indentMaster.count({ where }),
+    ]);
 
-    return { success: true, data: indents, total }
-  })
+    return res.json({ success: true, data: indents, total });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+}
 
-  // Full A-Z transaction detail for one indent
-  fastify.get('/detail', async (req, reply) => {
-    const { indentId } = req.query
-    if (!indentId) return reply.status(400).send({ success: false, error: 'indentId required' })
+// GET /api/tracker/detail?indentId=
+export async function getTrackerDetail(req, res) {
+  try {
+    const { indentId } = req.query;
+    if (!indentId)
+      return res.status(400).json({ success: false, error: "indentId required" });
 
-    // Core indent with all details
     const indent = await prisma.indentMaster.findUnique({
       where: { indentId },
-      include: { details: true }
-    })
-    if (!indent) return reply.status(404).send({ success: false, error: 'Indent not found' })
+      include: { details: true },
+    });
+    if (!indent)
+      return res.status(404).json({ success: false, error: "Indent not found" });
 
-    // SFG linked to this indent
-    const sfg = await prisma.sfgMaster.findFirst({ where: { indentId } })
+    const sfg = await prisma.sfgMaster.findFirst({ where: { indentId } });
 
-    // All outward transactions for this indent (BOM issuances)
     const outwardRecords = await prisma.outward.findMany({
       where: { indentId },
-      orderBy: { timestamp: 'asc' }
-    })
+      orderBy: { timestamp: "asc" },
+    });
 
-    // Pack (PrintMaster) details for each outward
-    const packIds = [...new Set(outwardRecords.map(o => o.sourceId).filter(Boolean))]
-    const packs = packIds.length > 0
-      ? await prisma.printMaster.findMany({ where: { packId: { in: packIds } } })
-      : []
-    const packMap = Object.fromEntries(packs.map(p => [p.packId, p]))
+    const packIds = [
+      ...new Set(outwardRecords.map((o) => o.sourceId).filter(Boolean)),
+    ];
+    const packs =
+      packIds.length > 0
+        ? await prisma.printMaster.findMany({ where: { packId: { in: packIds } } })
+        : [];
+    const packMap = Object.fromEntries(packs.map((p) => [p.packId, p]));
 
-    // Build per-RM history — use IndentDetails as the authoritative RM list
-    const rmHistory = indent.details.map(d => {
+    const rmHistory = indent.details.map((d) => {
       const txns = outwardRecords
-        .filter(o => o.rmCode === d.rmCode)
-        .map(o => ({
+        .filter((o) => o.rmCode === d.rmCode)
+        .map((o) => ({
           outwardId: o.id,
-          packId: o.sourceId,          // frontend reads tx.packId
-          qtyIssued: o.qtyIssued,      // frontend reads tx.qtyIssued
+          packId: o.sourceId,
+          qtyIssued: o.qtyIssued,
           timestamp: o.timestamp,
           sourceType: o.sourceType,
           remarks: o.remarks,
-          packDetails: packMap[o.sourceId] || null  // frontend reads tx.packDetails
-        }))
+          packDetails: packMap[o.sourceId] || null,
+        }));
 
-      const totalIssued = txns.reduce((s, t) => s + Number(t.qtyIssued), 0)
+      const totalIssued = txns.reduce((s, t) => s + Number(t.qtyIssued), 0);
       return {
         rmCode: d.rmCode,
         rmName: d.rmName,
@@ -87,13 +91,13 @@ export default async function trackerRoutes(fastify) {
         balanceQty: d.balanceQty,
         fullyIssued: Number(d.balanceQty) <= 0,
         transactions: txns,
-        totalIssued
-      }
-    })
+        totalIssued,
+      };
+    });
 
-    const fullyIssuedRms = rmHistory.filter(r => r.fullyIssued).length
+    const fullyIssuedRms = rmHistory.filter((r) => r.fullyIssued).length;
 
-    return {
+    return res.json({
       success: true,
       data: {
         indent: {
@@ -106,10 +110,10 @@ export default async function trackerRoutes(fastify) {
           plant: indent.plant,
           equipment: indent.equipment,
           status: indent.status,
-          createdAt: indent.createdAt
+          createdAt: indent.createdAt,
         },
         sfg,
-        rmHistory,     // ← key matches what frontend uses: detail.rmHistory
+        rmHistory,
         summary: {
           totalRms: indent.details.length,
           fullyIssuedRms,
@@ -117,8 +121,10 @@ export default async function trackerRoutes(fastify) {
           formulatedQty: sfg?.formulatedQty || 0,
           packedQty: sfg?.packedQty || 0,
           sfgBalance: sfg?.sfgQty || 0,
-        }
-      }
-    }
-  })
+        },
+      },
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
 }

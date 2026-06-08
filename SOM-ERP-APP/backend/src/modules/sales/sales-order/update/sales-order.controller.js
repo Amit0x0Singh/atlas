@@ -113,56 +113,58 @@ const updateSalesOrderItem = async (req, reply) => {
 //   { preHandler: salesOrAbove },
 //   async (req, reply) => {
 
-const updateSalesOrder = async (req, reply) => {
-  const di = req.params.di;
-  const current =
-    await prisma.$queryRaw`SELECT * FROM sales_orders WHERE di_number = ${di}`;
-  if (!current[0])
-    return reply.status(404).send({ success: false, error: "Order not found" });
+// const updateSalesOrder = async (req, reply) => {
+//   const di = req.params.di;
+//   const current =
+//     await prisma.$queryRaw`SELECT * FROM sales_orders WHERE di_number = ${di}`;
+//   if (!current[0])
+//     return reply.status(404).send({ success: false, error: "Order not found" });
 
-  const { status, etd, order_qty, priority, notes, ...rest } = req.body || {};
+//   const { status, etd, order_qty, priority, notes, ...rest } = req.body || {};
 
-  // Sales team can only set new → confirmed
-  if (status && req.user?.role === "sales_team") {
-    if (!(current[0].status === "new" && status === "confirmed"))
-      return reply.status(403).send({
-        success: false,
-        error: "Sales team can only move orders from new → confirmed",
-      });
-  }
+//   // Sales team can only set new → confirmed
+//   if (status && req.user?.role === "sales_team") {
+//     if (!(current[0].status === "new" && status === "confirmed"))
+//       return reply.status(403).send({
+//         success: false,
+//         error: "Sales team can only move orders from new → confirmed",
+//       });
+//   }
 
-  // ERP handles status beyond confirmed
-  if (
-    status &&
-    ["planned", "in_production", "dispatched"].includes(status) &&
-    req.user?.role === "sales_team"
-  )
-    return reply.status(403).send({
-      success: false,
-      error: "ERP system manages statuses beyond confirmed",
-    });
+//   // ERP handles status beyond confirmed
+//   if (
+//     status &&
+//     ["planned", "in_production", "dispatched"].includes(status) &&
+//     req.user?.role === "sales_team"
+//   )
+//     return reply.status(403).send({
+//       success: false,
+//       error: "ERP system manages statuses beyond confirmed",
+//     });
 
-  await prisma.$executeRaw`
-      UPDATE sales_orders SET
-        status   = COALESCE(${status || null}, status),
-        etd      = COALESCE(${etd || null}::date, etd),
-        order_qty = COALESCE(${order_qty || null}, order_qty),
-        priority = COALESCE(${priority || null}, priority),
-        notes    = COALESCE(${notes || null}, notes),
-        updated_at = NOW()
-      WHERE di_number = ${di}
-    `;
-  await writeAudit({
-    ...auditUser(req),
-    action: "UPDATE",
-    tableName: "sales_orders",
-    recordId: di,
-    oldValue: current[0],
-    newValue: req.body,
-  });
+//   await prisma.$executeRaw`
+//       UPDATE sales_orders SET
+//         status   = COALESCE(${status || null}, status),
+//         etd      = COALESCE(${etd || null}::date, etd),
+//         order_qty = COALESCE(${order_qty || null}, order_qty),
+//         priority = COALESCE(${priority || null}, priority),
+//         notes    = COALESCE(${notes || null}, notes),
+//         updated_at = NOW()
+//       WHERE di_number = ${di}
+//     `;
+//   await writeAudit({
+//     ...auditUser(req),
+//     action: "UPDATE",
+//     tableName: "sales_orders",
+//     recordId: di,
+//     oldValue: current[0],
+//     newValue: req.body,
+//   });
 
-  const updated =
-    await prisma.$queryRaw`SELECT * FROM sales_orders WHERE di_number = ${di}`;
+//   const updated =
+//     await prisma.$queryRaw`SELECT * FROM sales_orders WHERE di_number = ${di}`;
 
-  return { success: true, data: updated[0] };
-};
+//   return { success: true, data: updated[0] };
+// };
+
+export { updateSalesOrder, updateSalesOrderItem };

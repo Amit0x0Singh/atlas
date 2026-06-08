@@ -27,7 +27,7 @@ import OrderHistory from "../component/order-history.jsx";
 //   Tab 2 — "Dispatch"       → dispatch table + DispatchOrder modal
 //   Tab 3 — "Order History"  → OrderHistory table
 // ─────────────────────────────────────────────────────────────────────────────
-export default function SalesOrder() {
+const SalesOrder = () => {
   // ── Core data ─────────────────────────────────────────────────────────────
   const [orders, setOrders] = useState([]);
   const [products, setProducts] = useState([]);
@@ -292,25 +292,6 @@ export default function SalesOrder() {
       {/* ── Tab: Sales Orders ─────────────────────────────────────────── */}
       {activeTab === "orders" && (
         <div>
-          {/* Create / edit form */}
-          {showForm && (
-            <div className="bg-white border border-gray-200 rounded-xl p-6 mb-6 shadow-sm">
-              <h2 className="text-base font-bold text-gray-800 mb-5">
-                {editing ? `Edit — ${editing.soId}` : "New Sales Order"}
-              </h2>
-              <CreateSalesOrder
-                initial={editing || undefined}
-                products={products}
-                profiles={profiles}
-                onSave={handleSave}
-                onCancel={() => {
-                  setShowForm(false);
-                  setEditing(null);
-                }}
-              />
-            </div>
-          )}
-
           {/* Status summary pills */}
           <div className="grid grid-cols-4 gap-3 mb-5 lg:grid-cols-7">
             {STATUSES.map((s) => (
@@ -371,6 +352,25 @@ export default function SalesOrder() {
               </button>
             )}
           </div>
+
+          {/* Create / edit form */}
+          {showForm && (
+            <div className="bg-white border border-gray-200 rounded-xl p-6 mb-6 shadow-sm">
+              <h2 className="text-base font-bold text-gray-800 mb-5">
+                {editing ? `Edit — ${editing.soId}` : "New Sales Order"}
+              </h2>
+              <CreateSalesOrder
+                initial={editing || undefined}
+                products={products}
+                profiles={profiles}
+                onSave={handleSave}
+                onCancel={() => {
+                  setShowForm(false);
+                  setEditing(null);
+                }}
+              />
+            </div>
+          )}
 
           {/* Order cards */}
           {loading ? (
@@ -615,4 +615,10 @@ export default function SalesOrder() {
       )}
     </div>
   );
-}
+};
+
+export default SalesOrder;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SalesOrder — main page
+// Pure orchestrator: owns top-level state, makes API calls, renders the

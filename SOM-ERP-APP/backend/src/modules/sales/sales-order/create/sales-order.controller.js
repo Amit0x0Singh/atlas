@@ -82,3 +82,5 @@ const createSalesOrder = async (req, reply) => {
     include: { items: true },
   });
 };
+
+export default createSalesOrder;

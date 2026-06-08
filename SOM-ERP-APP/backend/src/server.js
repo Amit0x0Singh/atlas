@@ -8,6 +8,7 @@ import { existsSync } from "fs";
 import { startCronJobs } from "./services/cron-jobs.js";
 import { runAutoSeed } from "./services/auto-seed.js";
 import router from "./routers/routers.js";
+import { connectDb, disconnectDb } from "./db.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -74,10 +75,24 @@ app.use((err, req, res, next) => {
 
 // ── Start server ───────────────────────────────────────────────────────────────
 const PORT = parseInt(process.env.PORT || "3001", 10);
-app.listen(PORT, "0.0.0.0", () => {
+await connectDb();
+
+const server = app.listen(PORT, "0.0.0.0", () => {
   console.log(`SOM ERP Backend running on port ${PORT}`);
   runAutoSeed((msg) => console.log(msg));
   startCronJobs(app);
 });
+
+const shutdown = async () => {
+  console.log("Shutting down backend...");
+  await disconnectDb();
+  server.close(() => {
+    console.log("Server closed.");
+    process.exit(0);
+  });
+};
+
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);
 
 export default app;

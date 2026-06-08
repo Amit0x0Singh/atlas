@@ -14,3 +14,5 @@ const deleteSalesOrderItem = async (req) => {
   await prisma.salesOrderItem.delete({ where: { id: req.params.itemId } });
   return { success: true };
 };
+
+export { deleteSalesOrder, deleteSalesOrderItem };
