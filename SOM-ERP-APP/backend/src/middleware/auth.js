@@ -69,9 +69,27 @@ export function verifyPin(pin, stored) {
   return attempt === hash;
 }
 
+// ─── Dev bypass ─────────────────────────────────────────────────────────────
+// Set BYPASS_AUTH=true in .env to skip token checks during development.
+// Never set this in production — the guard below prevents it.
+const BYPASS_AUTH =
+  process.env.BYPASS_AUTH === "true" &&
+  process.env.NODE_ENV !== "production";
+
+const DEV_USER = {
+  user_id: "dev-user",
+  username: "dev",
+  full_name: "Dev Admin",
+  role: "admin",
+};
+
 // ─── Express middleware: authenticate ────────────────────────────────────────
 
 export function authenticate(req, res, next) {
+  if (BYPASS_AUTH) {
+    req.user = DEV_USER;
+    return next();
+  }
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith("Bearer ")) {
@@ -109,6 +127,7 @@ export function authorize(roles = []) {
 
 // Alias for admin only
 export const adminOnly = authorize(["admin"]);
+
 export const storeOrAbove = authorize([
   "store_person",
   "store_manager",

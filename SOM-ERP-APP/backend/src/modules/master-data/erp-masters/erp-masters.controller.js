@@ -1,56 +1,47 @@
-/**
- * ERP Masters — /api/erp/masters/*
- * Items, Suppliers, Plants, Equipment, Products, BOM, Microbial Strains, Customers
- */
-import prisma from '../db.js'
-import { authenticate, authorize } from '../middleware/auth.js'
-import { writeAudit, auditUser } from '../middleware/audit.js'
-import { createNotification } from '../services/notification-service.js'
+import prisma from '../../../db.js'
+import { writeAudit, auditUser } from '../../../middleware/audit.js'
+import { createNotification } from '../../../services/notification-service.js'
 
-const adminOrStore = authorize(['admin', 'store_manager', 'store_person'])
-const adminOnly    = authorize(['admin'])
-const plannerPlus  = authorize(['admin', 'planner', 'planning_manager'])
+// ── Items ─────────────────────────────────────────────────────────────────────
 
-export default async function erpMastersRoutes(fastify) {
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // ITEMS
-  // ═══════════════════════════════════════════════════════════════════════════
-
-  fastify.get('/items', { preHandler: authenticate }, async (req) => {
+export async function listItems(req, res) {
+  try {
     const { category, search, active } = req.query
     let where = 'WHERE 1=1'
     const params = []
     if (category) { params.push(category); where += ` AND item_category = $${params.length}` }
     if (search)   { params.push(`%${search}%`); where += ` AND (item_name ILIKE $${params.length} OR item_code ILIKE $${params.length})` }
     if (active !== undefined) { params.push(active === 'true'); where += ` AND is_active = $${params.length}` }
-
     const items = await prisma.$queryRawUnsafe(
-      `SELECT i.*, s.supplier_name AS default_supplier_name
-       FROM erp_items i
-       LEFT JOIN erp_suppliers s ON s.supplier_id = i.supplier_default
-       ${where} ORDER BY item_name ASC`,
+      `SELECT i.*, s.supplier_name AS default_supplier_name FROM erp_items i LEFT JOIN erp_suppliers s ON s.supplier_id = i.supplier_default ${where} ORDER BY item_name ASC`,
       ...params
     )
-    return { success: true, data: items }
-  })
+    return res.json({ success: true, data: items })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message })
+  }
+}
 
-  fastify.get('/items/:code', { preHandler: authenticate }, async (req, reply) => {
+export async function getItem(req, res) {
+  try {
     const rows = await prisma.$queryRaw`
       SELECT i.*, s.supplier_name AS default_supplier_name
-      FROM erp_items i
-      LEFT JOIN erp_suppliers s ON s.supplier_id = i.supplier_default
+      FROM erp_items i LEFT JOIN erp_suppliers s ON s.supplier_id = i.supplier_default
       WHERE i.item_code = ${req.params.code}
     `
-    if (!rows[0]) return reply.status(404).send({ success: false, error: 'Item not found' })
-    return { success: true, data: rows[0] }
-  })
+    if (!rows[0]) return res.status(404).json({ success: false, error: 'Item not found' })
+    return res.json({ success: true, data: rows[0] })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message })
+  }
+}
 
-  fastify.post('/items', { preHandler: authorize(['admin', 'store_manager']) }, async (req, reply) => {
+export async function createItem(req, res) {
+  try {
     const { item_code, item_name, item_category, uom, warehouse_zone,
             reorder_level, decanting_tolerance_pct, is_microbial, supplier_default } = req.body || {}
     if (!item_code || !item_name || !item_category || !uom)
-      return reply.status(400).send({ success: false, error: 'item_code, item_name, item_category, uom required' })
+      return res.status(400).json({ success: false, error: 'item_code, item_name, item_category, uom required' })
     const rows = await prisma.$queryRaw`
       INSERT INTO erp_items (item_code, item_name, item_category, uom, warehouse_zone,
         reorder_level, decanting_tolerance_pct, is_microbial, supplier_default)
@@ -60,10 +51,14 @@ export default async function erpMastersRoutes(fastify) {
       RETURNING *
     `
     await writeAudit({ ...auditUser(req), action: 'CREATE', tableName: 'erp_items', recordId: item_code, newValue: req.body })
-    return reply.status(201).send({ success: true, data: rows[0] })
-  })
+    return res.status(201).json({ success: true, data: rows[0] })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message })
+  }
+}
 
-  fastify.put('/items/:code', { preHandler: authorize(['admin', 'store_manager']) }, async (req, reply) => {
+export async function updateItem(req, res) {
+  try {
     const { item_name, item_category, uom, warehouse_zone, reorder_level,
             decanting_tolerance_pct, is_microbial, supplier_default, is_active } = req.body || {}
     await prisma.$executeRaw`
@@ -81,31 +76,41 @@ export default async function erpMastersRoutes(fastify) {
       WHERE item_code = ${req.params.code}
     `
     await writeAudit({ ...auditUser(req), action: 'UPDATE', tableName: 'erp_items', recordId: req.params.code, newValue: req.body })
-    return { success: true, message: 'Item updated' }
-  })
+    return res.json({ success: true, message: 'Item updated' })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message })
+  }
+}
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // SUPPLIERS
-  // ═══════════════════════════════════════════════════════════════════════════
+// ── Suppliers ─────────────────────────────────────────────────────────────────
 
-  fastify.get('/suppliers', { preHandler: authenticate }, async () => {
+export async function listSuppliers(req, res) {
+  try {
     const data = await prisma.$queryRaw`SELECT * FROM erp_suppliers WHERE is_active = true ORDER BY supplier_name`
-    return { success: true, data }
-  })
+    return res.json({ success: true, data })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message })
+  }
+}
 
-  fastify.post('/suppliers', { preHandler: authorize(['admin', 'store_manager']) }, async (req, reply) => {
+export async function createSupplier(req, res) {
+  try {
     const { supplier_name, gstin, phone, email, address } = req.body || {}
-    if (!supplier_name) return reply.status(400).send({ success: false, error: 'supplier_name required' })
+    if (!supplier_name) return res.status(400).json({ success: false, error: 'supplier_name required' })
     const rows = await prisma.$queryRaw`
       INSERT INTO erp_suppliers (supplier_name, gstin, phone, email, address)
       VALUES (${supplier_name}, ${gstin || null}, ${phone || null}, ${email || null}, ${address || null})
       RETURNING *
     `
     await writeAudit({ ...auditUser(req), action: 'CREATE', tableName: 'erp_suppliers', recordId: rows[0].supplier_id, newValue: req.body })
-    return reply.status(201).send({ success: true, data: rows[0] })
-  })
+    return res.status(201).json({ success: true, data: rows[0] })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message })
+  }
+}
 
-  fastify.put('/suppliers/:id', { preHandler: authorize(['admin', 'store_manager']) }, async (req, reply) => {
+export async function updateSupplier(req, res) {
+  try {
     const { supplier_name, gstin, phone, email, address, is_active } = req.body || {}
     await prisma.$executeRaw`
       UPDATE erp_suppliers SET
@@ -118,36 +123,44 @@ export default async function erpMastersRoutes(fastify) {
         updated_at = NOW()
       WHERE supplier_id = ${req.params.id}::uuid
     `
-    return { success: true, message: 'Supplier updated' }
-  })
+    return res.json({ success: true, message: 'Supplier updated' })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message })
+  }
+}
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // PLANTS
-  // ═══════════════════════════════════════════════════════════════════════════
+// ── Plants ────────────────────────────────────────────────────────────────────
 
-  fastify.get('/plants', { preHandler: authenticate }, async () => {
+export async function listPlants(req, res) {
+  try {
     const data = await prisma.$queryRaw`SELECT * FROM erp_plants WHERE is_active = true ORDER BY plant_name`
-    return { success: true, data }
-  })
+    return res.json({ success: true, data })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message })
+  }
+}
 
-  fastify.post('/plants', { preHandler: adminOnly }, async (req, reply) => {
+export async function createPlant(req, res) {
+  try {
     const { plant_name, plant_code, location, plant_type } = req.body || {}
     if (!plant_name || !plant_code || !plant_type)
-      return reply.status(400).send({ success: false, error: 'plant_name, plant_code, plant_type required' })
+      return res.status(400).json({ success: false, error: 'plant_name, plant_code, plant_type required' })
     const rows = await prisma.$queryRaw`
       INSERT INTO erp_plants (plant_name, plant_code, location, plant_type)
       VALUES (${plant_name}, ${plant_code}, ${location || null}, ${plant_type})
       RETURNING *
     `
     await writeAudit({ ...auditUser(req), action: 'CREATE', tableName: 'erp_plants', recordId: rows[0].plant_id, newValue: req.body })
-    return reply.status(201).send({ success: true, data: rows[0] })
-  })
+    return res.status(201).json({ success: true, data: rows[0] })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message })
+  }
+}
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // EQUIPMENT
-  // ═══════════════════════════════════════════════════════════════════════════
+// ── Equipment (ERP) ───────────────────────────────────────────────────────────
 
-  fastify.get('/equipment', { preHandler: authenticate }, async (req) => {
+export async function listErpEquipment(req, res) {
+  try {
     const { plant_id } = req.query
     if (plant_id) {
       const data = await prisma.$queryRaw`
@@ -155,21 +168,25 @@ export default async function erpMastersRoutes(fastify) {
         JOIN erp_plants p ON p.plant_id = e.plant_id
         WHERE e.plant_id = ${plant_id}::uuid ORDER BY e.equipment_name
       `
-      return { success: true, data }
+      return res.json({ success: true, data })
     }
     const data = await prisma.$queryRaw`
       SELECT e.*, p.plant_name FROM erp_equipment e
       LEFT JOIN erp_plants p ON p.plant_id = e.plant_id
       ORDER BY e.equipment_name
     `
-    return { success: true, data }
-  })
+    return res.json({ success: true, data })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message })
+  }
+}
 
-  fastify.post('/equipment', { preHandler: adminOnly }, async (req, reply) => {
+export async function createErpEquipment(req, res) {
+  try {
     const { plant_id, equipment_name, equipment_code, equipment_type,
             working_volume, working_volume_unit, cleaning_time_hrs, requires_sterilisation } = req.body || {}
     if (!equipment_name || !equipment_code || !equipment_type)
-      return reply.status(400).send({ success: false, error: 'equipment_name, equipment_code, equipment_type required' })
+      return res.status(400).json({ success: false, error: 'equipment_name, equipment_code, equipment_type required' })
     const rows = await prisma.$queryRaw`
       INSERT INTO erp_equipment (plant_id, equipment_name, equipment_code, equipment_type,
         working_volume, working_volume_unit, cleaning_time_hrs, requires_sterilisation)
@@ -179,10 +196,14 @@ export default async function erpMastersRoutes(fastify) {
       RETURNING *
     `
     await writeAudit({ ...auditUser(req), action: 'CREATE', tableName: 'erp_equipment', recordId: rows[0].equipment_id, newValue: req.body })
-    return reply.status(201).send({ success: true, data: rows[0] })
-  })
+    return res.status(201).json({ success: true, data: rows[0] })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message })
+  }
+}
 
-  fastify.patch('/equipment/:id', { preHandler: adminOnly }, async (req, reply) => {
+export async function patchErpEquipment(req, res) {
+  try {
     const { status, equipment_name, working_volume, cleaning_time_hrs } = req.body || {}
     await prisma.$executeRaw`
       UPDATE erp_equipment SET
@@ -194,14 +215,16 @@ export default async function erpMastersRoutes(fastify) {
       WHERE equipment_id = ${req.params.id}::uuid
     `
     await writeAudit({ ...auditUser(req), action: 'UPDATE', tableName: 'erp_equipment', recordId: req.params.id, newValue: req.body })
-    return { success: true, message: 'Equipment updated' }
-  })
+    return res.json({ success: true, message: 'Equipment updated' })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message })
+  }
+}
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // PRODUCTS (ERP extended)
-  // ═══════════════════════════════════════════════════════════════════════════
+// ── ERP Products ──────────────────────────────────────────────────────────────
 
-  fastify.get('/erp-products', { preHandler: authenticate }, async (req) => {
+export async function listErpProducts(req, res) {
+  try {
     const { status } = req.query
     const data = await prisma.$queryRaw`
       SELECT p.*, pl.plant_name, ms.strain_name
@@ -211,15 +234,19 @@ export default async function erpMastersRoutes(fastify) {
       WHERE (${status || null}::text IS NULL OR p.status = ${status || null})
       ORDER BY p.product_name
     `
-    return { success: true, data }
-  })
+    return res.json({ success: true, data })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message })
+  }
+}
 
-  fastify.post('/erp-products', { preHandler: adminOnly }, async (req, reply) => {
+export async function createErpProduct(req, res) {
+  try {
     const { product_code, product_name, product_category, plant_id, alternate_plant_id,
             alt_plant_requires_approval, formulation_type, shelf_life_days,
             consolidation_window_days, is_microbial, microbial_strain_id } = req.body || {}
     if (!product_code || !product_name)
-      return reply.status(400).send({ success: false, error: 'product_code and product_name required' })
+      return res.status(400).json({ success: false, error: 'product_code and product_name required' })
     const rows = await prisma.$queryRaw`
       INSERT INTO erp_products (product_code, product_name, product_category, plant_id, alternate_plant_id,
         alt_plant_requires_approval, formulation_type, shelf_life_days, consolidation_window_days,
@@ -232,29 +259,34 @@ export default async function erpMastersRoutes(fastify) {
       RETURNING *
     `
     await writeAudit({ ...auditUser(req), action: 'CREATE', tableName: 'erp_products', recordId: product_code, newValue: req.body })
-    return reply.status(201).send({ success: true, data: rows[0] })
-  })
+    return res.status(201).json({ success: true, data: rows[0] })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message })
+  }
+}
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // BOM HEADERS + LINES
-  // ═══════════════════════════════════════════════════════════════════════════
+// ── BOM ───────────────────────────────────────────────────────────────────────
 
-  fastify.get('/bom', { preHandler: plannerPlus }, async (req) => {
+export async function listBom(req, res) {
+  try {
     const { product_code, status } = req.query
     const data = await prisma.$queryRaw`
       SELECT b.*, u.full_name AS approved_by_name
-      FROM bom_headers b
-      LEFT JOIN users u ON u.user_id = b.approved_by
+      FROM bom_headers b LEFT JOIN users u ON u.user_id = b.approved_by
       WHERE (${product_code || null}::text IS NULL OR b.product_code = ${product_code || null})
         AND (${status || null}::text IS NULL OR b.status = ${status || null})
       ORDER BY b.product_code, b.effective_date DESC
     `
-    return { success: true, data }
-  })
+    return res.json({ success: true, data })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message })
+  }
+}
 
-  fastify.get('/bom/:id', { preHandler: authenticate }, async (req, reply) => {
+export async function getBom(req, res) {
+  try {
     const bom = await prisma.$queryRaw`SELECT * FROM bom_headers WHERE bom_id = ${req.params.id}::uuid`
-    if (!bom[0]) return reply.status(404).send({ success: false, error: 'BOM not found' })
+    if (!bom[0]) return res.status(404).json({ success: false, error: 'BOM not found' })
     const formulation = await prisma.$queryRaw`
       SELECT f.*, i.item_name FROM bom_lines_formulation f
       JOIN erp_items i ON i.item_code = f.item_code
@@ -265,19 +297,19 @@ export default async function erpMastersRoutes(fastify) {
       JOIN erp_items i ON i.item_code = p.item_code
       WHERE p.bom_id = ${req.params.id}::uuid ORDER BY p.seq_no
     `
-    return { success: true, data: { ...bom[0], formulation_lines: formulation, packing_lines: packing } }
-  })
+    return res.json({ success: true, data: { ...bom[0], formulation_lines: formulation, packing_lines: packing } })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message })
+  }
+}
 
-  fastify.post('/bom', { preHandler: authorize(['admin', 'planning_manager']) }, async (req, reply) => {
+export async function createBom(req, res) {
+  try {
     const { product_code, bom_version, effective_date, yield_pct, notes,
             formulation_lines = [], packing_lines = [] } = req.body || {}
     if (!product_code || !bom_version || !effective_date)
-      return reply.status(400).send({ success: false, error: 'product_code, bom_version, effective_date required' })
-
-    // Mark previous active version inactive
-    await prisma.$executeRaw`
-      UPDATE bom_headers SET status = 'inactive' WHERE product_code = ${product_code} AND status = 'active'
-    `
+      return res.status(400).json({ success: false, error: 'product_code, bom_version, effective_date required' })
+    await prisma.$executeRaw`UPDATE bom_headers SET status = 'inactive' WHERE product_code = ${product_code} AND status = 'active'`
     const bom = await prisma.$queryRaw`
       INSERT INTO bom_headers (product_code, bom_version, effective_date, approved_by, yield_pct, notes)
       VALUES (${product_code}, ${bom_version}, ${effective_date}, ${req.user?.user_id || null}::uuid,
@@ -285,8 +317,6 @@ export default async function erpMastersRoutes(fastify) {
       RETURNING *
     `
     const bom_id = bom[0].bom_id
-
-    // Insert formulation lines
     for (let i = 0; i < formulation_lines.length; i++) {
       const { item_code, qty_per_unit, unit, is_critical } = formulation_lines[i]
       await prisma.$executeRaw`
@@ -294,7 +324,6 @@ export default async function erpMastersRoutes(fastify) {
         VALUES (${bom_id}::uuid, ${item_code}, ${qty_per_unit}, ${unit}, ${is_critical || false}, ${i + 1})
       `
     }
-    // Insert packing lines
     for (let i = 0; i < packing_lines.length; i++) {
       const { item_code, qty_per_unit, unit } = packing_lines[i]
       await prisma.$executeRaw`
@@ -302,81 +331,87 @@ export default async function erpMastersRoutes(fastify) {
         VALUES (${bom_id}::uuid, ${item_code}, ${qty_per_unit}, ${unit}, ${i + 1})
       `
     }
-
-    // Notify planning team of BOM change
-    await createNotification({
-      type: 'bom_version_changed',
-      title: `BOM Updated: ${product_code} → ${bom_version}`,
-      message: `BOM for Product ${product_code} updated to ${bom_version}. All pending plans using previous version require review.`,
-      targetRole: 'planner',
-      refType: 'bom_header',
-      refId: bom_id,
-    })
-
+    await createNotification({ type: 'bom_version_changed', title: `BOM Updated: ${product_code} → ${bom_version}`, message: `BOM for Product ${product_code} updated to ${bom_version}. All pending plans using previous version require review.`, targetRole: 'planner', refType: 'bom_header', refId: bom_id })
     await writeAudit({ ...auditUser(req), action: 'CREATE', tableName: 'bom_headers', recordId: bom_id, newValue: req.body })
-    return reply.status(201).send({ success: true, data: bom[0] })
-  })
+    return res.status(201).json({ success: true, data: bom[0] })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message })
+  }
+}
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // MICROBIAL STRAINS
-  // ═══════════════════════════════════════════════════════════════════════════
+// ── Strains ───────────────────────────────────────────────────────────────────
 
-  fastify.get('/strains', { preHandler: authenticate }, async () => {
+export async function listStrains(req, res) {
+  try {
     const data = await prisma.$queryRaw`SELECT * FROM microbial_strains WHERE is_active = true ORDER BY strain_name`
-    return { success: true, data }
-  })
+    return res.json({ success: true, data })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message })
+  }
+}
 
-  fastify.post('/strains', { preHandler: adminOnly }, async (req, reply) => {
+export async function createStrain(req, res) {
+  try {
     const { strain_name, decay_k, optimal_temp_c, min_viable_cfu_per_ml, notes } = req.body || {}
     if (!strain_name || decay_k === undefined)
-      return reply.status(400).send({ success: false, error: 'strain_name and decay_k required' })
+      return res.status(400).json({ success: false, error: 'strain_name and decay_k required' })
     const rows = await prisma.$queryRaw`
       INSERT INTO microbial_strains (strain_name, decay_k, optimal_temp_c, min_viable_cfu_per_ml, notes)
       VALUES (${strain_name}, ${decay_k}, ${optimal_temp_c || null}, ${min_viable_cfu_per_ml || null}, ${notes || null})
       RETURNING *
     `
     await writeAudit({ ...auditUser(req), action: 'CREATE', tableName: 'microbial_strains', recordId: rows[0].strain_id, newValue: req.body })
-    return reply.status(201).send({ success: true, data: rows[0] })
-  })
+    return res.status(201).json({ success: true, data: rows[0] })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message })
+  }
+}
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // CUSTOMERS
-  // ═══════════════════════════════════════════════════════════════════════════
+// ── Customers ─────────────────────────────────────────────────────────────────
 
-  fastify.get('/customers', { preHandler: authenticate }, async () => {
+export async function listCustomers(req, res) {
+  try {
     const data = await prisma.$queryRaw`SELECT * FROM customers WHERE is_active = true ORDER BY customer_name`
-    return { success: true, data }
-  })
+    return res.json({ success: true, data })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message })
+  }
+}
 
-  fastify.post('/customers', { preHandler: authorize(['admin', 'sales_team', 'store_manager']) }, async (req, reply) => {
+export async function createCustomer(req, res) {
+  try {
     const { customer_name, customer_code, gstin, address, state, phone, email } = req.body || {}
-    if (!customer_name) return reply.status(400).send({ success: false, error: 'customer_name required' })
+    if (!customer_name) return res.status(400).json({ success: false, error: 'customer_name required' })
     const rows = await prisma.$queryRaw`
       INSERT INTO customers (customer_name, customer_code, gstin, address, state, phone, email)
       VALUES (${customer_name}, ${customer_code || null}, ${gstin || null},
               ${address || null}, ${state || null}, ${phone || null}, ${email || null})
       RETURNING *
     `
-    return reply.status(201).send({ success: true, data: rows[0] })
-  })
+    return res.status(201).json({ success: true, data: rows[0] })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message })
+  }
+}
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // REASON CODES
-  // ═══════════════════════════════════════════════════════════════════════════
+// ── Reason codes ──────────────────────────────────────────────────────────────
 
-  fastify.get('/reason-codes', { preHandler: authenticate }, async (req) => {
+export async function listReasonCodes(req, res) {
+  try {
     const { category } = req.query
     const data = category
       ? await prisma.$queryRaw`SELECT * FROM reason_codes WHERE category = ${category} AND is_active = true ORDER BY label`
       : await prisma.$queryRaw`SELECT * FROM reason_codes WHERE is_active = true ORDER BY category, label`
-    return { success: true, data }
-  })
+    return res.json({ success: true, data })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message })
+  }
+}
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // CONTAINERS (for decanting) — list + create
-  // ═══════════════════════════════════════════════════════════════════════════
+// ── Containers ────────────────────────────────────────────────────────────────
 
-  fastify.get('/containers', { preHandler: authenticate }, async (req) => {
+export async function listErpContainers(req, res) {
+  try {
     const { item_code } = req.query
     const data = item_code
       ? await prisma.$queryRaw`
@@ -387,14 +422,17 @@ export default async function erpMastersRoutes(fastify) {
           SELECT c.*, i.item_name FROM erp_containers c
           JOIN erp_items i ON i.item_code = c.item_code
           WHERE c.is_active = true ORDER BY c.container_id`
-    return { success: true, data }
-  })
+    return res.json({ success: true, data })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message })
+  }
+}
 
-  fastify.post('/containers', { preHandler: authorize(['admin', 'store_manager']) }, async (req, reply) => {
-    const { container_id, container_qr, item_code, location, max_capacity,
-            uom, low_stock_threshold } = req.body || {}
+export async function createErpContainer(req, res) {
+  try {
+    const { container_id, container_qr, item_code, location, max_capacity, uom, low_stock_threshold } = req.body || {}
     if (!container_id || !item_code || !max_capacity)
-      return reply.status(400).send({ success: false, error: 'container_id, item_code, max_capacity required' })
+      return res.status(400).json({ success: false, error: 'container_id, item_code, max_capacity required' })
     const rows = await prisma.$queryRaw`
       INSERT INTO erp_containers (container_id, container_qr, item_code, location, max_capacity, uom, low_stock_threshold)
       VALUES (${container_id}, ${container_qr || container_id}, ${item_code},
@@ -402,6 +440,8 @@ export default async function erpMastersRoutes(fastify) {
       RETURNING *
     `
     await writeAudit({ ...auditUser(req), action: 'CREATE', tableName: 'erp_containers', recordId: container_id, newValue: req.body })
-    return reply.status(201).send({ success: true, data: rows[0] })
-  })
+    return res.status(201).json({ success: true, data: rows[0] })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message })
+  }
 }

@@ -1,24 +1,22 @@
 import express from "express";
-
-// ── Sub-routers (to be wired after Fastify → Express migration) ───────────────
-// import ExportController from "./export.controller.js";
+import { authenticate } from "../../middleware/auth.js";
+import { exportSalesOrders, exportAtRiskOrders, exportDispatchSummary, exportSalesPerformance, exportMicrobialStock, exportCfuDecay, exportMicrobialTransactions, exportDemandStockGap, exportProductionSchedule, exportTimeMotion, exportEquipmentUtilisation, exportRmForecast, exportManagementPack, exportGateInwardLog } from "./export.controller.js";
 
 const ExportRouter = express.Router();
 
-// ── API paths handled by this module ─────────────────────────────────────────
-// /api/erp/export/sales-orders
-// /api/erp/export/at-risk-orders
-// /api/erp/export/dispatch-summary
-// /api/erp/export/sales-performance
-// /api/erp/export/microbial-stock
-// /api/erp/export/cfu-decay
-// /api/erp/export/microbial-transactions
-// /api/erp/export/demand-stock-gap
-// /api/erp/export/production-schedule
-// /api/erp/export/time-motion
-// /api/erp/export/equipment-utilisation
-// /api/erp/export/rm-forecast
-// /api/erp/export/management-pack
-// /api/erp/export/gate-inward-log
+ExportRouter.get("/erp/export/sales-orders", authenticate, exportSalesOrders);
+ExportRouter.get("/erp/export/at-risk-orders", authenticate, exportAtRiskOrders);
+ExportRouter.get("/erp/export/dispatch-summary", authenticate, exportDispatchSummary);
+ExportRouter.get("/erp/export/sales-performance", authenticate, exportSalesPerformance);
+ExportRouter.get("/erp/export/microbial-stock", authenticate, exportMicrobialStock);
+ExportRouter.get("/erp/export/cfu-decay", authenticate, exportCfuDecay);
+ExportRouter.get("/erp/export/microbial-transactions", authenticate, exportMicrobialTransactions);
+ExportRouter.get("/erp/export/demand-stock-gap", authenticate, exportDemandStockGap);
+ExportRouter.get("/erp/export/production-schedule", authenticate, exportProductionSchedule);
+ExportRouter.get("/erp/export/time-motion", authenticate, exportTimeMotion);
+ExportRouter.get("/erp/export/equipment-utilisation", authenticate, exportEquipmentUtilisation);
+ExportRouter.get("/erp/export/rm-forecast", authenticate, exportRmForecast);
+ExportRouter.get("/erp/export/management-pack", authenticate, exportManagementPack);
+ExportRouter.get("/erp/export/gate-inward-log", authenticate, exportGateInwardLog);
 
 export default ExportRouter;

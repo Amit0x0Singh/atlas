@@ -1,81 +1,35 @@
 import express from "express";
-import { authenticate, authorize } from "../middleware/auth.js";
-import {
-  approveStockAdjustment,
-  createStockAdjustment,
-  listStockAdjustments,
-  rejectStockAdjustment,
-} from "../controllers/inventory/stock-adjustments-controller.js";
-import {
-  createWarehouseTransfer,
-  listWarehouseTransfers,
-  receiveWarehouseTransfer,
-} from "../controllers/inventory/warehouse-transfers-controller.js";
-import {
-  createDecanting,
-  listDecanting,
-} from "../controllers/inventory/decanting-controller.js";
-import {
-  checkFifo,
-  createFifoOverride,
-} from "../controllers/inventory/fifo-controller.js";
-import { getStockSummary } from "../controllers/inventory/stock-summary-controller.js";
+import { authenticate, authorize } from "../../../middleware/auth.js";
+import { createStockAdjustment, approveStockAdjustment, rejectStockAdjustment, listStockAdjustments } from "./stock-adjustments/stock-adjustments-controller.js";
+import { createWarehouseTransfer, receiveWarehouseTransfer, listWarehouseTransfers } from "./warehouse-transfers/warehouse-transfers-controller.js";
+import { createDecanting, listDecanting } from "./decanting/decanting.controller.js";
+import { checkFifo, createFifoOverride } from "./fifo/fifo.controller.js";
+import { getStockSummary } from "./stock-summary/stock-summary.controller.js";
 
+const router = express.Router();
 const storeOrAbove = authorize(["store_person", "store_manager", "admin"]);
 const managerOrAbove = authorize(["store_manager", "admin"]);
 
-export default async function erpInventoryRoutes(fastify) {
-  // Stock adjustments
-  fastify.post(
-    "/adjustments",
-    { preHandler: storeOrAbove },
-    createStockAdjustment,
-  );
-  fastify.patch(
-    "/adjustments/:id/approve",
-    { preHandler: managerOrAbove },
-    approveStockAdjustment,
-  );
-  fastify.patch(
-    "/adjustments/:id/reject",
-    { preHandler: managerOrAbove },
-    rejectStockAdjustment,
-  );
-  fastify.get(
-    "/adjustments",
-    { preHandler: storeOrAbove },
-    listStockAdjustments,
-  );
+// Stock adjustments
+router.post("/adjustments", authenticate, storeOrAbove, createStockAdjustment);
+router.patch("/adjustments/:id/approve", authenticate, managerOrAbove, approveStockAdjustment);
+router.patch("/adjustments/:id/reject", authenticate, managerOrAbove, rejectStockAdjustment);
+router.get("/adjustments", authenticate, storeOrAbove, listStockAdjustments);
 
-  // Warehouse transfers
-  fastify.post(
-    "/transfers",
-    { preHandler: storeOrAbove },
-    createWarehouseTransfer,
-  );
-  fastify.patch(
-    "/transfers/:id/receive",
-    { preHandler: storeOrAbove },
-    receiveWarehouseTransfer,
-  );
-  fastify.get(
-    "/transfers",
-    { preHandler: storeOrAbove },
-    listWarehouseTransfers,
-  );
+// Warehouse transfers
+router.post("/transfers", authenticate, storeOrAbove, createWarehouseTransfer);
+router.patch("/transfers/:id/receive", authenticate, storeOrAbove, receiveWarehouseTransfer);
+router.get("/transfers", authenticate, storeOrAbove, listWarehouseTransfers);
 
-  // Decanting
-  fastify.post("/decanting", { preHandler: storeOrAbove }, createDecanting);
-  fastify.get("/decanting", { preHandler: storeOrAbove }, listDecanting);
+// Decanting
+router.post("/decanting", authenticate, storeOrAbove, createDecanting);
+router.get("/decanting", authenticate, storeOrAbove, listDecanting);
 
-  // FIFO
-  fastify.post("/fifo-check", { preHandler: authenticate }, checkFifo);
-  fastify.post(
-    "/fifo-override",
-    { preHandler: managerOrAbove },
-    createFifoOverride,
-  );
+// FIFO
+router.post("/fifo-check", authenticate, checkFifo);
+router.post("/fifo-override", authenticate, managerOrAbove, createFifoOverride);
 
-  // Stock overview
-  fastify.get("/stock-summary", { preHandler: authenticate }, getStockSummary);
-}
+// Stock overview
+router.get("/stock-summary", authenticate, getStockSummary);
+
+export default router;

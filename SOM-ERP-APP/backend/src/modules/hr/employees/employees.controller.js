@@ -1,34 +1,27 @@
-import prisma from '../db.js'
+import prisma from '../../../db.js'
 
-// ── Page catalogue: every page that exists in the system ─────────────────────
 export const ALL_PAGES = [
-  // Masters
   { path: '/item-master',       label: 'Item Master',       group: 'Masters' },
   { path: '/product-master',    label: 'Product Master',    group: 'Masters' },
   { path: '/equipment-master',  label: 'Equipment Master',  group: 'Masters' },
   { path: '/recipe-db',         label: 'Recipe DB',         group: 'Masters' },
   { path: '/location-master',   label: 'Location Master',   group: 'Masters' },
   { path: '/employee-master',   label: 'Employee Master',   group: 'Masters' },
-  // Warehouse
   { path: '/inward',            label: 'Inward',            group: 'Warehouse' },
   { path: '/outward',           label: 'Outward',           group: 'Warehouse' },
   { path: '/stock',             label: 'Stock',             group: 'Warehouse' },
   { path: '/ledger',            label: 'Ledger',            group: 'Warehouse' },
-  // Production
   { path: '/indent',            label: 'Indent',            group: 'Production' },
   { path: '/production',        label: 'Production',        group: 'Production' },
   { path: '/sfg',               label: 'SFG',               group: 'Production' },
   { path: '/tracker',           label: 'Tracker',           group: 'Production' },
-  // Sales & Planning
   { path: '/sales-orders',      label: 'Sales Orders',      group: 'Sales' },
   { path: '/planning',          label: 'Planning',          group: 'Planning' },
-  // Admin
   { path: '/grn',               label: 'GRN',               group: 'Admin' },
   { path: '/import',            label: 'Import',            group: 'Admin' },
 ]
 
-// ── Default permissions per role ─────────────────────────────────────────────
-const ROLE_DEFAULTS = {
+export const ROLE_DEFAULTS = {
   ADMIN:      ALL_PAGES.map(p => p.path),
   SALES:      ['/sales-orders', '/tracker', '/stock'],
   PRODUCTION: ['/indent', '/production', '/sfg', '/stock', '/outward', '/planning', '/tracker'],
@@ -38,64 +31,64 @@ const ROLE_DEFAULTS = {
   ACCOUNTS:   ['/sales-orders', '/grn', '/tracker'],
 }
 
-export default async function employeeRoutes(fastify) {
-
-  // ── GET /api/erp/employees  ───────────────────────────────────────────────
-  fastify.get('/', async (req) => {
+export async function listEmployees(req, res) {
+  try {
     const { role, section, active } = req.query
     const where = {}
-    if (role)   where.role    = role
+    if (role)    where.role    = role
     if (section) where.section = section
     if (active !== undefined) where.isActive = active === 'true'
+    const employees = await prisma.employeeMaster.findMany({ where, orderBy: [{ role: 'asc' }, { name: 'asc' }] })
+    return res.json({ success: true, data: employees })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message })
+  }
+}
 
-    const employees = await prisma.employeeMaster.findMany({
-      where,
-      orderBy: [{ role: 'asc' }, { name: 'asc' }],
-    })
-    return { success: true, data: employees }
-  })
+export async function listPages(req, res) {
+  return res.json({ success: true, data: ALL_PAGES })
+}
 
-  // ── GET /api/erp/employees/pages  ────────────────────────────────────────
-  fastify.get('/pages', async () => {
-    return { success: true, data: ALL_PAGES }
-  })
+export async function listRoleDefaults(req, res) {
+  return res.json({ success: true, data: ROLE_DEFAULTS })
+}
 
-  // ── GET /api/erp/employees/role-defaults  ────────────────────────────────
-  fastify.get('/role-defaults', async () => {
-    return { success: true, data: ROLE_DEFAULTS }
-  })
+export async function getPermissionsByRole(req, res) {
+  try {
+    const perms = await prisma.rolePermission.findMany({ where: { role: req.params.role } })
+    return res.json({ success: true, data: perms })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message })
+  }
+}
 
-  // ── GET /api/erp/employees/permissions/:role  ────────────────────────────
-  fastify.get('/permissions/:role', async (req) => {
-    const { role } = req.params
-    const perms = await prisma.rolePermission.findMany({ where: { role } })
-    return { success: true, data: perms }
-  })
-
-  // ── GET /api/erp/employees/:id  ──────────────────────────────────────────
-  fastify.get('/:id', async (req, reply) => {
+export async function getEmployee(req, res) {
+  try {
     const emp = await prisma.employeeMaster.findUnique({ where: { id: req.params.id } })
-    if (!emp) return reply.status(404).send({ success: false, error: 'Employee not found' })
-    return { success: true, data: emp }
-  })
+    if (!emp) return res.status(404).json({ success: false, error: 'Employee not found' })
+    return res.json({ success: true, data: emp })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message })
+  }
+}
 
-  // ── POST /api/erp/employees  ─────────────────────────────────────────────
-  fastify.post('/', async (req, reply) => {
+export async function createEmployee(req, res) {
+  try {
     const { name, email, phone, role, section } = req.body
-    if (!name || !role) return reply.status(400).send({ success: false, error: 'name and role required' })
-
-    // Auto-generate emp code: EMP-001, EMP-002 …
+    if (!name || !role) return res.status(400).json({ success: false, error: 'name and role required' })
     const count = await prisma.employeeMaster.count()
     const empCode = `EMP-${String(count + 1).padStart(3, '0')}`
-
     const emp = await prisma.employeeMaster.create({
       data: { empCode, name, email: email || null, phone: phone || null, role, section: section || null }
     })
-    return { success: true, data: emp }
-  })
+    return res.status(201).json({ success: true, data: emp })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message })
+  }
+}
 
-  // ── PUT /api/erp/employees/:id  ──────────────────────────────────────────
-  fastify.put('/:id', async (req, reply) => {
+export async function updateEmployee(req, res) {
+  try {
     const { name, email, phone, role, section, isActive } = req.body
     const emp = await prisma.employeeMaster.update({
       where: { id: req.params.id },
@@ -108,36 +101,39 @@ export default async function employeeRoutes(fastify) {
         ...(isActive  !== undefined && { isActive }),
       }
     })
-    return { success: true, data: emp }
-  })
+    return res.json({ success: true, data: emp })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message })
+  }
+}
 
-  // ── DELETE /api/erp/employees/:id  ───────────────────────────────────────
-  fastify.delete('/:id', async (req) => {
-    // Soft-delete
+export async function deleteEmployee(req, res) {
+  try {
     await prisma.employeeMaster.update({ where: { id: req.params.id }, data: { isActive: false } })
-    return { success: true }
-  })
+    return res.json({ success: true })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message })
+  }
+}
 
-  // ── POST /api/erp/employees/permissions/save  ────────────────────────────
-  // Body: { role, pagePaths: ['/indent', '/production', ...] }
-  fastify.post('/permissions/save', async (req, reply) => {
+export async function savePermissions(req, res) {
+  try {
     const { role, pagePaths } = req.body
     if (!role || !Array.isArray(pagePaths))
-      return reply.status(400).send({ success: false, error: 'role and pagePaths required' })
-
-    // Delete existing, recreate
+      return res.status(400).json({ success: false, error: 'role and pagePaths required' })
     await prisma.rolePermission.deleteMany({ where: { role } })
-
     const pageMap = Object.fromEntries(ALL_PAGES.map(p => [p.path, p.label]))
     await prisma.rolePermission.createMany({
       data: pagePaths.map(path => ({ role, pagePath: path, pageLabel: pageMap[path] || path }))
     })
-    return { success: true, message: `Permissions saved for ${role}` }
-  })
+    return res.json({ success: true, message: `Permissions saved for ${role}` })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message })
+  }
+}
 
-  // ── POST /api/erp/employees/permissions/seed-defaults  ───────────────────
-  // Seeds default permissions for all roles (run once or to reset)
-  fastify.post('/permissions/seed-defaults', async () => {
+export async function seedDefaultPermissions(req, res) {
+  try {
     const pageMap = Object.fromEntries(ALL_PAGES.map(p => [p.path, p.label]))
     let total = 0
     for (const [role, paths] of Object.entries(ROLE_DEFAULTS)) {
@@ -147,29 +143,41 @@ export default async function employeeRoutes(fastify) {
       })
       total += paths.length
     }
-    return { success: true, message: `Seeded ${total} permission rows` }
-  })
+    return res.json({ success: true, message: `Seeded ${total} permission rows` })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message })
+  }
+}
 
-  // ── Company Master ────────────────────────────────────────────────────────
-
-  fastify.get('/companies/list', async () => {
+export async function listCompanies(req, res) {
+  try {
     const companies = await prisma.companyMaster.findMany({ orderBy: { code: 'asc' } })
-    return { success: true, data: companies }
-  })
+    return res.json({ success: true, data: companies })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message })
+  }
+}
 
-  fastify.post('/companies', async (req, reply) => {
+export async function upsertCompany(req, res) {
+  try {
     const { code, name } = req.body
-    if (!code || !name) return reply.status(400).send({ success: false, error: 'code and name required' })
+    if (!code || !name) return res.status(400).json({ success: false, error: 'code and name required' })
     const company = await prisma.companyMaster.upsert({
       where: { code },
       create: { code: code.toUpperCase(), name },
       update: { name }
     })
-    return { success: true, data: company }
-  })
+    return res.json({ success: true, data: company })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message })
+  }
+}
 
-  fastify.delete('/companies/:code', async (req) => {
+export async function deleteCompany(req, res) {
+  try {
     await prisma.companyMaster.update({ where: { code: req.params.code }, data: { isActive: false } })
-    return { success: true }
-  })
+    return res.json({ success: true })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message })
+  }
 }

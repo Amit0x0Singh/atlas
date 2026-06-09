@@ -1,10 +1,13 @@
-import prisma from '../db.js'
+import prisma from '../../../db.js'
 
-export default async function stockRoutes(fastify) {
-  fastify.get('/', async (req) => {
+export async function listStock(req, res) {
+  try {
     const { search } = req.query
     const rms = await prisma.rmMaster.findMany({
-      where: search ? { OR: [{ itemCode: { contains: search, mode: 'insensitive' } }, { itemName: { contains: search, mode: 'insensitive' } }] } : {},
+      where: search ? { OR: [
+        { itemCode: { contains: search, mode: 'insensitive' } },
+        { itemName: { contains: search, mode: 'insensitive' } },
+      ]} : {},
       orderBy: { itemName: 'asc' }
     })
     const stockData = await Promise.all(rms.map(async (rm) => {
@@ -24,20 +27,30 @@ export default async function stockRoutes(fastify) {
         totalStock: (packStock._sum.remainingQty || 0) + (container?.currentQty || 0),
       }
     }))
-    return { success: true, data: stockData }
-  })
+    return res.json({ success: true, data: stockData })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message })
+  }
+}
 
-  fastify.get('/containers/all', async () => {
+export async function listContainers(req, res) {
+  try {
     const containers = await prisma.containerMaster.findMany({ orderBy: { itemName: 'asc' } })
-    return { success: true, data: containers }
-  })
+    return res.json({ success: true, data: containers })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message })
+  }
+}
 
-  fastify.get('/:itemCode', async (req, reply) => {
+export async function getItemStock(req, res) {
+  try {
     const rm = await prisma.rmMaster.findUnique({ where: { itemCode: req.params.itemCode } })
-    if (!rm) return reply.status(404).send({ success: false, error: 'Item not found' })
+    if (!rm) return res.status(404).json({ success: false, error: 'Item not found' })
     const packs = await prisma.packBalance.findMany({
       where: { itemCode: rm.itemCode, remainingQty: { gt: 0 } }
     })
-    return { success: true, data: { rm, packs } }
-  })
+    return res.json({ success: true, data: { rm, packs } })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message })
+  }
 }

@@ -1,29 +1,31 @@
-import prisma from '../db.js'
+import prisma from '../../../db.js'
 
-export default async function equipmentMasterRoutes(fastify) {
-  fastify.get('/', async (req) => {
+export async function listEquipment(req, res) {
+  try {
     const items = await prisma.equipmentMaster.findMany({ orderBy: { equipName: 'asc' } })
-    return { success: true, data: items }
-  })
+    return res.json({ success: true, data: items })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message })
+  }
+}
 
-  fastify.post('/', async (req, reply) => {
+export async function createEquipment(req, res) {
+  try {
     const { equipName, plant, workingVolume, operation } = req.body
-    if (!equipName)
-      return reply.status(400).send({ success: false, error: 'equipName is required' })
+    if (!equipName) return res.status(400).json({ success: false, error: 'equipName is required' })
     const existing = await prisma.equipmentMaster.findUnique({ where: { equipName } })
-    if (existing) return reply.status(409).send({ success: false, error: 'Equipment already exists' })
+    if (existing) return res.status(409).json({ success: false, error: 'Equipment already exists' })
     const item = await prisma.equipmentMaster.create({
-      data: {
-        equipName,
-        plant: plant || '',
-        workingVolume: workingVolume ? parseFloat(workingVolume) : null,
-        operation: operation || '',
-      }
+      data: { equipName, plant: plant || '', workingVolume: workingVolume ? parseFloat(workingVolume) : null, operation: operation || '' }
     })
-    return reply.status(201).send({ success: true, data: item })
-  })
+    return res.status(201).json({ success: true, data: item })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message })
+  }
+}
 
-  fastify.put('/:equipId', async (req, reply) => {
+export async function updateEquipment(req, res) {
+  try {
     const { equipName, plant, workingVolume, operation } = req.body
     const item = await prisma.equipmentMaster.update({
       where: { equipId: req.params.equipId },
@@ -34,11 +36,17 @@ export default async function equipmentMasterRoutes(fastify) {
         operation: operation ?? '',
       },
     })
-    return { success: true, data: item }
-  })
+    return res.json({ success: true, data: item })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message })
+  }
+}
 
-  fastify.delete('/:equipId', async (req, reply) => {
+export async function deleteEquipment(req, res) {
+  try {
     await prisma.equipmentMaster.delete({ where: { equipId: req.params.equipId } })
-    return { success: true, message: 'Deleted' }
-  })
+    return res.json({ success: true, message: 'Deleted' })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message })
+  }
 }
