@@ -10,6 +10,9 @@ import HRRouter from "../modules/hr/routes.js";
 import MicrobialRouter from "../modules/microbial/routes.js";
 import ExportRouter from "../modules/export/routes.js";
 
+// Admin Panel Router
+import AdminPanelRouter from "../modules/admin_panel/router.js";
+
 const router = express.Router();
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
@@ -52,5 +55,8 @@ router.use("/", MicrobialRouter);
 // ── Export ────────────────────────────────────────────────────────────────────
 // Handles: /api/erp/export/*
 router.use("/", ExportRouter);
+
+// ---- admin planel routes (not prefixed with /api) ───────────────────────────────────────────
+router.use("/admin", AdminPanelRouter);
 
 export default router;

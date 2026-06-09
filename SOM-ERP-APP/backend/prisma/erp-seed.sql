@@ -127,7 +127,7 @@ ON CONFLICT (item_code) DO NOTHING;
 INSERT INTO erp_products (product_code, product_name, product_category, formulation_type,
   shelf_life_days, consolidation_window_days, is_microbial, status)
 SELECT
-  v.code, v.name, v.cat, v.form_type, v.shelf, v.window, v.micro, 'active'
+  v.code, v.name, v.cat, v.form_type, v.shelf, v.cons_window, v.micro, 'active'
 FROM (VALUES
   ('RHZ-500G', 'Rhizobium 500g Pack',       'Biofertilizer', 'WP',   365, 3, true),
   ('AZO-1KG',  'Azotobacter 1kg Pack',      'Biofertilizer', 'WP',   365, 3, true),
@@ -135,7 +135,7 @@ FROM (VALUES
   ('TRIC-1KG', 'Trichoderma 1kg Pack',      'Biocontrol',    'WP',   270, 3, true),
   ('BCO-5KG',  'Bioconsortia 5kg Bulk',     'Biofertilizer', 'WP',   365, 7, true),
   ('COM-1KG',  'Compost Activator 1kg',     'Amendment',     'Granule',180,5, false)
-) AS v(code, name, cat, form_type, shelf, window, micro)
+) AS v(code, name, cat, form_type, shelf, cons_window, micro)
 ON CONFLICT (product_code) DO NOTHING;
 
 -- Link products to plants

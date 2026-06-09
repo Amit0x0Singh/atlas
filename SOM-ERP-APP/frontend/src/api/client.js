@@ -44,25 +44,25 @@ export const packsApi = {
   list: (params) => api.get('/packs', { params }),
   get: (packId) => api.get(`/packs/${encodeURIComponent(packId)}`),
   nextLot: (itemCode) => api.get(`/packs/next-lot/${itemCode}`),
-  pendingInward: () => api.get('/packs/pending/inward'),
+  pendingInward: () => api.get('/packs/pending-inward'),
   labelUrl: (packId) => `/api/packs/label/${encodeURIComponent(packId)}`,
   batchLabelsUrl: (itemCode, lotNo) => `/api/packs/labels/lot/${itemCode}/${encodeURIComponent(lotNo)}`,
 }
 
 export const inwardApi = {
-  createSession: (data) => api.post('/inward/session/create', data),
-  scan: (sessionId, packId) => api.post(`/inward/session/${sessionId}/scan`, { packId }),
-  removeScan: (sessionId, packId) => api.delete(`/inward/session/${sessionId}/scan/${encodeURIComponent(packId)}`),
-  getSession: (sessionId) => api.get(`/inward/session/${sessionId}`),
-  submit: (sessionId, transactedBy) => api.post(`/inward/session/${sessionId}/submit`, { transactedBy }),
-  activeSessions: () => api.get('/inward/sessions/active'),
+  createSession: (data) => api.post('/inward/sessions', data),
+  scan: (sessionId, packId) => api.post(`/inward/sessions/${sessionId}/scan`, { packId }),
+  removeScan: (sessionId, packId) => api.delete(`/inward/sessions/${sessionId}/scan/${encodeURIComponent(packId)}`),
+  getSession: (sessionId) => api.get(`/inward/sessions/${sessionId}`),
+  submit: (sessionId, transactedBy) => api.post(`/inward/sessions/${sessionId}/submit`, { transactedBy }),
+  activeSessions: () => api.get('/inward/sessions'),
   history: (params) => api.get('/inward', { params }),
 }
 
 export const outwardApi = {
-  bomScan: (data) => api.post('/outward/bom/scan', data),
-  bomManual: (data) => api.post('/outward/bom/manual', data),
-  availablePacks: (rmCode) => api.get(`/outward/available-packs/${encodeURIComponent(rmCode)}`),
+  bomScan: (data) => api.post('/outward/bom-scan', data),
+  bomManual: (data) => api.post('/outward/bom-manual', data),
+  availablePacks: (rmCode) => api.get(`/outward/available/${encodeURIComponent(rmCode)}`),
   packReduction: (data) => api.post('/outward/pack-reduction', data),
   stockAdjustment: (data) => api.post('/outward/stock-adjustment', data),
   history: (params) => api.get('/outward', { params }),
@@ -121,13 +121,13 @@ export const recipeApi = {
 export const stockApi = {
   summary: (params) => api.get('/stock', { params }),
   item: (itemCode) => api.get(`/stock/${itemCode}`),
-  containers: () => api.get('/stock/containers/all'),
+  containers: () => api.get('/stock/containers'),
 }
 
 export const ledgerApi = {
   all: (params) => api.get('/ledger', { params }),
-  item: (itemCode, params) => api.get(`/ledger/${itemCode}`, { params }),
-  entryDetail: (id) => api.get(`/ledger/entry/${id}`),
+  item: (itemCode, params) => api.get(`/ledger/item/${itemCode}`, { params }),
+  entryDetail: (id) => api.get(`/ledger/${id}`),
 }
 
 export const importApi = {
@@ -155,17 +155,17 @@ export const grnApi = {
 
 export const bulkApi = {
   // Location master
-  listLocations:    (params) => api.get('/bulk', { params }),
-  getLocation:      (locationId) => api.get(`/bulk/${encodeURIComponent(locationId)}`),
-  createLocation:   (data) => api.post('/bulk', data),
-  deleteLocation:   (locationId) => api.delete(`/bulk/${encodeURIComponent(locationId)}`),
-  locationLabelUrl: (locationId) => `/api/bulk/${encodeURIComponent(locationId)}/label`,
+  listLocations:    (params) => api.get('/bulk/locations', { params }),
+  getLocation:      (locationId) => api.get(`/bulk/locations/${encodeURIComponent(locationId)}`),
+  createLocation:   (data) => api.post('/bulk/locations', data),
+  deleteLocation:   (locationId) => api.delete(`/bulk/locations/${encodeURIComponent(locationId)}`),
+  locationLabelUrl: (locationId) => `/api/bulk/locations/${encodeURIComponent(locationId)}/label`,
   // Bulk inward
   bulkInward:       (data) => api.post('/bulk/inward', data),
   // Bulk outward
   bulkOutward:      (data) => api.post('/bulk/outward', data),
   // Stock summary
-  stockSummary:     () => api.get('/bulk/stock/summary'),
+  stockSummary:     () => api.get('/bulk/summary'),
 }
 
 // ── Microbial SFG API ─────────────────────────────────────────────────────────
@@ -234,14 +234,14 @@ export const salesOrderApi = {
 }
 
 export const planningApi = {
-  run:           () => api.post('/erp/plan-engine/run'),
-  listPlans:     (params) => api.get('/erp/plan-engine/plans', { params }),
-  getPlan:       (id) => api.get(`/erp/plan-engine/plans/${id}`),
-  updatePlan:    (id, data) => api.patch(`/erp/plan-engine/plans/${id}`, data),
-  cancelPlan:    (id) => api.delete(`/erp/plan-engine/plans/${id}`),
-  dashboard:     () => api.get('/erp/plan-engine/dashboard'),
-  pendingOrders: () => api.get('/erp/plan-engine/pending-orders'),
-  logs:          () => api.get('/erp/plan-engine/logs'),
+  run:           () => api.post('/plan-engine/run'),
+  listPlans:     (params) => api.get('/plan-engine/plans', { params }),
+  getPlan:       (id) => api.get(`/plan-engine/plans/${id}`),
+  updatePlan:    (id, data) => api.patch(`/plan-engine/plans/${id}`, data),
+  cancelPlan:    (id) => api.delete(`/plan-engine/plans/${id}`),
+  dashboard:     () => api.get('/plan-engine/dashboard'),
+  pendingOrders: () => api.get('/plan-engine/pending-orders'),
+  logs:          () => api.get('/plan-engine/logs'),
 }
 
 export const customerProfileApi = {

@@ -21,12 +21,19 @@ app.use(express.urlencoded({ extended: true, limit: "30mb" }));
 
 // ── CORS ───────────────────────────────────────────────────────────────────────
 const isDev = process.env.NODE_ENV !== "production";
-app.use(
-  cors({
-    origin: isDev ? process.env.FRONTEND_URL || "http://localhost:5173" : false,
-    credentials: true,
-  }),
-);
+// app.use(
+//   cors({
+//     // Dev: allow any localhost port (main ERP 5173, admin panel 5175, etc.)
+//     origin: isDev
+//       ? (origin, cb) => {
+//           if (!origin || /^http:\/\/localhost(:\d+)?$/.test(origin)) cb(null, true);
+//           else cb(new Error("CORS: origin not allowed"));
+//         }
+//       : process.env.FRONTEND_URL || false,
+//     credentials: true,
+//   }),
+// );
+app.use(cors()); // Allow all origins for now (can be restricted later if needed)
 
 // ── File uploads ───────────────────────────────────────────────────────────────
 export const upload = multer({
