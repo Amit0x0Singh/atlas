@@ -188,7 +188,7 @@ const SalesOrder = () => {
       label: "Dispatch",
       count: summary["READY_TO_DISPATCH"] || 0,
     },
-    { key: "history", label: "Order History", count: orders.length },
+    { key: "history", label: "Order", count: orders.length },
   ];
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -373,7 +373,7 @@ const SalesOrder = () => {
           )}
 
           {/* Order cards */}
-          {loading ? (
+          {/* {loading ? (
             <div className="text-center py-16 text-gray-400">Loading…</div>
           ) : ordersVisible.length === 0 ? (
             <div className="text-center py-16 text-gray-400">
@@ -469,7 +469,7 @@ const SalesOrder = () => {
                 );
               })}
             </div>
-          )}
+          )} */}
         </div>
       )}
 

@@ -1,3 +1,7 @@
+// Secret token for Google Sheets webhook (set SHEET_WEBHOOK_SECRET in .env)
+const WEBHOOK_SECRET =
+  process.env.SHEET_WEBHOOK_SECRET || "som-sheet-sync-2024";
+
 // ── POST /api/erp/sales-orders/sheet-import  ─────────────────────────────
 
 // Called by Google Apps Script webhook OR manual trigger from frontend.
