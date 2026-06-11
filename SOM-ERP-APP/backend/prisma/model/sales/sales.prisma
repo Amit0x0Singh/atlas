@@ -125,3 +125,63 @@ model CustomerProductProfile {
   @@unique([customerName, productName])
   @@map("customer_product_profile")
 }
+
+// ─── ERP SALES (legacy tables from erp-migration.sql) ────────────────────────
+//
+// Models below are from the legacy flat-schema sales pipeline:
+//   ErpSalesOrder  — Legacy sales_orders table (Google Sheet / Excel sync)
+//                    NOTE: The active SalesOrder model above (sales_order table)
+//                    is the normalised replacement. This legacy table is kept for
+//                    historical data and the Excel/Sheet sync pipeline.
+//   OrderDispatch  — Dispatch records linked to legacy DI numbers
+//
+// ─────────────────────────────────────────────────────────────────────────────
+
+model ErpSalesOrder {
+  diNumber          String    @id @map("di_number") @db.VarChar(100)
+  company           String?   @db.VarChar(200)
+  orderType         String    @default("Domestic") @map("order_type") @db.VarChar(30)
+  status            String    @default("new") @db.VarChar(30)
+  customerName      String?   @map("customer_name") @db.VarChar(300)
+  orderDate         DateTime? @map("order_date") @db.Date
+  etd               DateTime? @db.Date
+  productCode       String?   @map("product_code") @db.VarChar(50)
+  productName       String?   @map("product_name") @db.VarChar(300)
+  orderQty          Decimal?  @map("order_qty") @db.Decimal(14, 3)
+  qtyUnit           String    @default("kg") @map("qty_unit") @db.VarChar(10)
+  activeIngredient  String?   @map("active_ingredient") @db.VarChar(200)
+  specifications    String?   @db.VarChar(200)
+  carrier           String?   @db.VarChar(200)
+  perUnitQtyPp      Decimal?  @map("per_unit_qty_pp") @db.Decimal(10, 3)
+  primaryPackType   String?   @map("primary_pack_type") @db.VarChar(200)
+  secondaryPackType String?   @map("secondary_pack_type") @db.VarChar(50)
+  labelType         String?   @map("label_type") @db.VarChar(200)
+  priority          String    @default("Normal") @db.VarChar(20)
+  salesStaff        String?   @map("sales_staff") @db.VarChar(200)
+  notes             String?
+  totalUnitsFp      Int?      @map("total_units_fp")
+  excelSyncedAt     DateTime? @map("excel_synced_at") @db.Timestamptz()
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+
+  dispatches       OrderDispatch[]
+  productionPlans  ErpProductionPlan[]
+
+  @@map("sales_orders")
+}
+
+model OrderDispatch {
+  dispatchId    String    @id @default(dbgenerated("gen_random_uuid()")) @map("dispatch_id") @db.Uuid
+  diNumber      String?   @map("di_number") @db.VarChar(100)
+  invoiceNumber String?   @map("invoice_number") @db.VarChar(100)
+  invoiceDate   DateTime? @map("invoice_date") @db.Date
+  transportName String?   @map("transport_name") @db.VarChar(200)
+  dispatchedBy  String?   @map("dispatched_by") @db.Uuid
+  dispatchDate  DateTime? @map("dispatch_date") @db.Date
+  dispatchNotes String?   @map("dispatch_notes")
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+
+  salesOrder ErpSalesOrder? @relation(fields: [diNumber], references: [diNumber])
+
+  @@map("order_dispatch")
+}

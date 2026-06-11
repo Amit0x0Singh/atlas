@@ -2,29 +2,34 @@ import prisma from "../../../db.js";
 import { authenticate, authorize } from "../../../middleware/auth.js";
 import { writeAudit, auditUser } from "../../../middleware/audit.js";
 
+function userNotifWhere(user) {
+  return {
+    OR: [
+      { targetUserId: user.user_id },
+      { targetRole: user.role },
+    ],
+  }
+}
+
 // GET /api/erp/notifications
 export async function getMyNotifications(req, res) {
   try {
     const { unread_only, limit = 50, offset = 0 } = req.query;
-    const data = await prisma.$queryRaw`
-      SELECT n.*
-      FROM notifications n
-      WHERE (n.target_user_id = ${req.user.user_id}::uuid
-             OR n.target_role = ${req.user.role})
-        AND (${unread_only === "true" ? true : null}::boolean IS NULL OR n.is_read = false)
-      ORDER BY n.created_at DESC
-      LIMIT ${Number(limit)} OFFSET ${Number(offset)}
-    `;
-    const unreadCount = await prisma.$queryRaw`
-      SELECT COUNT(*) AS cnt FROM notifications
-      WHERE (target_user_id = ${req.user.user_id}::uuid OR target_role = ${req.user.role})
-        AND is_read = false
-    `;
-    return res.json({
-      success: true,
-      data,
-      unread_count: Number(unreadCount[0].cnt),
-    });
+    const where = { ...userNotifWhere(req.user) }
+    if (unread_only === "true") where.isRead = false
+
+    const [data, unreadCount] = await Promise.all([
+      prisma.erpNotification.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        take: Number(limit),
+        skip: Number(offset),
+      }),
+      prisma.erpNotification.count({
+        where: { ...userNotifWhere(req.user), isRead: false },
+      }),
+    ])
+    return res.json({ success: true, data, unread_count: unreadCount });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
   }
@@ -33,11 +38,13 @@ export async function getMyNotifications(req, res) {
 // PATCH /api/erp/notifications/:id/read
 export async function markNotificationRead(req, res) {
   try {
-    await prisma.$executeRaw`
-      UPDATE notifications SET is_read = true WHERE notif_id = ${req.params.id}::uuid
-    `;
+    await prisma.erpNotification.update({
+      where: { notifId: req.params.id },
+      data: { isRead: true },
+    })
     return res.json({ success: true });
   } catch (err) {
+    if (err.code === "P2025") return res.status(404).json({ success: false, error: "Notification not found" })
     return res.status(500).json({ success: false, error: err.message });
   }
 }
@@ -45,11 +52,10 @@ export async function markNotificationRead(req, res) {
 // PATCH /api/erp/notifications/read-all
 export async function markAllNotificationsRead(req, res) {
   try {
-    await prisma.$executeRaw`
-      UPDATE notifications SET is_read = true
-      WHERE (target_user_id = ${req.user.user_id}::uuid OR target_role = ${req.user.role})
-        AND is_read = false
-    `;
+    await prisma.erpNotification.updateMany({
+      where: { ...userNotifWhere(req.user), isRead: false },
+      data: { isRead: true },
+    })
     return res.json({ success: true, message: "All notifications marked as read" });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
@@ -59,11 +65,15 @@ export async function markAllNotificationsRead(req, res) {
 // PATCH /api/erp/notifications/:id/action
 export async function actionNotification(req, res) {
   try {
-    await prisma.$executeRaw`
-      UPDATE notifications SET is_actioned = true, actioned_at = NOW(),
-        actioned_by = ${req.user.user_id}::uuid, is_read = true
-      WHERE notif_id = ${req.params.id}::uuid
-    `;
+    await prisma.erpNotification.update({
+      where: { notifId: req.params.id },
+      data: {
+        isActioned: true,
+        actionedAt: new Date(),
+        actionedBy: req.user.user_id,
+        isRead: true,
+      },
+    })
     await writeAudit({
       ...auditUser(req),
       action: "ACTION",
@@ -72,6 +82,7 @@ export async function actionNotification(req, res) {
     });
     return res.json({ success: true });
   } catch (err) {
+    if (err.code === "P2025") return res.status(404).json({ success: false, error: "Notification not found" })
     return res.status(500).json({ success: false, error: err.message });
   }
 }
@@ -79,12 +90,10 @@ export async function actionNotification(req, res) {
 // GET /api/erp/notifications/unread-count
 export async function getUnreadCount(req, res) {
   try {
-    const rows = await prisma.$queryRaw`
-      SELECT COUNT(*) AS cnt FROM notifications
-      WHERE (target_user_id = ${req.user.user_id}::uuid OR target_role = ${req.user.role})
-        AND is_read = false
-    `;
-    return res.json({ success: true, count: Number(rows[0].cnt) });
+    const count = await prisma.erpNotification.count({
+      where: { ...userNotifWhere(req.user), isRead: false },
+    })
+    return res.json({ success: true, count });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
   }
@@ -94,16 +103,22 @@ export async function getUnreadCount(req, res) {
 export async function getAllNotificationsAdmin(req, res) {
   try {
     const { notif_type, is_actioned, limit = 100, offset = 0 } = req.query;
-    const data = await prisma.$queryRaw`
-      SELECT n.*, u.full_name AS target_user_name
-      FROM notifications n
-      LEFT JOIN users u ON u.user_id = n.target_user_id
-      WHERE (${notif_type || null}::text IS NULL OR n.notif_type = ${notif_type || null})
-        AND (${is_actioned !== undefined ? (is_actioned === "true") : null}::boolean IS NULL
-             OR n.is_actioned = ${is_actioned === "true"})
-      ORDER BY n.created_at DESC
-      LIMIT ${Number(limit)} OFFSET ${Number(offset)}
-    `;
+    const where = {}
+    if (notif_type) where.notifType = notif_type
+    if (is_actioned !== undefined) where.isActioned = is_actioned === "true"
+
+    const rows = await prisma.erpNotification.findMany({
+      where,
+      include: { targetUser: { select: { fullName: true } } },
+      orderBy: { createdAt: "desc" },
+      take: Number(limit),
+      skip: Number(offset),
+    })
+    const data = rows.map(n => ({
+      ...n,
+      target_user_name: n.targetUser?.fullName ?? null,
+      targetUser: undefined,
+    }))
     return res.json({ success: true, data });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
@@ -114,14 +129,22 @@ export async function getAllNotificationsAdmin(req, res) {
 export async function getDeliveryLog(req, res) {
   try {
     const { notif_id, limit = 50, offset = 0 } = req.query;
-    const data = await prisma.$queryRaw`
-      SELECT ndl.*, n.title, n.notif_type
-      FROM notification_delivery_log ndl
-      JOIN notifications n ON n.notif_id = ndl.notif_id
-      WHERE (${notif_id || null}::uuid IS NULL OR ndl.notif_id = ${notif_id || null}::uuid)
-      ORDER BY ndl.sent_at DESC
-      LIMIT ${Number(limit)} OFFSET ${Number(offset)}
-    `;
+    const where = {}
+    if (notif_id) where.notifId = notif_id
+
+    const rows = await prisma.notificationDeliveryLog.findMany({
+      where,
+      include: { notification: { select: { title: true, notifType: true } } },
+      orderBy: { sentAt: "desc" },
+      take: Number(limit),
+      skip: Number(offset),
+    })
+    const data = rows.map(d => ({
+      ...d,
+      title:      d.notification?.title     ?? null,
+      notif_type: d.notification?.notifType ?? null,
+      notification: undefined,
+    }))
     return res.json({ success: true, data });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });

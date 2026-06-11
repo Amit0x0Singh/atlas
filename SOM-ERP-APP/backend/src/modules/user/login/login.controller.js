@@ -9,34 +9,37 @@ import { writeAudit } from "../../../middleware/audit.js";
 export async function login(req, res) {
   const { username, password } = req.body;
 
-  const rows = await prisma.$queryRaw`
-    SELECT user_id, username, full_name, role, password_hash, is_active
-    FROM users WHERE username = ${username} LIMIT 1
-  `;
-  const user = rows[0];
-  if (!user || !user.is_active)
-    return res
-      .status(401)
-      .json({ success: false, error: "Invalid credentials" });
+  const user = await prisma.user.findUnique({
+    where: { username },
+    select: {
+      userId: true,
+      username: true,
+      fullName: true,
+      role: true,
+      passwordHash: true,
+      isActive: true,
+    },
+  });
 
-  if (!verifyPassword(password, user.password_hash))
-    return res
-      .status(401)
-      .json({ success: false, error: "Invalid credentials" });
+  if (!user || !user.isActive)
+    return res.status(401).json({ success: false, error: "Invalid credentials" });
+
+  if (!verifyPassword(password, user.passwordHash))
+    return res.status(401).json({ success: false, error: "Invalid credentials" });
 
   const token = signJwt({
-    user_id: user.user_id,
+    user_id: user.userId,
     username: user.username,
-    full_name: user.full_name,
+    full_name: user.fullName,
     role: user.role,
   });
 
   await writeAudit({
-    userId: user.user_id,
+    userId: user.userId,
     username: user.username,
     action: "LOGIN",
     tableName: "users",
-    recordId: user.user_id,
+    recordId: user.userId,
     ip: req.ip,
   });
 
@@ -44,9 +47,9 @@ export async function login(req, res) {
     success: true,
     token,
     user: {
-      user_id: user.user_id,
+      user_id: user.userId,
       username: user.username,
-      full_name: user.full_name,
+      full_name: user.fullName,
       role: user.role,
     },
   });
@@ -55,28 +58,32 @@ export async function login(req, res) {
 export async function pinLogin(req, res) {
   const { username, pin } = req.body;
 
-  const rows = await prisma.$queryRaw`
-    SELECT user_id, username, full_name, role, pin_hash, is_active
-    FROM users WHERE username = ${username} LIMIT 1
-  `;
-  const user = rows[0];
-  if (!user || !user.is_active)
-    return res
-      .status(401)
-      .json({ success: false, error: "Invalid credentials" });
-  if (!user.pin_hash)
-    return res
-      .status(401)
-      .json({ success: false, error: "PIN not set for this user" });
-  if (!verifyPin(pin, user.pin_hash))
+  const user = await prisma.user.findUnique({
+    where: { username },
+    select: {
+      userId: true,
+      username: true,
+      fullName: true,
+      role: true,
+      pinHash: true,
+      isActive: true,
+    },
+  });
+
+  if (!user || !user.isActive)
+    return res.status(401).json({ success: false, error: "Invalid credentials" });
+
+  if (!user.pinHash)
+    return res.status(401).json({ success: false, error: "PIN not set for this user" });
+
+  if (!verifyPin(pin, user.pinHash))
     return res.status(401).json({ success: false, error: "Invalid PIN" });
 
-  // Short-lived token (30 min), marked as pin_session
   const token = signJwt(
     {
-      user_id: user.user_id,
+      user_id: user.userId,
       username: user.username,
-      full_name: user.full_name,
+      full_name: user.fullName,
       role: user.role,
       pin_session: true,
     },
@@ -84,11 +91,11 @@ export async function pinLogin(req, res) {
   );
 
   await writeAudit({
-    userId: user.user_id,
+    userId: user.userId,
     username: user.username,
     action: "PIN_LOGIN",
     tableName: "users",
-    recordId: user.user_id,
+    recordId: user.userId,
     ip: req.ip,
   });
 
@@ -96,9 +103,9 @@ export async function pinLogin(req, res) {
     success: true,
     token,
     user: {
-      user_id: user.user_id,
+      user_id: user.userId,
       username: user.username,
-      full_name: user.full_name,
+      full_name: user.fullName,
       role: user.role,
     },
   });

@@ -3,8 +3,9 @@ import prisma from '../../db.js';
 // ─── Model registry ───────────────────────────────────────────────────────────
 // idField:  string → simple PK field name
 //           array  → composite PK [f1, f2]
-// idType:   'int'  → parse id param as integer  (default: string)
-// rawTable: truthy → use $queryRawUnsafe instead of prisma[model]
+// idType:   'int'    → parse id param as integer
+//           'bigint' → parse id param as BigInt (BIGSERIAL PKs)
+//           default  → string
 // orderBy:  Prisma orderBy clause (omit if model has no usable sort column)
 
 const MODELS = {
@@ -58,10 +59,60 @@ const MODELS = {
   'employee-master':  { model: 'employeeMaster', idField: 'id',   orderBy: { createdAt: 'desc' } },
   'role-permission':  { model: 'rolePermission', idField: 'id'                                   },
 
-  // ── Microbial (raw SQL tables — no Prisma model) ───────────────────────────
-  'microbial-strains':      { rawTable: 'microbial_strains',      idField: 'strain_id',    orderBy: 'created_at DESC' },
-  'microbial-containers':   { rawTable: 'microbial_containers',   idField: 'container_id', orderBy: 'created_at DESC' },
-  'microbial-transactions': { rawTable: 'microbial_transactions', idField: 'id',           orderBy: 'dispatch_date DESC' },
+  // ── System ─────────────────────────────────────────────────────────────────
+  'users':     { model: 'user',     idField: 'userId',  orderBy: { createdAt: 'desc' } },
+  'audit-log': { model: 'auditLog', idField: 'id', idType: 'bigint', orderBy: { createdAt: 'desc' } },
+
+  // ── ERP Masters ────────────────────────────────────────────────────────────
+  'reason-codes':          { model: 'reasonCode',         idField: 'codeId',       idType: 'int', orderBy: { category: 'asc' } },
+  'erp-suppliers':         { model: 'erpSupplier',        idField: 'supplierId',   orderBy: { supplierName: 'asc' } },
+  'erp-plants':            { model: 'erpPlant',           idField: 'plantId',      orderBy: { plantName: 'asc' } },
+  'erp-equipment':         { model: 'erpEquipment',       idField: 'equipmentId',  orderBy: { equipmentName: 'asc' } },
+  'erp-items':             { model: 'erpItem',            idField: 'itemCode',     orderBy: { itemName: 'asc' } },
+  'customers':             { model: 'customer',           idField: 'customerId',   orderBy: { customerName: 'asc' } },
+  'erp-products':          { model: 'erpProduct',         idField: 'productCode',  orderBy: { productName: 'asc' } },
+  'bom-headers':           { model: 'erpBomHeader',       idField: 'bomId',        orderBy: { createdAt: 'desc' } },
+  'bom-lines-formulation': { model: 'erpBomLineFormulation', idField: 'id'                                         },
+  'bom-lines-packing':     { model: 'erpBomLinePacking',  idField: 'id'                                           },
+  'gate-lot-sequences':    { model: 'gateLotSequence',    idField: ['itemCode', 'year'], orderBy: { year: 'desc' } },
+
+  // ── ERP Inventory ──────────────────────────────────────────────────────────
+  'gate-inward':         { model: 'gateInward',       idField: 'inwardId',    orderBy: { createdAt: 'desc' } },
+  'erp-packs':           { model: 'erpPack',          idField: 'packId',      orderBy: { createdAt: 'desc' } },
+  'gate-outward':        { model: 'gateOutward',      idField: 'outwardId',   orderBy: { entryTime: 'desc' } },
+  'stock-adjustments':   { model: 'stockAdjustment',  idField: 'adjustmentId', orderBy: { raisedAt: 'desc' } },
+  'warehouse-transfers': { model: 'warehouseTransfer', idField: 'transferId', orderBy: { initiatedAt: 'desc' } },
+  'fifo-override-log':   { model: 'fifoOverrideLog',  idField: 'id',          orderBy: { createdAt: 'desc' } },
+  'erp-containers':      { model: 'erpContainer',     idField: 'containerId', orderBy: { createdAt: 'desc' } },
+  'decanting-log':       { model: 'decantingLog',     idField: 'id',          orderBy: { createdAt: 'desc' } },
+
+  // ── ERP Sales (legacy) ─────────────────────────────────────────────────────
+  'erp-sales-orders': { model: 'erpSalesOrder', idField: 'diNumber', orderBy: { createdAt: 'desc' } },
+  'order-dispatch':   { model: 'orderDispatch', idField: 'dispatchId', orderBy: { createdAt: 'desc' } },
+
+  // ── ERP Production ─────────────────────────────────────────────────────────
+  'erp-production-plans':        { model: 'erpProductionPlan',      idField: 'planId',      orderBy: { createdAt: 'desc' } },
+  'erp-production-jobs':         { model: 'erpProductionJob',       idField: 'jobId',       orderBy: { createdAt: 'desc' } },
+  'job-equipment-assignments':   { model: 'jobEquipmentAssignment', idField: 'id'                                           },
+  'erp-bom-issuance':            { model: 'erpBomIssuance',         idField: 'issuanceId',  orderBy: { issuedAt: 'desc' } },
+  'batch-qc-records':            { model: 'batchQcRecord',          idField: 'qcId',        orderBy: { createdAt: 'desc' } },
+  'production-loss-log':         { model: 'productionLossLog',      idField: 'id',          orderBy: { createdAt: 'desc' } },
+  'time-motion-logs':            { model: 'timeMotionLog',          idField: 'id',          orderBy: { createdAt: 'desc' } },
+
+  // ── Microbial ──────────────────────────────────────────────────────────────
+  'microbial-strains':           { model: 'microbialStrain',          idField: 'strainId',      orderBy: { createdAt: 'desc' } },
+  'microbial-containers':        { model: 'microbialContainer',       idField: 'containerId',   orderBy: { createdAt: 'desc' } },
+  'microbial-transactions':      { model: 'microbialTransaction',     idField: 'id',            orderBy: { dispatchDate: 'desc' } },
+  'microbe-master':              { model: 'microbeMaster',            idField: 'microbeId',     orderBy: { createdAt: 'desc' } },
+  'microbial-sfg-container-seq': { model: 'microbialSfgContainerSeq', idField: ['microbeCode', 'typeCode'] },
+  'microbial-sfg-containers':    { model: 'microbialSfgContainer',    idField: 'containerId',   orderBy: { createdAt: 'desc' } },
+  'microbial-sfg-inward':        { model: 'microbialSfgInward',       idField: 'inwardId',      orderBy: { createdAt: 'desc' } },
+  'microbial-sfg-allocations':   { model: 'microbialSfgAllocation',   idField: 'allocationId',  orderBy: { createdAt: 'desc' } },
+
+  // ── Notifications ──────────────────────────────────────────────────────────
+  'notifications':              { model: 'erpNotification',         idField: 'notifId',    orderBy: { createdAt: 'desc' } },
+  'notification-escalations':   { model: 'notificationEscalation',  idField: 'id', idType: 'bigint', orderBy: { escalatedAt: 'desc' } },
+  'notification-delivery-log':  { model: 'notificationDeliveryLog', idField: 'id', idType: 'bigint', orderBy: { sentAt: 'desc' } },
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -81,7 +132,11 @@ function buildWhere(meta, params) {
       },
     };
   }
-  const val = meta.idType === 'int' ? parseInt(params.id) : params.id;
+  const val = meta.idType === 'bigint'
+    ? BigInt(params.id)
+    : meta.idType === 'int'
+      ? parseInt(params.id)
+      : params.id;
   return { [meta.idField]: val };
 }
 

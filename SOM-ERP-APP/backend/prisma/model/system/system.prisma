@@ -17,9 +17,12 @@ model User {
   role         String    @db.VarChar(50)
   // gate_staff | store_person | store_manager | planner | planning_manager
   // plant_supervisor | qc_person | sales_team | admin
-  isActive     Boolean   @default(true) @map("is_active")
-  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz()
-  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+  isActive     Boolean        @default(true) @map("is_active")
+  createdAt    DateTime       @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt    DateTime       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+
+  approvedBoms  ErpBomHeader[]
+  notifications ErpNotification[]
 
   @@map("users")
 }

@@ -14,12 +14,14 @@ async function qrBuffer(text) {
 
 async function nextBulkLotNo(itemCode) {
   const year = new Date().getFullYear()
-  await prisma.$executeRaw`
-    INSERT INTO bulk_lot_sequence (item_code, year, seq) VALUES (${itemCode}, ${year}, 1)
-    ON CONFLICT (item_code, year) DO UPDATE SET seq = bulk_lot_sequence.seq + 1
-    RETURNING seq
-  `
-  const row = await prisma.bulkLotSequence.findUnique({ where: { itemCode_year: { itemCode, year } } })
+  const row = await prisma.$transaction(async tx => {
+    await tx.bulkLotSequence.upsert({
+      where: { itemCode_year: { itemCode, year } },
+      create: { itemCode, year, seq: 1 },
+      update: { seq: { increment: 1 } },
+    })
+    return tx.bulkLotSequence.findUnique({ where: { itemCode_year: { itemCode, year } } })
+  })
   const seq = String(row.seq).padStart(3, '0')
   return `BULK-${itemCode}-${year}-${seq}`
 }

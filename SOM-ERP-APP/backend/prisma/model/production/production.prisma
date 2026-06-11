@@ -53,6 +53,9 @@ model RecipeDb {
   qtyPerUnit  Float   @map("qty_per_unit")
   uom         String
   roleType    String  @default("INGREDIENT") @map("role_type") // INGREDIENT | CARRIER | BASE
+  isMicrobe   Boolean @default(false) @map("is_microbe")
+  microbeCode String? @map("microbe_code")
+  requiredCfu Float?  @map("required_cfu")
 
   @@unique([productCode, rmCode])
   @@map("recipe_db")
@@ -288,4 +291,156 @@ model InventoryHandover {
   batch             ProductionBatch @relation(fields: [batchId], references: [id])
 
   @@map("inventory_handover")
+}
+
+// ─── ERP PRODUCTION (erp-migration.sql tables) ───────────────────────────────
+//
+// Models below extend the production domain with ERP-level tracking:
+//   ErpProductionPlan       — ERP production plans (separate from app-level ProductionPlan)
+//   ErpProductionJob        — Individual batch jobs within an ERP production plan
+//   JobEquipmentAssignment  — Equipment time blocks assigned to a job
+//   ErpBomIssuance          — Material issuances from store to production (per pack)
+//   BatchQcRecord           — QC results per production job
+//   ProductionLossLog       — Material loss entries during production
+//   TimeMotionLog           — Time-and-motion observations for capacity planning
+//
+// ─────────────────────────────────────────────────────────────────────────────
+
+model ErpProductionPlan {
+  planId              String    @id @default(dbgenerated("gen_random_uuid()")) @map("plan_id") @db.Uuid
+  diNumber            String?   @map("di_number") @db.VarChar(100)
+  productCode         String?   @map("product_code") @db.VarChar(50)
+  bomId               String?   @map("bom_id") @db.Uuid
+  bomVersion          String?   @map("bom_version") @db.VarChar(20)
+  plannedQty          Decimal   @map("planned_qty") @db.Decimal(14, 3)
+  equipmentId         String?   @map("equipment_id") @db.Uuid
+  batchCount          Int       @default(1) @map("batch_count")
+  plannedStartDate    DateTime? @map("planned_start_date") @db.Date
+  plannedEndDate      DateTime? @map("planned_end_date") @db.Date
+  status              String    @default("draft") @db.VarChar(30)
+  isUrgent            Boolean   @default(false) @map("is_urgent")
+  urgentReason        String?   @map("urgent_reason")
+  consolidationGroup  String?   @map("consolidation_group") @db.VarChar(100)
+  fgStockUsed         Decimal   @default(0) @map("fg_stock_used") @db.Decimal(14, 3)
+  createdBy           String?   @map("created_by") @db.Uuid
+  submittedBy         String?   @map("submitted_by") @db.Uuid
+  approvedBy          String?   @map("approved_by") @db.Uuid
+  publishedBy         String?   @map("published_by") @db.Uuid
+  submittedAt         DateTime? @map("submitted_at") @db.Timestamptz()
+  approvedAt          DateTime? @map("approved_at") @db.Timestamptz()
+  publishedAt         DateTime? @map("published_at") @db.Timestamptz()
+  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt           DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+
+  jobs       ErpProductionJob[]
+  salesOrder ErpSalesOrder? @relation(fields: [diNumber], references: [diNumber])
+
+  @@map("production_plans")
+}
+
+model ErpProductionJob {
+  jobId              String    @id @default(dbgenerated("gen_random_uuid()")) @map("job_id") @db.Uuid
+  planId             String?   @map("plan_id") @db.Uuid
+  batchNo            Int       @map("batch_no")
+  batchCode          String?   @map("batch_code") @db.VarChar(100)
+  productCode        String?   @map("product_code") @db.VarChar(50)
+  equipmentId        String?   @map("equipment_id") @db.Uuid
+  batchQty           Decimal   @map("batch_qty") @db.Decimal(14, 3)
+  expectedStartTime  DateTime? @map("expected_start_time") @db.Timestamptz()
+  expectedEndTime    DateTime? @map("expected_end_time") @db.Timestamptz()
+  actualStartTime    DateTime? @map("actual_start_time") @db.Timestamptz()
+  actualEndTime      DateTime? @map("actual_end_time") @db.Timestamptz()
+  status             String    @default("pending") @db.VarChar(30)
+  delayReasonCode    String?   @map("delay_reason_code") @db.VarChar(50)
+  delayNotes         String?   @map("delay_notes")
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+
+  plan                 ErpProductionPlan?      @relation(fields: [planId], references: [planId])
+  equipment            ErpEquipment?           @relation(fields: [equipmentId], references: [equipmentId])
+  equipmentAssignments JobEquipmentAssignment[]
+  issuances            ErpBomIssuance[]
+  qcRecords            BatchQcRecord[]
+  lossLogs             ProductionLossLog[]
+
+  @@map("production_jobs")
+}
+
+model JobEquipmentAssignment {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  jobId       String?   @map("job_id") @db.Uuid
+  equipmentId String?   @map("equipment_id") @db.Uuid
+  startTime   DateTime? @map("start_time") @db.Timestamptz()
+  endTime     DateTime? @map("end_time") @db.Timestamptz()
+
+  job ErpProductionJob? @relation(fields: [jobId], references: [jobId])
+
+  @@map("job_equipment_assignments")
+}
+
+model ErpBomIssuance {
+  issuanceId   String    @id @default(dbgenerated("gen_random_uuid()")) @map("issuance_id") @db.Uuid
+  jobId        String?   @map("job_id") @db.Uuid
+  itemCode     String?   @map("item_code") @db.VarChar(50)
+  packId       String?   @map("pack_id") @db.Uuid
+  requiredQty  Decimal   @map("required_qty") @db.Decimal(12, 6)
+  issuedQty    Decimal   @map("issued_qty") @db.Decimal(12, 6)
+  issuedBy     String?   @map("issued_by") @db.Uuid
+  issuedAt     DateTime  @default(now()) @map("issued_at") @db.Timestamptz()
+  fifoOverride Boolean   @default(false) @map("fifo_override")
+  notes        String?
+
+  job  ErpProductionJob? @relation(fields: [jobId], references: [jobId])
+  pack ErpPack?          @relation(fields: [packId], references: [packId])
+
+  @@map("bom_issuance")
+}
+
+model BatchQcRecord {
+  qcId        String    @id @default(dbgenerated("gen_random_uuid()")) @map("qc_id") @db.Uuid
+  jobId       String?   @map("job_id") @db.Uuid
+  qcPersonId  String?   @map("qc_person_id") @db.Uuid
+  result      String    @db.VarChar(20)
+  cfuCount    Decimal?  @map("cfu_count") @db.Decimal(15, 2)
+  moisturePct Decimal?  @map("moisture_pct") @db.Decimal(5, 2)
+  phValue     Decimal?  @map("ph_value") @db.Decimal(5, 2)
+  notes       String?
+  actionTaken String?   @map("action_taken") @db.VarChar(30)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+
+  job ErpProductionJob? @relation(fields: [jobId], references: [jobId])
+
+  @@map("batch_qc_records")
+}
+
+model ProductionLossLog {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  jobId      String?  @map("job_id") @db.Uuid
+  itemCode   String?  @map("item_code") @db.VarChar(50)
+  qtyLost    Decimal  @map("qty_lost") @db.Decimal(12, 3)
+  reasonCode String?  @map("reason_code") @db.VarChar(50)
+  notes      String?
+  loggedBy   String?  @map("logged_by") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  job ErpProductionJob? @relation(fields: [jobId], references: [jobId])
+
+  @@map("production_loss_log")
+}
+
+model TimeMotionLog {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productCode     String?  @map("product_code") @db.VarChar(50)
+  equipmentId     String?  @map("equipment_id") @db.Uuid
+  operationStage  String   @map("operation_stage") @db.VarChar(50)
+  qtyProduced     Decimal  @map("qty_produced") @db.Decimal(12, 3)
+  timeHrs         Decimal  @map("time_hrs") @db.Decimal(8, 3)
+  workersDeployed Int?     @map("workers_deployed")
+  shift           String?  @db.VarChar(20)
+  supervisorId    String?  @map("supervisor_id") @db.Uuid
+  notes           String?
+  minsPerUnit     Decimal? @map("mins_per_unit") @db.Decimal(10, 4)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  @@map("time_motion_logs")
 }
