@@ -2,7 +2,7 @@
  * Production Planning Engine — 8-step analysis, plan creation, submit/publish, batch job tracking
  */
 import { useState, useEffect, useCallback } from 'react'
-import api from '../../api/erp-client.js'
+import { planningApi, erpReasonCodesApi, salesApi } from '../../api/erp-client.js'
 import { useAuth } from '../../components/erp/AuthContext.jsx'
 
 const inputStyle = { width: '100%', padding: '9px 12px', border: '1.5px solid #e2e8f0', borderRadius: '7px', fontSize: '13px', boxSizing: 'border-box', outline: 'none' }
@@ -37,7 +37,7 @@ function AnalysisPanel({ result, diNumber, onPlanCreated }) {
     if (!planForm.planned_start_date) { alert('Planned start date required'); return }
     setSaving(true)
     try {
-      await api.planning.createPlan({
+      await planningApi.createPlan({
         di_number: diNumber,
         planned_start_date: planForm.planned_start_date,
         planned_end_date: planForm.planned_end_date,
@@ -152,29 +152,29 @@ function PlanDetail({ plan, onClose, onRefresh }) {
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    api.planning.getPlan(plan.id).then(r => setDetail(r.data)).finally(() => setLoading(false))
-    api.masters.listReasonCodes('batch_delay').then(r => setReasons(r.data || []))
+    planningApi.getPlan(plan.id).then(r => setDetail(r.data)).finally(() => setLoading(false))
+    erpReasonCodesApi.list({ category: 'batch_delay' }).then(r => setReasons(r.data || []))
   }, [plan.id])
 
   const submit = async () => {
-    try { await api.planning.submitPlan(plan.id); onRefresh() }
+    try { await planningApi.submitPlan(plan.id); onRefresh() }
     catch (e) { alert(e.response?.data?.error || e.message) }
   }
   const publish = async () => {
-    try { await api.planning.publishPlan(plan.id); onRefresh() }
+    try { await planningApi.publishPlan(plan.id); onRefresh() }
     catch (e) { alert(e.response?.data?.error || e.message) }
   }
   const startJob = async (jobId) => {
-    try { await api.planning.startJob(jobId); onRefresh() }
+    try { await planningApi.startJob(jobId); onRefresh() }
     catch (e) { alert(e.response?.data?.error || e.message) }
   }
 
   const submitQc = async () => {
     setSaving(true)
     try {
-      await api.planning.recordQc(qcForm.jobId, { result: qcForm.result, notes: qcForm.notes, cfu_count: qcForm.cfu_count })
+      await planningApi.recordQC(qcForm.jobId, { result: qcForm.result, notes: qcForm.notes, cfu_count: qcForm.cfu_count })
       setQcForm({ show: false, jobId: null, result: 'pass', notes: '', cfu_count: '' })
-      const r = await api.planning.getPlan(plan.id)
+      const r = await planningApi.getPlan(plan.id)
       setDetail(r.data)
     } catch (e) { alert(e.response?.data?.error || e.message) }
     finally { setSaving(false) }
@@ -183,9 +183,9 @@ function PlanDetail({ plan, onClose, onRefresh }) {
   const submitDelay = async () => {
     setSaving(true)
     try {
-      await api.planning.delayJob(delayForm.jobId, { reason_code: delayForm.reason, notes: delayForm.notes })
+      await planningApi.delayJob(delayForm.jobId, { reason_code: delayForm.reason, notes: delayForm.notes })
       setDelayForm({ show: false, jobId: null, reason: '', notes: '' })
-      const r = await api.planning.getPlan(plan.id)
+      const r = await planningApi.getPlan(plan.id)
       setDetail(r.data)
     } catch (e) { alert(e.response?.data?.error || e.message) }
     finally { setSaving(false) }
@@ -323,17 +323,17 @@ export default function PlanningEngine() {
 
   const loadPlans = useCallback(() => {
     setLoading(true)
-    api.planning.listPlans().then(r => setPlans(r.data || [])).finally(() => setLoading(false))
+    planningApi.listPlans().then(r => setPlans(r.data || [])).finally(() => setLoading(false))
   }, [])
 
   useEffect(() => {
     loadPlans()
-    api.planning.plannerQueue().then(r => setPlannerQueue(r.data || []))
+    salesApi.plannerQueue().then(r => setPlannerQueue(r.data || []))
   }, [loadPlans])
 
   useEffect(() => {
     if (tab === 2) {
-      api.planning.timeMotion().then(r => setTmData(r.data || []))
+      planningApi.timeMotion().then(r => setTmData(r.data || []))
     }
   }, [tab])
 
@@ -341,7 +341,7 @@ export default function PlanningEngine() {
     if (!diInput) { setAnalysisError('Enter a DI number'); return }
     setAnalysing(true); setAnalysisError(''); setAnalysisResult(null)
     try {
-      const r = await api.planning.analyse({ di_number: diInput })
+      const r = await planningApi.analyse({ di_number: diInput })
       setAnalysisResult(r.data)
     } catch (e) { setAnalysisError(e.response?.data?.error || e.message) }
     finally { setAnalysing(false) }
@@ -351,9 +351,9 @@ export default function PlanningEngine() {
     if (!tmForm.job_id || !tmForm.step_name) { alert('Job ID and step name required'); return }
     setTmSaving(true)
     try {
-      await api.planning.logTimeMotion(tmForm)
+      await planningApi.logTimeMotion(tmForm)
       setTmForm({ show: false, job_id: '', step_name: '', planned_min: '', actual_min: '', operator_count: '', notes: '' })
-      const r = await api.planning.timeMotion()
+      const r = await planningApi.timeMotion()
       setTmData(r.data || [])
     } catch (e) { alert(e.response?.data?.error || e.message) }
     finally { setTmSaving(false) }

@@ -2,7 +2,7 @@
  * Inventory Management — Stock Adjustments, Transfers, Decanting, FIFO, Stock Summary
  */
 import { useState, useEffect, useCallback } from 'react'
-import api from '../../api/erp-client.js'
+import { inventoryApi, erpItemsApi, erpReasonCodesApi, gateApi, erpPlantsApi, erpContainersApi } from '../../api/erp-client.js'
 import { useAuth } from '../../components/erp/AuthContext.jsx'
 
 const TABS = ['Stock Summary', 'Adjustments', 'Transfers', 'Decanting', 'FIFO Check']
@@ -34,7 +34,7 @@ function StockSummary() {
   const [search, setSearch]   = useState('')
 
   useEffect(() => {
-    api.inventory.stockSummary().then(r => setRows(r.data || [])).finally(() => setLoading(false))
+    inventoryApi.stockSummary().then(r => setRows(r.data || [])).finally(() => setLoading(false))
   }, [])
 
   const filtered = rows.filter(r =>
@@ -99,20 +99,20 @@ function Adjustments() {
 
   const load = useCallback(() => {
     setLoading(true)
-    api.inventory.listAdjustments().then(r => setList(r.data || [])).finally(() => setLoading(false))
+    inventoryApi.listAdj().then(r => setList(r.data || [])).finally(() => setLoading(false))
   }, [])
 
   useEffect(() => {
     load()
-    api.masters.listItems({ category: 'RM' }).then(r => setItems(r.data || []))
-    api.masters.listReasonCodes('stock_adjustment').then(r => setReasons(r.data || []))
+    erpItemsApi.list({ category: 'RM' }).then(r => setItems(r.data || []))
+    erpReasonCodesApi.list({ category: 'stock_adjustment' }).then(r => setReasons(r.data || []))
   }, [load])
 
   const onItemChange = async (code) => {
     setForm(f => ({ ...f, item_code: code, pack_id: '' }))
     setSelectedPackQty(null)
     if (code) {
-      const r = await api.gate.listPacks({ item_code: code, status: 'active' })
+      const r = await gateApi.packList({ item_code: code, status: 'active' })
       setPacks(r.data || [])
     } else setPacks([])
   }
@@ -130,7 +130,7 @@ function Adjustments() {
     if (qty_after < 0) { setError(`Cannot reduce below 0. Current qty: ${selectedPackQty}`); return }
     setSaving(true); setError('')
     try {
-      await api.inventory.createAdjustment({ pack_id: form.pack_id, reason_code: form.reason_code, qty_after, notes: form.notes })
+      await inventoryApi.createAdj({ pack_id: form.pack_id, reason_code: form.reason_code, qty_after, notes: form.notes })
       setShowForm(false)
       setForm({ item_code: '', pack_id: '', qty_change: '', reason_code: '', notes: '' })
       setSelectedPackQty(null)
@@ -140,13 +140,13 @@ function Adjustments() {
   }
 
   const approve = async (id) => {
-    try { await api.inventory.approveAdjustment(id); load() }
+    try { await inventoryApi.approveAdj(id); load() }
     catch (e) { alert(e.message) }
   }
   const reject = async (id) => {
     const note = prompt('Rejection reason:')
     if (!note) return
-    try { await api.inventory.rejectAdjustment(id, { reason: note }); load() }
+    try { await inventoryApi.rejectAdj(id, { reason: note }); load() }
     catch (e) { alert(e.message) }
   }
 
@@ -267,17 +267,17 @@ function Transfers() {
 
   const load = useCallback(() => {
     setLoading(true)
-    api.inventory.listTransfers().then(r => setList(r.data || [])).finally(() => setLoading(false))
+    inventoryApi.listTransfers().then(r => setList(r.data || [])).finally(() => setLoading(false))
   }, [])
 
   useEffect(() => {
     load()
-    api.masters.listPlants().then(r => setPlants(r.data || []))
+    erpPlantsApi.list().then(r => setPlants(r.data || []))
   }, [load])
 
   const searchPacks = async () => {
     if (!packSearch) return
-    const r = await api.gate.listPacks({ item_code: packSearch, status: 'active' })
+    const r = await gateApi.packList({ item_code: packSearch, status: 'active' })
     setPacks(r.data || [])
   }
 
@@ -285,7 +285,7 @@ function Transfers() {
     if (!form.pack_id) { setError('Select a pack'); return }
     setSaving(true); setError('')
     try {
-      await api.inventory.createTransfer(form)
+      await inventoryApi.createTransfer(form)
       setShowForm(false)
       setForm({ pack_id: '', transfer_type: 'intra_plant', to_plant_id: '', to_location: '', notes: '' })
       load()
@@ -294,7 +294,7 @@ function Transfers() {
   }
 
   const receive = async (id) => {
-    try { await api.inventory.receiveTransfer(id); load() }
+    try { await inventoryApi.receiveTransfer(id); load() }
     catch (e) { alert(e.message) }
   }
 
@@ -414,7 +414,7 @@ function Decanting() {
 
   const load = useCallback(() => {
     setLoading(true)
-    api.inventory.listDecanting().then(r => setList(r.data || [])).finally(() => setLoading(false))
+    inventoryApi.listDecanting().then(r => setList(r.data || [])).finally(() => setLoading(false))
   }, [])
 
   useEffect(() => { load() }, [load])
@@ -422,8 +422,8 @@ function Decanting() {
   const searchPacks = async () => {
     if (!packItemCode) return
     const [pr, cr] = await Promise.all([
-      api.gate.listPacks({ item_code: packItemCode, status: 'active' }),
-      api.masters.listContainers(packItemCode),
+      gateApi.packList({ item_code: packItemCode, status: 'active' }),
+      erpContainersApi.list({ item_code: packItemCode }),
     ])
     setPacks(pr.data || [])
     setContainers(cr.data || [])
@@ -435,7 +435,7 @@ function Decanting() {
     }
     setSaving(true); setError('')
     try {
-      await api.inventory.createDecanting(form)
+      await inventoryApi.decant(form)
       setShowForm(false)
       setForm({ source_pack_id: '', target_container_id: '', qty_to_transfer: '', notes: '', supervisor_approved: false })
       load()
@@ -553,7 +553,7 @@ function FifoCheck() {
   const [overrideForm, setOverrideForm] = useState({ show: false, selected_pack_id: '', reason: '' })
 
   useEffect(() => {
-    api.masters.listReasonCodes('fifo_override').then(r => setReasons(r.data || []))
+    erpReasonCodesApi.list({ category: 'fifo_override' }).then(r => setReasons(r.data || []))
   }, [])
 
   const check = async () => {
@@ -561,7 +561,7 @@ function FifoCheck() {
     setChecking(true); setHasSearched(true)
     try {
       // packList is sorted ASC by inward_date — first result = oldest = FIFO correct
-      const r = await api.gate.listPacks({ item_code: itemCode })
+      const r = await gateApi.packList({ item_code: itemCode })
       setPacks(r.data || [])
     } catch (e) { alert(e.message) }
     finally { setChecking(false) }
@@ -574,7 +574,7 @@ function FifoCheck() {
     if (!overrideForm.reason) { alert('Reason required for FIFO override'); return }
     const selected = packs.find(p => p.pack_id === overrideForm.selected_pack_id)
     try {
-      await api.inventory.fifoOverride({
+      await inventoryApi.fifoOverride({
         item_code: itemCode,
         older_lot:    oldest?.lot_number,
         older_qty:    oldest?.qty_remaining,

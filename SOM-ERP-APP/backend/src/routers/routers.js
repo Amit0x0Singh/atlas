@@ -23,7 +23,7 @@ router.use("/auth", UserRouter);
 // Handles: /api/rm, /api/packs, /api/inward, /api/outward, /api/stock,
 //          /api/ledger, /api/grn, /api/import, /api/bulk,
 //          /api/erp/gate, /api/erp/inventory
-router.use("/", InventoryRouter);
+// router.use("/", InventoryRouter);
 
 // ── Sales ─────────────────────────────────────────────────────────────────────
 // Handles: /api/customer-profiles, /api/cp-profiles, /api/tracker,
@@ -34,27 +34,27 @@ router.use("/", SalesRouter);
 // ── Production ────────────────────────────────────────────────────────────────
 // Handles: /api/production, /api/indent, /api/sfg, /api/recipe,
 //          /api/erp/bom-issuance
-router.use("/", ProductionRouter);
+// router.use("/", ProductionRouter);
 
 // ── Planning ──────────────────────────────────────────────────────────────────
 // Handles: /api/plan-engine/*, /api/erp/planning/*, /api/sales/planner-queue
-router.use("/", PlanningRouter);
+// router.use("/", PlanningRouter);
 
 // ── Master Data ───────────────────────────────────────────────────────────────
 // Handles: /api/rm, /api/products, /api/equipment, /api/erp/masters/*
-router.use("/", MasterDataRouter);
+// router.use("/", MasterDataRouter);
 
 // ── HR ────────────────────────────────────────────────────────────────────────
 // Handles: /api/erp/employees/*
-router.use("/", HRRouter);
+// router.use("/", HRRouter);
 
 // ── Microbial ─────────────────────────────────────────────────────────────────
 // Handles: /api/microbial-sfg/*, /api/erp/microbial/*
-router.use("/", MicrobialRouter);
+// router.use("/", MicrobialRouter);
 
 // ── Export ────────────────────────────────────────────────────────────────────
 // Handles: /api/erp/export/*
-router.use("/", ExportRouter);
+// router.use("/", ExportRouter);
 
 // ---- admin planel routes (not prefixed with /api) ───────────────────────────────────────────
 router.use("/admin", AdminPanelRouter);

@@ -2,7 +2,7 @@
  * Sales Orders — list, create, status transitions, dispatch, at-risk alerts
  */
 import { useState, useEffect, useCallback } from 'react'
-import api from '../../api/erp-client.js'
+import { salesApi, erpProductsApi, erpCustomersApi, erpPlantsApi } from '../../api/erp-client.js'
 import { useAuth } from '../../components/erp/AuthContext.jsx'
 
 const STATUS_COLORS = {
@@ -38,7 +38,7 @@ function OrderDetail({ order, onClose, onRefresh }) {
   const updateStatus = async (status) => {
     setSaving(true)
     try {
-      await api.sales.updateOrder(order.di_number, { status })
+      await salesApi.update(order.di_number, { status })
       onRefresh()
     } catch (e) { alert(e.response?.data?.error || e.message) }
     finally { setSaving(false) }
@@ -48,7 +48,7 @@ function OrderDetail({ order, onClose, onRefresh }) {
     if (!dispatchForm.qty_dispatched) { alert('Qty dispatched required'); return }
     setSaving(true)
     try {
-      await api.sales.dispatchOrder(order.di_number, dispatchForm)
+      await salesApi.dispatch(order.di_number, dispatchForm)
       onRefresh()
     } catch (e) { alert(e.response?.data?.error || e.message) }
     finally { setSaving(false) }
@@ -143,9 +143,9 @@ function CreateOrderForm({ onCreated, onCancel }) {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    api.masters.listProducts().then(r => setProducts(r.data || []))
-    api.masters.listCustomers().then(r => setCustomers(r.data || []))
-    api.masters.listPlants().then(r => setPlants(r.data || []))
+    erpProductsApi.list().then(r => setProducts(r.data || []))
+    erpCustomersApi.list().then(r => setCustomers(r.data || []))
+    erpPlantsApi.list().then(r => setPlants(r.data || []))
   }, [])
 
   const submit = async () => {
@@ -155,7 +155,7 @@ function CreateOrderForm({ onCreated, onCancel }) {
     }
     setSaving(true); setError('')
     try {
-      await api.sales.createOrder(form)
+      await salesApi.create(form)
       onCreated()
     } catch (e) { setError(e.response?.data?.error || e.message) }
     finally { setSaving(false) }
@@ -219,8 +219,8 @@ export default function SalesOrders() {
     const params = {}
     if (filters.status) params.status = filters.status
     if (filters.search) params.search = filters.search
-    api.sales.listOrders(params).then(r => setOrders(r.data || [])).finally(() => setLoading(false))
-    api.sales.atRiskOrders().then(r => setAtRiskCount((r.data || []).length)).catch(() => {})
+    salesApi.list(params).then(r => setOrders(r.data || [])).finally(() => setLoading(false))
+    salesApi.atRisk().then(r => setAtRiskCount((r.data || []).length)).catch(() => {})
   }, [filters])
 
   useEffect(() => { load() }, [load])
@@ -228,7 +228,7 @@ export default function SalesOrders() {
   const syncExcel = async () => {
     setSyncing(true)
     try {
-      await api.sales.syncExcel()
+      await salesApi.syncExcel()
       load()
       alert('MS365 Excel sync triggered. Orders updated.')
     } catch (e) { alert(e.response?.data?.error || e.message) }
@@ -237,7 +237,7 @@ export default function SalesOrders() {
 
   const openOrder = async (di) => {
     try {
-      const r = await api.sales.getOrder(di)
+      const r = await salesApi.get(di)
       setSelected(r.data)
     } catch (e) { alert(e.message) }
   }

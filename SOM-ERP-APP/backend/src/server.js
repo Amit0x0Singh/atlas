@@ -48,7 +48,14 @@ app.get("/health", (req, res) => {
 });
 
 // ── Register all API routes ────────────────────────────────────────────────────
-app.use("/api", router);
+app.use(
+  "/api",
+  (req, res, next) => {
+    console.log(`Incoming request: ${req.method} ${req.originalUrl}`);
+    next();
+  },
+  router,
+);
 
 // ── Serve built frontend in production ────────────────────────────────────────
 const publicDir = path.join(__dirname, "..", "public");

@@ -41,7 +41,7 @@ import GateEntry           from '../pages/erp/GateEntry.jsx'
 import InventoryManagement from '../pages/erp/InventoryManagement.jsx'
 import BomIssuance         from '../pages/erp/BomIssuance.jsx'
 import PlanningEngine      from '../pages/erp/PlanningEngine.jsx'
-// import SalesOrders      from '../pages/erp/SalesOrders.jsx'
+import SalesOrders         from '../pages/erp/SalesOrders.jsx'
 import MicrobialManagement from '../pages/erp/MicrobialManagement.jsx'
 
 // ── Auth & Notifications ──────────────────────────────────────────────────────
@@ -212,22 +212,8 @@ export default function AppRoutes() {
   return (
     <Routes>
       {/* ERP v2 — auth-protected, own layout */}
-      <Route
-        path="/erp/login"
-        element={
-          <AuthProvider>
-            <ErpLoginPage />
-          </AuthProvider>
-        }
-      />
-      <Route
-        path="/erp/*"
-        element={
-          <AuthProvider>
-            <ErpLayout />
-          </AuthProvider>
-        }
-      />
+      <Route path="/erp/login" element={<ErpLoginPage />} />
+      <Route path="/erp/*"     element={<ErpLayout />} />
 
       {/* Legacy app — sidebar + all routes */}
       <Route path="/*" element={<LegacyLayout />} />

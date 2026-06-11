@@ -4,6 +4,8 @@ import prisma from "../../../../db.js";
 // Query params: company, status, priority, diNo, search, from, to, limit, offset
 
 const getSalesOrders = async (req, res) => {
+  console.log("Query params:", req.query); // Debug log to check incoming query parameters
+
   const {
     company,
     status,
@@ -50,12 +52,16 @@ const getSalesOrders = async (req, res) => {
 // ── GET /api/erp/sales-orders/:id  ───────────────────────────────────────
 
 const getSalesOrderById = async (req, res) => {
+  console.log("Fetching order with ID:", req.params.id); // Debug log to check incoming order ID
+
   const order = await prisma.salesOrder.findUnique({
     where: { id: req.params.id },
     include: { items: { orderBy: { lineNo: "asc" } } },
   });
+
   if (!order)
     return res.status(404).json({ success: false, error: "Order not found" });
+
   return res.json({ success: true, data: order });
 };
 
@@ -63,6 +69,8 @@ const getSalesOrderById = async (req, res) => {
 // Quick counts per status for a dashboard widget
 
 const getDashboardSummary = async (req, res) => {
+  console.log("Generating dashboard summary"); // Debug log to indicate this endpoint is hit
+
   const statuses = [
     "PENDING",
     "PLANNED",
@@ -88,11 +96,16 @@ const getDashboardSummary = async (req, res) => {
     },
   });
 
-  return res.json({ success: true, data: { statusCounts: counts, urgentPending } });
+  return res.json({
+    success: true,
+    data: { statusCounts: counts, urgentPending },
+  });
 };
 
 // GET /api/erp/sales-orders/companies
 const getCompanies = async (req, res) => {
+  console.log("Fetching active companies"); // Debug log to indicate this endpoint is hit
+
   try {
     const companies = await prisma.companyMaster.findMany({
       where: { isActive: true },
@@ -109,6 +122,8 @@ const getCompanies = async (req, res) => {
 // Last 20 sheet sync attempts
 
 const getSyncLogs = async (req, res) => {
+  console.log("Fetching sync logs"); // Debug log to indicate this endpoint is hit
+
   const logs = await prisma.sheetSyncLog.findMany({
     orderBy: { createdAt: "desc" },
     take: 20,

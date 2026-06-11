@@ -10,7 +10,7 @@
  *   location_position → Batch / Container Code
  */
 import { useState, useEffect, useCallback } from 'react'
-import api from '../../api/erp-client.js'
+import { microbialApi, erpStrainsApi } from '../../api/erp-client.js'
 import { useAuth } from '../../components/erp/AuthContext.jsx'
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -274,7 +274,7 @@ function InwardTab({ strains, onRefresh }) {
   const [recent, setRecent] = useState([])
 
   const loadRecent = useCallback(() => {
-    api.microbial.listContainers({}).then(r => {
+    microbialApi.containers({}).then(r => {
       const sorted = (r.data || []).sort((a, b) => new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0))
       setRecent(sorted.slice(0, 15))
     }).catch(() => {})
@@ -291,7 +291,7 @@ function InwardTab({ strains, onRefresh }) {
     }
     setSaving(true); setError(''); setSuccess('')
     try {
-      await api.microbial.createContainer({
+      await microbialApi.createContainer({
         strain_id: form.strain_id,
         volume_litres: Number(form.volume_litres),
         mfg_cfu_per_ml: Number(form.mfg_cfu_per_ml),
@@ -456,7 +456,7 @@ function IssueCalculatorTab({ strains, onRefresh }) {
     // Load FIFO containers for this strain (sorted by mfg_date ASC = oldest first)
     let ctrs = []
     try {
-      const res = await api.microbial.listContainers({ strain_id })
+      const res = await microbialApi.containers({ strain_id })
       ctrs = (res.data || [])
         .filter(c => c.status !== 'exhausted' && c.volume_litres > 0)
         .sort((a, b) => new Date(a.mfg_date) - new Date(b.mfg_date)) // FIFO: oldest harvest first
@@ -533,7 +533,7 @@ function IssueCalculatorTab({ strains, onRefresh }) {
       const results = []
       for (const p of allocation.plan) {
         if (p.qty_to_issue <= 0) continue
-        const tx = await api.microbial.createTransaction({
+        const tx = await microbialApi.createTx({
           container_id: p.container_id,
           volume_dispatched_l: p.qty_to_issue,
           cfu_per_ml_at_dispatch: p.inhouse_cfu,
@@ -709,9 +709,9 @@ export default function MicrobialManagement() {
     setLoading(true)
     try {
       const [cRes, sRes, tRes] = await Promise.all([
-        api.microbial.listContainers({}),
-        api.microbial.listStrains(),
-        api.microbial.listTransactions({ limit: 20 }),
+        microbialApi.containers({}),
+        erpStrainsApi.list(),
+        microbialApi.transactions({ limit: 20 }),
       ])
       setContainers(cRes.data || [])
       setStrains(sRes.data || [])

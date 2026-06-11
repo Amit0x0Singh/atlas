@@ -1,265 +1,280 @@
-import axios from 'axios'
-
-const BASE = ''
-
-const api = axios.create({
-  baseURL: `${BASE}/api`,
-  timeout: 30000,
-})
-
-api.interceptors.response.use(
-  (res) => res.data,
-  (err) => {
-    const message = err.response?.data?.error || err.message || 'Network error'
-    return Promise.reject(new Error(message))
-  }
-)
+import { api } from "../context/context.jsx";
 
 export const rmApi = {
-  list: (params) => api.get('/rm', { params }),
+  list: (params) => api.get("/rm", { params }),
   get: (code) => api.get(`/rm/${code}`),
-  create: (data) => api.post('/rm', data),
+  create: (data) => api.post("/rm", data),
   update: (code, data) => api.put(`/rm/${code}`, data),
   delete: (code) => api.delete(`/rm/${code}`),
-  warehouses: () => api.get('/rm/meta/warehouses'),
-}
+  warehouses: () => api.get("/rm/meta/warehouses"),
+};
 
 export const productApi = {
-  list: (params) => api.get('/products', { params }),
+  list: (params) => api.get("/products", { params }),
   get: (code) => api.get(`/products/${encodeURIComponent(code)}`),
-  create: (data) => api.post('/products', data),
-  update: (code, data) => api.put(`/products/${encodeURIComponent(code)}`, data),
+  create: (data) => api.post("/products", data),
+  update: (code, data) =>
+    api.put(`/products/${encodeURIComponent(code)}`, data),
   delete: (code) => api.delete(`/products/${encodeURIComponent(code)}`),
-}
+};
 
 export const equipmentApi = {
-  list: () => api.get('/equipment'),
-  create: (data) => api.post('/equipment', data),
+  list: () => api.get("/equipment"),
+  create: (data) => api.post("/equipment", data),
   update: (id, data) => api.put(`/equipment/${id}`, data),
   delete: (id) => api.delete(`/equipment/${id}`),
-}
+};
 
 export const packsApi = {
-  generate: (data) => api.post('/packs/generate', data),
-  list: (params) => api.get('/packs', { params }),
+  generate: (data) => api.post("/packs/generate", data),
+  list: (params) => api.get("/packs", { params }),
   get: (packId) => api.get(`/packs/${encodeURIComponent(packId)}`),
   nextLot: (itemCode) => api.get(`/packs/next-lot/${itemCode}`),
-  pendingInward: () => api.get('/packs/pending-inward'),
+  pendingInward: () => api.get("/packs/pending-inward"),
   labelUrl: (packId) => `/api/packs/label/${encodeURIComponent(packId)}`,
-  batchLabelsUrl: (itemCode, lotNo) => `/api/packs/labels/lot/${itemCode}/${encodeURIComponent(lotNo)}`,
-}
+  batchLabelsUrl: (itemCode, lotNo) =>
+    `/api/packs/labels/lot/${itemCode}/${encodeURIComponent(lotNo)}`,
+};
 
 export const inwardApi = {
-  createSession: (data) => api.post('/inward/sessions', data),
-  scan: (sessionId, packId) => api.post(`/inward/sessions/${sessionId}/scan`, { packId }),
-  removeScan: (sessionId, packId) => api.delete(`/inward/sessions/${sessionId}/scan/${encodeURIComponent(packId)}`),
+  createSession: (data) => api.post("/inward/sessions", data),
+  scan: (sessionId, packId) =>
+    api.post(`/inward/sessions/${sessionId}/scan`, { packId }),
+  removeScan: (sessionId, packId) =>
+    api.delete(
+      `/inward/sessions/${sessionId}/scan/${encodeURIComponent(packId)}`,
+    ),
   getSession: (sessionId) => api.get(`/inward/sessions/${sessionId}`),
-  submit: (sessionId, transactedBy) => api.post(`/inward/sessions/${sessionId}/submit`, { transactedBy }),
-  activeSessions: () => api.get('/inward/sessions'),
-  history: (params) => api.get('/inward', { params }),
-}
+  submit: (sessionId, transactedBy) =>
+    api.post(`/inward/sessions/${sessionId}/submit`, { transactedBy }),
+  activeSessions: () => api.get("/inward/sessions"),
+  history: (params) => api.get("/inward", { params }),
+};
 
 export const outwardApi = {
-  bomScan: (data) => api.post('/outward/bom-scan', data),
-  bomManual: (data) => api.post('/outward/bom-manual', data),
-  availablePacks: (rmCode) => api.get(`/outward/available/${encodeURIComponent(rmCode)}`),
-  packReduction: (data) => api.post('/outward/pack-reduction', data),
-  stockAdjustment: (data) => api.post('/outward/stock-adjustment', data),
-  history: (params) => api.get('/outward', { params }),
-}
+  bomScan: (data) => api.post("/outward/bom-scan", data),
+  bomManual: (data) => api.post("/outward/bom-manual", data),
+  availablePacks: (rmCode) =>
+    api.get(`/outward/available/${encodeURIComponent(rmCode)}`),
+  packReduction: (data) => api.post("/outward/pack-reduction", data),
+  stockAdjustment: (data) => api.post("/outward/stock-adjustment", data),
+  history: (params) => api.get("/outward", { params }),
+};
 
 export const productionApi = {
-  list: (params) => api.get('/production', { params }),
+  list: (params) => api.get("/production", { params }),
   get: (id) => api.get(`/production/${id}`),
-  create: (data) => api.post('/production', data),
+  create: (data) => api.post("/production", data),
   patch: (id, data) => api.patch(`/production/${id}`, data),
   saveBiomass: (id, rows) => api.put(`/production/${id}/biomass`, { rows }),
   saveTechnical: (id, data) => api.put(`/production/${id}/technical`, data),
   addCycle: (id, data) => api.post(`/production/${id}/formulation`, data),
-  updateCycle: (id, cycleId, data) => api.put(`/production/${id}/formulation/${cycleId}`, data),
-  deleteCycle: (id, cycleId) => api.delete(`/production/${id}/formulation/${cycleId}`),
+  updateCycle: (id, cycleId, data) =>
+    api.put(`/production/${id}/formulation/${cycleId}`, data),
+  deleteCycle: (id, cycleId) =>
+    api.delete(`/production/${id}/formulation/${cycleId}`),
   saveUnloading: (id, data) => api.put(`/production/${id}/unloading`, data),
   saveSieving: (id, data) => api.put(`/production/${id}/sieving`, data),
   savePacking: (id, data) => api.put(`/production/${id}/packing`, data),
   saveQC: (id, data) => api.put(`/production/${id}/qc`, data),
   saveInventory: (id, data) => api.put(`/production/${id}/inventory`, data),
-}
+};
 
 export const indentApi = {
-  create: (data) => api.post('/indent', data),
-  list: (params) => api.get('/indent', { params }),
+  create: (data) => api.post("/indent", data),
+  list: (params) => api.get("/indent", { params }),
   get: (id) => api.get(`/indent/${id}`),
-  products: () => api.get('/indent/products/list'),
+  products: () => api.get("/indent/products/list"),
   stockCheck: (productCode, batchSize) =>
-    api.get('/indent/stock-check', { params: { productCode, batchSize } }),
+    api.get("/indent/stock-check", { params: { productCode, batchSize } }),
   nextBatchNo: (productCode) =>
-    api.get('/indent/next-batch-no', { params: { productCode } }),
+    api.get("/indent/next-batch-no", { params: { productCode } }),
   sfgAvailable: (productCode) =>
-    api.get('/indent/sfg-available', { params: { productCode } }),
-  purchaseSummary: (params) => api.get('/indent/purchase-summary', { params }),
-  markPoSent: (indentIds) => api.post('/indent/mark-po-sent', { indentIds }),
-}
+    api.get("/indent/sfg-available", { params: { productCode } }),
+  purchaseSummary: (params) => api.get("/indent/purchase-summary", { params }),
+  markPoSent: (indentIds) => api.post("/indent/mark-po-sent", { indentIds }),
+};
 
 export const sfgApi = {
-  list: (params) => api.get('/sfg', { params }),
-  listAll: (params) => api.get('/sfg', { params: { ...params, showAll: 'true' } }),
+  list: (params) => api.get("/sfg", { params }),
+  listAll: (params) =>
+    api.get("/sfg", { params: { ...params, showAll: "true" } }),
   get: (sfgId) => api.get(`/sfg/${sfgId}`),
-  summary: () => api.get('/sfg/summary'),
+  summary: () => api.get("/sfg/summary"),
   update: (sfgId, data) => api.put(`/sfg/${sfgId}`, data),
-}
+};
 
 export const recipeApi = {
-  list: (params) => api.get('/recipe', { params }),
-  products: () => api.get('/recipe/products'),
-  bulkSave: (rows) => api.post('/recipe/bulk-save', { rows }),
+  list: (params) => api.get("/recipe", { params }),
+  products: () => api.get("/recipe/products"),
+  bulkSave: (rows) => api.post("/recipe/bulk-save", { rows }),
   deleteRow: (id) => api.delete(`/recipe/${id}`),
   deleteProduct: (code) => api.delete(`/recipe/product/${code}`),
-  checkRmMapping: () => api.get('/recipe/check-rm-mapping'),
-  fixRmMapping: (mappings) => api.post('/recipe/fix-rm-mapping', { mappings }),
-}
+  checkRmMapping: () => api.get("/recipe/check-rm-mapping"),
+  fixRmMapping: (mappings) => api.post("/recipe/fix-rm-mapping", { mappings }),
+};
 
 export const stockApi = {
-  summary: (params) => api.get('/stock', { params }),
+  summary: (params) => api.get("/stock", { params }),
   item: (itemCode) => api.get(`/stock/${itemCode}`),
-  containers: () => api.get('/stock/containers'),
-}
+  containers: () => api.get("/stock/containers"),
+};
 
 export const ledgerApi = {
-  all: (params) => api.get('/ledger', { params }),
+  all: (params) => api.get("/ledger", { params }),
   item: (itemCode, params) => api.get(`/ledger/item/${itemCode}`, { params }),
   entryDetail: (id) => api.get(`/ledger/${id}`),
-}
+};
 
 export const importApi = {
   preview: (file) => {
-    const form = new FormData()
-    form.append('file', file)
-    return api.post('/import/preview', form, { timeout: 60000 })
+    const form = new FormData();
+    form.append("file", file);
+    return api.post("/import/preview", form, { timeout: 60000 });
   },
   execute: (file) => {
-    const form = new FormData()
-    form.append('file', file)
-    return api.post('/import/execute', form, { timeout: 300000 })
+    const form = new FormData();
+    form.append("file", file);
+    return api.post("/import/execute", form, { timeout: 300000 });
   },
-}
+};
 
 export const trackerApi = {
-  searchDiNo: (diNo) => api.get('/tracker', { params: { diNo } }),
-  getDetail: (indentId) => api.get('/tracker/detail', { params: { indentId } }),
-}
+  searchDiNo: (diNo) => api.get("/tracker", { params: { diNo } }),
+  getDetail: (indentId) => api.get("/tracker/detail", { params: { indentId } }),
+};
 
 export const grnApi = {
-  list: () => api.get('/grn'),
-  detail: (invoiceNo, supplier) => api.get('/grn/detail', { params: { invoiceNo, supplier } }),
-}
+  list: () => api.get("/grn"),
+  detail: (invoiceNo, supplier) =>
+    api.get("/grn/detail", { params: { invoiceNo, supplier } }),
+};
 
 export const bulkApi = {
   // Location master
-  listLocations:    (params) => api.get('/bulk/locations', { params }),
-  getLocation:      (locationId) => api.get(`/bulk/locations/${encodeURIComponent(locationId)}`),
-  createLocation:   (data) => api.post('/bulk/locations', data),
-  deleteLocation:   (locationId) => api.delete(`/bulk/locations/${encodeURIComponent(locationId)}`),
-  locationLabelUrl: (locationId) => `/api/bulk/locations/${encodeURIComponent(locationId)}/label`,
+  listLocations: (params) => api.get("/bulk/locations", { params }),
+  getLocation: (locationId) =>
+    api.get(`/bulk/locations/${encodeURIComponent(locationId)}`),
+  createLocation: (data) => api.post("/bulk/locations", data),
+  deleteLocation: (locationId) =>
+    api.delete(`/bulk/locations/${encodeURIComponent(locationId)}`),
+  locationLabelUrl: (locationId) =>
+    `/api/bulk/locations/${encodeURIComponent(locationId)}/label`,
   // Bulk inward
-  bulkInward:       (data) => api.post('/bulk/inward', data),
+  bulkInward: (data) => api.post("/bulk/inward", data),
   // Bulk outward
-  bulkOutward:      (data) => api.post('/bulk/outward', data),
+  bulkOutward: (data) => api.post("/bulk/outward", data),
   // Stock summary
-  stockSummary:     () => api.get('/bulk/summary'),
-}
+  stockSummary: () => api.get("/bulk/summary"),
+};
 
 // ── Microbial SFG API ─────────────────────────────────────────────────────────
 export const microbialSfgApi = {
   // Microbe master
-  listMicrobes:       ()       => api.get('/microbial-sfg/masters/microbes'),
-  createMicrobe:      (data)   => api.post('/microbial-sfg/masters/microbes', data),
-  updateMicrobe:      (id, d)  => api.put(`/microbial-sfg/masters/microbes/${id}`, d),
-  deleteMicrobe:      (id)     => api.delete(`/microbial-sfg/masters/microbes/${id}`),
-  importMicrobes:     (rows)   => api.post('/microbial-sfg/masters/microbes/import', { rows }),
+  listMicrobes: () => api.get("/microbial-sfg/masters/microbes"),
+  createMicrobe: (data) => api.post("/microbial-sfg/masters/microbes", data),
+  updateMicrobe: (id, d) => api.put(`/microbial-sfg/masters/microbes/${id}`, d),
+  deleteMicrobe: (id) => api.delete(`/microbial-sfg/masters/microbes/${id}`),
+  importMicrobes: (rows) =>
+    api.post("/microbial-sfg/masters/microbes/import", { rows }),
 
   // Containers
-  listContainers:     (params) => api.get('/microbial-sfg/inward/containers', { params }),
-  availableContainers:(params) => api.get('/microbial-sfg/inward/containers/available', { params }),
-  nextContainerCode:  (params) => api.get('/microbial-sfg/inward/containers/next-code', { params }),
-  containerBatches:   (id)     => api.get(`/microbial-sfg/inward/containers/${id}/batches`),
+  listContainers: (params) =>
+    api.get("/microbial-sfg/inward/containers", { params }),
+  availableContainers: (params) =>
+    api.get("/microbial-sfg/inward/containers/available", { params }),
+  nextContainerCode: (params) =>
+    api.get("/microbial-sfg/inward/containers/next-code", { params }),
+  containerBatches: (id) =>
+    api.get(`/microbial-sfg/inward/containers/${id}/batches`),
 
   // Inward
-  listInward:         (params) => api.get('/microbial-sfg/inward', { params }),
-  createInward:       (data)   => api.post('/microbial-sfg/inward', data),
-  updateInward:       (id, d)  => api.put(`/microbial-sfg/inward/${id}`, d),
-  importInward:       (rows)   => api.post('/microbial-sfg/inward/import', { rows }),
-  inwardSummary:      ()       => api.get('/microbial-sfg/inward/summary'),
+  listInward: (params) => api.get("/microbial-sfg/inward", { params }),
+  createInward: (data) => api.post("/microbial-sfg/inward", data),
+  updateInward: (id, d) => api.put(`/microbial-sfg/inward/${id}`, d),
+  importInward: (rows) => api.post("/microbial-sfg/inward/import", { rows }),
+  inwardSummary: () => api.get("/microbial-sfg/inward/summary"),
 
   // Planning integration
-  checkPlanMicrobes:  (planId, mf) =>
-    api.get(`/microbial-sfg/planning/check/${planId}`, { params: { multiplication_factor: mf } }),
-  allocate:           (data)   => api.post('/microbial-sfg/planning/allocate', data),
-  listAllocations:    (planId) => api.get(`/microbial-sfg/planning/allocations/${planId}`),
-  cancelAllocation:   (id)     => api.delete(`/microbial-sfg/planning/allocations/${id}`),
-}
+  checkPlanMicrobes: (planId, mf) =>
+    api.get(`/microbial-sfg/planning/check/${planId}`, {
+      params: { multiplication_factor: mf },
+    }),
+  allocate: (data) => api.post("/microbial-sfg/planning/allocate", data),
+  listAllocations: (planId) =>
+    api.get(`/microbial-sfg/planning/allocations/${planId}`),
+  cancelAllocation: (id) =>
+    api.delete(`/microbial-sfg/planning/allocations/${id}`),
+};
 
 export const employeeApi = {
-  list:             (params) => api.get('/erp/employees', { params }),
-  get:              (id) => api.get(`/erp/employees/${id}`),
-  create:           (data) => api.post('/erp/employees', data),
-  update:           (id, data) => api.put(`/erp/employees/${id}`, data),
-  remove:           (id) => api.delete(`/erp/employees/${id}`),
-  listPages:        () => api.get('/erp/employees/pages'),
-  roleDefaults:     () => api.get('/erp/employees/role-defaults'),
-  getPermissions:   (role) => api.get(`/erp/employees/permissions/${role}`),
-  savePermissions:  (role, pagePaths) => api.post('/erp/employees/permissions/save', { role, pagePaths }),
-  seedDefaults:     () => api.post('/erp/employees/permissions/seed-defaults'),
-  listCompanies:    () => api.get('/erp/employees/companies/list'),
-  addCompany:       (data) => api.post('/erp/employees/companies', data),
-}
+  list: (params) => api.get("/erp/employees", { params }),
+  get: (id) => api.get(`/erp/employees/${id}`),
+  create: (data) => api.post("/erp/employees", data),
+  update: (id, data) => api.put(`/erp/employees/${id}`, data),
+  remove: (id) => api.delete(`/erp/employees/${id}`),
+  listPages: () => api.get("/erp/employees/pages"),
+  roleDefaults: () => api.get("/erp/employees/role-defaults"),
+  getPermissions: (role) => api.get(`/erp/employees/permissions/${role}`),
+  savePermissions: (role, pagePaths) =>
+    api.post("/erp/employees/permissions/save", { role, pagePaths }),
+  seedDefaults: () => api.post("/erp/employees/permissions/seed-defaults"),
+  listCompanies: () => api.get("/erp/employees/companies/list"),
+  addCompany: (data) => api.post("/erp/employees/companies", data),
+};
 
 export const salesOrderApi = {
-  list:          (params) => api.get('/erp/sales-orders', { params }),
-  get:           (id) => api.get(`/erp/sales-orders/${id}`),
-  create:        (data) => api.post('/erp/sales-orders', data),
-  update:        (id, data) => api.put(`/erp/sales-orders/${id}`, data),
-  patchDispatch: (id, data) => api.patch(`/erp/sales-orders/dispatch/${id}`, data),
-  remove:        (id) => api.delete(`/erp/sales-orders/${id}`),
-  updateItem:    (itemId, data) => api.patch(`/erp/sales-orders/item/${itemId}`, data),
-  removeItem:    (itemId) => api.delete(`/erp/sales-orders/item/${itemId}`),
-  companies:     () => api.get('/erp/sales-orders/companies'),
-  addCompany:    (code, name) => api.post('/erp/sales-orders/companies', { code, name }),
-  dashboard:     () => api.get('/erp/sales-orders/summary/dashboard'),
-  syncLog:       () => api.get('/erp/sales-orders/sync-log'),
-  sheetImport:   (rows, trigger = 'MANUAL') => api.post('/erp/sales-orders/sheet-import', {
-    secret: import.meta.env.VITE_SHEET_WEBHOOK_SECRET || 'som-sheet-sync-2024',
-    trigger,
-    rows,
-  }),
-}
+  list: (params) => api.get("/sales-orders", { params }),
+  get: (id) => api.get(`/sales-orders/${id}`),
+  create: (data) => api.post("/sales-orders", data),
+  update: (id, data) => api.put(`/sales-orders/${id}`, data),
+  patchDispatch: (id, data) => api.patch(`/sales-orders/dispatch/${id}`, data),
+  remove: (id) => api.delete(`/sales-orders/${id}`),
+  updateItem: (itemId, data) => api.patch(`/sales-orders/item/${itemId}`, data),
+  removeItem: (itemId) => api.delete(`/sales-orders/item/${itemId}`),
+  companies: () => api.get("/sales-orders/companies"),
+  addCompany: (code, name) =>
+    api.post("/sales-orders/companies", { code, name }),
+  dashboard: () => api.get("/sales-orders/summary/dashboard"),
+  syncLog: () => api.get("/sales-orders/sync-log"),
+  sheetImport: (rows, trigger = "MANUAL") =>
+    api.post("/sales-orders/sheet-import", {
+      secret:
+        import.meta.env.VITE_SHEET_WEBHOOK_SECRET || "som-sheet-sync-2024",
+      trigger,
+      rows,
+    }),
+};
 
 export const planningApi = {
-  run:           () => api.post('/plan-engine/run'),
-  listPlans:     (params) => api.get('/plan-engine/plans', { params }),
-  getPlan:       (id) => api.get(`/plan-engine/plans/${id}`),
-  updatePlan:    (id, data) => api.patch(`/plan-engine/plans/${id}`, data),
-  cancelPlan:    (id) => api.delete(`/plan-engine/plans/${id}`),
-  dashboard:     () => api.get('/plan-engine/dashboard'),
-  pendingOrders: () => api.get('/plan-engine/pending-orders'),
-  logs:          () => api.get('/plan-engine/logs'),
-}
+  run: () => api.post("/plan-engine/run"),
+  listPlans: (params) => api.get("/plan-engine/plans", { params }),
+  getPlan: (id) => api.get(`/plan-engine/plans/${id}`),
+  updatePlan: (id, data) => api.patch(`/plan-engine/plans/${id}`, data),
+  cancelPlan: (id) => api.delete(`/plan-engine/plans/${id}`),
+  dashboard: () => api.get("/plan-engine/dashboard"),
+  pendingOrders: () => api.get("/plan-engine/pending-orders"),
+  logs: () => api.get("/plan-engine/logs"),
+};
 
 export const customerProfileApi = {
-  list:   ()     => api.get('/customer-profiles'),
-  upsert: (data) => api.post('/customer-profiles/upsert', data),
-  seed:   (profiles) => api.post('/customer-profiles/seed', { profiles }),
-}
+  list: () => api.get("/customer-profiles"),
+  upsert: (data) => api.post("/customer-profiles/upsert", data),
+  seed: (profiles) => api.post("/customer-profiles/seed", { profiles }),
+};
 
 export const cpProfileApi = {
-  forCustomer:  (customer) => api.get('/cp-profiles', { params: { customer } }),
-  upsertMany:   (customerName, items) => api.post('/cp-profiles/upsert-many', { customerName, items }),
-}
+  forCustomer: (customer) => api.get("/cp-profiles", { params: { customer } }),
+  upsertMany: (customerName, items) =>
+    api.post("/cp-profiles/upsert-many", { customerName, items }),
+};
 
 export const bomSendApi = {
-  list:         (params)   => api.get('/bom-sends', { params }),
-  get:          (id)       => api.get(`/bom-sends/${id}`),
-  create:       (data)     => api.post('/bom-sends', data),
-  issuePack:    (id, data) => api.post(`/bom-sends/${id}/issue-pack`, data),
-  updateStatus: (id, status, remarks) => api.patch(`/bom-sends/${id}/status`, { status, remarks }),
-  remove:       (id)       => api.delete(`/bom-sends/${id}`),
-}
+  list: (params) => api.get("/bom-sends", { params }),
+  get: (id) => api.get(`/bom-sends/${id}`),
+  create: (data) => api.post("/bom-sends", data),
+  issuePack: (id, data) => api.post(`/bom-sends/${id}/issue-pack`, data),
+  updateStatus: (id, status, remarks) =>
+    api.patch(`/bom-sends/${id}/status`, { status, remarks }),
+  remove: (id) => api.delete(`/bom-sends/${id}`),
+};
