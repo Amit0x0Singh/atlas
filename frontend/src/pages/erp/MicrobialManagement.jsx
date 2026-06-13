@@ -10,7 +10,8 @@
  *   location_position → Batch / Container Code
  */
 import { useState, useEffect, useCallback } from 'react'
-import { microbialApi, erpStrainsApi } from '../../api/erp-client.js'
+import { microbialApi } from '../../api/microbial.js'
+import { erpStrainsApi } from '../../api/masters.js'
 import { useAuth } from '../../components/erp/AuthContext.jsx'
 
 // ── helpers ───────────────────────────────────────────────────────────────────

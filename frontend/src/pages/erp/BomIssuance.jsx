@@ -11,7 +11,7 @@
  *   Shortage: alert with option to raise purchase indent request
  */
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { bomSendApi } from '../../api/client'
+import { bomSendApi } from '../../api/sales.js'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function fmt(date) {

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { packsApi } from "../../../../api/client.js";
+import { packsApi } from "../../../../api/inventory.js";
 import { useRmSearch } from "../hooks/useRmSearch.js";
 
 const today = () => new Date().toISOString().split("T")[0];

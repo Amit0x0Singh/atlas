@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { ledgerApi, rmApi } from '../../../../../api/client.js'
+import { ledgerApi, rmApi } from '../../../../../api/inventory.js'
 import { DSection, DGrid, DRow } from '../components/DetailModal.jsx'
 
 const TX_COLORS = {

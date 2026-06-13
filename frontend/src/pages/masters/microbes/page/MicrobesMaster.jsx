@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import * as XLSX from 'xlsx'
-import { microbialSfgApi } from '../../../../api/client.js'
+import { microbialSfgApi } from '../../../../api/microbial.js'
 
 const S = {
   page: { padding: '24px', fontFamily: "'Inter',system-ui,sans-serif", maxWidth: '960px' },

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { stockApi } from '../../../../../api/client.js'
+import { stockApi } from '../../../../../api/inventory.js'
 
 export default function Stock() {
   const [data, setData] = useState([])

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { trackerApi } from '../../../../api/client.js'
+import { trackerApi } from '../../../../api/sales.js'
 import InfoChip from '../components/InfoChip.jsx'
 import Stat from '../components/Stat.jsx'
 

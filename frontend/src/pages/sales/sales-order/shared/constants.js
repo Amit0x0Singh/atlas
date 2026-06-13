@@ -15,9 +15,7 @@ export const STATUSES = [
   "PENDING",
   "PLANNED",
   "UNDER_PRODUCTION",
-  "PACKED",
   "IN_INVENTORY",
-  "READY_TO_DISPATCH",
   "DISPATCHED",
 ];
 export const SECTIONS = ["NANO", "BOTANICAL", "LIQUID", "POWDER", "GRANULES"];
@@ -97,9 +95,7 @@ export const STATUS_STYLE = {
   PENDING: "bg-yellow-100 text-yellow-700",
   PLANNED: "bg-blue-100 text-blue-700",
   UNDER_PRODUCTION: "bg-indigo-100 text-indigo-700",
-  PACKED: "bg-purple-100 text-purple-700",
   IN_INVENTORY: "bg-teal-100 text-teal-700",
-  READY_TO_DISPATCH: "bg-green-100 text-green-700",
   DISPATCHED: "bg-gray-100 text-gray-500",
 };
 
@@ -107,10 +103,8 @@ export const STATUS_LABELS = {
   PENDING: "Pending",
   PLANNED: "Planned",
   UNDER_PRODUCTION: "Under Production",
-  PACKED: "Packed",
-  IN_INVENTORY: "In Inventory",
-  READY_TO_DISPATCH: "Ready to Dispatch",
-  DISPATCHED: "Dispatched",
+  IN_INVENTORY: "Inventory",
+  DISPATCHED: "Dispatch",
 };
 
 // ── Blank line item — default shape for a new product line ───────────────────

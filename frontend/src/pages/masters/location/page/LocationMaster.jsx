@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { bulkApi, rmApi } from '../../../../api/client.js'
+import { bulkApi, rmApi } from '../../../../api/inventory.js'
 import jsQR from 'jsqr'
 
 const STATUS_COLOR = {

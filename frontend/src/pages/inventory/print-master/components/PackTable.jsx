@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { packsApi } from "../../../../api/client.js";
+import { packsApi } from "../../../../api/inventory.js";
 import { usePacks } from "../hooks/usePacks.js";
 
 const STATUS_COLORS = {

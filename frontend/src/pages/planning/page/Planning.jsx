@@ -1,5 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { planningApi, indentApi, equipmentApi, productionApi, employeeApi, microbialSfgApi, bomSendApi } from '../../../api/client.js'
+import { planEngineApi as planningApi } from '../../../api/planning.js'
+import { indentApi, productionApi } from '../../../api/production.js'
+import { equipmentApi } from '../../../api/masters.js'
+import { employeeApi } from '../../../api/hr.js'
+import { microbialSfgApi } from '../../../api/microbial.js'
+import { bomSendApi } from '../../../api/sales.js'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const SECTIONS = ['NANO', 'BOTANICAL', 'LIQUID', 'POWDER', 'GRANULES']

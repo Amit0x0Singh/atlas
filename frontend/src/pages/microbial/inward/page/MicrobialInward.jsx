@@ -6,7 +6,7 @@
  */
 import { useState, useEffect, useRef } from 'react'
 import * as XLSX from 'xlsx'
-import { microbialSfgApi } from '../../../../api/client.js'
+import { microbialSfgApi } from '../../../../api/microbial.js'
 
 const MICROBE_TYPES = [
   { code: 'BM',  label: 'Biomass',                  fill: 'PARTIAL' },

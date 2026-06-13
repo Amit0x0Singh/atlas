@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { sfgApi } from '../../../../api/client.js'
+import { sfgApi } from '../../../../api/inventory.js'
 
 const STATUS_COLOR = {
   OPEN:     'bg-gray-100 text-gray-600',

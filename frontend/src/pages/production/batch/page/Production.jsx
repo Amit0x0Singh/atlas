@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { productionApi, indentApi, sfgApi } from '../../../../api/client.js'
+import { productionApi, indentApi } from '../../../../api/production.js'
+import { sfgApi } from '../../../../api/inventory.js'
 
 const STAGES = [
   { key: 'BIOMASS',     label: 'Biomass Input',       icon: '🧫', color: '#16a34a' },

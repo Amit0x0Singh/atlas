@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { productApi } from '../../../../api/client.js'
+import { productApi } from '../../../../api/masters.js'
 
 export default function ProductMaster() {
   const [items, setItems] = useState([])

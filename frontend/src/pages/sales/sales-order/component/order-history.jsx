@@ -1,49 +1,16 @@
-import { COMPANIES, STATUS_STYLE, STATUS_LABELS } from '../shared/constants.js'
+import { STATUS_STYLE, STATUS_LABELS } from '../shared/constants.js'
 import { fmtDate, etdDays } from '../shared/utils.js'
 
-// ─────────────────────────────────────────────────────────────────────────────
-// OrderHistory
-// Read-only tabular view of all orders. Search by customer or DI number,
-// filter by company. Each row links to the dispatch modal via onOpenDispatch.
-//
 // Props:
-//   orders          {array}   full orders list
-//   loading         {bool}
-//   search          {string}
-//   onSearchChange  {fn}      (value: string) => void
-//   filterCompany   {string}
-//   onCompanyChange {fn}      (value: string) => void
-//   onOpenDispatch  {fn}      (order) => void
-// ─────────────────────────────────────────────────────────────────────────────
-export default function OrderHistory({
-  orders, loading, search, onSearchChange,
-  filterCompany, onCompanyChange, onOpenDispatch,
-}) {
-  const visible = orders.filter(o =>
-    !search ||
-    o.customerName.toLowerCase().includes(search.toLowerCase()) ||
-    o.diNo.toLowerCase().includes(search.toLowerCase())
-  )
+//   orders         {array}   pre-filtered orders list (filtering done by parent)
+//   loading        {bool}
+//   total          {number}
+//   onOpenDispatch {fn}      (order) => void
+export default function OrderHistory({ orders, loading, total, onOpenDispatch }) {
+  const visible = orders
 
   return (
     <div>
-      {/* ── Filter bar ────────────────────────────────────────────────── */}
-      <div className="flex flex-wrap gap-3 mb-5">
-        <input
-          value={search}
-          onChange={e => onSearchChange(e.target.value)}
-          placeholder="Search customer or order…"
-          className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-52 focus:ring-2 focus:ring-green-500 focus:outline-none"
-        />
-        <select
-          value={filterCompany}
-          onChange={e => onCompanyChange(e.target.value)}
-          className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
-        >
-          <option value="ALL">All Companies</option>
-          {COMPANIES.map(c => <option key={c} value={c}>{c}</option>)}
-        </select>
-      </div>
 
       {/* ── Table ─────────────────────────────────────────────────────── */}
       {loading ? (

@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { importApi } from '../../../../api/client.js'
+import { importApi } from '../../../../api/inventory.js'
 import ResultCard from '../components/ResultCard.jsx'
 import FormatGuide from '../components/FormatGuide.jsx'
 

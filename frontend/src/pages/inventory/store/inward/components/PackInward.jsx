@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { inwardApi } from '../../../../../api/client.js'
+import { inwardApi } from '../../../../../api/inventory.js'
 import jsQR from 'jsqr'
 
 const STEPS = { SETUP: 'setup', SCANNING: 'scanning', DONE: 'done' }

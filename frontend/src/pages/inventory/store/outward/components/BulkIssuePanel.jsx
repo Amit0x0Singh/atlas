@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { indentApi, bulkApi } from '../../../../../api/client.js'
+import { bulkApi } from '../../../../../api/inventory.js'
+import { indentApi } from '../../../../../api/production.js'
 import jsQR from 'jsqr'
 
 export default function BulkIssuePanel({ onDone }) {

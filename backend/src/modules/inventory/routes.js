@@ -10,14 +10,13 @@ import { bomScan, bomManual, getAvailablePacks, packReduction, stockAdjustment, 
 import { listLocations, getLocation, createLocation, deleteLocation, getLocationLabel, bulkInward, bulkOutward, getBulkStockSummary } from "./bulk-location/bulk-location.controller.js";
 import { previewImport, executeImport } from "./import/import.controller.js";
 import { getPendingInwardGroups, getNextLotNumber, listPacks, getPackById, getPackLabel, getBatchLabels, generatePacks } from "./store/inward/get/inward.controller.js";
-import { createGateInward, getPendingReview, getQuarantineCount, confirmItem, getQrLabels, scanConfirm, verifyScan, listGateInward, getGateInward, createGateOutward, listGateOutward, getPack, listPacks as listGatePacks, getFifoPacks } from "./gate/gate.controller.js";
+import GateRouter from "./gate/router.js";
 import adjustmentsRouter from "./adjustments/routes.js";
 
 const InventoryRouter = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
 const storeOrAbove = authorize(["store_person", "store_manager", "admin"]);
 const managerOrAbove = authorize(["store_manager", "admin"]);
-const gateOrAbove = authorize(["gate_person", "gate_manager", "store_manager", "admin"]);
 
 // ── RM Master ─────────────────────────────────────────────────────────────────
 InventoryRouter.get("/rm", authenticate, listRm);
@@ -81,25 +80,8 @@ InventoryRouter.post("/bulk/outward", authenticate, storeOrAbove, bulkOutward);
 InventoryRouter.post("/import/preview", authenticate, managerOrAbove, upload.single("file"), previewImport);
 InventoryRouter.post("/import/execute", authenticate, managerOrAbove, upload.single("file"), executeImport);
 
-// ── Gate Inward ───────────────────────────────────────────────────────────────
-InventoryRouter.post("/erp/gate/inward", authenticate, gateOrAbove, createGateInward);
-InventoryRouter.get("/erp/gate/inward/pending", authenticate, gateOrAbove, getPendingReview);
-InventoryRouter.get("/erp/gate/inward/quarantine-count", authenticate, getQuarantineCount);
-InventoryRouter.patch("/erp/gate/inward/:id/confirm-item", authenticate, gateOrAbove, confirmItem);
-InventoryRouter.get("/erp/gate/inward/:id/qr-labels", authenticate, getQrLabels);
-InventoryRouter.get("/erp/gate/inward/:id", authenticate, getGateInward);
-InventoryRouter.get("/erp/gate/inward", authenticate, listGateInward);
-InventoryRouter.post("/erp/gate/scan-confirm", authenticate, gateOrAbove, scanConfirm);
-InventoryRouter.post("/erp/gate/verify-scan", authenticate, gateOrAbove, verifyScan);
-
-// ── Gate Outward ──────────────────────────────────────────────────────────────
-InventoryRouter.post("/erp/gate/outward", authenticate, gateOrAbove, createGateOutward);
-InventoryRouter.get("/erp/gate/outward", authenticate, listGateOutward);
-
-// ── Gate packs ────────────────────────────────────────────────────────────────
-InventoryRouter.get("/erp/packs", authenticate, listGatePacks);
-InventoryRouter.get("/erp/packs/fifo/:itemCode", authenticate, getFifoPacks);
-InventoryRouter.get("/erp/packs/:packId", authenticate, getPack);
+// ── Gate (Inward + Outward) ───────────────────────────────────────────────────
+InventoryRouter.use("/erp/gate", GateRouter);
 
 // ── Adjustments sub-router ────────────────────────────────────────────────────
 InventoryRouter.use("/erp/inventory", adjustmentsRouter);

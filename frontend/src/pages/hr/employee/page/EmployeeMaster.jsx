@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { employeeApi } from '../../../../api/client.js'
+import { employeeApi } from '../../../../api/hr.js'
 
 const ROLES = ['ADMIN', 'SALES', 'PRODUCTION', 'QC', 'DISPATCH', 'PLANNING', 'ACCOUNTS']
 const SECTIONS = ['NANO', 'BOTANICAL', 'LIQUID', 'POWDER', 'GRANULES']

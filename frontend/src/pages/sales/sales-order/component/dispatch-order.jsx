@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { salesOrderApi } from "../../../../api/client";
+import { salesOrderApi } from "../../../../api/sales.js";
 import {
   BRAND,
   LABEL_TYPES,

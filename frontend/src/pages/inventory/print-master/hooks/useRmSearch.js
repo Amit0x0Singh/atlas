@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { rmApi, packsApi } from "../../../../api/client.js";
+import { rmApi, packsApi } from "../../../../api/inventory.js";
 
 export function useRmSearch() {
   const [rmList, setRmList] = useState([]);

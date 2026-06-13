@@ -12,6 +12,7 @@ import ExportRouter from "../modules/export/routes.js";
 
 // Admin Panel Router
 import AdminPanelRouter from "../modules/admin_panel/router.js";
+import GateRouter from "../modules/inventory/gate/router.js";
 
 const router = express.Router();
 
@@ -24,6 +25,9 @@ const router = express.Router();
 //          /api/ledger, /api/grn, /api/import, /api/bulk,
 //          /api/erp/gate, /api/erp/inventory
 // router.use("/", InventoryRouter);
+
+// ── Gate (Inward + Outward) ───────────────────────────────────────────────────
+router.use("/erp/gate", GateRouter);
 
 // ── Sales ─────────────────────────────────────────────────────────────────────
 // Handles: /api/customer-profiles, /api/cp-profiles, /api/tracker,

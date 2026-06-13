@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { equipmentApi } from '../../../../api/client.js'
+import { equipmentApi } from '../../../../api/masters.js'
 
 export default function EquipmentMaster() {
   const [items, setItems] = useState([])

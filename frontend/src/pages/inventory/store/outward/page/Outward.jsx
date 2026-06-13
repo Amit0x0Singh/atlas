@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { outwardApi, indentApi } from '../../../../../api/client.js'
+import { outwardApi } from '../../../../../api/inventory.js'
+import { indentApi } from '../../../../../api/production.js'
 import jsQR from 'jsqr'
 import BulkIssuePanel from '../components/BulkIssuePanel.jsx'
 

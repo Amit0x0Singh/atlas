@@ -92,20 +92,18 @@ export const bulkApi = {
 // ── ERP gate & inventory (authenticated) ─────────────────────────────────────
 
 export const gateApi = {
-  createInward:    (data)       => erpApi.post('/erp/gate/inward', data),
-  pendingReview:   ()           => erpApi.get('/erp/gate/inward/pending-review'),
-  quarantineCount: ()           => erpApi.get('/erp/gate/inward/quarantine-count'),
-  confirmItem:     (id, data)   => erpApi.patch(`/erp/gate/inward/${id}/confirm-item`, data),
-  getLabels:       (id)         => erpApi.get(`/erp/gate/inward/${id}/qr-labels`),
-  scanConfirm:     (data)       => erpApi.post('/erp/gate/inward/scan-confirm', data),
-  verifyScan:      (data)       => erpApi.post('/erp/gate/inward/verify-scan', data),
-  inwardList:      (params)     => erpApi.get('/erp/gate/inward', { params }),
-  inwardDetail:    (id)         => erpApi.get(`/erp/gate/inward/${id}`),
-  createOutward:   (data)       => erpApi.post('/erp/gate/outward', data),
-  outwardList:     (params)     => erpApi.get('/erp/gate/outward', { params }),
-  getPack:         (packId)     => erpApi.get(`/erp/gate/packs/${packId}`),
-  packList:        (params)     => erpApi.get('/erp/gate/packs', { params }),
-  fifoPacks:       (itemCode)   => erpApi.get(`/erp/gate/packs/fifo/${encodeURIComponent(itemCode)}`),
+  // Inward
+  createInward:   (data)       => erpApi.post('/erp/gate/inward', data),
+  inwardList:     (params)     => erpApi.get('/erp/gate/inward', { params }),
+  inwardDetail:   (id)         => erpApi.get(`/erp/gate/inward/${id}`),
+  updateInward:   (id, data)   => erpApi.patch(`/erp/gate/inward/${id}/status`, data),
+  deleteInward:   (id)         => erpApi.delete(`/erp/gate/inward/${id}`),
+  // Outward
+  createOutward:  (data)       => erpApi.post('/erp/gate/outward', data),
+  outwardList:    (params)     => erpApi.get('/erp/gate/outward', { params }),
+  outwardDetail:  (id)         => erpApi.get(`/erp/gate/outward/${id}`),
+  updateOutward:  (id, data)   => erpApi.patch(`/erp/gate/outward/${id}/status`, data),
+  deleteOutward:  (id)         => erpApi.delete(`/erp/gate/outward/${id}`),
 }
 
 export const inventoryApi = {

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
-import { indentApi, productApi, equipmentApi } from '../../../../api/client.js'
+import { indentApi } from '../../../../api/production.js'
+import { productApi, equipmentApi } from '../../../../api/masters.js'
 import IndentCard from '../components/IndentCard.jsx'
 
 const TABS = ['Production Indent', 'Purchase Indent', 'Pending Indents']

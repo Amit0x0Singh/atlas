@@ -5,7 +5,8 @@
  *   — grouped by microbe → type → containers → FIFO batches
  */
 import { useState, useEffect } from 'react'
-import { microbialSfgApi, sfgApi } from '../../../../api/client.js'
+import { microbialSfgApi } from '../../../../api/microbial.js'
+import { sfgApi } from '../../../../api/inventory.js'
 
 function fmtCfu(v) {
   if (!v) return '—'

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { grnApi } from '../../../../../api/client.js'
+import { grnApi } from '../../../../../api/inventory.js'
 import MetaField from '../components/MetaField.jsx'
 
 const COMPANY = {

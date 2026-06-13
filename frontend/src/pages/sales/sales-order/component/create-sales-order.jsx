@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { cpProfileApi } from "../../../../api/client";
+import { cpProfileApi } from "../../../../api/sales.js";
 import {
   COMPANIES,
   ORDER_TYPES,

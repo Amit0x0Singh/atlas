@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { packsApi } from "../../../../api/client.js";
+import { packsApi } from "../../../../api/inventory.js";
 
 export function usePacks(filterCode) {
   const [packs, setPacks] = useState([]);

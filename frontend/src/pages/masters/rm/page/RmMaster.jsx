@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { rmApi } from '../../../../api/client.js'
+import { rmApi } from '../../../../api/inventory.js'
 
 const TRACKING_BADGE = {
   PACK: 'bg-blue-100 text-blue-700',

@@ -2,7 +2,9 @@
  * Production Planning Engine — 8-step analysis, plan creation, submit/publish, batch job tracking
  */
 import { useState, useEffect, useCallback } from 'react'
-import { planningApi, erpReasonCodesApi, salesApi } from '../../api/erp-client.js'
+import { planningApi } from '../../api/planning.js'
+import { erpReasonCodesApi } from '../../api/masters.js'
+import { salesApi } from '../../api/sales.js'
 import { useAuth } from '../../components/erp/AuthContext.jsx'
 
 const inputStyle = { width: '100%', padding: '9px 12px', border: '1.5px solid #e2e8f0', borderRadius: '7px', fontSize: '13px', boxSizing: 'border-box', outline: 'none' }

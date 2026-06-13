@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { bulkApi } from '../../../../../api/client.js'
+import { bulkApi } from '../../../../../api/inventory.js'
 import jsQR from 'jsqr'
 
 export default function BulkInward() {

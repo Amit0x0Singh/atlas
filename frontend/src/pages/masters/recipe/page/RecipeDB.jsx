@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
-import { recipeApi, rmApi, productApi, importApi } from '../../../../api/client.js'
+import { recipeApi, productApi } from '../../../../api/masters.js'
+import { rmApi, importApi } from '../../../../api/inventory.js'
 
 const CONFIDENCE_STYLES = {
   emerald: 'bg-emerald-100 text-emerald-700 border-emerald-200',
