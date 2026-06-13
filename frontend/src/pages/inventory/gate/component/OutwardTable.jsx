@@ -36,9 +36,31 @@ function StatusBadge({ status }) {
   );
 }
 
-const HEADERS = ["Receiver Name", "Invoice No.", "Vehicle No.", "Date & Time", "Status"];
+const HEADERS = ["Receiver Name", "Invoice No.", "Vehicle No.", "Date & Time", "Status", "Actions"];
 
-export default function OutwardTable({ list, total }) {
+function DeleteRequestBadge() {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "4px",
+        padding: "3px 8px",
+        background: "#fef3c7",
+        color: "#92400e",
+        border: "1px solid #fde68a",
+        borderRadius: "6px",
+        fontSize: "11px",
+        fontWeight: 700,
+        whiteSpace: "nowrap",
+      }}
+    >
+      ⏳ Delete Requested
+    </span>
+  );
+}
+
+export default function OutwardTable({ list, total, onRequestDelete }) {
   if (!list.length) {
     return (
       <div
@@ -134,6 +156,28 @@ export default function OutwardTable({ list, total }) {
                 </td>
                 <td style={{ padding: "12px 14px" }}>
                   <StatusBadge status={item.status} />
+                </td>
+                <td style={{ padding: "12px 14px" }}>
+                  {item.request_delete ? (
+                    <DeleteRequestBadge />
+                  ) : (
+                    <button
+                      onClick={() => onRequestDelete(item.outward_id || item.outwardId)}
+                      style={{
+                        padding: "5px 12px",
+                        background: "#fff7ed",
+                        color: "#c2410c",
+                        border: "1px solid #fed7aa",
+                        borderRadius: "6px",
+                        fontSize: "12px",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      🗑 Request Delete
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}

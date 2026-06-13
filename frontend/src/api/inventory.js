@@ -93,17 +93,19 @@ export const bulkApi = {
 
 export const gateApi = {
   // Inward
-  createInward:   (data)       => erpApi.post('/erp/gate/inward', data),
-  inwardList:     (params)     => erpApi.get('/erp/gate/inward', { params }),
-  inwardDetail:   (id)         => erpApi.get(`/erp/gate/inward/${id}`),
-  updateInward:   (id, data)   => erpApi.patch(`/erp/gate/inward/${id}/status`, data),
-  deleteInward:   (id)         => erpApi.delete(`/erp/gate/inward/${id}`),
+  createInward:         (data)     => erpApi.post('/erp/gate/inward', data),
+  inwardList:           (params)   => erpApi.get('/erp/gate/inward', { params }),
+  inwardDetail:         (id)       => erpApi.get(`/erp/gate/inward/${id}`),
+  updateInward:         (id, data) => erpApi.patch(`/erp/gate/inward/${id}/status`, data),
+  requestDeleteInward:  (id)       => erpApi.patch(`/erp/gate/inward/${id}/request-delete`),
+  deleteInward:         (id)       => erpApi.delete(`/erp/gate/inward/${id}`),
   // Outward
-  createOutward:  (data)       => erpApi.post('/erp/gate/outward', data),
-  outwardList:    (params)     => erpApi.get('/erp/gate/outward', { params }),
-  outwardDetail:  (id)         => erpApi.get(`/erp/gate/outward/${id}`),
-  updateOutward:  (id, data)   => erpApi.patch(`/erp/gate/outward/${id}/status`, data),
-  deleteOutward:  (id)         => erpApi.delete(`/erp/gate/outward/${id}`),
+  createOutward:        (data)     => erpApi.post('/erp/gate/outward', data),
+  outwardList:          (params)   => erpApi.get('/erp/gate/outward', { params }),
+  outwardDetail:        (id)       => erpApi.get(`/erp/gate/outward/${id}`),
+  updateOutward:        (id, data) => erpApi.patch(`/erp/gate/outward/${id}/status`, data),
+  requestDeleteOutward: (id)       => erpApi.patch(`/erp/gate/outward/${id}/request-delete`),
+  deleteOutward:        (id)       => erpApi.delete(`/erp/gate/outward/${id}`),
 }
 
 export const inventoryApi = {

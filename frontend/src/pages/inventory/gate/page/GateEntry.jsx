@@ -106,6 +106,19 @@ export default function GateEntry() {
     }
   };
 
+  const handleRequestDelete = async (id, type) => {
+    if (!confirm(
+      "Send a delete request to admin?\n\nThis record will be flagged for review. Only an admin can permanently delete it."
+    )) return;
+    try {
+      if (type === "inward") await gateApi.requestDeleteInward(id);
+      else await gateApi.requestDeleteOutward(id);
+      fetchList(filters);
+    } catch (e) {
+      alert(e.message);
+    }
+  };
+
   return (
     <div style={{ padding: "24px 28px", background: "#f1f5f9", minHeight: "100vh" }}>
       <GateHeader
@@ -167,9 +180,18 @@ export default function GateEntry() {
           Loading…
         </div>
       ) : tab === "inward" ? (
-        <InwardTable list={list} total={total} onOpenDetail={openDetail} />
+        <InwardTable
+          list={list}
+          total={total}
+          onOpenDetail={openDetail}
+          onRequestDelete={(id) => handleRequestDelete(id, "inward")}
+        />
       ) : (
-        <OutwardTable list={list} total={total} />
+        <OutwardTable
+          list={list}
+          total={total}
+          onRequestDelete={(id) => handleRequestDelete(id, "outward")}
+        />
       )}
     </div>
   );

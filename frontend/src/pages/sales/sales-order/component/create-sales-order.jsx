@@ -178,11 +178,10 @@ export default function CreateSalesOrder({
         <h3 className="text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide">
           Order Details
         </h3>
-        <div className="grid grid-cols-4 gap-4">
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1">
-              DI No. *
-            </label>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+          {/* Row 1: DI No. | Customer Name */}
+          <div style={{ minWidth: 0 }}>
+            <label className="block text-xs font-semibold text-gray-500 mb-1">DI No. *</label>
             <input
               value={hdr.diNo || ""}
               onChange={(e) => setH("diNo", e.target.value)}
@@ -190,11 +189,8 @@ export default function CreateSalesOrder({
               placeholder="e.g. DVS/SO-25-001"
             />
           </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1">
-              Customer Name *
-            </label>
+          <div style={{ minWidth: 0 }}>
+            <label className="block text-xs font-semibold text-gray-500 mb-1">Customer Name *</label>
             <CustomerNamePicker
               value={hdr.customerName}
               profiles={profiles}
@@ -205,51 +201,36 @@ export default function CreateSalesOrder({
               }}
             />
             {hdr.customerName &&
-              profiles.find(
-                (p) => p.customerName === hdr.customerName.toUpperCase(),
-              ) && (
-                <p className="mt-1 text-xs text-green-600">
-                  Auto-filled from memory
-                </p>
+              profiles.find((p) => p.customerName === hdr.customerName.toUpperCase()) && (
+                <p className="mt-1 text-xs text-green-600">Auto-filled from memory</p>
               )}
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1">
-              Order Type
-            </label>
+          {/* Row 2: Order Type | Company */}
+          <div style={{ minWidth: 0 }}>
+            <label className="block text-xs font-semibold text-gray-500 mb-1">Order Type</label>
             <select
               value={hdr.orderType}
               onChange={(e) => setH("orderType", e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
             >
-              {ORDER_TYPES.map((t) => (
-                <option key={t}>{t}</option>
-              ))}
+              {ORDER_TYPES.map((t) => <option key={t}>{t}</option>)}
             </select>
           </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1">
-              Company
-            </label>
+          <div style={{ minWidth: 0 }}>
+            <label className="block text-xs font-semibold text-gray-500 mb-1">Company</label>
             <select
               value={hdr.company}
               onChange={(e) => setH("company", e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
             >
-              {COMPANIES.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
+              {COMPANIES.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1">
-              Sales Staff
-            </label>
+          {/* Row 3: Sales Staff | Order Date */}
+          <div style={{ minWidth: 0 }}>
+            <label className="block text-xs font-semibold text-gray-500 mb-1">Sales Staff</label>
             <input
               value={hdr.salesStaff || ""}
               onChange={(e) => setH("salesStaff", e.target.value)}
@@ -257,11 +238,8 @@ export default function CreateSalesOrder({
               placeholder="Name of sales person"
             />
           </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1">
-              Order Date
-            </label>
+          <div style={{ minWidth: 0 }}>
+            <label className="block text-xs font-semibold text-gray-500 mb-1">Order Date</label>
             <input
               type="date"
               value={hdr.orderReceivedDate}
@@ -270,10 +248,9 @@ export default function CreateSalesOrder({
             />
           </div>
 
-          <div className="col-span-2">
-            <label className="block text-xs font-semibold text-gray-500 mb-1">
-              Order Remarks
-            </label>
+          {/* Row 4: Remarks — full width */}
+          <div style={{ minWidth: 0, gridColumn: "1 / -1" }}>
+            <label className="block text-xs font-semibold text-gray-500 mb-1">Order Remarks</label>
             <input
               value={hdr.remarks || ""}
               onChange={(e) => setH("remarks", e.target.value)}

@@ -11,22 +11,9 @@ import { calcTotalCS, addDays } from "../shared/utils.js";
 import InhouseProductPicker from "./InhouseProductPicker.jsx";
 import CustomerProductPicker from "./CustomerProductPicker.jsx";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// LineItemRow
-// Renders one product line inside the CreateSalesOrder form.
-// Covers: product names, specs, carrier, qty/UOM, full packing section,
-// label type, and conditional batch/date/MRP fields.
-//
-// Props:
-//   item              {object}   current line item state
-//   idx               {number}   position in the items array
-//   products          {array}    product master list (for InhouseProductPicker)
-//   cpProfiles        {array}    customer-product profiles (for CustomerProductPicker)
-//   onChange          {fn}       (idx, updatedItem) => void
-//   onRemove          {fn}       (idx) => void
-//   onProductPicked   {fn}       (idx, productCode) => void
-//   onCpProductPicked {fn}       (idx, profile) => void
-// ─────────────────────────────────────────────────────────────────────────────
+const field = "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none";
+const label = "block text-xs font-semibold text-gray-500 mb-1";
+
 export default function LineItemRow({
   item,
   idx,
@@ -50,15 +37,25 @@ export default function LineItemRow({
     item.packingType !== "";
 
   return (
-    <div className="border border-gray-200 rounded-xl p-4 space-y-4 bg-gray-50">
-      {/* ── Row header ──────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">
+    <div
+      style={{
+        border: "1px solid #e2e8f0",
+        borderRadius: "12px",
+        padding: "16px",
+        background: "#f8fafc",
+        display: "flex",
+        flexDirection: "column",
+        gap: "14px",
+      }}
+    >
+      {/* ── Row header ── */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <span style={{ fontSize: "11px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em" }}>
             Line {idx + 1}
           </span>
           {item._memApplied && (
-            <span className="text-xs bg-green-100 text-green-700 font-semibold px-2 py-0.5 rounded-full">
+            <span style={{ fontSize: "11px", background: "#f0fdf4", color: "#15803d", fontWeight: 600, padding: "2px 8px", borderRadius: "99px" }}>
               Memory applied
             </span>
           )}
@@ -66,19 +63,19 @@ export default function LineItemRow({
         <button
           type="button"
           onClick={() => onRemove(idx)}
-          className="text-xs text-red-400 hover:underline"
+          style={{ fontSize: "12px", color: "#f87171", background: "none", border: "none", cursor: "pointer" }}
         >
           Remove
         </button>
       </div>
 
-      {/* ── Product names ────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-xs font-semibold text-gray-500 mb-1">
+      {/* ── Product names — 2 cols ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+        <div style={{ minWidth: 0 }}>
+          <label className={label}>
             Customer Product Name *
             {cpProfiles.length > 0 && (
-              <span className="ml-1.5 text-green-600 font-normal">
+              <span style={{ marginLeft: "6px", color: "#16a34a", fontWeight: 400 }}>
                 ({cpProfiles.length} known)
               </span>
             )}
@@ -90,154 +87,134 @@ export default function LineItemRow({
             onSelect={(profile) => onCpProductPicked(idx, profile)}
           />
         </div>
-        <div>
-          <label className="block text-xs font-semibold text-gray-500 mb-1">
-            Inhouse Product Name *
-          </label>
+        <div style={{ minWidth: 0 }}>
+          <label className={label}>Inhouse Product Name *</label>
           <InhouseProductPicker
             value={item.inhouseProductName}
             productCode={item.inhouseProductCode}
             products={products}
             onChange={(name, code) => {
-              onChange(idx, {
-                ...item,
-                inhouseProductName: name,
-                inhouseProductCode: code,
-              });
+              onChange(idx, { ...item, inhouseProductName: name, inhouseProductCode: code });
               if (code) onProductPicked(idx, code);
             }}
           />
         </div>
       </div>
 
-      {/* ── Specs ────────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-xs font-semibold text-gray-500 mb-1">
-            CFU / Specs
-          </label>
+      {/* ── CFU / Specs + Carrier — 2 cols ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+        <div style={{ minWidth: 0 }}>
+          <label className={label}>CFU / Specs</label>
           <input
             value={item.activeSpecs || ""}
             onChange={(e) => set("activeSpecs", e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
-            placeholder="e.g. 2x10^9 CFU/g"
+            className={field}
+            placeholder="e.g. 2×10^9 CFU/g"
           />
         </div>
-        <div>
-          <label className="block text-xs font-semibold text-gray-500 mb-1">
-            Carrier
-          </label>
+        <div style={{ minWidth: 0 }}>
+          <label className={label}>Carrier</label>
           <select
             value={item.carrier || ""}
             onChange={(e) => set("carrier", e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
+            className={field}
           >
             {CARRIER_OPTIONS.map((c) => (
-              <option key={c} value={c}>
-                {c || "— Select —"}
-              </option>
+              <option key={c} value={c}>{c || "— Select —"}</option>
             ))}
           </select>
         </div>
       </div>
 
-      {/* ── Qty + Section ────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-3 gap-3">
-        <div>
-          <label className="block text-xs font-semibold text-gray-500 mb-1">
-            Total Qty *
-          </label>
-          <div className="flex gap-2">
+      {/* ── Qty row: Total Qty | Unit Qty | Section — 3 cols ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px" }}>
+        {/* Total Qty */}
+        <div style={{ minWidth: 0 }}>
+          <label className={label}>Total Qty *</label>
+          <div style={{ display: "flex", gap: "6px" }}>
             <input
               type="number"
               value={item.totalQty}
               onChange={(e) => {
                 const newQty = e.target.value;
-                const newCS = calcTotalCS(
-                  newQty,
-                  item.unitQty,
-                  item.unitsPerCS,
-                );
-                onChange(idx, {
-                  ...item,
-                  totalQty: newQty,
-                  ...(newCS ? { totalCS: newCS } : {}),
-                });
+                const newCS = calcTotalCS(newQty, item.unitQty, item.unitsPerCS);
+                onChange(idx, { ...item, totalQty: newQty, ...(newCS ? { totalCS: newCS } : {}) });
               }}
-              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
+              className={field}
+              style={{ flex: "1 1 0", minWidth: 0 }}
               placeholder="0"
               min="0"
             />
             <select
               value={item.totalUom || "KG"}
               onChange={(e) => set("totalUom", e.target.value)}
-              className="w-20 border border-gray-300 rounded-lg px-2 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
+              className={field}
+              style={{ flexShrink: 0, width: "68px", padding: "8px 4px" }}
             >
-              {UOMS.map((u) => (
-                <option key={u}>{u}</option>
-              ))}
+              {UOMS.map((u) => <option key={u}>{u}</option>)}
             </select>
           </div>
         </div>
-        <div>
-          <label className="block text-xs font-semibold text-gray-500 mb-1">
-            Unit Qty (per pack)
-          </label>
-          <div className="flex gap-2">
+
+        {/* Unit Qty */}
+        <div style={{ minWidth: 0 }}>
+          <label className={label}>Unit Qty (per pack)</label>
+          <div style={{ display: "flex", gap: "6px" }}>
             <input
               type="number"
               value={item.unitQty || ""}
               onChange={(e) => set("unitQty", e.target.value)}
-              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
+              className={field}
+              style={{ flex: "1 1 0", minWidth: 0 }}
               placeholder="e.g. 1"
               min="0"
             />
             <select
               value={item.unitUom || "KG"}
               onChange={(e) => set("unitUom", e.target.value)}
-              className="w-20 border border-gray-300 rounded-lg px-2 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
+              className={field}
+              style={{ flexShrink: 0, width: "68px", padding: "8px 4px" }}
             >
-              {UOMS.map((u) => (
-                <option key={u}>{u}</option>
-              ))}
+              {UOMS.map((u) => <option key={u}>{u}</option>)}
             </select>
           </div>
         </div>
-        <div>
-          <label className="block text-xs font-semibold text-gray-500 mb-1">
-            Section / MFG Unit
-          </label>
+
+        {/* Section */}
+        <div style={{ minWidth: 0 }}>
+          <label className={label}>Section / MFG Unit</label>
           <select
             value={item.sectionName || ""}
             onChange={(e) => set("sectionName", e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
+            className={field}
           >
             <option value="">— Select —</option>
-            {SECTIONS.map((s) => (
-              <option key={s}>{s}</option>
-            ))}
+            {SECTIONS.map((s) => <option key={s}>{s}</option>)}
           </select>
         </div>
       </div>
 
-      {/* ── Packing ──────────────────────────────────────────────────────── */}
-      <div className="border-t border-gray-200 pt-3">
-        <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">
+      {/* ── Packing — 2×2 grid ── */}
+      <div
+        style={{
+          borderTop: "1px solid #e2e8f0",
+          paddingTop: "12px",
+        }}
+      >
+        <p style={{ fontSize: "11px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "10px" }}>
           Packing
         </p>
-        <div className="grid grid-cols-4 gap-3">
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
           {/* Primary pack */}
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1">
-              Primary Pack
-            </label>
+          <div style={{ minWidth: 0 }}>
+            <label className={label}>Primary Pack</label>
             <select
               value={ppIsCustom ? "__CUSTOM__" : item.unitPackType || ""}
               onChange={(e) => {
                 if (e.target.value === "__CUSTOM__") set("unitPackType", "");
                 else set("unitPackType", e.target.value);
               }}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
+              className={field}
             >
               {PRIMARY_PACKING.map((p) => (
                 <option key={p} value={p}>
@@ -250,23 +227,22 @@ export default function LineItemRow({
                 value={item.unitPackType}
                 onChange={(e) => set("unitPackType", e.target.value)}
                 placeholder="Type custom…"
-                className="mt-1 w-full border border-green-300 rounded-lg px-3 py-2 text-sm"
+                className={field}
+                style={{ marginTop: "6px", borderColor: "#bbf7d0" }}
               />
             )}
           </div>
 
           {/* Secondary pack */}
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1">
-              Secondary Pack
-            </label>
+          <div style={{ minWidth: 0 }}>
+            <label className={label}>Secondary Pack</label>
             <select
               value={spIsCustom ? "__CUSTOM__" : item.packingType || ""}
               onChange={(e) => {
                 if (e.target.value === "__CUSTOM__") set("packingType", "");
                 else set("packingType", e.target.value);
               }}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
+              className={field}
             >
               {SECONDARY_PACKING.map((p) => (
                 <option key={p} value={p}>
@@ -279,44 +255,37 @@ export default function LineItemRow({
                 value={item.packingType}
                 onChange={(e) => set("packingType", e.target.value)}
                 placeholder="Type custom…"
-                className="mt-1 w-full border border-green-300 rounded-lg px-3 py-2 text-sm"
+                className={field}
+                style={{ marginTop: "6px", borderColor: "#bbf7d0" }}
               />
             )}
           </div>
 
           {/* Units per secondary pack */}
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1">
-              Unit Per Sec. Pack
-            </label>
+          <div style={{ minWidth: 0 }}>
+            <label className={label}>Unit Per Sec. Pack</label>
             <input
               type="number"
               value={item.unitsPerCS || ""}
               onChange={(e) => {
                 const newUPS = e.target.value;
                 const newCS = calcTotalCS(item.totalQty, item.unitQty, newUPS);
-                onChange(idx, {
-                  ...item,
-                  unitsPerCS: newUPS,
-                  ...(newCS ? { totalCS: newCS } : {}),
-                });
+                onChange(idx, { ...item, unitsPerCS: newUPS, ...(newCS ? { totalCS: newCS } : {}) });
               }}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
+              className={field}
               placeholder="e.g. 10"
               min="0"
             />
           </div>
 
-          {/* Total secondary packs — auto-calculated or manual override */}
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1">
-              No. of Sec. Packs
-            </label>
+          {/* Total secondary packs */}
+          <div style={{ minWidth: 0 }}>
+            <label className={label}>No. of Sec. Packs</label>
             <input
               type="number"
               value={item.totalCS || ""}
               onChange={(e) => set("totalCS", e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
+              className={field}
               placeholder="Auto or enter"
               min="0"
             />
@@ -324,42 +293,42 @@ export default function LineItemRow({
         </div>
       </div>
 
-      {/* ── Label details ────────────────────────────────────────────────── */}
-      <div className="border-t border-gray-200 pt-3">
-        <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">
+      {/* ── Label details ── */}
+      <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: "12px" }}>
+        <p style={{ fontSize: "11px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "10px" }}>
           Label Details
         </p>
-        <div className="grid grid-cols-4 gap-3">
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1">
-              Label Type
-            </label>
-            <select
-              value={item.labelType || ""}
-              onChange={(e) => set("labelType", e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
-            >
-              {LABEL_TYPES.map((lt) => (
-                <option key={lt.value} value={lt.value}>
-                  {lt.label}
-                </option>
-              ))}
-            </select>
-            {item.labelType && !LABEL_NEEDS_DETAILS.has(item.labelType) && (
-              <p className="mt-1 text-xs text-gray-400">
-                No print details needed
-              </p>
-            )}
-          </div>
+        <div style={{ maxWidth: "260px" }}>
+          <label className={label}>Label Type</label>
+          <select
+            value={item.labelType || ""}
+            onChange={(e) => set("labelType", e.target.value)}
+            className={field}
+          >
+            {LABEL_TYPES.map((lt) => (
+              <option key={lt.value} value={lt.value}>{lt.label}</option>
+            ))}
+          </select>
+          {item.labelType && !LABEL_NEEDS_DETAILS.has(item.labelType) && (
+            <p style={{ marginTop: "4px", fontSize: "11px", color: "#94a3b8" }}>No print details needed</p>
+          )}
         </div>
 
-        {/* Batch / MFG date / EXP date / MRP — only for CUSTOMER, COMPUTER, RETAIL */}
         {showLabelDetails && (
-          <div className="mt-3 grid grid-cols-4 gap-3 bg-green-50 border border-green-100 rounded-xl p-3">
-            <div>
-              <label className="block text-xs font-semibold text-green-800 mb-1">
-                Batch No.
-              </label>
+          <div
+            style={{
+              marginTop: "12px",
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr 1fr 1fr",
+              gap: "12px",
+              background: "#f0fdf4",
+              border: "1px solid #dcfce7",
+              borderRadius: "10px",
+              padding: "12px",
+            }}
+          >
+            <div style={{ minWidth: 0 }}>
+              <label style={{ ...{}, fontSize: "11px", fontWeight: 700, color: "#166534", display: "block", marginBottom: "4px" }}>Batch No.</label>
               <input
                 value={item.batchNo || ""}
                 onChange={(e) => set("batchNo", e.target.value)}
@@ -367,30 +336,21 @@ export default function LineItemRow({
                 placeholder="e.g. GAS250601"
               />
             </div>
-            <div>
-              <label className="block text-xs font-semibold text-green-800 mb-1">
-                Mfg. Date
-              </label>
+            <div style={{ minWidth: 0 }}>
+              <label style={{ fontSize: "11px", fontWeight: 700, color: "#166534", display: "block", marginBottom: "4px" }}>Mfg. Date</label>
               <input
                 type="date"
                 value={item.mfgDate || ""}
                 onChange={(e) => {
                   set("mfgDate", e.target.value);
-                  // Auto-calculate expiry if shelf life is known from memory
-                  if (item._shelfLifeDays && e.target.value) {
-                    set(
-                      "expDate",
-                      addDays(e.target.value, item._shelfLifeDays),
-                    );
-                  }
+                  if (item._shelfLifeDays && e.target.value)
+                    set("expDate", addDays(e.target.value, item._shelfLifeDays));
                 }}
                 className="w-full border border-green-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-green-500 focus:outline-none"
               />
             </div>
-            <div>
-              <label className="block text-xs font-semibold text-green-800 mb-1">
-                Exp. Date
-              </label>
+            <div style={{ minWidth: 0 }}>
+              <label style={{ fontSize: "11px", fontWeight: 700, color: "#166534", display: "block", marginBottom: "4px" }}>Exp. Date</label>
               <input
                 type="date"
                 value={item.expDate || ""}
@@ -398,10 +358,8 @@ export default function LineItemRow({
                 className="w-full border border-green-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-green-500 focus:outline-none"
               />
             </div>
-            <div>
-              <label className="block text-xs font-semibold text-green-800 mb-1">
-                MRP (₹)
-              </label>
+            <div style={{ minWidth: 0 }}>
+              <label style={{ fontSize: "11px", fontWeight: 700, color: "#166534", display: "block", marginBottom: "4px" }}>MRP (₹)</label>
               <input
                 type="number"
                 value={item.mrp || ""}

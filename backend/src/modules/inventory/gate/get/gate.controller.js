@@ -67,7 +67,7 @@ export async function listGateInward(req, res) {
     const { where, params } = buildInwardWhere({ search, status, from_date, to_date, invoice_no })
 
     const rows = await prisma.$queryRawUnsafe(
-      `SELECT inward_id, supplier_name, invoice_no, vehicle_no, status, created_at, updated_at
+      `SELECT inward_id, supplier_name, invoice_no, vehicle_no, status, request_delete, created_at, updated_at
        FROM gate_inward
        ${where}
        ORDER BY created_at DESC
@@ -112,7 +112,7 @@ export async function listGateOutward(req, res) {
     const { where, params } = buildOutwardWhere({ search, status, from_date, to_date, invoice_no })
 
     const rows = await prisma.$queryRawUnsafe(
-      `SELECT outward_id, receiver_name, invoice_no, vehicle_no, status, created_at
+      `SELECT outward_id, receiver_name, invoice_no, vehicle_no, status, request_delete, created_at
        FROM gate_outward
        ${where}
        ORDER BY created_at DESC

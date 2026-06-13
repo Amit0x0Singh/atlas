@@ -45,7 +45,29 @@ const HEADERS = [
   "Actions",
 ];
 
-export default function InwardTable({ list, total, onOpenDetail }) {
+function DeleteRequestBadge() {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "4px",
+        padding: "3px 8px",
+        background: "#fef3c7",
+        color: "#92400e",
+        border: "1px solid #fde68a",
+        borderRadius: "6px",
+        fontSize: "11px",
+        fontWeight: 700,
+        whiteSpace: "nowrap",
+      }}
+    >
+      ⏳ Delete Requested
+    </span>
+  );
+}
+
+export default function InwardTable({ list, total, onOpenDetail, onRequestDelete }) {
   if (!list.length) {
     return (
       <div
@@ -175,23 +197,45 @@ export default function InwardTable({ list, total, onOpenDetail }) {
                   <StatusBadge status={item.status} />
                 </td>
                 <td style={{ padding: "12px 14px" }}>
-                  <button
-                    onClick={() =>
-                      onOpenDetail(item.inward_id || item.inwardId)
-                    }
-                    style={{
-                      padding: "5px 14px",
-                      background: "#eff6ff",
-                      color: "#3b82f6",
-                      border: "1px solid #bfdbfe",
-                      borderRadius: "6px",
-                      fontSize: "12px",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                    }}
-                  >
-                    Details
-                  </button>
+                  <div style={{ display: "flex", gap: "6px", alignItems: "center", flexWrap: "wrap" }}>
+                    <button
+                      onClick={() => onOpenDetail(item.inward_id || item.inwardId)}
+                      style={{
+                        padding: "5px 12px",
+                        background: "#eff6ff",
+                        color: "#3b82f6",
+                        border: "1px solid #bfdbfe",
+                        borderRadius: "6px",
+                        fontSize: "12px",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      Details
+                    </button>
+
+                    {item.request_delete ? (
+                      <DeleteRequestBadge />
+                    ) : (
+                      <button
+                        onClick={() => onRequestDelete(item.inward_id || item.inwardId)}
+                        style={{
+                          padding: "5px 12px",
+                          background: "#fff7ed",
+                          color: "#c2410c",
+                          border: "1px solid #fed7aa",
+                          borderRadius: "6px",
+                          fontSize: "12px",
+                          fontWeight: 600,
+                          cursor: "pointer",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        🗑 Request Delete
+                      </button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
