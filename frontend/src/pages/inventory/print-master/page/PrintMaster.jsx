@@ -1,11 +1,11 @@
 import { useState } from "react";
 import GenerateForm from "../components/GenerateForm.jsx";
-import HowItWorks from "../components/HowItWorks.jsx";
+import GateInwardPanel from "../components/GateInwardPanel.jsx";
 import PackTable from "../components/PackTable.jsx";
 
 export default function PrintMaster() {
-  // Incrementing this tells PackTable to reload after a successful generation
   const [reloadTrigger, setReloadTrigger] = useState(0);
+  const [selectedGate, setSelectedGate]   = useState(null);
 
   return (
     <div className="p-6">
@@ -14,8 +14,14 @@ export default function PrintMaster() {
       </h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <GenerateForm onGenerated={() => setReloadTrigger((n) => n + 1)} />
-        <HowItWorks />
+        <GenerateForm
+          onGenerated={() => setReloadTrigger(n => n + 1)}
+          prefill={selectedGate}
+        />
+        <GateInwardPanel
+          onSelect={setSelectedGate}
+          selectedId={selectedGate?.inward_id}
+        />
       </div>
 
       <PackTable reloadTrigger={reloadTrigger} />
