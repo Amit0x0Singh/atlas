@@ -10,6 +10,7 @@ export function usePacks(filterCode) {
       setLoading(true);
       const r = await packsApi.list({
         itemCode: filterCode || undefined,
+        status: "AWAITING_INWARD",
         limit: 100,
       });
       setPacks(r.data || []);

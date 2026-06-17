@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { packsApi, rmApi } from "../../../../api/inventory.js";
+import { packsApi, rmApi, gateApi } from "../../../../api/inventory.js";
+import QRCodePreview from "./QRCodePreview.jsx";
 
 const todayStr = () => new Date().toISOString().split("T")[0];
 const BLANK_ITEM = { selectedRm: null, numberOfBags: "", packQty: "" };
@@ -141,7 +142,7 @@ function ItemLine({ idx, item, rmList, onChange, onRemove, canRemove }) {
 }
 
 // ── Main form ─────────────────────────────────────────────────────────────────
-export default function GenerateForm({ onGenerated, prefill }) {
+export default function GenerateForm({ onGenerated, prefill, onGateUsed }) {
   const [rmList, setRmList]         = useState([]);
   const [hdr, setHdr]               = useState(BLANK_HDR);
   const [items, setItems]           = useState([{ ...BLANK_ITEM }]);
@@ -149,6 +150,7 @@ export default function GenerateForm({ onGenerated, prefill }) {
   const [error, setError]           = useState("");
   const [results, setResults]       = useState([]);
   const [linkedEntry, setLinkedEntry] = useState(null);
+  const [showQR, setShowQR]         = useState(false);
 
   // Load shared RM list once
   useEffect(() => {
@@ -212,8 +214,13 @@ export default function GenerateForm({ onGenerated, prefill }) {
       setResults(allResults);
       setItems([{ ...BLANK_ITEM }]);
       setHdr(BLANK_HDR);
+      // Mark the gate entry as approved so it leaves the "Incoming Gate Entries" panel
+      if (linkedEntry?.inward_id) {
+        try { await gateApi.updateInward(linkedEntry.inward_id, { status: "approved" }) } catch { /* ignore auth errors */ }
+      }
       setLinkedEntry(null);
       onGenerated?.();
+      onGateUsed?.();
     } catch (ex) {
       setError(ex.message);
     } finally {
@@ -276,12 +283,28 @@ export default function GenerateForm({ onGenerated, prefill }) {
                   rel="noreferrer"
                   style={{ color: "#2563eb", textDecoration: "underline", fontWeight: 600 }}
                 >
-                  🖨️ Print Labels
+                  🖨️ PDF Labels
                 </a>
               )}
             </div>
           ))}
+          <button
+            type="button"
+            onClick={() => setShowQR(true)}
+            style={{
+              marginTop: "8px", padding: "7px 16px",
+              background: "#1a3a6b", color: "#fff",
+              border: "none", borderRadius: "7px",
+              fontSize: "12px", fontWeight: 700, cursor: "pointer",
+            }}
+          >
+            📦 Show QR Labels
+          </button>
         </div>
+      )}
+
+      {showQR && (
+        <QRCodePreview results={results} onClose={() => setShowQR(false)} />
       )}
 
       <form onSubmit={handleSubmit}>

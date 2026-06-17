@@ -16,10 +16,16 @@ import AdminPanelRouter from "../modules/admin_panel/router.js";
 import GateRouter from "../modules/inventory/gate/router.js";
 
 // Import controller
-import { previewImport, executeImport } from "../modules/inventory/import/import.controller.js";
+import {
+  previewImport,
+  executeImport,
+} from "../modules/inventory/import/import.controller.js";
 import { authenticate, managerOrAbove } from "../middleware/auth.js";
 
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024 },
+});
 
 const router = express.Router();
 
@@ -31,7 +37,7 @@ const router = express.Router();
 // Handles: /api/rm, /api/packs, /api/inward, /api/outward, /api/stock,
 //          /api/ledger, /api/grn, /api/import, /api/bulk,
 //          /api/erp/gate, /api/erp/inventory
-// router.use("/", InventoryRouter);
+router.use("/", InventoryRouter);
 
 // ── Gate (Inward + Outward) ───────────────────────────────────────────────────
 router.use("/erp/gate", GateRouter);
@@ -68,8 +74,20 @@ router.use("/", MasterDataRouter);
 // router.use("/", ExportRouter);
 
 // ── Import (Excel file upload → DB) ──────────────────────────────────────────
-router.post("/import/preview", authenticate, managerOrAbove, upload.single("file"), previewImport);
-router.post("/import/execute", authenticate, managerOrAbove, upload.single("file"), executeImport);
+router.post(
+  "/import/preview",
+  authenticate,
+  managerOrAbove,
+  upload.single("file"),
+  previewImport,
+);
+router.post(
+  "/import/execute",
+  authenticate,
+  managerOrAbove,
+  upload.single("file"),
+  executeImport,
+);
 
 // ---- admin planel routes (not prefixed with /api) ───────────────────────────────────────────
 router.use("/admin", AdminPanelRouter);

@@ -88,6 +88,10 @@ export async function submitInwardSession(sessionId, transactedBy) {
     })
     await tx.stockLedger.createMany({ data: ledgerEntries })
     await tx.inwardSession.update({ where: { sessionId }, data: { status: 'SUBMITTED' } })
+    await tx.printMaster.updateMany({
+      where: { packId: { in: session.scannedPackIds } },
+      data:  { status: 'INWARDED' },
+    })
   }, { timeout: 60000 })
 
   // After successful inward - re-check any PENDING_STOCK indents for these items

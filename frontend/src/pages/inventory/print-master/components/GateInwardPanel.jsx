@@ -27,7 +27,7 @@ function StatusBadge({ status }) {
   );
 }
 
-export default function GateInwardPanel({ onSelect, selectedId }) {
+export default function GateInwardPanel({ onSelect, selectedId, reloadTrigger }) {
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
@@ -36,7 +36,7 @@ export default function GateInwardPanel({ onSelect, selectedId }) {
     setLoading(true);
     setErr("");
     try {
-      const res = await gateApi.inwardList({ limit: 30 });
+      const res = await gateApi.inwardList({ limit: 50, status: "pending" });
       setRecords(res.data || []);
     } catch (e) {
       setErr(e.message);
@@ -45,7 +45,7 @@ export default function GateInwardPanel({ onSelect, selectedId }) {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [reloadTrigger]);
 
   return (
     <div style={{
