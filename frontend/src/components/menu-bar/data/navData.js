@@ -28,6 +28,7 @@ export const APP_NAV = [
       { to: "/print-master", label: "Print Master", icon: "▣" },
       { to: "/inward", label: "Inward", icon: "↓" },
       { to: "/outward", label: "Outward", icon: "↑" },
+      { to: "/containers", label: "Container", icon: "📦" },
       { to: "/grn", label: "GRN", icon: "☰" },
       { to: "/microbial-inward", label: "Microbial Inward", icon: "🧊" },
       { to: "/ledger", label: "Stock Ledger", icon: "▤" },

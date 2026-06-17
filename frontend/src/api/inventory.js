@@ -48,6 +48,15 @@ export const sfgApi = {
   update:  (sfgId, data) => api.put(`/sfg/${sfgId}`, data),
 }
 
+export const containerApi = {
+  list:       (params)      => api.get('/containers', { params }),
+  get:        (id)          => api.get(`/containers/${encodeURIComponent(id)}`),
+  create:     (data)        => api.post('/containers', data),
+  fill:       (id, data)    => api.post(`/containers/${encodeURIComponent(id)}/fill`, data),
+  issue:      (id, data)    => api.post(`/containers/${encodeURIComponent(id)}/issue`, data),
+  labelUrl:   (id)          => `/api/containers/${encodeURIComponent(id)}/label`,
+}
+
 export const stockApi = {
   summary:    (params)   => api.get('/stock', { params }),
   item:       (itemCode) => api.get(`/stock/${itemCode}`),

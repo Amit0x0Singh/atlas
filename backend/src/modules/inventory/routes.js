@@ -7,6 +7,7 @@ import { listGrn, getGrnDetail } from "./grn/grn.controller.js";
 import { listRm, getRm, createRm, updateRm, deleteRm, listWarehouses } from "./row-material-master/rm-master.controller.js";
 import { createSession, getSession, scanPack, removeScan, submitSession, listActiveSessions, listInward } from "./store/inward/inward.controller.js";
 import { bomScan, bomManual, getAvailablePacks, packReduction, stockAdjustment, listOutward } from "./store/outward/outward.controller.js";
+import { listContainers as listContainersCtrl, getContainer, createContainer, fillContainer, issueFromContainer, getContainerLabel } from "./store/containers/containers.controller.js";
 import { listLocations, getLocation, createLocation, deleteLocation, getLocationLabel, bulkInward, bulkOutward, getBulkStockSummary } from "./bulk-location/bulk-location.controller.js";
 import { previewImport, executeImport } from "./import/import.controller.js";
 import { getPendingInwardGroups, getNextLotNumber, listPacks, getPackById, getPackLabel, getBatchLabels, generatePacks } from "./store/inward/get/inward.controller.js";
@@ -65,6 +66,14 @@ InventoryRouter.post("/outward/bom-scan", authenticate, storeOrAbove, bomScan);
 InventoryRouter.post("/outward/bom-manual", authenticate, storeOrAbove, bomManual);
 InventoryRouter.post("/outward/pack-reduction", authenticate, storeOrAbove, packReduction);
 InventoryRouter.post("/outward/stock-adjustment", authenticate, managerOrAbove, stockAdjustment);
+
+// ── Containers ────────────────────────────────────────────────────────────────
+InventoryRouter.get("/containers", authenticate, listContainersCtrl);
+InventoryRouter.post("/containers", authenticate, storeOrAbove, createContainer);
+InventoryRouter.get("/containers/:containerId/label", getContainerLabel);
+InventoryRouter.get("/containers/:containerId", authenticate, getContainer);
+InventoryRouter.post("/containers/:containerId/fill", authenticate, storeOrAbove, fillContainer);
+InventoryRouter.post("/containers/:containerId/issue", authenticate, storeOrAbove, issueFromContainer);
 
 // ── Bulk Location ─────────────────────────────────────────────────────────────
 InventoryRouter.get("/bulk/summary", authenticate, getBulkStockSummary);
