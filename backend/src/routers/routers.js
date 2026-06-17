@@ -1,4 +1,5 @@
 import express from "express";
+import multer from "multer";
 
 import UserRouter from "../modules/user/routes.js";
 import InventoryRouter from "../modules/inventory/routes.js";
@@ -13,6 +14,12 @@ import ExportRouter from "../modules/export/routes.js";
 // Admin Panel Router
 import AdminPanelRouter from "../modules/admin_panel/router.js";
 import GateRouter from "../modules/inventory/gate/router.js";
+
+// Import controller
+import { previewImport, executeImport } from "../modules/inventory/import/import.controller.js";
+import { authenticate, managerOrAbove } from "../middleware/auth.js";
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
 
 const router = express.Router();
 
@@ -59,6 +66,10 @@ router.use("/", MasterDataRouter);
 // ── Export ────────────────────────────────────────────────────────────────────
 // Handles: /api/erp/export/*
 // router.use("/", ExportRouter);
+
+// ── Import (Excel file upload → DB) ──────────────────────────────────────────
+router.post("/import/preview", authenticate, managerOrAbove, upload.single("file"), previewImport);
+router.post("/import/execute", authenticate, managerOrAbove, upload.single("file"), executeImport);
 
 // ---- admin planel routes (not prefixed with /api) ───────────────────────────────────────────
 router.use("/admin", AdminPanelRouter);

@@ -81,15 +81,33 @@ export async function previewImport(req, res) {
     if (!req.file) return res.status(400).json({ success: false, error: 'No file uploaded' })
     const wb = XLSX.read(req.file.buffer, { type: 'buffer', cellDates: true })
     const summary = {}
+    const detectedAs = {}
+
     for (const name of wb.SheetNames) {
       const rows = XLSX.utils.sheet_to_json(wb.Sheets[name], { defval: '' })
-      summary[name] = {
-        rowCount: rows.length,
-        columns: rows.length > 0 ? Object.keys(rows[0]) : [],
-        sample: rows.slice(0, 3)
+      const columns = rows.length > 0 ? Object.keys(rows[0]) : []
+      summary[name] = { rowCount: rows.length, columns, sample: rows.slice(0, 3) }
+
+      // Tag each sheet with what it will be imported as
+      const n = name.toLowerCase()
+      if (/product/i.test(n) && !/print|pack|recipe|bom|formula|rm|material|equipment|equip/i.test(n)) detectedAs[name] = 'Product Master'
+      else if (/equipment|equip/i.test(n)) detectedAs[name] = 'Equipment Master'
+      else if (/rm|material|raw.?mat/i.test(n) && !/print|pack|inward|outward|recipe|bom|product/i.test(n)) detectedAs[name] = 'RM Master'
+      else if (/recipe|bom|bill.?of.?material|formula/i.test(n)) detectedAs[name] = 'Recipe / BOM'
+      else if (/print|pack.?master/i.test(n)) detectedAs[name] = 'Print Master'
+      else if (/inward|goods.?received|grn|receipt/i.test(n)) detectedAs[name] = 'Inward'
+      else if (/outward|issuance|issue|dispatch/i.test(n)) detectedAs[name] = 'Outward'
+      else {
+        // Try column-based RM auto-detection
+        const headers = columns.map(k => k.toLowerCase().replace(/[^a-z0-9]/g, ''))
+        const hasCode = headers.some(h => h.includes('code') || h.includes('itemcode') || h.includes('itemno') || h.includes('srno'))
+        const hasName = headers.some(h => h.includes('name') || h.includes('itemname') || h.includes('description') || h.includes('material'))
+        if (hasCode && hasName) detectedAs[name] = 'RM Master (auto-detected by columns)'
+        else detectedAs[name] = '⚠️ Not recognized — will be skipped'
       }
     }
-    return res.json({ success: true, data: { sheets: wb.SheetNames, summary, totalSheets: wb.SheetNames.length } })
+
+    return res.json({ success: true, data: { sheets: wb.SheetNames, summary, detectedAs, totalSheets: wb.SheetNames.length } })
   } catch (e) {
     console.error(e)
     return res.status(500).json({ success: false, error: e.message })
@@ -169,16 +187,35 @@ export async function executeImport(req, res) {
     }
 
     // ── RM MASTER ─────────────────────────────────────────────────────────
-    const rmSheet = wb.SheetNames.find(s =>
+    // 1. Try sheet-name detection first
+    let rmSheet = wb.SheetNames.find(s =>
       /rm|material|raw.?mat/i.test(s) && !/print|pack|inward|outward|recipe|bom|product/i.test(s)
     )
+
+    // 2. Fallback: auto-detect by column headers (catches "Sheet1" etc.)
+    if (!rmSheet) {
+      const alreadyClaimed = new Set([prodSheet, equipSheet].filter(Boolean))
+      rmSheet = wb.SheetNames.find(s => {
+        if (alreadyClaimed.has(s)) return false
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets[s], { defval: '' })
+        if (!rows.length) return false
+        const headers = Object.keys(rows[0]).map(k => k.toLowerCase().replace(/[^a-z0-9]/g, ''))
+        const hasCode = headers.some(h => h.includes('code') || h.includes('itemcode') || h.includes('itemno') || h.includes('srno'))
+        const hasName = headers.some(h => h.includes('name') || h.includes('itemname') || h.includes('description') || h.includes('material'))
+        return hasCode && hasName
+      })
+      if (rmSheet) {
+        results.errors.push(`ℹ️ RM sheet auto-detected: "${rmSheet}" (tip: name it "RM Master" to avoid this message)`)
+      }
+    }
+
     if (rmSheet) {
       const rows = XLSX.utils.sheet_to_json(wb.Sheets[rmSheet], { defval: '' })
       for (const row of rows) {
         try {
-          const itemCode = col(row, 'itemcode', 'item code', 'code', 'rm code')
-          const itemName = col(row, 'itemname', 'item name', 'name', 'rm name', 'material name')
-          const uom = col(row, 'uom', 'unit', 'unit of measure') || 'KG'
+          const itemCode = col(row, 'itemcode', 'item code', 'item_code', 'code', 'rm code', 'material code', 'mat code', 'part no', 'partno', 'sr no', 'srno', 'no')
+          const itemName = col(row, 'itemname', 'item name', 'item_name', 'name', 'rm name', 'material name', 'description', 'desc', 'particulars', 'material')
+          const uom = col(row, 'uom', 'unit', 'unit of measure', 'unit of meas') || 'KG'
           if (!itemCode || !itemName) continue
           await prisma.rmMaster.upsert({
             where: { itemCode },
@@ -188,6 +225,8 @@ export async function executeImport(req, res) {
           results.rmMaster++
         } catch (e) { results.errors.push(`RM row: ${e.message}`) }
       }
+    } else {
+      results.errors.push('⚠️ No RM sheet found. Name your sheet "RM Master" or "Raw Material" and ensure it has Item Code + Item Name columns.')
     }
 
     // ── RECIPE / BOM ──────────────────────────────────────────────────────

@@ -1,21 +1,6 @@
-import { useState, Fragment } from 'react'
+import { Fragment } from 'react'
 import { STATUS_STYLE, STATUS_LABELS } from '../shared/constants.js'
 import { fmtDate, etdDays } from '../shared/utils.js'
-
-const TOGGLE_BTN = (active) => ({
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: '5px',
-  padding: '4px 10px',
-  background: active ? '#f0fdf4' : '#f8fafc',
-  color: active ? '#15803d' : '#64748b',
-  border: `1px solid ${active ? '#bbf7d0' : '#e2e8f0'}`,
-  borderRadius: '6px',
-  fontSize: '11px',
-  fontWeight: 600,
-  cursor: 'pointer',
-  whiteSpace: 'nowrap',
-})
 
 const TH_INNER = {
   textAlign: 'left',
@@ -28,15 +13,6 @@ const TH_INNER = {
 }
 
 export default function OrderHistory({ orders, loading, onOpenDispatch }) {
-  const [expandedIds, setExpandedIds] = useState(new Set())
-
-  const toggle = (id) =>
-    setExpandedIds((prev) => {
-      const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
-      return next
-    })
-
   if (loading)
     return <div className="text-center py-16 text-gray-400">Loading…</div>
 
@@ -76,12 +52,13 @@ export default function OrderHistory({ orders, loading, onOpenDispatch }) {
               (n, it) => n + parseFloat(it.totalQty || 0),
               0,
             )
-            const expanded = expandedIds.has(order.id)
-
             return (
               <Fragment key={order.id}>
                 {/* ── Main row ── */}
-                <tr className="border-b border-gray-50 hover:bg-green-50 transition">
+                <tr className="border-b border-gray-50 transition" style={{ background: '#fff8f2' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = '#fef3e8')}
+                  onMouseLeave={e => (e.currentTarget.style.background = '#fff8f2')}
+                >
                   <td className="px-4 py-3 font-mono text-xs font-bold text-gray-700">
                     {order.diNo}
                   </td>
@@ -114,15 +91,22 @@ export default function OrderHistory({ orders, loading, onOpenDispatch }) {
                     {order.invoiceNo || '—'}
                   </td>
 
-                  {/* Items toggle */}
+                  {/* Item count — static label, no toggle */}
                   <td className="px-4 py-3">
-                    <button
-                      onClick={() => toggle(order.id)}
-                      style={TOGGLE_BTN(expanded)}
-                    >
-                      {expanded ? '▲' : '▼'} {order.items.length} item
-                      {order.items.length !== 1 ? 's' : ''}
-                    </button>
+                    <span style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      padding: '3px 8px',
+                      background: '#f1f5f9',
+                      color: '#475569',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '6px',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      whiteSpace: 'nowrap',
+                    }}>
+                      {order.items.length} item{order.items.length !== 1 ? 's' : ''}
+                    </span>
                   </td>
 
                   <td className="px-4 py-3 text-center">
@@ -135,104 +119,66 @@ export default function OrderHistory({ orders, loading, onOpenDispatch }) {
                   </td>
                 </tr>
 
-                {/* ── Expandable items sub-row ── */}
-                {expanded && (
-                  <tr style={{ background: '#f8fafc' }}>
-                    <td colSpan={9} style={{ padding: '0 20px 12px' }}>
-                      <div
-                        style={{
-                          border: '1px solid #e2e8f0',
-                          borderRadius: '8px',
-                          overflow: 'hidden',
-                          marginTop: '6px',
-                        }}
-                      >
-                        <table
-                          style={{
-                            width: '100%',
-                            borderCollapse: 'collapse',
-                          }}
-                        >
-                          <thead>
-                            <tr style={{ background: '#f1f5f9' }}>
-                              <th style={TH_INNER}>Product</th>
-                              <th style={{ ...TH_INNER, textAlign: 'right' }}>Qty</th>
-                              <th style={TH_INNER}>Packing</th>
-                              <th style={TH_INNER}>Status</th>
+                {/* ── Items always visible ── */}
+                <tr style={{ background: '#f8fafc' }}>
+                  <td colSpan={9} style={{ padding: '0 20px 12px' }}>
+                    <div
+                      style={{
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '8px',
+                        overflow: 'hidden',
+                        marginTop: '4px',
+                      }}
+                    >
+                      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                        <thead>
+                          <tr style={{ background: '#f1f5f9' }}>
+                            <th style={TH_INNER}>Product</th>
+                            <th style={{ ...TH_INNER, textAlign: 'right' }}>Qty</th>
+                            <th style={TH_INNER}>Packing</th>
+                            <th style={TH_INNER}>Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {order.items.map((it, idx) => (
+                            <tr
+                              key={it.id || idx}
+                              style={{
+                                borderTop: '1px solid #e2e8f0',
+                                background: idx % 2 === 0 ? '#fff' : '#fafafa',
+                              }}
+                            >
+                              <td style={{ padding: '8px 12px', fontSize: '12px', fontWeight: 600, color: '#1e293b' }}>
+                                {it.inhouseProductName || '—'}
+                                {it.customerProductName &&
+                                  it.customerProductName !== it.inhouseProductName && (
+                                    <span style={{ marginLeft: '6px', fontSize: '10px', color: '#94a3b8', fontWeight: 400 }}>
+                                      ({it.customerProductName})
+                                    </span>
+                                  )}
+                              </td>
+                              <td style={{ padding: '8px 12px', textAlign: 'right', fontSize: '12px', fontWeight: 600, color: '#475569' }}>
+                                {it.totalQty} {it.totalUom}
+                              </td>
+                              <td style={{ padding: '8px 12px', fontSize: '11px', color: '#64748b' }}>
+                                {[it.unitPackType, it.packingType].filter(Boolean).join(' / ') || '—'}
+                              </td>
+                              <td style={{ padding: '8px 12px' }}>
+                                <span
+                                  className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                                    STATUS_STYLE[it.status] || 'bg-gray-100 text-gray-600'
+                                  }`}
+                                >
+                                  {STATUS_LABELS[it.status] || it.status}
+                                </span>
+                              </td>
                             </tr>
-                          </thead>
-                          <tbody>
-                            {order.items.map((it, idx) => (
-                              <tr
-                                key={it.id || idx}
-                                style={{
-                                  borderTop: '1px solid #e2e8f0',
-                                  background: idx % 2 === 0 ? '#fff' : '#fafafa',
-                                }}
-                              >
-                                <td
-                                  style={{
-                                    padding: '8px 12px',
-                                    fontSize: '12px',
-                                    fontWeight: 600,
-                                    color: '#1e293b',
-                                  }}
-                                >
-                                  {it.inhouseProductName || '—'}
-                                  {it.customerProductName &&
-                                    it.customerProductName !== it.inhouseProductName && (
-                                      <span
-                                        style={{
-                                          marginLeft: '6px',
-                                          fontSize: '10px',
-                                          color: '#94a3b8',
-                                          fontWeight: 400,
-                                        }}
-                                      >
-                                        ({it.customerProductName})
-                                      </span>
-                                    )}
-                                </td>
-                                <td
-                                  style={{
-                                    padding: '8px 12px',
-                                    textAlign: 'right',
-                                    fontSize: '12px',
-                                    fontWeight: 600,
-                                    color: '#475569',
-                                  }}
-                                >
-                                  {it.totalQty} {it.totalUom}
-                                </td>
-                                <td
-                                  style={{
-                                    padding: '8px 12px',
-                                    fontSize: '11px',
-                                    color: '#64748b',
-                                  }}
-                                >
-                                  {[it.unitPackType, it.packingType]
-                                    .filter(Boolean)
-                                    .join(' / ') || '—'}
-                                </td>
-                                <td style={{ padding: '8px 12px' }}>
-                                  <span
-                                    className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                                      STATUS_STYLE[it.status] ||
-                                      'bg-gray-100 text-gray-600'
-                                    }`}
-                                  >
-                                    {STATUS_LABELS[it.status] || it.status}
-                                  </span>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </td>
-                  </tr>
-                )}
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </td>
+                </tr>
               </Fragment>
             )
           })}

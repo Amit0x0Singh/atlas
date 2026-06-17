@@ -85,31 +85,48 @@ export default function Import() {
       {preview && (
         <div className="bg-white border border-gray-200 rounded-xl p-5 mb-6">
           <h2 className="font-bold text-gray-900 mb-3">📋 File Preview</h2>
-          <p className="text-sm text-gray-500 mb-3">{preview.totalSheets} sheet(s) found: {preview.sheets.join(', ')}</p>
-          {Object.entries(preview.summary).map(([sheet, info]) => (
-            <div key={sheet} className="mb-4">
-              <div className="font-semibold text-gray-800 mb-1">Sheet: {sheet} ({info.rowCount} rows)</div>
-              <div className="text-xs text-gray-500 mb-2">Columns: {info.columns.join(', ')}</div>
-              {info.sample.length > 0 && (
-                <div className="overflow-x-auto">
-                  <table className="text-xs border border-gray-200 rounded">
-                    <thead className="bg-gray-50">
-                      <tr>{info.columns.map(c => <th key={c} className="px-2 py-1 border-r border-gray-200 text-left">{c}</th>)}</tr>
-                    </thead>
-                    <tbody>
-                      {info.sample.map((row, i) => (
-                        <tr key={i} className="border-t border-gray-100">
-                          {info.columns.map(c => <td key={c} className="px-2 py-1 border-r border-gray-100">{String(row[c] || '')}</td>)}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+          <p className="text-sm text-gray-500 mb-3">{preview.totalSheets} sheet(s) found</p>
+          {Object.entries(preview.summary).map(([sheet, info]) => {
+            const detected = preview.detectedAs?.[sheet] || ''
+            const skipped = detected.includes('skipped')
+            const autoDetect = detected.includes('auto-detected')
+            return (
+              <div key={sheet} className="mb-5">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <span className="font-semibold text-gray-800">Sheet: {sheet}</span>
+                  <span className="text-gray-400 text-xs">({info.rowCount} rows)</span>
+                  {detected && (
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                      skipped ? 'bg-yellow-100 text-yellow-700' :
+                      autoDetect ? 'bg-blue-100 text-blue-700' :
+                      'bg-green-100 text-green-700'
+                    }`}>
+                      {detected}
+                    </span>
+                  )}
                 </div>
-              )}
-            </div>
-          ))}
+                <div className="text-xs text-gray-500 mb-2">Columns: {info.columns.join(', ')}</div>
+                {info.sample.length > 0 && !skipped && (
+                  <div className="overflow-x-auto">
+                    <table className="text-xs border border-gray-200 rounded">
+                      <thead className="bg-gray-50">
+                        <tr>{info.columns.map(c => <th key={c} className="px-2 py-1 border-r border-gray-200 text-left">{c}</th>)}</tr>
+                      </thead>
+                      <tbody>
+                        {info.sample.map((row, i) => (
+                          <tr key={i} className="border-t border-gray-100">
+                            {info.columns.map(c => <td key={c} className="px-2 py-1 border-r border-gray-100">{String(row[c] || '')}</td>)}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )
+          })}
           <div className="bg-blue-50 border border-blue-200 px-4 py-3 rounded-lg mt-3 text-sm text-blue-800">
-            ✅ File looks good. Click <strong>"Import to Database"</strong> to load this data.
+            ✅ Review the detected sheet types above, then click <strong>"Import to Database"</strong>.
           </div>
         </div>
       )}
