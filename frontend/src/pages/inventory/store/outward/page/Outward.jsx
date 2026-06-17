@@ -1,419 +1,169 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { outwardApi } from '../../../../../api/inventory.js'
-import { indentApi } from '../../../../../api/production.js'
-import jsQR from 'jsqr'
-import BulkIssuePanel from '../components/BulkIssuePanel.jsx'
+import WarehouseToWarehouse from '../components/WarehouseToWarehouse.jsx'
+import WarehouseToPlant from '../components/WarehouseToPlant.jsx'
+import WarehouseToContainer from '../components/WarehouseToContainer.jsx'
+import ContainerToPlant from '../components/ContainerToPlant.jsx'
 
-const MODES = { BOM: 'BOM_ISSUANCE', REDUCTION: 'PACK_REDUCTION', RECON: 'STOCK_RECON', BULK: 'BULK_ISSUE' }
+const MODES = [
+  {
+    key: 'wh-wh',
+    icon: '🏭',
+    label: 'Warehouse → Warehouse',
+    desc: 'Transfer a pack from one warehouse/location to another',
+    color: 'border-blue-300 hover:border-blue-500 hover:bg-blue-50',
+    badge: 'bg-blue-100 text-blue-700',
+  },
+  {
+    key: 'wh-plant',
+    icon: '🏗️',
+    label: 'Warehouse → Plant',
+    desc: 'Issue directly to plant or against a production indent (BOM)',
+    color: 'border-indigo-300 hover:border-indigo-500 hover:bg-indigo-50',
+    badge: 'bg-indigo-100 text-indigo-700',
+  },
+  {
+    key: 'wh-cont',
+    icon: '🛢️',
+    label: 'Warehouse → Container',
+    desc: 'Fill a container from warehouse packs — scan container QR',
+    color: 'border-orange-300 hover:border-orange-500 hover:bg-orange-50',
+    badge: 'bg-orange-100 text-orange-700',
+  },
+  {
+    key: 'cont-plant',
+    icon: '🧪',
+    label: 'Container → Plant',
+    desc: 'Issue material from a container to the plant — scan container QR',
+    color: 'border-green-300 hover:border-green-500 hover:bg-green-50',
+    badge: 'bg-green-100 text-green-700',
+  },
+]
+
+function fmt(ts) {
+  return new Date(ts).toLocaleString('en-IN', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })
+}
+
+const TYPE_COLOR = {
+  BOM_ISSUANCE:      'bg-indigo-100 text-indigo-700',
+  DIRECT_ISSUE:      'bg-blue-100 text-blue-700',
+  PACK_REDUCTION:    'bg-orange-100 text-orange-700',
+  CONTAINER_ISSUE:   'bg-green-100 text-green-700',
+  WAREHOUSE_TRANSFER:'bg-gray-100 text-gray-700',
+}
 
 export default function Outward() {
-  const [mode, setMode] = useState(null)
-  const [indents, setIndents] = useState([])
-  const [selectedIndent, setSelectedIndent] = useState(null)
-  const [selectedRm, setSelectedRm] = useState(null)
-  const [scanning, setScanning] = useState(false)
-  const [issueMode, setIssueMode] = useState('scan')
-  const [availablePacks, setAvailablePacks] = useState([])
-  const [selectedPack, setSelectedPack] = useState('')
-  const [manualQty, setManualQty] = useState('')
-  const [loadingPacks, setLoadingPacks] = useState(false)
-  const [msg, setMsg] = useState({ type: '', text: '' })
-  const [recon, setRecon] = useState({ itemCode: '', adjustmentQty: '', remarks: '' })
-  const [reduction, setReduction] = useState({ packId: '', qty: '' })
+  const [mode, setMode]       = useState(null)
   const [history, setHistory] = useState([])
   const [histPage, setHistPage] = useState(1)
   const [histTotal, setHistTotal] = useState(0)
-  const videoRef = useRef(null)
-  const canvasRef = useRef(null)
-  const streamRef = useRef(null)
-  const lastScanRef = useRef(0)
-  const scanningRef = useRef(false)
-  const HIST_LIMIT = 20
-
-  useEffect(() => {
-    indentApi.list({ status: 'OPEN' }).then(r => setIndents(r.data || [])).catch(console.error)
-    loadHistory()
-    return () => stopCamera()
-  }, [])
+  const LIMIT = 15
 
   useEffect(() => { loadHistory() }, [histPage])
 
   const loadHistory = async () => {
     try {
-      const res = await outwardApi.history({ page: histPage, limit: HIST_LIMIT })
-      setHistory(res.data || [])
-      setHistTotal(res.total || 0)
+      const r = await outwardApi.history({ page: histPage, limit: LIMIT })
+      setHistory(r.data || [])
+      setHistTotal(r.total || 0)
     } catch { /* silent */ }
   }
 
-  const startCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-      streamRef.current = stream
-      videoRef.current.srcObject = stream
-      videoRef.current.onloadedmetadata = () => { videoRef.current.play(); scanningRef.current = true; scanLoop() }
-    } catch (e) { setMsg({ type: 'error', text: 'Camera error: ' + e.message }) }
-  }
+  const goBack = () => { setMode(null); loadHistory() }
 
-  const stopCamera = () => {
-    scanningRef.current = false
-    if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop())
-  }
+  // ── Mode panels ──────────────────────────────────────────────────────────────
+  if (mode === 'wh-wh')    return <Panel mode={MODES[0]} onBack={goBack}><WarehouseToWarehouse /></Panel>
+  if (mode === 'wh-plant') return <Panel mode={MODES[1]} onBack={goBack}><WarehouseToPlant /></Panel>
+  if (mode === 'wh-cont')  return <Panel mode={MODES[2]} onBack={goBack}><WarehouseToContainer /></Panel>
+  if (mode === 'cont-plant') return <Panel mode={MODES[3]} onBack={goBack}><ContainerToPlant /></Panel>
 
-  const scanLoop = useCallback(() => {
-    if (!scanningRef.current) return
-    requestAnimationFrame(async () => {
-      const video = videoRef.current; const canvas = canvasRef.current
-      if (!video || !canvas || video.readyState < 2) { if (scanningRef.current) scanLoop(); return }
-      const ctx = canvas.getContext('2d')
-      canvas.width = video.videoWidth; canvas.height = video.videoHeight
-      ctx.drawImage(video, 0, 0)
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-      const code = jsQR(imageData.data, imageData.width, imageData.height)
-      const now = Date.now()
-      if (code?.data && now - lastScanRef.current > 2000) {
-        lastScanRef.current = now
-        await handleBomScan(code.data)
-      }
-      if (scanningRef.current) scanLoop()
-    })
-  }, [])
-
-  const handleBomScan = async (packId) => {
-    if (!selectedIndent || !selectedRm) return
-    setMsg({ type: '', text: '' })
-    try {
-      const res = await outwardApi.bomScan({ indentId: selectedIndent.indentId, rmCode: selectedRm.rmCode, packId })
-      setMsg({ type: 'success', text: `✅ Scanned ${packId} | Deducted: ${res.deducted} | Remaining: ${res.remaining}` })
-      const updatedIndent = await indentApi.get(selectedIndent.indentId)
-      setSelectedIndent(updatedIndent.data)
-      if (res.remaining <= 0) { setScanning(false); stopCamera() }
-      loadHistory()
-    } catch (e) { setMsg({ type: 'error', text: '❌ ' + e.message }) }
-  }
-
-  const loadAvailablePacks = async (rmCode) => {
-    setLoadingPacks(true)
-    try {
-      const res = await outwardApi.availablePacks(rmCode)
-      setAvailablePacks(res.data || [])
-      setSelectedPack(''); setManualQty('')
-    } catch { setAvailablePacks([]) }
-    setLoadingPacks(false)
-  }
-
-  const selectRmForIssue = async (rm) => {
-    setSelectedRm(rm); setMsg({ type: '', text: '' })
-    if (issueMode === 'scan') { setScanning(true); await startCamera() }
-    else { await loadAvailablePacks(rm.rmCode) }
-  }
-
-  const handleManualIssue = async () => {
-    if (!selectedPack) { setMsg({ type: 'error', text: 'Select a pack' }); return }
-    if (!manualQty || parseFloat(manualQty) <= 0) { setMsg({ type: 'error', text: 'Enter a valid quantity' }); return }
-    setMsg({ type: '', text: '' })
-    try {
-      const res = await outwardApi.bomManual({
-        indentId: selectedIndent.indentId, rmCode: selectedRm.rmCode,
-        packId: selectedPack, qtyToIssue: parseFloat(manualQty)
-      })
-      setMsg({ type: 'success', text: `✅ Issued ${res.deducted} from ${selectedPack} | Remaining: ${res.remaining}` })
-      const updatedIndent = await indentApi.get(selectedIndent.indentId)
-      setSelectedIndent(updatedIndent.data)
-      setSelectedRm(null); setAvailablePacks([]); setSelectedPack(''); setManualQty('')
-      loadHistory()
-    } catch (e) { setMsg({ type: 'error', text: '❌ ' + e.message }) }
-  }
-
-  const submitRecon = async () => {
-    try {
-      await outwardApi.stockAdjustment(recon)
-      setMsg({ type: 'success', text: '✅ Adjustment saved' })
-      setRecon({ itemCode: '', adjustmentQty: '', remarks: '' })
-      loadHistory()
-    } catch (e) { setMsg({ type: 'error', text: e.message }) }
-  }
-
-  const submitReduction = async () => {
-    try {
-      const res = await outwardApi.packReduction(reduction)
-      setMsg({ type: 'success', text: `✅ ${res.deducted} units moved to container ${res.containerId}` })
-      setReduction({ packId: '', qty: '' })
-      loadHistory()
-    } catch (e) { setMsg({ type: 'error', text: e.message }) }
-  }
-
-  const histPages = Math.ceil(histTotal / HIST_LIMIT)
-
-  if (!mode) {
-    return (
-      <div className="p-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Outward — Issue Materials</h1>
-        <p className="text-gray-500 text-sm mb-6">Select the type of outward transaction</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {[
-            { key: MODES.BOM,       label: 'BOM Issuance',    desc: 'Issue item against a production indent (scan or manual)', icon: '📤' },
-            { key: MODES.BULK,      label: 'Bulk Issue',       desc: 'Issue from a bulk location — scan location QR, select lot', icon: '🗄️' },
-            { key: MODES.REDUCTION, label: 'Pack → Container', desc: 'Move qty from pack to bulk container', icon: '📦' },
-            { key: MODES.RECON,     label: 'Stock Adjustment', desc: 'Manual stock correction with reason', icon: '⚖️' },
-          ].map(m => (
-            <button key={m.key} onClick={() => setMode(m.key)}
-              className="bg-white border-2 border-gray-200 rounded-xl p-5 text-left hover:border-blue-400 hover:bg-blue-50 transition-all">
-              <div className="text-3xl mb-2">{m.icon}</div>
-              <div className="text-base font-bold text-gray-900 mb-1">{m.label}</div>
-              <div className="text-xs text-gray-500">{m.desc}</div>
-            </button>
-          ))}
-        </div>
-
-        <div>
-          <h2 className="text-lg font-semibold text-gray-800 mb-3">Recent Transactions</h2>
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-slate-700 text-white">
-                <tr>
-                  <th className="text-left px-4 py-2.5">Date</th>
-                  <th className="text-left px-4 py-2.5">Type</th>
-                  <th className="text-left px-4 py-2.5">Source / Pack</th>
-                  <th className="text-left px-4 py-2.5">Item Code</th>
-                  <th className="text-right px-4 py-2.5">Qty Issued</th>
-                  <th className="text-left px-4 py-2.5">Indent</th>
-                </tr>
-              </thead>
-              <tbody>
-                {history.length === 0 ? (
-                  <tr><td colSpan={6} className="text-center py-6 text-gray-400">No transactions yet</td></tr>
-                ) : history.map(h => (
-                  <tr key={h.id} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td className="px-4 py-2 text-xs text-gray-500">
-                      {new Date(h.timestamp).toLocaleString('en-IN', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' })}
-                    </td>
-                    <td className="px-4 py-2">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${h.sourceType === 'BULK' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>
-                        {h.sourceType}
-                      </span>
-                    </td>
-                    <td className="px-4 py-2 font-mono text-xs">{h.sourceId}</td>
-                    <td className="px-4 py-2 font-mono text-xs text-blue-700">{h.rmCode}</td>
-                    <td className="px-4 py-2 text-right font-semibold">{Number(h.qtyIssued).toFixed(3)}</td>
-                    <td className="px-4 py-2 text-xs text-gray-500">{h.indentId || '—'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          {histPages > 1 && (
-            <div className="flex items-center justify-center gap-2 mt-3">
-              <button disabled={histPage <= 1} onClick={() => setHistPage(p => p - 1)}
-                className="px-3 py-1.5 border rounded-lg text-sm disabled:opacity-40 hover:bg-gray-50">← Prev</button>
-              <span className="text-sm text-gray-600">Page {histPage} of {histPages}</span>
-              <button disabled={histPage >= histPages} onClick={() => setHistPage(p => p + 1)}
-                className="px-3 py-1.5 border rounded-lg text-sm disabled:opacity-40 hover:bg-gray-50">Next →</button>
-            </div>
-          )}
-        </div>
-      </div>
-    )
-  }
-
-  const goBack = () => {
-    setMode(null); setScanning(false); stopCamera()
-    setSelectedIndent(null); setSelectedRm(null); setAvailablePacks([])
-    setMsg({ type: '', text: '' })
-  }
+  // ── Landing: mode selector + recent history ──────────────────────────────────
+  const totalPages = Math.ceil(histTotal / LIMIT)
 
   return (
     <div className="p-6">
-      <div className="flex items-center gap-3 mb-4">
-        <button onClick={goBack} className="text-gray-500 hover:text-gray-700 font-medium">← Back</button>
-        <h1 className="text-xl font-bold">
-          {mode === MODES.BOM ? '📤 BOM Issuance'
-           : mode === MODES.BULK ? '🗄️ Bulk Issue'
-           : mode === MODES.REDUCTION ? '📦 Pack → Container'
-           : '⚖️ Stock Adjustment'}
-        </h1>
+      <h1 className="text-2xl font-bold text-gray-900 mb-1">Outward — Issue Materials</h1>
+      <p className="text-sm text-gray-500 mb-6">Select the type of outward transaction</p>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {MODES.map(m => (
+          <button key={m.key} onClick={() => setMode(m.key)}
+            className={`bg-white border-2 rounded-xl p-5 text-left transition-all ${m.color}`}>
+            <div className="text-3xl mb-3">{m.icon}</div>
+            <div className="font-bold text-gray-900 text-sm mb-1">{m.label}</div>
+            <div className="text-xs text-gray-500">{m.desc}</div>
+          </button>
+        ))}
       </div>
 
-      {msg.text && (
-        <div className={`px-4 py-3 rounded-lg mb-4 ${msg.type === 'success' ? 'bg-green-50 border border-green-200 text-green-800' : 'bg-red-50 border border-red-200 text-red-700'}`}>
-          {msg.text}
+      {/* Recent history */}
+      <div>
+        <div className="flex justify-between items-center mb-3">
+          <h2 className="text-lg font-semibold text-gray-800">Recent Transactions</h2>
+          <button onClick={loadHistory} className="text-sm border border-gray-300 px-3 py-1.5 rounded-lg hover:bg-gray-50">Refresh</button>
         </div>
-      )}
-
-      {mode === MODES.BOM && (
-        <div className="space-y-4">
-          {!selectedIndent ? (
-            <div>
-              <h2 className="font-semibold mb-2 text-gray-700">1. Select Open Indent</h2>
-              {indents.length === 0 ? <p className="text-gray-400">No open indents</p> : (
-                <div className="space-y-2">
-                  {indents.map(i => (
-                    <button key={i.indentId} onClick={() => setSelectedIndent(i)}
-                      className="w-full text-left bg-white border border-gray-200 rounded-lg px-4 py-3 hover:bg-blue-50 hover:border-blue-300 transition">
-                      <div className="font-semibold text-gray-900">{i.productName}</div>
-                      <div className="text-sm text-gray-500">
-                        Batch: {i.batchNo} | DI: {i.diNo} | Size: {i.batchSize}
-                        {i.cycleNo && <span className="ml-2 text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded">Cycle {i.cycleNo}/{i.totalCycles}</span>}
-                        {' · '}{new Date(i.createdAt).toLocaleDateString('en-IN')}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          ) : !selectedRm ? (
-            <div>
-              <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 mb-4 flex justify-between items-center">
-                <div><strong>{selectedIndent.productName}</strong> | Batch: {selectedIndent.batchNo} | DI: {selectedIndent.diNo}</div>
-                <button onClick={() => setSelectedIndent(null)} className="text-blue-500 text-sm hover:underline">Change</button>
-              </div>
-              <div className="flex items-center gap-2 mb-4">
-                <span className="text-sm font-medium text-gray-700">Issue Mode:</span>
-                <div className="flex border border-gray-300 rounded-lg overflow-hidden">
-                  {[['scan','📷 Scan QR'],['manual','📋 Manual Select']].map(([v,l]) => (
-                    <button key={v} onClick={() => setIssueMode(v)}
-                      className={`px-4 py-1.5 text-sm font-medium transition ${issueMode === v ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}>
-                      {l}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <h2 className="font-semibold mb-2 text-gray-700">2. Select Item to Issue</h2>
-              <div className="space-y-2">
-                {selectedIndent.details?.filter(d => Number(d.balanceQty) > 0).map(d => (
-                  <button key={d.id} onClick={() => selectRmForIssue(d)}
-                    className="w-full text-left bg-white border border-gray-200 rounded-lg px-4 py-3 hover:bg-blue-50 transition">
-                    <div className="font-medium text-gray-900">{d.rmName} <span className="font-mono text-xs text-blue-700">({d.rmCode})</span></div>
-                    <div className="text-sm text-gray-500">
-                      Required: {Number(d.requiredQty).toFixed(3)} | Issued: {Number(d.issuedQty).toFixed(3)} |{' '}
-                      <span className="text-orange-700 font-semibold">Balance: {Number(d.balanceQty).toFixed(3)}</span>
-                    </div>
-                  </button>
-                ))}
-                {selectedIndent.details?.every(d => Number(d.balanceQty) <= 0) && (
-                  <div className="text-center py-6 text-green-600 font-medium">✅ All items fully issued for this indent!</div>
-                )}
-              </div>
-            </div>
-          ) : issueMode === 'scan' && scanning ? (
-            <div>
-              <div className="bg-orange-50 border border-orange-200 rounded-lg px-4 py-3 mb-4">
-                Scanning for: <strong>{selectedRm?.rmName}</strong> | Balance needed: <strong>{Number(selectedRm?.balanceQty).toFixed(3)}</strong>
-              </div>
-              <div className="bg-black rounded-xl overflow-hidden relative" style={{ height: 300 }}>
-                <video ref={videoRef} className="w-full h-full object-cover" playsInline muted />
-                <canvas ref={canvasRef} className="hidden" />
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="w-48 h-48 border-2 border-blue-400 rounded-lg opacity-80" />
-                </div>
-              </div>
-              <button onClick={() => { setScanning(false); stopCamera(); setSelectedRm(null) }}
-                className="mt-3 w-full border border-gray-300 py-2 rounded-lg hover:bg-gray-50">Stop Scanning</button>
-            </div>
-          ) : issueMode === 'manual' && selectedRm ? (
-            <div className="max-w-lg">
-              <div className="bg-orange-50 border border-orange-200 rounded-lg px-4 py-3 mb-4">
-                Issuing: <strong>{selectedRm?.rmName}</strong> | Balance needed: <strong>{Number(selectedRm?.balanceQty).toFixed(3)}</strong>
-              </div>
-              {loadingPacks ? <p className="text-gray-400 text-sm">Loading available packs...</p>
-                : availablePacks.length === 0 ? (
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 text-sm">
-                    ❌ No available packs for {selectedRm.rmCode}. Ensure the item is inwarded.
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Select Pack / Bag</label>
-                      <select value={selectedPack} onChange={e => {
-                        setSelectedPack(e.target.value)
-                        const pk = availablePacks.find(p => p.packId === e.target.value)
-                        if (pk) setManualQty(Math.min(pk.remainingQty, Number(selectedRm.balanceQty)).toFixed(3))
-                      }} className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="">— Select a pack —</option>
-                        {availablePacks.map(p => (
-                          <option key={p.packId} value={p.packId}>
-                            {p.packId} | Lot: {p.lotNo} | Bag #{p.bagNo} | Avail: {Number(p.remainingQty).toFixed(3)}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    {selectedPack && (() => {
-                      const pk = availablePacks.find(p => p.packId === selectedPack)
-                      return pk && (
-                        <>
-                          <div className="bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 text-sm text-blue-800">
-                            Pack: {pk.packId} | Available: <strong>{Number(pk.remainingQty).toFixed(3)}</strong> | Lot: {pk.lotNo}
-                            {pk.supplier && ` | Supplier: ${pk.supplier}`}
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Qty to Issue</label>
-                            <input type="number" step="0.001" min="0.001" value={manualQty}
-                              onChange={e => setManualQty(e.target.value)}
-                              className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 text-right" />
-                          </div>
-                          <button onClick={handleManualIssue}
-                            className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 font-semibold">
-                            ✅ Confirm Issue
-                          </button>
-                        </>
-                      )
-                    })()}
-                  </div>
-                )}
-              <button onClick={() => { setSelectedRm(null); setAvailablePacks([]); setSelectedPack(''); setManualQty('') }}
-                className="mt-3 w-full border border-gray-300 py-2 rounded-lg hover:bg-gray-50 text-sm">← Back to Item List</button>
-            </div>
-          ) : null}
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-slate-700 text-white">
+              <tr>
+                <th className="text-left px-4 py-2.5">Date &amp; Time</th>
+                <th className="text-left px-4 py-2.5">Type</th>
+                <th className="text-left px-4 py-2.5">RM Code</th>
+                <th className="text-left px-4 py-2.5">Source (Pack / Container)</th>
+                <th className="text-right px-4 py-2.5">Qty Issued</th>
+                <th className="text-left px-4 py-2.5">Remarks</th>
+              </tr>
+            </thead>
+            <tbody>
+              {history.length === 0 ? (
+                <tr><td colSpan={6} className="text-center py-10 text-gray-400">No transactions yet</td></tr>
+              ) : history.map(h => (
+                <tr key={h.id} className="border-b border-gray-100 hover:bg-gray-50">
+                  <td className="px-4 py-2 text-xs text-gray-500 whitespace-nowrap">{fmt(h.timestamp)}</td>
+                  <td className="px-4 py-2">
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${TYPE_COLOR[h.sourceType] || 'bg-gray-100 text-gray-600'}`}>
+                      {h.sourceType?.replace(/_/g, ' ')}
+                    </span>
+                  </td>
+                  <td className="px-4 py-2 font-mono text-blue-700 text-xs">{h.rmCode}</td>
+                  <td className="px-4 py-2 font-mono text-xs text-gray-600 max-w-[160px] truncate">{h.sourceId}</td>
+                  <td className="px-4 py-2 text-right font-semibold text-red-600">{Number(h.qtyIssued).toFixed(3)}</td>
+                  <td className="px-4 py-2 text-xs text-gray-400 max-w-[140px] truncate">{h.remarks || '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-      )}
-
-      {mode === MODES.BULK && <BulkIssuePanel onDone={() => { goBack(); loadHistory() }} />}
-
-      {mode === MODES.REDUCTION && (
-        <div className="max-w-md space-y-3">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Pack ID</label>
-            <input value={reduction.packId} onChange={e => setReduction(r => ({ ...r, packId: e.target.value }))}
-              placeholder="Scan or type Pack ID"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500" />
+        {totalPages > 1 && (
+          <div className="flex justify-center gap-2 mt-3">
+            <button disabled={histPage <= 1} onClick={() => setHistPage(p => p - 1)}
+              className="px-3 py-1.5 border rounded-lg text-sm disabled:opacity-40 hover:bg-gray-50">Prev</button>
+            <span className="text-sm text-gray-600 self-center">Page {histPage} / {totalPages}</span>
+            <button disabled={histPage >= totalPages} onClick={() => setHistPage(p => p + 1)}
+              className="px-3 py-1.5 border rounded-lg text-sm disabled:opacity-40 hover:bg-gray-50">Next</button>
           </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function Panel({ mode, onBack, children }) {
+  return (
+    <div className="flex flex-col h-full">
+      <div className="px-6 pt-5 pb-0 border-b border-gray-200 bg-white">
+        <button onClick={onBack} className="text-sm text-gray-500 hover:text-gray-700 mb-3">← Back to Outward</button>
+        <div className="flex items-center gap-3 pb-4">
+          <span className="text-2xl">{mode.icon}</span>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Qty to Transfer</label>
-            <input type="number" step="0.01" value={reduction.qty} onChange={e => setReduction(r => ({ ...r, qty: e.target.value }))}
-              placeholder="0.00"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500" />
+            <h1 className="text-xl font-bold text-gray-900">{mode.label}</h1>
+            <p className="text-sm text-gray-500">{mode.desc}</p>
           </div>
-          <button onClick={submitReduction} className="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 font-semibold">
-            Transfer to Container
-          </button>
         </div>
-      )}
-
-      {mode === MODES.RECON && (
-        <div className="max-w-md space-y-3">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Item Code</label>
-            <input value={recon.itemCode} onChange={e => setRecon(r => ({ ...r, itemCode: e.target.value }))}
-              placeholder="Item Code"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Adjustment Qty (+ to add, − to deduct)</label>
-            <input type="number" value={recon.adjustmentQty} onChange={e => setRecon(r => ({ ...r, adjustmentQty: e.target.value }))}
-              placeholder="e.g. -5 or +10"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Reason / Remarks *</label>
-            <textarea value={recon.remarks} onChange={e => setRecon(r => ({ ...r, remarks: e.target.value }))}
-              placeholder="Explain why (min 5 characters)"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 h-24 resize-none" />
-          </div>
-          <button onClick={submitRecon} className="w-full bg-orange-600 text-white py-3 rounded-lg hover:bg-orange-700 font-semibold">
-            Save Adjustment
-          </button>
-        </div>
-      )}
+      </div>
+      <div className="flex-1 overflow-y-auto">
+        {children}
+      </div>
     </div>
   )
 }

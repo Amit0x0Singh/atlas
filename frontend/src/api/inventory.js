@@ -32,12 +32,14 @@ export const inwardApi = {
 }
 
 export const outwardApi = {
-  bomScan:         (data)    => api.post('/outward/bom-scan', data),
-  bomManual:       (data)    => api.post('/outward/bom-manual', data),
-  availablePacks:  (rmCode)  => api.get(`/outward/available/${encodeURIComponent(rmCode)}`),
-  packReduction:   (data)    => api.post('/outward/pack-reduction', data),
-  stockAdjustment: (data)    => api.post('/outward/stock-adjustment', data),
-  history:         (params)  => api.get('/outward', { params }),
+  bomScan:             (data)    => api.post('/outward/bom-scan', data),
+  bomManual:           (data)    => api.post('/outward/bom-manual', data),
+  availablePacks:      (rmCode)  => api.get(`/outward/available/${encodeURIComponent(rmCode)}`),
+  packReduction:       (data)    => api.post('/outward/pack-reduction', data),
+  stockAdjustment:     (data)    => api.post('/outward/stock-adjustment', data),
+  warehouseTransfer:   (data)    => api.post('/outward/warehouse-transfer', data),
+  directIssue:         (data)    => api.post('/outward/direct-issue', data),
+  history:             (params)  => api.get('/outward', { params }),
 }
 
 export const sfgApi = {

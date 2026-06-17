@@ -94,6 +94,63 @@ export async function stockAdjustment(req, res) {
   }
 }
 
+export async function warehouseTransfer(req, res) {
+  const { packId, fromWarehouse, toWarehouse, remarks } = req.body
+  if (!packId || !toWarehouse)
+    return res.status(400).json({ success: false, error: 'packId and toWarehouse required' })
+  try {
+    const pack = await prisma.printMaster.findUnique({ where: { packId } })
+    if (!pack) return res.status(404).json({ success: false, error: 'Pack not found' })
+    const packBalance = await prisma.packBalance.findUnique({ where: { packId } })
+    if (!packBalance || packBalance.remainingQty <= 0)
+      return res.status(400).json({ success: false, error: 'Pack is exhausted or not inwarded' })
+    await prisma.inward.updateMany({ where: { packId }, data: { warehouse: toWarehouse } })
+    const prevLedger = await prisma.stockLedger.findFirst({ where: { itemCode: pack.itemCode }, orderBy: { timestamp: 'desc' } })
+    await prisma.stockLedger.create({
+      data: {
+        itemCode: pack.itemCode, sourceId: packId, transactionType: 'WAREHOUSE_TRANSFER',
+        inQty: 0, outQty: 0, balance: prevLedger?.balance || 0,
+        reference: `${fromWarehouse || 'Warehouse'} → ${toWarehouse} | Pack: ${packId}${remarks ? ' | ' + remarks : ''}`
+      }
+    })
+    return res.json({ success: true, message: `Pack ${packId} transferred to ${toWarehouse}` })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message })
+  }
+}
+
+export async function directIssue(req, res) {
+  const { packId, qty, plant, remarks } = req.body
+  if (!packId || !qty || !plant)
+    return res.status(400).json({ success: false, error: 'packId, qty, plant required' })
+  try {
+    const packBalance = await prisma.packBalance.findUnique({ where: { packId } })
+    if (!packBalance) return res.status(404).json({ success: false, error: 'Pack not found or not inwarded' })
+    const issue = parseFloat(qty)
+    if (issue <= 0) return res.status(400).json({ success: false, error: 'Qty must be positive' })
+    if (issue > packBalance.remainingQty)
+      return res.status(400).json({ success: false, error: `Qty exceeds pack balance (${packBalance.remainingQty})` })
+    const pack = await prisma.printMaster.findUnique({ where: { packId } })
+    await prisma.$transaction(async (tx) => {
+      await tx.packBalance.update({ where: { packId }, data: { remainingQty: packBalance.remainingQty - issue } })
+      await tx.outward.create({
+        data: { sourceId: packId, sourceType: 'DIRECT_ISSUE', rmCode: pack.itemCode, qtyIssued: issue, remarks: `To: ${plant}${remarks ? ' | ' + remarks : ''}` }
+      })
+      const prevLedger = await tx.stockLedger.findFirst({ where: { itemCode: pack.itemCode }, orderBy: { timestamp: 'desc' } })
+      await tx.stockLedger.create({
+        data: {
+          itemCode: pack.itemCode, sourceId: packId, transactionType: 'DIRECT_ISSUE',
+          inQty: 0, outQty: issue, balance: (prevLedger?.balance || 0) - issue,
+          reference: `Direct issue to ${plant}`
+        }
+      })
+    })
+    return res.json({ success: true, issued: issue, remainingQty: packBalance.remainingQty - issue })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message })
+  }
+}
+
 export async function listOutward(req, res) {
   try {
     const { itemCode, page = 1, limit = 50 } = req.query

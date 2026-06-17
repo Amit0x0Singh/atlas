@@ -36,11 +36,13 @@ export async function getContainer(req, res) {
 
 export async function createContainer(req, res) {
   try {
-    const { containerId, itemCode, itemName, capacity, uom } = req.body
-    if (!containerId || !itemCode || !itemName || !capacity || !uom)
-      return res.status(400).json({ success: false, error: 'containerId, itemCode, itemName, capacity, uom are required' })
-    const existing = await prisma.containerMaster.findUnique({ where: { containerId } })
-    if (existing) return res.status(409).json({ success: false, error: 'Container ID already exists' })
+    const { itemCode, itemName, capacity, uom } = req.body
+    if (!itemCode || !itemName || !capacity || !uom)
+      return res.status(400).json({ success: false, error: 'itemCode, itemName, capacity, uom are required' })
+    const alreadyExists = await prisma.containerMaster.findUnique({ where: { itemCode } })
+    if (alreadyExists) return res.status(409).json({ success: false, error: `Container already exists for ${itemCode}: ${alreadyExists.containerId}` })
+    const lbl = itemName.replace(/[^a-zA-Z0-9]/g, '').slice(0, 4).toUpperCase()
+    const containerId = `CONT-${lbl}-${itemCode}`
     const container = await prisma.containerMaster.create({
       data: { containerId, itemCode, itemName, capacity: parseFloat(capacity), currentQty: 0, uom }
     })
