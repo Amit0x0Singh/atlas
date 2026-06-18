@@ -90,6 +90,10 @@ export async function previewImport(req, res) {
 
       // Tag each sheet with what it will be imported as
       const n = name.toLowerCase()
+      const fileName = req.file.originalname || ''
+      const fileHasBom = /recipe|bom|bill.?of.?material|formula/i.test(fileName)
+      const headers = columns.map(k => k.toLowerCase().replace(/[^a-z0-9]/g, ''))
+
       if (/product/i.test(n) && !/print|pack|recipe|bom|formula|rm|material|equipment|equip/i.test(n)) detectedAs[name] = 'Product Master'
       else if (/equipment|equip/i.test(n)) detectedAs[name] = 'Equipment Master'
       else if (/rm|material|raw.?mat/i.test(n) && !/print|pack|inward|outward|recipe|bom|product/i.test(n)) detectedAs[name] = 'RM Master'
@@ -98,12 +102,19 @@ export async function previewImport(req, res) {
       else if (/inward|goods.?received|grn|receipt/i.test(n)) detectedAs[name] = 'Inward'
       else if (/outward|issuance|issue|dispatch/i.test(n)) detectedAs[name] = 'Outward'
       else {
-        // Try column-based RM auto-detection
-        const headers = columns.map(k => k.toLowerCase().replace(/[^a-z0-9]/g, ''))
-        const hasCode = headers.some(h => h.includes('code') || h.includes('itemcode') || h.includes('itemno') || h.includes('srno'))
-        const hasName = headers.some(h => h.includes('name') || h.includes('itemname') || h.includes('description') || h.includes('material'))
-        if (hasCode && hasName) detectedAs[name] = 'RM Master (auto-detected by columns)'
-        else detectedAs[name] = '⚠️ Not recognized — will be skipped'
+        // Column-based BOM detection (product + raw material + qty)
+        const hasProd = headers.some(h => h.includes('product'))
+        const hasRawMat = headers.some(h => h === 'rawmaterial' || (h.includes('raw') && h.includes('material')) || h.includes('ingredient'))
+        const hasQty = headers.some(h => h.includes('qty') || h.includes('quantity'))
+        if (hasProd && hasRawMat && hasQty) {
+          detectedAs[name] = fileHasBom ? 'Recipe / BOM (auto-detected — filename match)' : 'Recipe / BOM (auto-detected by columns)'
+        } else {
+          // Column-based RM auto-detection
+          const hasCode = headers.some(h => h.includes('code') || h.includes('itemcode') || h.includes('itemno') || h.includes('srno'))
+          const hasName = headers.some(h => h.includes('name') || h.includes('itemname') || h.includes('description'))
+          if (hasCode && hasName) detectedAs[name] = 'RM Master (auto-detected by columns)'
+          else detectedAs[name] = '⚠️ Not recognized — will be skipped'
+        }
       }
     }
 
@@ -230,7 +241,41 @@ export async function executeImport(req, res) {
     }
 
     // ── RECIPE / BOM ──────────────────────────────────────────────────────
-    const recipeSheet = wb.SheetNames.find(s => /recipe|bom|bill.?of.?material|formula/i.test(s))
+    const bomClaimed = new Set([prodSheet, equipSheet, rmSheet].filter(Boolean))
+
+    let recipeSheet = wb.SheetNames.find(s => /recipe|bom|bill.?of.?material|formula/i.test(s))
+
+    // Fallback 1: filename contains bom/recipe/formula
+    if (!recipeSheet) {
+      const fileName = req.file.originalname || ''
+      if (/recipe|bom|bill.?of.?material|formula/i.test(fileName)) {
+        recipeSheet = wb.SheetNames.find(s => {
+          if (bomClaimed.has(s)) return false
+          const rows = XLSX.utils.sheet_to_json(wb.Sheets[s], { defval: '' })
+          if (!rows.length) return false
+          const hdrs = Object.keys(rows[0]).map(k => k.toLowerCase().replace(/[^a-z0-9]/g, ''))
+          return hdrs.some(h => h.includes('product')) &&
+                 hdrs.some(h => h === 'rawmaterial' || (h.includes('raw') && h.includes('material')) || h.includes('ingredient')) &&
+                 hdrs.some(h => h.includes('qty') || h.includes('quantity'))
+        })
+        if (recipeSheet) results.errors.push(`ℹ️ BOM sheet auto-detected from filename: "${recipeSheet}" (tip: name the sheet tab "BOM" next time)`)
+      }
+    }
+
+    // Fallback 2: column-signature detection (product + raw material + qty)
+    if (!recipeSheet) {
+      recipeSheet = wb.SheetNames.find(s => {
+        if (bomClaimed.has(s)) return false
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets[s], { defval: '' })
+        if (!rows.length) return false
+        const hdrs = Object.keys(rows[0]).map(k => k.toLowerCase().replace(/[^a-z0-9]/g, ''))
+        return hdrs.some(h => h.includes('product')) &&
+               hdrs.some(h => h === 'rawmaterial' || (h.includes('raw') && h.includes('material')) || h.includes('ingredient')) &&
+               hdrs.some(h => h.includes('qty') || h.includes('quantity'))
+      })
+      if (recipeSheet) results.errors.push(`ℹ️ BOM sheet auto-detected by columns: "${recipeSheet}" (tip: name the sheet tab "BOM" next time)`)
+    }
+
     if (recipeSheet) {
       const rows = XLSX.utils.sheet_to_json(wb.Sheets[recipeSheet], { defval: '' })
       const productsByName = {}

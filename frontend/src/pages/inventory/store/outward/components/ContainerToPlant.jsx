@@ -1,10 +1,10 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { containerApi } from '../../../../../api/inventory.js'
 import { indentApi } from '../../../../../api/production.js'
 import { useQrScanner } from '../../../../../hooks/useQrScanner.js'
 
-export default function ContainerToPlant() {
-  const [container, setContainer]   = useState(null)
+export default function ContainerToPlant({ preselected, onDone }) {
+  const [container, setContainer]   = useState(preselected || null)
   const [manualId, setManualId]     = useState('')
   const [loadingCont, setLoadingC]  = useState(false)
   const [qty, setQty]               = useState('')
@@ -15,6 +15,14 @@ export default function ContainerToPlant() {
   const [submitting, setSub]        = useState(false)
   const [error, setError]           = useState('')
   const [success, setSuccess]       = useState('')
+
+  useEffect(() => {
+    if (preselected) {
+      indentApi.list({ status: 'OPEN' })
+        .then(r => setIndents((r.data || []).filter(i => i.details?.some(d => d.rmCode === preselected.itemCode))))
+        .catch(() => {})
+    }
+  }, [])
 
   const onScan = useCallback(async (raw) => {
     const id = raw.startsWith('CONT:') ? raw.slice(5) : raw

@@ -4,6 +4,39 @@ const field = (name, label, type = 'text', options = {}) => ({ name, label, type
 
 export const resources = [
 
+  // ── GATE & SUPPLY CHAIN ──────────────────────────────────────────────────────
+
+  {
+    key: 'gateInward', group: 'gate',
+    title: 'Gate Inward', model: 'GateInward', path: 'gate-inward',
+    idField: 'inwardId',
+    description: 'Inward gate entry records for incoming vehicles and suppliers.',
+    fields: [
+      field('inwardId',     'Inward ID',     'text', { readOnly: true }),
+      field('supplierName', 'Supplier Name'),
+      field('invoiceNo',    'Invoice No'),
+      field('vehicleNo',    'Vehicle No'),
+      field('status',       'Status', 'select', { options: ['pending', 'approved', 'rejected', 'completed'] }),
+      field('createdAt',    'Created At', 'datetime-local', { readOnly: true }),
+      field('updatedAt',    'Updated At', 'datetime-local', { readOnly: true }),
+    ],
+  },
+  {
+    key: 'gateOutward', group: 'gate',
+    title: 'Gate Outward', model: 'GateOutward', path: 'gate-outward',
+    idField: 'outwardId',
+    description: 'Outward gate entry records for dispatching vehicles.',
+    fields: [
+      field('outwardId',    'Outward ID',    'text', { readOnly: true }),
+      field('receiverName', 'Receiver Name'),
+      field('invoiceNo',    'Invoice No'),
+      field('vehicleNo',    'Vehicle No'),
+      field('status',       'Status', 'select', { options: ['pending', 'approved', 'rejected', 'completed'] }),
+      field('createdAt',    'Created At', 'datetime-local', { readOnly: true }),
+      field('updatedAt',    'Updated At', 'datetime-local', { readOnly: true }),
+    ],
+  },
+
   // ── INVENTORY ───────────────────────────────────────────────────────────────
 
   {

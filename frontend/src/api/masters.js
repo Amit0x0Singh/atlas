@@ -3,11 +3,11 @@ import { api, erpApi } from '../context/context.jsx'
 // ── Legacy unauthenticated master APIs ────────────────────────────────────────
 
 export const productApi = {
-  list:   (params)     => api.get('/products', { params }),
-  get:    (code)       => api.get(`/products/${encodeURIComponent(code)}`),
-  create: (data)       => api.post('/products', data),
-  update: (code, data) => api.put(`/products/${encodeURIComponent(code)}`, data),
-  delete: (code)       => api.delete(`/products/${encodeURIComponent(code)}`),
+  list:   (params)     => erpApi.get('/products', { params }),
+  get:    (code)       => erpApi.get(`/products/${encodeURIComponent(code)}`),
+  create: (data)       => erpApi.post('/products', data),
+  update: (code, data) => erpApi.put(`/products/${encodeURIComponent(code)}`, data),
+  delete: (code)       => erpApi.delete(`/products/${encodeURIComponent(code)}`),
 }
 
 export const equipmentApi = {
@@ -18,13 +18,13 @@ export const equipmentApi = {
 }
 
 export const recipeApi = {
-  list:           (params)   => api.get('/recipe', { params }),
-  products:       ()         => api.get('/recipe/products'),
-  bulkSave:       (rows)     => api.post('/recipe/bulk-save', { rows }),
-  deleteRow:      (id)       => api.delete(`/recipe/${id}`),
-  deleteProduct:  (code)     => api.delete(`/recipe/product/${code}`),
-  checkRmMapping: ()         => api.get('/recipe/check-rm-mapping'),
-  fixRmMapping:   (mappings) => api.post('/recipe/fix-rm-mapping', { mappings }),
+  list:           (params)   => erpApi.get('/recipe', { params }),
+  products:       ()         => erpApi.get('/recipe/products'),
+  bulkSave:       (rows)     => erpApi.post('/recipe/bulk-save', { rows }),
+  deleteRow:      (id)       => erpApi.delete(`/recipe/${id}`),
+  deleteProduct:  (code)     => erpApi.delete(`/recipe/product/${code}`),
+  checkRmMapping: ()         => erpApi.get('/recipe/check-rm-mapping'),
+  fixRmMapping:   (mappings) => erpApi.post('/recipe/fix-rm-mapping', { mappings }),
 }
 
 // ── ERP master data (authenticated) ──────────────────────────────────────────

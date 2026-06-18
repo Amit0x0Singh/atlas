@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { resources } from '../data/resources.js';
 
 const GROUP_LABELS = {
+  gate:       'Gate & Supply Chain',
   inventory:  'Inventory',
   sales:      'Sales',
   production: 'Production',
@@ -11,6 +12,7 @@ const GROUP_LABELS = {
 };
 
 const GROUP_COLORS = {
+  gate:       '#f59e0b',
   inventory:  '#2563eb',
   sales:      '#16a34a',
   production: '#9333ea',

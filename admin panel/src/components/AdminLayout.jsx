@@ -2,6 +2,7 @@ import { NavLink, Outlet } from 'react-router-dom';
 import { resources } from '../data/resources.js';
 
 const GROUPS = [
+  { key: 'gate',       label: 'Gate & Supply Chain' },
   { key: 'inventory',  label: 'Inventory' },
   { key: 'sales',      label: 'Sales' },
   { key: 'production', label: 'Production' },

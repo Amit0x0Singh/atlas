@@ -1,9 +1,9 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { containerApi, outwardApi } from '../../../../../api/inventory.js'
 import { useQrScanner } from '../../../../../hooks/useQrScanner.js'
 
-export default function WarehouseToContainer() {
-  const [container, setContainer]   = useState(null)
+export default function WarehouseToContainer({ preselected, onDone }) {
+  const [container, setContainer]   = useState(preselected || null)
   const [manualId, setManualId]     = useState('')
   const [loadingCont, setLoadingC]  = useState(false)
   const [availPacks, setAvailPacks] = useState([])
@@ -13,6 +13,10 @@ export default function WarehouseToContainer() {
   const [submitting, setSub]        = useState(false)
   const [error, setError]           = useState('')
   const [success, setSuccess]       = useState('')
+
+  useEffect(() => {
+    if (preselected) loadPacks(preselected.itemCode)
+  }, [])
 
   const onScan = useCallback(async (raw) => {
     const id = raw.startsWith('CONT:') ? raw.slice(5) : raw

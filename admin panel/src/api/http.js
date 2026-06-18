@@ -57,3 +57,8 @@ export async function deleteRecord(resource, record) {
   const { data } = await axios.delete(url);
   return data;
 }
+
+export async function deleteAllRecords(resource) {
+  const { data } = await axios.delete(getResourceUrl(resource));
+  return data;
+}

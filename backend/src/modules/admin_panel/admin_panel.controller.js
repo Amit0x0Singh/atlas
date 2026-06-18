@@ -288,6 +288,25 @@ export async function deleteRecord(req, res) {
   }
 }
 
+// DELETE /admin/:resource — wipe all rows in a table
+export async function deleteAllRecords(req, res) {
+  const meta = getMeta(req.params.resource);
+  if (!meta) return res.status(404).json({ success: false, error: 'Unknown resource' });
+  try {
+    let deleted;
+    if (meta.rawTable) {
+      await prisma.$queryRawUnsafe(`DELETE FROM ${meta.rawTable}`);
+      deleted = 0;
+    } else {
+      const result = await prisma[meta.model].deleteMany({});
+      deleted = result.count;
+    }
+    return res.json({ success: true, deleted });
+  } catch (err) {
+    return res.status(400).json({ success: false, error: err.message });
+  }
+}
+
 // GET /admin/stats — row counts for all tables (dashboard)
 export async function getStats(req, res) {
   try {

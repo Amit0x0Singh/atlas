@@ -31,14 +31,14 @@ const SHEETS = [
   },
   {
     sheet: 'Recipe / BOM',
-    match: 'Sheet name contains "recipe", "bom", "formula"',
+    match: 'Sheet TAB name contains "recipe", "bom", or "formula" — OR auto-detected by columns',
     cols: [
       { name: 'Product Name', note: 'Required. Product (FG) this BOM belongs to.' },
-      { name: 'Raw Material Name', note: 'Required. RM ingredient.' },
+      { name: 'Raw Material', note: 'Required. RM ingredient name.' },
       { name: 'Qty Per Unit', note: 'Required. Qty of RM per unit of product.' },
       { name: 'UOM', note: 'Unit of measure for the RM qty.' },
     ],
-    note: 'Products and RMs not yet in the system are auto-created with generated codes.'
+    note: 'Tip: rename the sheet TAB (bottom of Excel) to "BOM". If the file name contains "bom" or columns match (Product Name + Raw Material + Qty), it is auto-detected. Products and RMs not yet in the system are auto-created.'
   },
   {
     sheet: 'Print Master (Pack Stock)',
@@ -71,7 +71,7 @@ export default function FormatGuide() {
     <div className="mt-6 bg-white border border-gray-200 rounded-xl overflow-hidden">
       <div className="px-5 py-3 bg-gray-50 border-b border-gray-200">
         <h3 className="font-semibold text-gray-800">📌 Excel File Format Guide</h3>
-        <p className="text-xs text-gray-500 mt-0.5">One Excel file can have multiple sheets — the system auto-detects each by sheet name</p>
+        <p className="text-xs text-gray-500 mt-0.5">One Excel file can have multiple sheets — detected by sheet TAB name, filename, or column headers automatically</p>
       </div>
       <div className="divide-y divide-gray-100">
         {SHEETS.map(s => (

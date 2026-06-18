@@ -51,7 +51,7 @@ router.use("/", SalesRouter);
 // ── Production ────────────────────────────────────────────────────────────────
 // Handles: /api/production, /api/indent, /api/sfg, /api/recipe,
 //          /api/erp/bom-issuance
-// router.use("/", ProductionRouter);
+router.use("/", ProductionRouter);
 
 // ── Planning ──────────────────────────────────────────────────────────────────
 // Handles: /api/plan-engine/*, /api/erp/planning/*, /api/sales/planner-queue

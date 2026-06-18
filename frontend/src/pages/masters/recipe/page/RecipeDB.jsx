@@ -63,6 +63,10 @@ export default function RecipeDB() {
     try {
       const res = await recipeApi.list({ productCode: prod.productCode })
       const data = res.data || []
+      // Pre-populate rmSearch so focusing a loaded row shows filtered results, not all items
+      const searchMap = {}
+      data.forEach((r, i) => { searchMap[i] = r.rmName })
+      setRmSearch(searchMap)
       setBomRows(data.length > 0
         ? data.map(r => ({ ...r, _dirty: false }))
         : [EMPTY_ROW()]
@@ -171,6 +175,8 @@ export default function RecipeDB() {
       setImportResult(res)
       setMsg({ type: 'success', text: `✅ Import done — Products: ${res.data?.productMaster || 0}, RM Items: ${res.data?.rmMaster || 0}, Recipe lines: ${res.data?.recipeBom || 0}, Equipment: ${res.data?.equipmentMaster || 0}` })
       await loadAll()
+      // Refresh BOM rows if a product is already open
+      if (selectedProduct) await selectProduct(selectedProduct)
     } catch (e) { setImportResult({ error: e.message }) }
     setImporting(false)
   }
@@ -385,8 +391,8 @@ export default function RecipeDB() {
             </div>
             <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 mb-4 text-sm text-blue-800">
               <p className="font-semibold mb-1">Expected Excel format:</p>
-              <p>Sheet name must contain: <strong>recipe</strong>, <strong>bom</strong>, or <strong>formula</strong></p>
-              <p className="mt-1">Required columns: <strong>Product Name</strong>, <strong>Raw Material</strong>, <strong>Qty Per Unit</strong>, <strong>UOM</strong></p>
+              <p>Required columns: <strong>Product Name</strong>, <strong>Raw Material</strong>, <strong>Qty Per Unit</strong>, <strong>UOM</strong></p>
+              <p className="mt-1 text-xs text-blue-600">Sheet tab name <em>or</em> file name should contain <strong>bom</strong>, <strong>recipe</strong>, or <strong>formula</strong> — or it is auto-detected by column headers.</p>
             </div>
             <div
               className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition"

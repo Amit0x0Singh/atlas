@@ -2,17 +2,19 @@ import { useEffect, useMemo, useState } from 'react';
 import DataFormModal from '../components/DataFormModal.jsx';
 import DataTable from '../components/DataTable.jsx';
 import RowDetailDrawer from '../components/RowDetailDrawer.jsx';
-import { createRecord, deleteRecord, getResourceUrl, listRecords, updateRecord } from '../api/http.js';
+import { createRecord, deleteAllRecords, deleteRecord, getResourceUrl, listRecords, updateRecord } from '../api/http.js';
 
 export default function ResourcePage({ resource }) {
-  const [records, setRecords]       = useState([]);
-  const [total, setTotal]           = useState(0);
-  const [loading, setLoading]       = useState(true);
-  const [saving, setSaving]         = useState(false);
-  const [error, setError]           = useState('');
-  const [query, setQuery]           = useState('');
-  const [modalState, setModalState] = useState(null);   // { mode: 'create'|'edit', record? }
+  const [records, setRecords]           = useState([]);
+  const [total, setTotal]               = useState(0);
+  const [loading, setLoading]           = useState(true);
+  const [saving, setSaving]             = useState(false);
+  const [error, setError]               = useState('');
+  const [query, setQuery]               = useState('');
+  const [modalState, setModalState]     = useState(null);   // { mode: 'create'|'edit', record? }
   const [drawerRecord, setDrawerRecord] = useState(null);
+  const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
+  const [deletingAll, setDeletingAll]   = useState(false);
 
   const visibleRecords = useMemo(() => {
     if (!query.trim()) return records;
@@ -73,6 +75,20 @@ export default function ResourcePage({ resource }) {
     }
   }
 
+  async function handleDeleteAll() {
+    setConfirmDeleteAll(false);
+    setDeletingAll(true);
+    setError('');
+    try {
+      await deleteAllRecords(resource);
+      await loadData();
+    } catch (err) {
+      setError(err?.response?.data?.error || err.message || 'Unable to delete all records.');
+    } finally {
+      setDeletingAll(false);
+    }
+  }
+
   return (
     <div>
       {/* Page header */}
@@ -87,12 +103,29 @@ export default function ResourcePage({ resource }) {
           </h2>
           <p className="text-muted mb-0">{resource.description}</p>
         </div>
-        <button
-          className="btn btn-primary"
-          onClick={() => setModalState({ mode: 'create' })}
-        >
-          + Add Record
-        </button>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button
+            className="btn btn-primary"
+            onClick={() => setModalState({ mode: 'create' })}
+          >
+            + Add Record
+          </button>
+          <button
+            className="btn"
+            disabled={deletingAll || total === 0}
+            onClick={() => setConfirmDeleteAll(true)}
+            style={{
+              background: total === 0 ? '#f1f5f9' : '#fff1f2',
+              color:      total === 0 ? '#94a3b8' : '#dc2626',
+              border:     `1px solid ${total === 0 ? '#e2e8f0' : '#fecaca'}`,
+              fontWeight: 600,
+              cursor:     total === 0 || deletingAll ? 'not-allowed' : 'pointer',
+              opacity:    deletingAll ? 0.6 : 1,
+            }}
+          >
+            {deletingAll ? 'Deleting…' : '🗑 Delete All'}
+          </button>
+        </div>
       </div>
 
       {/* Toolbar */}
@@ -166,6 +199,44 @@ export default function ResourcePage({ resource }) {
           onSubmit={handleSave}
           saving={saving}
         />
+      )}
+
+      {/* Delete All confirmation modal */}
+      {confirmDeleteAll && (
+        <div className="modal-backdrop-custom">
+          <div className="modal-card" style={{ maxWidth: 440 }}>
+            <div style={{ textAlign: 'center', marginBottom: 16, fontSize: 36 }}>⚠️</div>
+            <h3 style={{ margin: '0 0 8px', textAlign: 'center', fontSize: '1.15rem' }}>
+              Delete All Records?
+            </h3>
+            <p style={{ color: '#64748b', textAlign: 'center', fontSize: '0.9rem', margin: '0 0 24px' }}>
+              This will permanently remove all{' '}
+              <strong>{total.toLocaleString()}</strong> rows from{' '}
+              <code style={{ background: '#fef2f2', color: '#dc2626', padding: '1px 6px', borderRadius: 4 }}>
+                {resource.path}
+              </code>
+              . This action <strong>cannot be undone</strong>.
+            </p>
+            <div className="modal-actions">
+              <button
+                className="btn btn-outline-secondary"
+                onClick={() => setConfirmDeleteAll(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn"
+                onClick={handleDeleteAll}
+                style={{
+                  background: '#dc2626', color: '#fff',
+                  border: 'none', fontWeight: 600,
+                }}
+              >
+                Yes, Delete All
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
