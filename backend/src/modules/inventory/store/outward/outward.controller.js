@@ -151,6 +151,54 @@ export async function directIssue(req, res) {
   }
 }
 
+export async function bomDirectIssue(req, res) {
+  const { source, sourceId, qty, rmCode, productCode, productName, batchSize, batchRef } = req.body
+  if (!source || !sourceId || !qty || !rmCode)
+    return res.status(400).json({ success: false, error: 'source, sourceId, qty, rmCode required' })
+  if (!['pack', 'container'].includes(source))
+    return res.status(400).json({ success: false, error: 'source must be "pack" or "container"' })
+  try {
+    const issue = parseFloat(qty)
+    if (issue <= 0) return res.status(400).json({ success: false, error: 'Qty must be positive' })
+    const ref = `BOM: ${productName || productCode || ''}${batchSize ? ' | Batch: ' + batchSize + ' kg' : ''}${batchRef ? ' | Ref: ' + batchRef : ''}`
+
+    if (source === 'pack') {
+      const packBalance = await prisma.packBalance.findUnique({ where: { packId: sourceId } })
+      if (!packBalance) return res.status(404).json({ success: false, error: 'Pack not found or not inwarded' })
+      if (packBalance.itemCode !== rmCode)
+        return res.status(400).json({ success: false, error: `Pack item code (${packBalance.itemCode}) does not match RM (${rmCode})` })
+      if (issue > packBalance.remainingQty)
+        return res.status(400).json({ success: false, error: `Qty (${issue}) exceeds pack balance (${packBalance.remainingQty})` })
+
+      await prisma.$transaction(async (tx) => {
+        await tx.packBalance.update({ where: { packId: sourceId }, data: { remainingQty: packBalance.remainingQty - issue } })
+        await tx.outward.create({ data: { sourceId, sourceType: 'BOM_ISSUANCE', rmCode, qtyIssued: issue, remarks: ref } })
+        const prev = await tx.stockLedger.findFirst({ where: { itemCode: rmCode }, orderBy: { timestamp: 'desc' } })
+        await tx.stockLedger.create({ data: { itemCode: rmCode, sourceId, transactionType: 'BOM_ISSUANCE', outQty: issue, balance: (prev?.balance || 0) - issue, reference: ref } })
+      })
+      return res.json({ success: true, issued: issue, remaining: packBalance.remainingQty - issue })
+    }
+
+    // source === 'container'
+    const container = await prisma.containerMaster.findUnique({ where: { containerId: sourceId } })
+    if (!container) return res.status(404).json({ success: false, error: 'Container not found' })
+    if (container.itemCode !== rmCode)
+      return res.status(400).json({ success: false, error: `Container item code (${container.itemCode}) does not match RM (${rmCode})` })
+    if (issue > container.currentQty)
+      return res.status(400).json({ success: false, error: `Qty (${issue}) exceeds container balance (${container.currentQty})` })
+
+    await prisma.$transaction(async (tx) => {
+      await tx.containerMaster.update({ where: { containerId: sourceId }, data: { currentQty: { decrement: issue } } })
+      await tx.outward.create({ data: { sourceId, sourceType: 'BOM_ISSUANCE', rmCode, qtyIssued: issue, remarks: ref } })
+      const prev = await tx.stockLedger.findFirst({ where: { itemCode: rmCode }, orderBy: { timestamp: 'desc' } })
+      await tx.stockLedger.create({ data: { itemCode: rmCode, sourceId, transactionType: 'BOM_ISSUANCE', outQty: issue, balance: (prev?.balance || 0) - issue, reference: ref } })
+    })
+    return res.json({ success: true, issued: issue, remaining: container.currentQty - issue })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message })
+  }
+}
+
 export async function listOutward(req, res) {
   try {
     const { itemCode, page = 1, limit = 50 } = req.query

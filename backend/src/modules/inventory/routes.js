@@ -6,7 +6,7 @@ import { listLedger, getLedgerByItem, getLedgerEntry } from "./ledger/ledger.con
 import { listGrn, getGrnDetail } from "./grn/grn.controller.js";
 import { listRm, getRm, createRm, updateRm, deleteRm, listWarehouses } from "./row-material-master/rm-master.controller.js";
 import { createSession, getSession, scanPack, removeScan, submitSession, listActiveSessions, listInward } from "./store/inward/inward.controller.js";
-import { bomScan, bomManual, getAvailablePacks, packReduction, stockAdjustment, listOutward, warehouseTransfer, directIssue } from "./store/outward/outward.controller.js";
+import { bomScan, bomManual, getAvailablePacks, packReduction, stockAdjustment, listOutward, warehouseTransfer, directIssue, bomDirectIssue } from "./store/outward/outward.controller.js";
 import { listContainers as listContainersCtrl, getContainer, createContainer, fillContainer, issueFromContainer, getContainerLabel } from "./store/containers/containers.controller.js";
 import { listLocations, getLocation, createLocation, deleteLocation, getLocationLabel, bulkInward, bulkOutward, getBulkStockSummary } from "./bulk-location/bulk-location.controller.js";
 import { previewImport, executeImport } from "./import/import.controller.js";
@@ -68,6 +68,7 @@ InventoryRouter.post("/outward/pack-reduction", authenticate, storeOrAbove, pack
 InventoryRouter.post("/outward/stock-adjustment", authenticate, managerOrAbove, stockAdjustment);
 InventoryRouter.post("/outward/warehouse-transfer", authenticate, storeOrAbove, warehouseTransfer);
 InventoryRouter.post("/outward/direct-issue", authenticate, storeOrAbove, directIssue);
+InventoryRouter.post("/outward/bom-direct", authenticate, storeOrAbove, bomDirectIssue);
 
 // ── Containers ────────────────────────────────────────────────────────────────
 InventoryRouter.get("/containers", authenticate, listContainersCtrl);

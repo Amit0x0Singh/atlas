@@ -39,6 +39,7 @@ export const outwardApi = {
   stockAdjustment:     (data)    => api.post('/outward/stock-adjustment', data),
   warehouseTransfer:   (data)    => api.post('/outward/warehouse-transfer', data),
   directIssue:         (data)    => api.post('/outward/direct-issue', data),
+  bomDirect:           (data)    => api.post('/outward/bom-direct', data),
   history:             (params)  => api.get('/outward', { params }),
 }
 

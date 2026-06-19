@@ -392,7 +392,8 @@ export default function RecipeDB() {
             <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 mb-4 text-sm text-blue-800">
               <p className="font-semibold mb-1">Expected Excel format:</p>
               <p>Required columns: <strong>Product Name</strong>, <strong>Raw Material</strong>, <strong>Qty Per Unit</strong>, <strong>UOM</strong></p>
-              <p className="mt-1 text-xs text-blue-600">Sheet tab name <em>or</em> file name should contain <strong>bom</strong>, <strong>recipe</strong>, or <strong>formula</strong> — or it is auto-detected by column headers.</p>
+              <p className="mt-1 text-xs text-blue-600">Sheet tab name <em>or</em> file name should contain <strong>bom</strong>, <strong>recipe</strong>, or <strong>formula</strong>.</p>
+              <p className="mt-1 text-xs text-amber-700 font-semibold">⚠ Raw Materials must already exist in RM Master. Unrecognised RMs are skipped and listed in warnings.</p>
             </div>
             <div
               className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition"

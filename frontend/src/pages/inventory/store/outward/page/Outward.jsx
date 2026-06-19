@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react'
 import { outwardApi } from '../../../../../api/inventory.js'
 import WarehouseToWarehouse from '../components/WarehouseToWarehouse.jsx'
-import WarehouseToPlant from '../components/WarehouseToPlant.jsx'
 import WarehouseToContainer from '../components/WarehouseToContainer.jsx'
-import ContainerToPlant from '../components/ContainerToPlant.jsx'
+import MaterialIssueByBOM from '../components/MaterialIssueByBOM.jsx'
 
 const MODES = [
   {
@@ -15,10 +14,10 @@ const MODES = [
     badge: 'bg-blue-100 text-blue-700',
   },
   {
-    key: 'wh-plant',
-    icon: '🏗️',
-    label: 'Warehouse → Plant',
-    desc: 'Issue directly to plant or against a production indent (BOM)',
+    key: 'bom-issue',
+    icon: '📋',
+    label: 'Material Issue by BOM',
+    desc: 'Issue raw materials to plant based on product recipe — scan pack or container QR per RM',
     color: 'border-indigo-300 hover:border-indigo-500 hover:bg-indigo-50',
     badge: 'bg-indigo-100 text-indigo-700',
   },
@@ -29,14 +28,6 @@ const MODES = [
     desc: 'Fill a container from warehouse packs — scan container QR',
     color: 'border-orange-300 hover:border-orange-500 hover:bg-orange-50',
     badge: 'bg-orange-100 text-orange-700',
-  },
-  {
-    key: 'cont-plant',
-    icon: '🧪',
-    label: 'Container → Plant',
-    desc: 'Issue material from a container to the plant — scan container QR',
-    color: 'border-green-300 hover:border-green-500 hover:bg-green-50',
-    badge: 'bg-green-100 text-green-700',
   },
 ]
 
@@ -73,9 +64,8 @@ export default function Outward() {
 
   // ── Mode panels ──────────────────────────────────────────────────────────────
   if (mode === 'wh-wh')    return <Panel mode={MODES[0]} onBack={goBack}><WarehouseToWarehouse /></Panel>
-  if (mode === 'wh-plant') return <Panel mode={MODES[1]} onBack={goBack}><WarehouseToPlant /></Panel>
+  if (mode === 'bom-issue') return <Panel mode={MODES[1]} onBack={goBack}><MaterialIssueByBOM /></Panel>
   if (mode === 'wh-cont')  return <Panel mode={MODES[2]} onBack={goBack}><WarehouseToContainer /></Panel>
-  if (mode === 'cont-plant') return <Panel mode={MODES[3]} onBack={goBack}><ContainerToPlant /></Panel>
 
   // ── Landing: mode selector + recent history ──────────────────────────────────
   const totalPages = Math.ceil(histTotal / LIMIT)
@@ -85,7 +75,7 @@ export default function Outward() {
       <h1 className="text-2xl font-bold text-gray-900 mb-1">Outward — Issue Materials</h1>
       <p className="text-sm text-gray-500 mb-6">Select the type of outward transaction</p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         {MODES.map(m => (
           <button key={m.key} onClick={() => setMode(m.key)}
             className={`bg-white border-2 rounded-xl p-5 text-left transition-all ${m.color}`}>

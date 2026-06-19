@@ -38,7 +38,7 @@ const SHEETS = [
       { name: 'Qty Per Unit', note: 'Required. Qty of RM per unit of product.' },
       { name: 'UOM', note: 'Unit of measure for the RM qty.' },
     ],
-    note: 'Tip: rename the sheet TAB (bottom of Excel) to "BOM". If the file name contains "bom" or columns match (Product Name + Raw Material + Qty), it is auto-detected. Products and RMs not yet in the system are auto-created.'
+    note: 'Raw Materials MUST already exist in RM Master — the system matches by name (with fuzzy matching for minor spelling differences) but will NOT create new RM codes. Unmatched RMs are listed in the warnings. Products are auto-created if missing.'
   },
   {
     sheet: 'Print Master (Pack Stock)',

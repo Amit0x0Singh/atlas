@@ -1,5 +1,6 @@
 import prisma from '../../../db.js'
 import * as XLSX from 'xlsx'
+import { findBestRmMatch } from '../../../utils/fuzzy.js'
 
 function col(row, ...keys) {
   for (const key of keys) {
@@ -172,29 +173,23 @@ export async function executeImport(req, res) {
       const rows = XLSX.utils.sheet_to_json(wb.Sheets[equipSheet], { defval: '' })
       for (const row of rows) {
         try {
-          const equipName = col(row, 'equipname', 'equip name', 'equipment name', 'name', 'equipment', 'work center')
-          const locationRaw = col(row, 'plant', 'location', 'unit', 'designated')
+          const equipName = col(row, 'equipname', 'equip name', 'equipment name', 'name', 'equipment', 'machine', 'reactor', 'work center', 'workcenter', 'asset')
+          const locationRaw = col(row, 'plant', 'location', 'unit', 'designated', 'section', 'area', 'department')
           const plant = normalizeEquipSection(locationRaw)
-          const workingVolumeRaw = col(row, 'workingvolume', 'working volume', 'volume', 'capacity', 'vol')
-          const workingVolume = workingVolumeRaw ? parseFloat(workingVolumeRaw) || null : null
-          const operation = col(row, 'operation', 'operations', 'process', 'type') || ''
+          const workingVolumeRaw = col(row, 'workingvolume', 'working volume', 'volume', 'capacity', 'vol', 'size')
+          const workingVolume = safeNum(workingVolumeRaw) || null
+          const operation = col(row, 'operation', 'operations', 'process', 'type', 'activity') || ''
           if (!equipName) continue
-          try {
-            await prisma.equipmentMaster.upsert({
-              where: { equipName },
-              create: { equipName, plant, workingVolume, operation },
-              update: { plant, workingVolume, operation }
-            })
-          } catch {
-            await prisma.equipmentMaster.upsert({
-              where: { equipName },
-              create: { equipName, plant },
-              update: { plant }
-            })
-          }
+          await prisma.equipmentMaster.upsert({
+            where: { equipName },
+            create: { equipName, plant, workingVolume, operation },
+            update: { plant, workingVolume, operation }
+          })
           results.equipmentMaster++
         } catch (e) { results.errors.push(`Equipment row: ${e.message}`) }
       }
+    } else {
+      results.errors.push('ℹ️ No Equipment sheet found — sheet tab must contain "equipment" or "equip".')
     }
 
     // ── RM MASTER ─────────────────────────────────────────────────────────
@@ -236,8 +231,6 @@ export async function executeImport(req, res) {
           results.rmMaster++
         } catch (e) { results.errors.push(`RM row: ${e.message}`) }
       }
-    } else {
-      results.errors.push('⚠️ No RM sheet found. Name your sheet "RM Master" or "Raw Material" and ensure it has Item Code + Item Name columns.')
     }
 
     // ── RECIPE / BOM ──────────────────────────────────────────────────────
@@ -276,6 +269,10 @@ export async function executeImport(req, res) {
       if (recipeSheet) results.errors.push(`ℹ️ BOM sheet auto-detected by columns: "${recipeSheet}" (tip: name the sheet tab "BOM" next time)`)
     }
 
+    if (recipeSheet && !rmSheet) {
+      results.errors.push('⚠️ No RM sheet found. Name your sheet "RM Master" or "Raw Material" and ensure it has Item Code + Item Name columns.')
+    }
+
     if (recipeSheet) {
       const rows = XLSX.utils.sheet_to_json(wb.Sheets[recipeSheet], { defval: '' })
       const productsByName = {}
@@ -285,7 +282,6 @@ export async function executeImport(req, res) {
       const existingRms = await prisma.rmMaster.findMany()
       existingRms.forEach(r => { rmsByName[r.itemName.toLowerCase()] = r })
       const newProductCodes = []
-      const newRmCodes = []
 
       for (const row of rows) {
         try {
@@ -299,6 +295,7 @@ export async function executeImport(req, res) {
           const roleType = getRoleType(concCfu)
           if (!productName || !rmName || qtyPerUnit <= 0) continue
 
+          // Product: auto-create if not in master (products come from BOM)
           let product = productsByName[productName.toLowerCase()]
           if (!product) {
             const newCode = await nextProductCode(newProductCodes)
@@ -310,13 +307,21 @@ export async function executeImport(req, res) {
             await prisma.productMaster.update({ where: { productCode: product.productCode }, data: { plant: section } })
           }
 
+          // RM: match to existing RM Master ONLY — never auto-create RM records
           let rm = rmsByName[rmName.toLowerCase()]
           if (!rm) {
-            const newCode = await nextRmCode(newRmCodes)
-            newRmCodes.push(newCode)
-            rm = await prisma.rmMaster.create({ data: { itemCode: newCode, itemName: rmName, uom } })
-            rmsByName[rmName.toLowerCase()] = rm
-            results.rmMaster++
+            // Fuzzy match against all existing RMs (threshold 0.75 — handles minor spelling differences)
+            const match = findBestRmMatch(rmName, existingRms, 0.75)
+            if (match) {
+              rm = match.candidate
+              const pct = Math.round(match.score * 100)
+              results.fuzzyMatches++
+              results.fuzzyLog.push(`"${rmName}" → "${rm.itemName}" [${pct}% ${match.method}] (product: ${productName})`)
+              rmsByName[rmName.toLowerCase()] = rm  // cache so subsequent rows reuse this match
+            } else {
+              results.errors.push(`⚠️ RM not found: "${rmName}" (product: ${productName}) — add this RM to RM Master first, then re-import`)
+              continue  // skip this BOM line — don't pollute RM Master with auto-generated codes
+            }
           }
 
           const finalRoleType = roleType || 'INGREDIENT'
