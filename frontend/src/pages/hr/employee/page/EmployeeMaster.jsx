@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { employeeApi } from '../../../../api/hr.js'
+import BackButton from '../../../../components/erp/BackButton.jsx'
 
 const ROLES = ['ADMIN', 'SALES', 'PRODUCTION', 'QC', 'DISPATCH', 'PLANNING', 'ACCOUNTS']
 const SECTIONS = ['NANO', 'BOTANICAL', 'LIQUID', 'POWDER', 'GRANULES']
@@ -251,10 +252,13 @@ export default function EmployeeMaster() {
           <h1 className="text-2xl font-bold text-gray-900">Employee Master</h1>
           <p className="text-sm text-gray-500 mt-0.5">{activeCount} active employees · Role-based access control</p>
         </div>
-        <button onClick={() => { setEditing(null); setShowForm(true) }}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700">
-          + Add Employee
-        </button>
+        <div className="flex items-center gap-3">
+          <button onClick={() => { setEditing(null); setShowForm(true) }}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700">
+            + Add Employee
+          </button>
+          <BackButton />
+        </div>
       </div>
 
       {err && <div className="mb-4 text-sm text-red-600 bg-red-50 px-4 py-3 rounded-lg">{err}</div>}

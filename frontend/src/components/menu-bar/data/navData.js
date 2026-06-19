@@ -1,7 +1,10 @@
 export const APP_NAV = [
   {
     group: "DASHBOARD",
-    items: [{ to: "/stock", label: "Stock Dashboard", icon: "▦" }],
+    items: [
+      { to: "/stock", label: "Dashboard", icon: "▦" },
+      { to: "/rm-material", label: "RM Material", icon: "▦" },
+    ],
   },
   {
     group: "MASTER DATA",
@@ -29,9 +32,9 @@ export const APP_NAV = [
       { to: "/inward", label: "Inward", icon: "↓" },
       { to: "/outward", label: "Outward", icon: "↑" },
       { to: "/containers", label: "Container", icon: "📦" },
+      { to: "/ledger", label: "Stock Transaction", icon: "▤" },
       { to: "/grn", label: "GRN", icon: "☰" },
       { to: "/microbial-inward", label: "Microbial Inward", icon: "🧊" },
-      { to: "/ledger", label: "Stock Ledger", icon: "▤" },
       { to: "/location-master", label: "Location Master", icon: "📍" },
       { to: "/indent", label: "Indent Management", icon: "◻" },
     ],

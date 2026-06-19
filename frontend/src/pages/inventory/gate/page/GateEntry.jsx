@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { gateApi } from "../../../../api/inventory.js";
 import { useAuth } from "../../../../components/erp/AuthContext.jsx";
 import GateHeader from "../component/GateHeader.jsx";
+import BackButton from "../../../../components/erp/BackButton.jsx";
 import GateTabs from "../component/GateTabs.jsx";
 import GateFilterBar from "../component/GateFilterBar.jsx";
 import InwardForm from "../component/InwardForm.jsx";
@@ -126,6 +127,7 @@ export default function GateEntry() {
         showForm={showForm}
         canGate={canGate}
         onNewClick={() => { setShowForm(!showForm); setDetail(null); }}
+        backButton={<BackButton />}
       />
 
       <GateTabs tab={tab} onChange={handleTabChange} />

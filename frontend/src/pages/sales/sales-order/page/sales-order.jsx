@@ -17,6 +17,7 @@ import CreateSalesOrder from "../component/create-sales-order.jsx";
 import DispatchOrder from "../component/dispatch-order.jsx";
 import OrderHistory from "../component/order-history.jsx";
 import SalesFilterBar from "../component/SalesFilterBar.jsx";
+import BackButton from "../../../../components/erp/BackButton.jsx";
 
 const EMPTY_FILTERS = {
   search: "",
@@ -309,12 +310,14 @@ const SalesOrder = () => {
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
-      {/* Page header */}
-      <div className="mb-5">
-        <h1 className="text-2xl font-bold text-gray-900">Sales Orders</h1>
-        <p className="text-sm text-gray-500 mt-0.5">
-          SOM Phytopharma — {orders.length} orders total
-        </p>
+      <div className="flex justify-between items-start mb-5">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Sales Orders</h1>
+          <p className="text-sm text-gray-500 mt-0.5">
+            SOM Phytopharma — {orders.length} orders total
+          </p>
+        </div>
+        <BackButton />
       </div>
 
       {err && (

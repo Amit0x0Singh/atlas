@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { rmApi } from '../../../../api/inventory.js'
+import BackButton from '../../../../components/erp/BackButton.jsx'
 
 const TRACKING_BADGE = {
   PACK: 'bg-blue-100 text-blue-700',
@@ -67,9 +68,12 @@ export default function RmMaster() {
             <span className="text-green-600 font-medium">BULK</span> = location QR (bags/labels/consumables in bulk)
           </p>
         </div>
-        <button onClick={openAdd} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-medium">
-          + Add New Item
-        </button>
+        <div className="flex items-center gap-3">
+          <button onClick={openAdd} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-medium">
+            + Add New Item
+          </button>
+          <BackButton />
+        </div>
       </div>
 
       <div className="flex gap-3 mb-4">

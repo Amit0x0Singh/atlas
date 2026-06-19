@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { stockApi } from '../../../../../api/inventory.js'
+import BackButton from '../../../../../components/erp/BackButton.jsx'
 
 export default function Stock() {
   const [data, setData] = useState([])
@@ -21,7 +22,10 @@ export default function Stock() {
           <h1 className="text-2xl font-bold text-gray-900">Stock Dashboard</h1>
           <p className="text-sm text-gray-500 mt-1">Real-time inventory across all raw materials</p>
         </div>
-        <button onClick={load} className="border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-50 text-sm">🔄 Refresh</button>
+        <div className="flex items-center gap-3">
+          <button onClick={load} className="border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-50 text-sm">🔄 Refresh</button>
+          <BackButton />
+        </div>
       </div>
 
       <div className="grid grid-cols-3 gap-4 mb-6">

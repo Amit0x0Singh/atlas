@@ -1,4 +1,4 @@
-export default function GateHeader({ tab, showForm, canGate, onNewClick }) {
+export default function GateHeader({ tab, showForm, canGate, onNewClick, backButton }) {
   return (
     <div
       style={{
@@ -25,24 +25,27 @@ export default function GateHeader({ tab, showForm, canGate, onNewClick }) {
         </p>
       </div>
 
-      {canGate && (
-        <button
-          onClick={onNewClick}
-          style={{
-            padding: "9px 20px",
-            background: showForm ? "#64748b" : "#3b82f6",
-            color: "#fff",
-            border: "none",
-            borderRadius: "8px",
-            fontSize: "13px",
-            fontWeight: 600,
-            cursor: "pointer",
-            flexShrink: 0,
-          }}
-        >
-          {showForm ? "✕ Cancel" : `+ New ${tab === "inward" ? "Inward" : "Outward"}`}
-        </button>
-      )}
+      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        {canGate && (
+          <button
+            onClick={onNewClick}
+            style={{
+              padding: "9px 20px",
+              background: showForm ? "#64748b" : "#3b82f6",
+              color: "#fff",
+              border: "none",
+              borderRadius: "8px",
+              fontSize: "13px",
+              fontWeight: 600,
+              cursor: "pointer",
+              flexShrink: 0,
+            }}
+          >
+            {showForm ? "✕ Cancel" : `+ New ${tab === "inward" ? "Inward" : "Outward"}`}
+          </button>
+        )}
+        {backButton}
+      </div>
     </div>
   );
 }

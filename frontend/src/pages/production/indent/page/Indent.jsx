@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { indentApi } from '../../../../api/production.js'
+import BackButton from '../../../../components/erp/BackButton.jsx'
 import { productApi, equipmentApi } from '../../../../api/masters.js'
 import IndentCard from '../components/IndentCard.jsx'
 
@@ -194,12 +195,15 @@ export default function Indent() {
           <h1 className="text-2xl font-bold text-gray-900">Indent Management</h1>
           <p className="text-sm text-gray-500 mt-0.5">Production work orders — Item requirements auto-calculated from Recipe DB</p>
         </div>
-        {tab === 0 && (
-          <button onClick={() => { setShowForm(true); setError('') }}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-medium">
-            + New Production Indent
-          </button>
-        )}
+        <div className="flex items-center gap-3">
+          {tab === 0 && (
+            <button onClick={() => { setShowForm(true); setError('') }}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-medium">
+              + New Production Indent
+            </button>
+          )}
+          <BackButton />
+        </div>
       </div>
 
       <div className="flex gap-0 mb-5 border-b border-gray-200">

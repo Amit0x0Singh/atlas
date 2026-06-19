@@ -119,9 +119,19 @@ export default function MicrobesMaster() {
           <h1 style={S.h1}>🦠 Microbes Master</h1>
           <p style={S.sub}>Manage microbe names and codes used across the SFG module</p>
         </div>
-        <div style={{ display: 'flex', gap: '10px' }}>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           <button style={S.btnOutline} onClick={() => { setTab('import') }}>⇪ Import Excel</button>
           <button style={S.btnPrimary} onClick={() => { setForm({ microbe_name: '', microbe_code: '' }); setEditId(null); setTab('add') }}>+ Add Microbe</button>
+          <button
+            onClick={() => window.history.back()}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: '6px',
+              padding: '8px 14px', borderRadius: '8px',
+              background: '#fff', border: '1px solid #e2e8f0',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+              fontSize: '13px', fontWeight: 500, color: '#475569', cursor: 'pointer',
+            }}
+          >← Back</button>
         </div>
       </div>
 

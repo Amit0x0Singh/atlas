@@ -31,14 +31,14 @@ export default function AppSidebar() {
       style={{
         width: sidebarOpen ? '220px' : '60px',
         minWidth: sidebarOpen ? '220px' : '60px',
-        background: 'linear-gradient(160deg, #081508 0%, #0d1f0d 60%, #0a1a10 100%)',
+        background: 'linear-gradient(180deg, #0f1117 0%, #13161f 60%, #0d1018 100%)',
         flexShrink: 0,
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
         transition: 'width 0.25s cubic-bezier(0.4,0,0.2,1), min-width 0.25s cubic-bezier(0.4,0,0.2,1)',
         overflow: 'hidden',
-        boxShadow: '2px 0 16px rgba(0,0,0,0.35)',
+        boxShadow: '1px 0 0 rgba(255,255,255,0.06), 4px 0 24px rgba(0,0,0,0.5)',
         position: 'relative',
         zIndex: 20,
       }}
@@ -46,13 +46,13 @@ export default function AppSidebar() {
       {/* ── Header ── */}
       <div
         style={{
-          borderBottom: '1px solid #1a3320',
-          padding: sidebarOpen ? '12px 14px 10px' : '12px 0 10px',
+          borderBottom: '1px solid rgba(255,255,255,0.07)',
+          padding: sidebarOpen ? '14px 14px 12px' : '14px 0 12px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: sidebarOpen ? 'space-between' : 'center',
           gap: '8px',
-          minHeight: '62px',
+          minHeight: '64px',
           flexShrink: 0,
         }}
       >
@@ -65,16 +65,16 @@ export default function AppSidebar() {
                   borderRadius: '8px',
                   padding: '4px 7px',
                   flexShrink: 0,
-                  boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
+                  boxShadow: '0 1px 6px rgba(0,0,0,0.3)',
                 }}
               >
                 <img src="/logo.png" alt="SOM" style={{ height: '26px', width: 'auto', display: 'block' }} />
               </div>
               <div style={{ overflow: 'hidden' }}>
-                <div style={{ color: '#e8f5e8', fontSize: '12px', fontWeight: 700, letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>
+                <div style={{ color: '#f1f5f9', fontSize: '12.5px', fontWeight: 700, letterSpacing: '0.03em', whiteSpace: 'nowrap' }}>
                   SOM ERP
                 </div>
-                <div style={{ color: '#4ade80', fontSize: '8px', letterSpacing: '0.14em', whiteSpace: 'nowrap', opacity: 0.8 }}>
+                <div style={{ color: '#6366f1', fontSize: '8px', letterSpacing: '0.14em', whiteSpace: 'nowrap', fontWeight: 600 }}>
                   MANUFACTURING
                 </div>
               </div>
@@ -85,8 +85,8 @@ export default function AppSidebar() {
               onClick={() => setSidebarOpen(false)}
               title="Collapse sidebar"
               style={{
-                background: '#1a3320',
-                border: '1px solid #2a5030',
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255,255,255,0.1)',
                 borderRadius: '6px',
                 width: '26px',
                 height: '26px',
@@ -94,13 +94,13 @@ export default function AppSidebar() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: 'pointer',
-                color: '#4ade80',
-                fontSize: '11px',
+                color: '#94a3b8',
+                fontSize: '13px',
                 flexShrink: 0,
-                transition: 'background 0.15s',
+                transition: 'background 0.15s, color 0.15s',
               }}
-              onMouseEnter={e => e.currentTarget.style.background = '#22452a'}
-              onMouseLeave={e => e.currentTarget.style.background = '#1a3320'}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(99,102,241,0.15)'; e.currentTarget.style.color = '#a5b4fc' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = '#94a3b8' }}
             >
               ‹
             </button>
@@ -111,21 +111,21 @@ export default function AppSidebar() {
             onClick={() => setSidebarOpen(true)}
             title="Expand sidebar"
             style={{
-              background: '#1a3320',
-              border: '1px solid #2a5030',
-              borderRadius: '6px',
-              width: '34px',
-              height: '34px',
+              background: 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '8px',
+              width: '36px',
+              height: '36px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
-              color: '#4ade80',
-              fontSize: '14px',
-              transition: 'background 0.15s',
+              color: '#94a3b8',
+              fontSize: '15px',
+              transition: 'background 0.15s, color 0.15s',
             }}
-            onMouseEnter={e => e.currentTarget.style.background = '#22452a'}
-            onMouseLeave={e => e.currentTarget.style.background = '#1a3320'}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(99,102,241,0.15)'; e.currentTarget.style.color = '#a5b4fc' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = '#94a3b8' }}
           >
             ›
           </button>
@@ -133,14 +133,14 @@ export default function AppSidebar() {
       </div>
 
       {/* ── Nav ── */}
-      <nav style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '8px 0' }}>
+      <nav style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '10px 0' }}>
         {APP_NAV.map(({ group, items }) => {
           const isOpen = openGroups.has(group)
           const hasActive = items.some(i => i.to === location.pathname)
           const firstIcon = items.find(i => !i.soon)?.icon ?? items[0]?.icon
 
           return (
-            <div key={group} style={{ marginBottom: '2px' }}>
+            <div key={group} style={{ marginBottom: '1px' }}>
 
               {/* ── Group header ── */}
               <button
@@ -154,37 +154,38 @@ export default function AppSidebar() {
                   display: 'flex',
                   alignItems: 'center',
                   gap: '10px',
-                  background: hasActive && !sidebarOpen ? 'rgba(74,222,128,0.08)' : 'none',
+                  background: hasActive && !sidebarOpen ? 'rgba(99,102,241,0.1)' : 'none',
                   border: 'none',
-                  borderLeft: hasActive && !sidebarOpen ? '3px solid #4ade80' : '3px solid transparent',
+                  borderLeft: hasActive && !sidebarOpen ? '2px solid #6366f1' : '2px solid transparent',
                   cursor: 'pointer',
                   padding: sidebarOpen ? '7px 14px 6px' : '9px 0',
                   justifyContent: sidebarOpen ? 'flex-start' : 'center',
                   textAlign: 'left',
                   transition: 'background 0.15s',
                 }}
-                onMouseEnter={e => { if (!hasActive || sidebarOpen) e.currentTarget.style.background = 'rgba(255,255,255,0.03)' }}
-                onMouseLeave={e => { if (!hasActive || sidebarOpen) e.currentTarget.style.background = 'none' }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
+                onMouseLeave={e => { e.currentTarget.style.background = hasActive && !sidebarOpen ? 'rgba(99,102,241,0.1)' : 'none' }}
               >
                 {sidebarOpen ? (
                   <>
                     <span
                       style={{
-                        color: hasActive ? '#86d98a' : '#6aaa72',
-                        fontSize: '9px',
+                        color: hasActive ? '#cbd5e1' : '#8899aa',
+                        fontSize: '9.5px',
                         fontWeight: 700,
-                        letterSpacing: '0.13em',
+                        letterSpacing: '0.12em',
                         flex: 1,
                         overflow: 'hidden',
                         whiteSpace: 'nowrap',
+                        textTransform: 'uppercase',
                       }}
                     >
                       {group}
                     </span>
                     <span
                       style={{
-                        color: '#5a9065',
-                        fontSize: '11px',
+                        color: '#475569',
+                        fontSize: '10px',
                         display: 'inline-block',
                         transform: isOpen ? 'rotate(0deg)' : 'rotate(-90deg)',
                         transition: 'transform 0.2s ease',
@@ -199,7 +200,7 @@ export default function AppSidebar() {
                   <span
                     style={{
                       fontSize: '15px',
-                      color: hasActive ? '#4ade80' : '#3d6645',
+                      color: hasActive ? '#818cf8' : '#3d4a5c',
                       transition: 'color 0.15s',
                     }}
                   >
@@ -224,20 +225,20 @@ export default function AppSidebar() {
                         display: 'flex',
                         alignItems: 'center',
                         gap: '9px',
-                        padding: '6px 14px 6px 24px',
-                        fontSize: '12px',
-                        color: '#1f4028',
+                        padding: '7px 14px 7px 24px',
+                        fontSize: '13.5px',
+                        color: '#5a6a7a',
                         cursor: 'default',
-                        borderLeft: '3px solid transparent',
+                        borderLeft: '2px solid transparent',
                       }}
                     >
-                      <span style={{ fontSize: '11px', minWidth: '14px', textAlign: 'center', opacity: 0.4 }}>{icon}</span>
-                      <span style={{ opacity: 0.4, flex: 1 }}>{label}</span>
+                      <span style={{ fontSize: '11px', minWidth: '14px', textAlign: 'center', opacity: 0.3 }}>{icon}</span>
+                      <span style={{ opacity: 0.3, flex: 1 }}>{label}</span>
                       <span
                         style={{
                           fontSize: '8px',
-                          background: '#1a3a20',
-                          color: '#5a9a65',
+                          background: 'rgba(99,102,241,0.15)',
+                          color: '#6366f1',
                           borderRadius: '3px',
                           padding: '1px 5px',
                           fontWeight: 700,
@@ -256,22 +257,26 @@ export default function AppSidebar() {
                         display: 'flex',
                         alignItems: 'center',
                         gap: '9px',
-                        padding: '6px 14px 6px 24px',
-                        fontSize: '12.5px',
+                        padding: '7px 14px 7px 24px',
+                        fontSize: '13.5px',
                         fontWeight: isActive ? 600 : 400,
-                        color: isActive ? '#f0fdf4' : '#a8c8ac',
+                        color: isActive ? '#f1f5f9' : '#b0bec5',
                         background: isActive
-                          ? 'linear-gradient(90deg, rgba(74,222,128,0.12) 0%, rgba(74,222,128,0.04) 100%)'
+                          ? 'linear-gradient(90deg, rgba(99,102,241,0.18) 0%, rgba(99,102,241,0.05) 100%)'
                           : 'transparent',
-                        borderLeft: isActive ? '3px solid #4ade80' : '3px solid transparent',
+                        borderLeft: isActive ? '2px solid #6366f1' : '2px solid transparent',
                         textDecoration: 'none',
                         transition: 'all 0.12s',
                         letterSpacing: '0.01em',
                       })}
-                      onMouseEnter={e => { if (!e.currentTarget.getAttribute('data-active')) e.currentTarget.style.background = 'rgba(255,255,255,0.03)' }}
-                      onMouseLeave={e => { if (!e.currentTarget.getAttribute('data-active')) e.currentTarget.style.background = 'transparent' }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = '#e2e8f0' }}
+                      onMouseLeave={e => {
+                        const active = e.currentTarget.getAttribute('aria-current') === 'page'
+                        e.currentTarget.style.background = active ? 'linear-gradient(90deg, rgba(99,102,241,0.18) 0%, rgba(99,102,241,0.05) 100%)' : 'transparent'
+                        e.currentTarget.style.color = active ? '#f1f5f9' : '#b0bec5'
+                      }}
                     >
-                      <span style={{ fontSize: '12px', minWidth: '14px', textAlign: 'center', opacity: 0.75 }}>{icon}</span>
+                      <span style={{ fontSize: '13px', minWidth: '16px', textAlign: 'center' }}>{icon}</span>
                       <span style={{ flex: 1, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
                         {label}
                       </span>
@@ -281,7 +286,7 @@ export default function AppSidebar() {
               </div>
 
               {/* Divider after each group */}
-              <div style={{ height: '1px', background: '#121f12', margin: '2px 0' }} />
+              <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '3px 0' }} />
             </div>
           )
         })}
@@ -290,9 +295,9 @@ export default function AppSidebar() {
       {/* ── Footer ── */}
       <div
         style={{
-          borderTop: '1px solid #1a3320',
+          borderTop: '1px solid rgba(255,255,255,0.07)',
           padding: sidebarOpen ? '8px 14px' : '8px 0',
-          color: '#5a8a60',
+          color: '#334155',
           fontSize: '9px',
           letterSpacing: '0.04em',
           flexShrink: 0,

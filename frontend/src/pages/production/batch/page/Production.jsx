@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { productionApi, indentApi } from '../../../../api/production.js'
+import BackButton from '../../../../components/erp/BackButton.jsx'
 import { sfgApi } from '../../../../api/inventory.js'
 
 const STAGES = [
@@ -140,10 +141,13 @@ export default function Production() {
           <h1 className="text-2xl font-bold text-gray-900">🏭 Production Master</h1>
           <p className="text-sm text-gray-500 mt-1">Powder Formulations — end-to-end batch execution & traceability</p>
         </div>
-        <button onClick={() => { setShowNewForm(true); indentApi.list({ limit: 200 }).then(r => setIndents(r.data || [])) }}
-          className="bg-indigo-600 text-white px-4 py-2.5 rounded-lg font-semibold text-sm hover:bg-indigo-700 transition">
-          + Start New Batch
-        </button>
+        <div className="flex items-center gap-3">
+          <button onClick={() => { setShowNewForm(true); indentApi.list({ limit: 200 }).then(r => setIndents(r.data || [])) }}
+            className="bg-indigo-600 text-white px-4 py-2.5 rounded-lg font-semibold text-sm hover:bg-indigo-700 transition">
+            + Start New Batch
+          </button>
+          <BackButton />
+        </div>
       </div>
       <div className="flex gap-0 mb-5 border-b border-gray-200">
         {['Powder Formulations', 'Liquid (soon)', 'Granules (soon)', 'Microbial (soon)'].map((t, i) => (

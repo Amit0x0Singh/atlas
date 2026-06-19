@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { planEngineApi as planningApi } from '../../../api/planning.js'
+import BackButton from '../../../components/erp/BackButton.jsx'
 import { indentApi, productionApi } from '../../../api/production.js'
 import { equipmentApi } from '../../../api/masters.js'
 import { employeeApi } from '../../../api/hr.js'
@@ -1046,6 +1047,7 @@ export default function Planning() {
               className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-2 transition">
               {running ? <><span className="animate-spin inline-block">⚙</span> Running…</> : '⚡ Run Planning Engine'}
             </button>
+            <BackButton />
           </div>
         </div>
       </div>

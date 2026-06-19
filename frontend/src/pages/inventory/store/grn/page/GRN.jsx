@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { grnApi } from '../../../../../api/inventory.js'
+import BackButton from '../../../../../components/erp/BackButton.jsx'
 import MetaField from '../components/MetaField.jsx'
 
 const COMPANY = {
@@ -72,11 +73,15 @@ export default function GRN() {
     `GRN-${grn.invoiceNo?.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 10) || 'NOINV'}-${new Date(grn.createdAt).getFullYear()}`
 
   return (
-    <div className="flex h-full" style={{ minHeight: 0 }}>
+    <div className="flex flex-col h-full" style={{ minHeight: 0 }}>
+      <div className="flex flex-1 min-h-0">
       {/* Left: GRN list */}
       <div className="w-72 flex-shrink-0 bg-white border-r border-gray-200 flex flex-col overflow-y-auto">
         <div className="px-4 py-3 border-b bg-gray-50 sticky top-0 z-10">
-          <h2 className="font-bold text-gray-900 text-sm mb-2">Goods Received Notes</h2>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="font-bold text-gray-900 text-sm">Goods Received Notes</h2>
+            <BackButton />
+          </div>
           <input
             type="text"
             placeholder="Search by item, invoice, supplier…"
@@ -237,6 +242,7 @@ export default function GRN() {
             </div>
           </div>
         )}
+      </div>
       </div>
     </div>
   )

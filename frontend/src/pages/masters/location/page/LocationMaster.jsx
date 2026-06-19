@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { bulkApi, rmApi } from '../../../../api/inventory.js'
+import BackButton from '../../../../components/erp/BackButton.jsx'
 import jsQR from 'jsqr'
 
 const STATUS_COLOR = {
@@ -135,7 +136,7 @@ export default function LocationMaster() {
             Manage physical rack/shelf locations for bulk items — each gets a scannable QR
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
           <button onClick={scanning ? stopCamera : startCamera}
             className={`px-4 py-2 rounded-lg font-medium text-sm ${scanning ? 'bg-red-500 text-white hover:bg-red-600' : 'border border-gray-300 hover:bg-gray-50'}`}>
             {scanning ? '⏹ Stop Scanner' : '📷 Scan QR'}
@@ -144,6 +145,7 @@ export default function LocationMaster() {
             className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 font-medium text-sm">
             + New Location
           </button>
+          <BackButton />
         </div>
       </div>
 

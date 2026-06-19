@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
 import { importApi } from '../../../../api/inventory.js'
+import BackButton from '../../../../components/erp/BackButton.jsx'
 import ResultCard from '../components/ResultCard.jsx'
 import FormatGuide from '../components/FormatGuide.jsx'
 
@@ -47,8 +48,13 @@ export default function Import() {
 
   return (
     <div className="p-6 max-w-3xl">
-      <h1 className="text-2xl font-bold text-gray-900 mb-2">Import Legacy Data</h1>
-      <p className="text-gray-500 text-sm mb-6">Upload your existing Excel file to bring historical data into the system</p>
+      <div className="flex justify-between items-start mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Import Legacy Data</h1>
+          <p className="text-gray-500 text-sm">Upload your existing Excel file to bring historical data into the system</p>
+        </div>
+        <BackButton />
+      </div>
 
       {/* Upload area */}
       <div className="bg-white border-2 border-dashed border-gray-300 rounded-xl p-8 text-center mb-6 hover:border-blue-400 transition-colors cursor-pointer"

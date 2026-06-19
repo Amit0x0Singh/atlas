@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { outwardApi } from '../../../../../api/inventory.js'
+import BackButton from '../../../../../components/erp/BackButton.jsx'
 import WarehouseToWarehouse from '../components/WarehouseToWarehouse.jsx'
 import WarehouseToContainer from '../components/WarehouseToContainer.jsx'
 import MaterialIssueByBOM from '../components/MaterialIssueByBOM.jsx'
@@ -72,8 +73,13 @@ export default function Outward() {
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold text-gray-900 mb-1">Outward — Issue Materials</h1>
-      <p className="text-sm text-gray-500 mb-6">Select the type of outward transaction</p>
+      <div className="flex justify-between items-start mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-1">Outward — Issue Materials</h1>
+          <p className="text-sm text-gray-500">Select the type of outward transaction</p>
+        </div>
+        <BackButton />
+      </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         {MODES.map(m => (

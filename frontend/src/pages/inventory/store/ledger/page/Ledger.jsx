@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { ledgerApi, rmApi } from '../../../../../api/inventory.js'
+import BackButton from '../../../../../components/erp/BackButton.jsx'
 import { DSection, DGrid, DRow } from '../components/DetailModal.jsx'
 
 const TX_COLORS = {
@@ -55,9 +56,12 @@ export default function Ledger() {
           <h1 className="text-2xl font-bold text-gray-900">📒 Stock Ledger</h1>
           <p className="text-sm text-gray-500 mt-0.5">Full transaction history — click any row for complete detail</p>
         </div>
-        <button onClick={loadLedger} className="border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-50 text-sm">
-          ↻ Refresh
-        </button>
+        <div className="flex items-center gap-3">
+          <button onClick={loadLedger} className="border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-50 text-sm">
+            ↻ Refresh
+          </button>
+          <BackButton />
+        </div>
       </div>
 
       {/* Filter */}

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import BackButton from '../../../../../components/erp/BackButton.jsx'
 import ContainerList from '../components/ContainerList.jsx'
 import CreateContainer from '../components/CreateContainer.jsx'
 import WarehouseToContainer from '../../outward/components/WarehouseToContainer.jsx'
@@ -67,10 +68,15 @@ export default function Containers() {
   return (
     <div className="flex flex-col h-full">
       <div className="px-6 pt-6 pb-0">
-        <h1 className="text-2xl font-bold text-gray-900">Container Management</h1>
-        <p className="text-sm text-gray-500 mt-1 mb-4">
-          Create containers for raw materials · Fill from warehouse · Issue to plant
-        </p>
+        <div className="flex justify-between items-start mb-2">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Container Management</h1>
+            <p className="text-sm text-gray-500 mt-1">
+              Create containers for raw materials · Fill from warehouse · Issue to plant
+            </p>
+          </div>
+          <BackButton />
+        </div>
         <div className="flex gap-0 border-b border-gray-200">
           {TABS.map((t, i) => (
             <button key={i} onClick={() => setTab(i)}

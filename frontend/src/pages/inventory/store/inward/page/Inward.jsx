@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import PackInward from '../components/PackInward.jsx'
 import BulkInward from '../components/BulkInward.jsx'
+import InwardHistory from '../components/InwardHistory.jsx'
+import BackButton from '../../../../../components/erp/BackButton.jsx'
 
-const TABS = ['📦 Pack Inward', '🗄️ Bulk Inward']
+const TABS = ['📦 Pack Inward', '🗄️ Bulk Inward', '📋 Inward History']
 
 export default function Inward() {
   const [tab, setTab] = useState(0)
@@ -10,10 +12,15 @@ export default function Inward() {
   return (
     <div className="flex flex-col h-full">
       <div className="px-6 pt-6 pb-0">
-        <h1 className="text-2xl font-bold text-gray-900">Inward — Receive Stock</h1>
-        <p className="text-sm text-gray-500 mt-1 mb-4">
-          Pack Inward: scan individual QR-labelled bags · Bulk Inward: receive lots of bulk consumables by location
-        </p>
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Inward — Receive Stock</h1>
+            <p className="text-sm text-gray-500 mt-1">
+              Pack Inward: scan individual QR-labelled bags · Bulk Inward: receive lots of bulk consumables by location · History: view all inwarded stock
+            </p>
+          </div>
+          <BackButton />
+        </div>
         <div className="flex gap-0 border-b border-gray-200">
           {TABS.map((t, i) => (
             <button key={i} onClick={() => setTab(i)}
@@ -24,7 +31,7 @@ export default function Inward() {
         </div>
       </div>
       <div className="flex-1 overflow-y-auto">
-        {tab === 0 ? <PackInward /> : <BulkInward />}
+        {tab === 0 ? <PackInward /> : tab === 1 ? <BulkInward /> : <InwardHistory />}
       </div>
     </div>
   )

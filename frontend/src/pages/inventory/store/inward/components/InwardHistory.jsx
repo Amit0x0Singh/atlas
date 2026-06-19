@@ -1,0 +1,332 @@
+import { useState, useEffect, useMemo } from 'react'
+import { packsApi } from '../../../../../api/inventory.js'
+
+const STATUS_COLORS = {
+  INWARDED:         'bg-blue-100 text-blue-800',
+  PARTIALLY_ISSUED: 'bg-orange-100 text-orange-800',
+  EXHAUSTED:        'bg-gray-100 text-gray-500',
+  AWAITING_INWARD:  'bg-yellow-100 text-yellow-800',
+}
+const statusColor = (s) => STATUS_COLORS[s] ?? 'bg-gray-100 text-gray-600'
+
+function groupPacks(packs) {
+  const map = new Map()
+  for (const p of packs) {
+    const key = `${p.itemCode}||${p.lotNo}`
+    if (!map.has(key)) {
+      map.set(key, {
+        key,
+        itemCode:     p.itemCode,
+        itemName:     p.itemName,
+        lotNo:        p.lotNo,
+        invoiceNo:    p.invoiceNo,
+        supplier:     p.supplier,
+        receivedDate: p.receivedDate,
+        uom:          p.uom,
+        bags:         [],
+      })
+    }
+    map.get(key).bags.push(p)
+  }
+  for (const g of map.values()) {
+    g.bags.sort((a, b) => (a.bagNo || 0) - (b.bagNo || 0))
+  }
+  // Sort groups by receivedDate descending (most recent first)
+  return Array.from(map.values()).sort((a, b) => {
+    if (!a.receivedDate && !b.receivedDate) return 0
+    if (!a.receivedDate) return 1
+    if (!b.receivedDate) return -1
+    return new Date(b.receivedDate) - new Date(a.receivedDate)
+  })
+}
+
+function aggregateStatus(bags) {
+  const statuses = new Set(bags.map(b => b.status))
+  if (statuses.size === 1) return [...statuses][0]
+  if (bags.some(b => b.status === 'PARTIALLY_ISSUED')) return 'PARTIALLY_ISSUED'
+  if (bags.some(b => b.status === 'INWARDED'))         return 'INWARDED'
+  return 'EXHAUSTED'
+}
+
+function fmtDate(d) {
+  if (!d) return '—'
+  return new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
+export default function InwardHistory() {
+  const [packs, setPacks]           = useState([])
+  const [loading, setLoading]       = useState(false)
+  const [expandedKeys, setExpandedKeys] = useState(new Set())
+
+  // Filters
+  const [searchText, setSearchText]       = useState('')
+  const [supplierFilter, setSupplierFilter] = useState('')
+  const [dateFrom, setDateFrom]           = useState('')
+  const [dateTo, setDateTo]               = useState('')
+
+  useEffect(() => { load() }, [])
+
+  const load = async () => {
+    setLoading(true)
+    try {
+      const r = await packsApi.list({ limit: 1000 })
+      // Show only packs that have been inwarded (exclude AWAITING_INWARD)
+      setPacks((r.data || []).filter(p => p.status !== 'AWAITING_INWARD'))
+    } catch { /* silent */ }
+    finally { setLoading(false) }
+  }
+
+  const allGroups = useMemo(() => groupPacks(packs), [packs])
+
+  // Unique suppliers for dropdown
+  const suppliers = useMemo(() =>
+    Array.from(new Set(allGroups.map(g => g.supplier).filter(Boolean))).sort()
+  , [allGroups])
+
+  // Apply filters
+  const filteredGroups = useMemo(() => {
+    return allGroups.filter(g => {
+      if (searchText) {
+        const q = searchText.toLowerCase()
+        if (
+          !g.itemName?.toLowerCase().includes(q) &&
+          !g.itemCode?.toLowerCase().includes(q) &&
+          !g.lotNo?.toLowerCase().includes(q) &&
+          !g.invoiceNo?.toLowerCase().includes(q)
+        ) return false
+      }
+      if (supplierFilter && g.supplier !== supplierFilter) return false
+      if (dateFrom && g.receivedDate && new Date(g.receivedDate) < new Date(dateFrom)) return false
+      if (dateTo  && g.receivedDate && new Date(g.receivedDate) > new Date(dateTo + 'T23:59:59')) return false
+      return true
+    })
+  }, [allGroups, searchText, supplierFilter, dateFrom, dateTo])
+
+  const toggle      = (key) => setExpandedKeys(prev => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n })
+  const expandAll   = () => setExpandedKeys(new Set(filteredGroups.map(g => g.key)))
+  const collapseAll = () => setExpandedKeys(new Set())
+
+  const hasFilters = searchText || supplierFilter || dateFrom || dateTo
+  const clearFilters = () => { setSearchText(''); setSupplierFilter(''); setDateFrom(''); setDateTo('') }
+
+  const totalBags = filteredGroups.reduce((s, g) => s + g.bags.length, 0)
+
+  return (
+    <div className="p-6">
+      {/* ── Filters ─────────────────────────────────────────────────────────── */}
+      <div className="bg-white border border-gray-200 rounded-xl p-4 mb-4">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Search */}
+          <input
+            value={searchText}
+            onChange={e => setSearchText(e.target.value)}
+            placeholder="Search item, code, lot, invoice…"
+            className="flex-1 min-w-48 border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+          />
+
+          {/* Supplier filter */}
+          <select
+            value={supplierFilter}
+            onChange={e => setSupplierFilter(e.target.value)}
+            className="border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 min-w-36"
+          >
+            <option value="">All Suppliers</option>
+            {suppliers.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+
+          {/* Date range */}
+          <div className="flex items-center gap-1.5">
+            <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <span className="text-gray-400 text-xs">to</span>
+            <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          {hasFilters && (
+            <button onClick={clearFilters}
+              className="text-sm text-red-500 hover:text-red-700 px-3 py-2 border border-red-200 rounded-lg hover:bg-red-50 whitespace-nowrap">
+              × Clear
+            </button>
+          )}
+
+          <button onClick={load}
+            className="text-sm border border-gray-300 px-3 py-2 rounded-lg hover:bg-gray-50 whitespace-nowrap">
+            ↻ Refresh
+          </button>
+        </div>
+      </div>
+
+      {/* ── Table ───────────────────────────────────────────────────────────── */}
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        {/* Table toolbar */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            <h2 className="text-base font-semibold text-gray-900">Inward History</h2>
+            {!loading && (
+              <span className="text-xs text-gray-400">
+                {filteredGroups.length} invoices · {totalBags} bags
+                {hasFilters && allGroups.length !== filteredGroups.length && (
+                  <span className="text-indigo-500 ml-1">(filtered from {allGroups.length})</span>
+                )}
+              </span>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <button onClick={expandAll}
+              className="text-xs text-blue-600 px-2 py-1 border border-blue-200 rounded-lg hover:bg-blue-50">
+              Expand all
+            </button>
+            <button onClick={collapseAll}
+              className="text-xs text-gray-500 px-2 py-1 border border-gray-200 rounded-lg hover:bg-gray-50">
+              Collapse all
+            </button>
+          </div>
+        </div>
+
+        {loading ? (
+          <p className="text-gray-400 text-center py-14">Loading inward history…</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-700 text-white text-xs">
+                <tr>
+                  <th className="w-8 px-3 py-2.5" />
+                  <th className="text-left px-3 py-2.5 font-semibold">Item</th>
+                  <th className="text-left px-3 py-2.5 font-semibold">Lot / Invoice</th>
+                  <th className="text-left px-3 py-2.5 font-semibold">Supplier</th>
+                  <th className="text-center px-3 py-2.5 font-semibold">Bags</th>
+                  <th className="text-left px-3 py-2.5 font-semibold">Total Qty</th>
+                  <th className="text-left px-3 py-2.5 font-semibold">Received</th>
+                  <th className="text-left px-3 py-2.5 font-semibold">Status</th>
+                  <th className="text-left px-3 py-2.5 font-semibold">Print All QRs</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredGroups.length === 0 ? (
+                  <tr>
+                    <td colSpan={9} className="text-center py-14 text-gray-400">
+                      {hasFilters ? 'No records match your filters.' : 'No inward records found.'}
+                    </td>
+                  </tr>
+                ) : (
+                  filteredGroups.map(g => {
+                    const isOpen   = expandedKeys.has(g.key)
+                    const totalQty = g.bags.reduce((s, b) => s + (b.packQty || 0), 0)
+                    const status   = aggregateStatus(g.bags)
+
+                    return (
+                      <>
+                        {/* ── Main group row ──────────────────────────── */}
+                        <tr key={g.key}
+                          onClick={() => toggle(g.key)}
+                          className={`border-t border-gray-200 cursor-pointer select-none transition-colors ${
+                            isOpen ? 'bg-blue-50 hover:bg-blue-100/60' : 'hover:bg-gray-50'
+                          }`}>
+                          {/* Toggle */}
+                          <td className="px-3 py-3 text-center text-gray-400 text-xs">
+                            {isOpen ? '▼' : '▶'}
+                          </td>
+
+                          {/* Item */}
+                          <td className="px-3 py-3">
+                            <div className="font-semibold text-gray-900">{g.itemName}</div>
+                            <div className="text-xs text-gray-400 font-mono mt-0.5">{g.itemCode}</div>
+                          </td>
+
+                          {/* Lot / Invoice */}
+                          <td className="px-3 py-3">
+                            <div className="font-mono text-xs font-semibold text-gray-700">{g.lotNo || '—'}</div>
+                            {g.invoiceNo && (
+                              <div className="text-xs text-gray-400 mt-0.5">Inv: {g.invoiceNo}</div>
+                            )}
+                          </td>
+
+                          {/* Supplier */}
+                          <td className="px-3 py-3 text-sm text-gray-600">{g.supplier || '—'}</td>
+
+                          {/* Bags */}
+                          <td className="px-3 py-3 text-center">
+                            <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">
+                              {g.bags.length}
+                            </span>
+                          </td>
+
+                          {/* Total Qty */}
+                          <td className="px-3 py-3 font-semibold text-gray-800">
+                            {totalQty % 1 === 0 ? totalQty : totalQty.toFixed(3)}{' '}
+                            <span className="text-gray-400 font-normal text-xs">{g.uom}</span>
+                          </td>
+
+                          {/* Received */}
+                          <td className="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">
+                            {fmtDate(g.receivedDate)}
+                          </td>
+
+                          {/* Status */}
+                          <td className="px-3 py-3">
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColor(status)}`}>
+                              {status.replace(/_/g, ' ')}
+                            </span>
+                          </td>
+
+                          {/* Print all QRs */}
+                          <td className="px-3 py-3" onClick={e => e.stopPropagation()}>
+                            <a
+                              href={packsApi.batchLabelsUrl(g.itemCode, g.lotNo)}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-lg transition whitespace-nowrap"
+                            >
+                              🖨️ Print All ({g.bags.length})
+                            </a>
+                          </td>
+                        </tr>
+
+                        {/* ── Bag sub-rows ─────────────────────────────── */}
+                        {isOpen && g.bags.map(b => (
+                          <tr key={b.packId} className="bg-blue-50/30 border-t border-blue-100/60">
+                            <td colSpan={9} className="px-0 py-0">
+                              <div className="flex items-center pl-8 pr-3 py-2 gap-0">
+                                <div className="w-px h-8 bg-blue-300 mr-4 shrink-0" />
+                                <span className="text-xs text-gray-400 w-16 shrink-0">
+                                  Bag{' '}
+                                  <span className="font-mono font-bold text-gray-700">
+                                    #{String(b.bagNo).padStart(3, '0')}
+                                  </span>
+                                </span>
+                                <span className="font-mono text-xs text-blue-700 font-semibold flex-1 min-w-0 truncate mx-4">
+                                  {b.packId}
+                                </span>
+                                <span className="text-xs text-gray-700 w-20 shrink-0">
+                                  {b.packQty} {b.uom}
+                                </span>
+                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium w-36 text-center shrink-0 ${statusColor(b.status)}`}>
+                                  {b.status.replace(/_/g, ' ')}
+                                </span>
+                                <a
+                                  href={packsApi.labelUrl(b.packId)}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-xs text-blue-600 hover:text-blue-800 font-medium ml-4 shrink-0 whitespace-nowrap"
+                                >
+                                  🖨️ Label
+                                </a>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </>
+                    )
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { sfgApi } from '../../../../api/inventory.js'
+import BackButton from '../../../../components/erp/BackButton.jsx'
 
 const STATUS_COLOR = {
   OPEN:     'bg-gray-100 text-gray-600',
@@ -76,9 +77,12 @@ export default function SFG() {
           <h1 className="text-2xl font-bold text-gray-900">🧪 SFG Tracker</h1>
           <p className="text-sm text-gray-500 mt-1">Semi-Finished Goods — visible after all RM for the indent is fully issued</p>
         </div>
-        <button onClick={loadData} className="border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-50 text-sm font-medium text-gray-600">
-          ↻ Refresh
-        </button>
+        <div className="flex items-center gap-3">
+          <button onClick={loadData} className="border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-50 text-sm font-medium text-gray-600">
+            ↻ Refresh
+          </button>
+          <BackButton />
+        </div>
       </div>
 
       {summary.length > 0 && (

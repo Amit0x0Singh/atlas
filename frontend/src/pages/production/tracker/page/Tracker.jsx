@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { trackerApi } from '../../../../api/sales.js'
+import BackButton from '../../../../components/erp/BackButton.jsx'
 import InfoChip from '../components/InfoChip.jsx'
 import Stat from '../components/Stat.jsx'
 
@@ -54,7 +55,10 @@ export default function Tracker() {
     <div className="flex h-full" style={{ minHeight: 0 }}>
       <div className="w-80 flex-shrink-0 border-r border-gray-200 bg-white flex flex-col" style={{ overflowY: 'auto' }}>
         <div className="px-4 py-3 border-b border-gray-200 bg-gray-50 sticky top-0 z-10">
-          <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">🔍 Batch Tracker</h2>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">🔍 Batch Tracker</h2>
+            <BackButton />
+          </div>
           <input type="text" placeholder="Search DI No, product, batch…" value={diNo}
             onChange={e => setDiNo(e.target.value)}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-400 bg-white" />

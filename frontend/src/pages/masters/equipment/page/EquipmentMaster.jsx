@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { equipmentApi } from '../../../../api/masters.js'
+import BackButton from '../../../../components/erp/BackButton.jsx'
 
 export default function EquipmentMaster() {
   const [items, setItems] = useState([])
@@ -42,9 +43,12 @@ export default function EquipmentMaster() {
           <h1 className="text-2xl font-bold text-gray-900">Equipment Master</h1>
           <p className="text-sm text-gray-500 mt-1">Manage production equipment for indent selection</p>
         </div>
-        <button onClick={openAdd} className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 font-medium">
-          + Add Equipment
-        </button>
+        <div className="flex items-center gap-3">
+          <button onClick={openAdd} className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 font-medium">
+            + Add Equipment
+          </button>
+          <BackButton />
+        </div>
       </div>
 
       {loading ? <p className="text-gray-500">Loading...</p> : (

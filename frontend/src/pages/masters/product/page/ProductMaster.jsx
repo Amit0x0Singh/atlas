@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { productApi } from '../../../../api/masters.js'
+import BackButton from '../../../../components/erp/BackButton.jsx'
 
 export default function ProductMaster() {
   const [items, setItems] = useState([])
@@ -43,9 +44,12 @@ export default function ProductMaster() {
           <h1 className="text-2xl font-bold text-gray-900">Product Master</h1>
           <p className="text-sm text-gray-500 mt-1">Manage finished product codes, names and plant</p>
         </div>
-        <button onClick={openAdd} className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 font-medium">
-          + Add New Product
-        </button>
+        <div className="flex items-center gap-3">
+          <button onClick={openAdd} className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 font-medium">
+            + Add New Product
+          </button>
+          <BackButton />
+        </div>
       </div>
 
       <div className="mb-4">
