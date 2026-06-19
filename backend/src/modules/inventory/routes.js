@@ -1,13 +1,13 @@
 import express from "express";
 import multer from "multer";
 import { authenticate, authorize } from "../../middleware/auth.js";
-import { listStock, listContainers, getItemStock } from "./stock/stock.controller.js";
+import { listStock, listContainers, getItemStock, getRmHistory } from "./stock/stock.controller.js";
 import { getDashboardStats } from "./stock/dashboard.controller.js";
 import { listLedger, getLedgerByItem, getLedgerEntry } from "./ledger/ledger.controller.js";
 import { listGrn, getGrnDetail } from "./grn/grn.controller.js";
 import { listRm, getRm, createRm, updateRm, deleteRm, listWarehouses } from "./row-material-master/rm-master.controller.js";
 import { createSession, getSession, scanPack, removeScan, submitSession, listActiveSessions, listInward } from "./store/inward/inward.controller.js";
-import { bomScan, bomManual, getAvailablePacks, packReduction, stockAdjustment, listOutward, warehouseTransfer, directIssue, bomDirectIssue } from "./store/outward/outward.controller.js";
+import { bomScan, bomManual, getAvailablePacks, packReduction, stockAdjustment, bagLossAdjustment, listOutward, warehouseTransfer, directIssue, bomDirectIssue } from "./store/outward/outward.controller.js";
 import { listContainers as listContainersCtrl, getContainer, createContainer, fillContainer, issueFromContainer, getContainerLabel } from "./store/containers/containers.controller.js";
 import { listLocations, getLocation, createLocation, deleteLocation, getLocationLabel, bulkInward, bulkOutward, getBulkStockSummary } from "./bulk-location/bulk-location.controller.js";
 import { previewImport, executeImport } from "./import/import.controller.js";
@@ -32,6 +32,7 @@ InventoryRouter.delete("/rm/:itemCode", authenticate, managerOrAbove, deleteRm);
 InventoryRouter.get("/stock/dashboard", authenticate, getDashboardStats);
 InventoryRouter.get("/stock", authenticate, listStock);
 InventoryRouter.get("/stock/containers", authenticate, listContainers);
+InventoryRouter.get("/stock/rm/:itemCode/history", authenticate, getRmHistory);
 InventoryRouter.get("/stock/:itemCode", authenticate, getItemStock);
 
 // ── Ledger ────────────────────────────────────────────────────────────────────
@@ -68,6 +69,7 @@ InventoryRouter.post("/outward/bom-scan", authenticate, storeOrAbove, bomScan);
 InventoryRouter.post("/outward/bom-manual", authenticate, storeOrAbove, bomManual);
 InventoryRouter.post("/outward/pack-reduction", authenticate, storeOrAbove, packReduction);
 InventoryRouter.post("/outward/stock-adjustment", authenticate, managerOrAbove, stockAdjustment);
+InventoryRouter.post("/outward/loss-adjustment", authenticate, storeOrAbove, bagLossAdjustment);
 InventoryRouter.post("/outward/warehouse-transfer", authenticate, storeOrAbove, warehouseTransfer);
 InventoryRouter.post("/outward/direct-issue", authenticate, storeOrAbove, directIssue);
 InventoryRouter.post("/outward/bom-direct", authenticate, storeOrAbove, bomDirectIssue);

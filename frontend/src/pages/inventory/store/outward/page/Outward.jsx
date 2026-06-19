@@ -4,6 +4,7 @@ import BackButton from '../../../../../components/erp/BackButton.jsx'
 import WarehouseToWarehouse from '../components/WarehouseToWarehouse.jsx'
 import WarehouseToContainer from '../components/WarehouseToContainer.jsx'
 import MaterialIssueByBOM from '../components/MaterialIssueByBOM.jsx'
+import StockLossAdjustment from '../components/StockLossAdjustment.jsx'
 
 const MODES = [
   {
@@ -26,9 +27,17 @@ const MODES = [
     key: 'wh-cont',
     icon: '🛢️',
     label: 'Warehouse → Container',
-    desc: 'Fill a container from warehouse packs — scan container QR',
+    desc: 'Fill a container from warehouse packs — scan bag QR to select material',
     color: 'border-orange-300 hover:border-orange-500 hover:bg-orange-50',
     badge: 'bg-orange-100 text-orange-700',
+  },
+  {
+    key: 'stock-loss',
+    icon: '⚠️',
+    label: 'Stock Loss Adjustment',
+    desc: 'Record material lost during production, spillage, damage or weighing errors — scan bag QR',
+    color: 'border-red-300 hover:border-red-500 hover:bg-red-50',
+    badge: 'bg-red-100 text-red-700',
   },
 ]
 
@@ -42,6 +51,7 @@ const TYPE_COLOR = {
   PACK_REDUCTION:    'bg-orange-100 text-orange-700',
   CONTAINER_ISSUE:   'bg-green-100 text-green-700',
   WAREHOUSE_TRANSFER:'bg-gray-100 text-gray-700',
+  STOCK_ADJUSTMENT:  'bg-red-100 text-red-700',
 }
 
 export default function Outward() {
@@ -64,9 +74,10 @@ export default function Outward() {
   const goBack = () => { setMode(null); loadHistory() }
 
   // ── Mode panels ──────────────────────────────────────────────────────────────
-  if (mode === 'wh-wh')    return <Panel mode={MODES[0]} onBack={goBack}><WarehouseToWarehouse /></Panel>
-  if (mode === 'bom-issue') return <Panel mode={MODES[1]} onBack={goBack}><MaterialIssueByBOM /></Panel>
-  if (mode === 'wh-cont')  return <Panel mode={MODES[2]} onBack={goBack}><WarehouseToContainer /></Panel>
+  if (mode === 'wh-wh')      return <Panel mode={MODES[0]} onBack={goBack}><WarehouseToWarehouse /></Panel>
+  if (mode === 'bom-issue')  return <Panel mode={MODES[1]} onBack={goBack}><MaterialIssueByBOM /></Panel>
+  if (mode === 'wh-cont')    return <Panel mode={MODES[2]} onBack={goBack}><WarehouseToContainer /></Panel>
+  if (mode === 'stock-loss') return <Panel mode={MODES[3]} onBack={goBack}><StockLossAdjustment /></Panel>
 
   // ── Landing: mode selector + recent history ──────────────────────────────────
   const totalPages = Math.ceil(histTotal / LIMIT)
@@ -81,7 +92,7 @@ export default function Outward() {
         <BackButton />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {MODES.map(m => (
           <button key={m.key} onClick={() => setMode(m.key)}
             className={`bg-white border-2 rounded-xl p-5 text-left transition-all ${m.color}`}>
@@ -104,7 +115,7 @@ export default function Outward() {
               <tr>
                 <th className="text-left px-4 py-2.5">Date &amp; Time</th>
                 <th className="text-left px-4 py-2.5">Type</th>
-                <th className="text-left px-4 py-2.5">RM Code</th>
+                <th className="text-left px-4 py-2.5">RM Name</th>
                 <th className="text-left px-4 py-2.5">Source (Pack / Container)</th>
                 <th className="text-right px-4 py-2.5">Qty Issued</th>
                 <th className="text-left px-4 py-2.5">Remarks</th>
@@ -121,7 +132,7 @@ export default function Outward() {
                       {h.sourceType?.replace(/_/g, ' ')}
                     </span>
                   </td>
-                  <td className="px-4 py-2 font-mono text-blue-700 text-xs">{h.rmCode}</td>
+                  <td className="px-4 py-2 text-xs text-gray-800 font-medium">{h.rmName || h.rmCode}</td>
                   <td className="px-4 py-2 font-mono text-xs text-gray-600 max-w-[160px] truncate">{h.sourceId}</td>
                   <td className="px-4 py-2 text-right font-semibold text-red-600">{Number(h.qtyIssued).toFixed(3)}</td>
                   <td className="px-4 py-2 text-xs text-gray-400 max-w-[140px] truncate">{h.remarks || '—'}</td>

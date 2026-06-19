@@ -37,6 +37,7 @@ export const outwardApi = {
   availablePacks:      (rmCode)  => api.get(`/outward/available/${encodeURIComponent(rmCode)}`),
   packReduction:       (data)    => api.post('/outward/pack-reduction', data),
   stockAdjustment:     (data)    => api.post('/outward/stock-adjustment', data),
+  lossAdjustment:      (data)    => api.post('/outward/loss-adjustment', data),
   warehouseTransfer:   (data)    => api.post('/outward/warehouse-transfer', data),
   directIssue:         (data)    => api.post('/outward/direct-issue', data),
   bomDirect:           (data)    => api.post('/outward/bom-direct', data),
@@ -65,6 +66,7 @@ export const stockApi = {
   item:       (itemCode) => api.get(`/stock/${itemCode}`),
   containers: ()         => api.get('/stock/containers'),
   dashboard:  (period)   => api.get('/stock/dashboard', { params: { period } }),
+  rmHistory:  (itemCode) => api.get(`/stock/rm/${encodeURIComponent(itemCode)}/history`),
 }
 
 export const ledgerApi = {

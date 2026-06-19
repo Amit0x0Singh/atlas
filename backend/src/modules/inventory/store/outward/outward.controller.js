@@ -73,6 +73,48 @@ export async function packReduction(req, res) {
   }
 }
 
+export async function bagLossAdjustment(req, res) {
+  const { packId, lossQty, reason } = req.body
+  if (!packId || !lossQty || !reason || reason.trim().length < 3)
+    return res.status(400).json({ success: false, error: 'packId, lossQty, and reason (min 3 chars) required' })
+  try {
+    const loss = parseFloat(lossQty)
+    if (isNaN(loss) || loss <= 0)
+      return res.status(400).json({ success: false, error: 'lossQty must be a positive number' })
+
+    const [packBalance, pack] = await Promise.all([
+      prisma.packBalance.findUnique({ where: { packId } }),
+      prisma.printMaster.findUnique({ where: { packId } }),
+    ])
+    if (!packBalance) return res.status(404).json({ success: false, error: 'Pack not found or not inwarded' })
+    if (!pack)        return res.status(404).json({ success: false, error: 'Pack not found in print master' })
+    if (loss > packBalance.remainingQty)
+      return res.status(400).json({ success: false, error: `Loss (${loss}) exceeds remaining qty (${packBalance.remainingQty})` })
+
+    const newRemaining = packBalance.remainingQty - loss
+    const newStatus    = newRemaining <= 0 ? 'EXHAUSTED' : 'PARTIALLY_ISSUED'
+
+    await prisma.$transaction(async (tx) => {
+      await tx.packBalance.update({ where: { packId }, data: { remainingQty: newRemaining } })
+      await tx.printMaster.update({ where: { packId }, data: { status: newStatus } })
+      await tx.outward.create({
+        data: { sourceId: packId, sourceType: 'STOCK_ADJUSTMENT', rmCode: pack.itemCode, qtyIssued: loss, remarks: reason.trim() }
+      })
+      const prev = await tx.stockLedger.findFirst({ where: { itemCode: pack.itemCode }, orderBy: { timestamp: 'desc' } })
+      await tx.stockLedger.create({
+        data: {
+          itemCode: pack.itemCode, sourceId: packId, transactionType: 'STOCK_RECON',
+          outQty: loss, balance: (prev?.balance || 0) - loss, reference: `Loss: ${reason.trim()}`
+        }
+      })
+    })
+
+    return res.json({ success: true, packId, lossDeducted: loss, newRemaining, newStatus })
+  } catch (e) {
+    return res.status(400).json({ success: false, error: e.message })
+  }
+}
+
 export async function stockAdjustment(req, res) {
   const { itemCode, adjustmentQty, remarks } = req.body
   if (!itemCode || adjustmentQty === undefined || !remarks || remarks.length < 5)
@@ -207,7 +249,15 @@ export async function listOutward(req, res) {
       prisma.outward.count({ where }),
       prisma.outward.findMany({ where, orderBy: { timestamp: 'desc' }, skip: (page-1)*parseInt(limit), take: parseInt(limit) })
     ])
-    return res.json({ success: true, data: rows, total, page: parseInt(page), limit: parseInt(limit) })
+    // Attach rmName from rmMaster
+    const rmCodes = [...new Set(rows.map(r => r.rmCode).filter(Boolean))]
+    const rmItems = await prisma.rmMaster.findMany({
+      where: { itemCode: { in: rmCodes } },
+      select: { itemCode: true, itemName: true }
+    })
+    const rmMap = Object.fromEntries(rmItems.map(r => [r.itemCode, r.itemName]))
+    const data = rows.map(r => ({ ...r, rmName: rmMap[r.rmCode] || r.rmCode }))
+    return res.json({ success: true, data, total, page: parseInt(page), limit: parseInt(limit) })
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message })
   }

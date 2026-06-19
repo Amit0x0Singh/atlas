@@ -13,7 +13,12 @@ export async function listLedger(req, res) {
         take: parseInt(limit)
       })
     ])
-    return res.json({ success: true, data: rows, total, page: parseInt(page), limit: parseInt(limit) })
+    // Enrich with item names
+    const codes   = [...new Set(rows.map(r => r.itemCode).filter(Boolean))]
+    const rmItems = await prisma.rmMaster.findMany({ where: { itemCode: { in: codes } }, select: { itemCode: true, itemName: true } })
+    const rmMap   = Object.fromEntries(rmItems.map(r => [r.itemCode, r.itemName]))
+    const data    = rows.map(r => ({ ...r, itemName: rmMap[r.itemCode] || r.itemCode }))
+    return res.json({ success: true, data, total, page: parseInt(page), limit: parseInt(limit) })
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message })
   }

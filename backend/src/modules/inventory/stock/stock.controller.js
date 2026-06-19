@@ -54,3 +54,24 @@ export async function getItemStock(req, res) {
     return res.status(500).json({ success: false, error: err.message })
   }
 }
+
+export async function getRmHistory(req, res) {
+  try {
+    const { itemCode } = req.params
+    const [rm, packs, balances] = await Promise.all([
+      prisma.rmMaster.findUnique({ where: { itemCode } }),
+      prisma.printMaster.findMany({ where: { itemCode }, orderBy: { createdAt: 'desc' } }),
+      prisma.packBalance.findMany({ where: { itemCode } }),
+    ])
+    if (!rm) return res.status(404).json({ success: false, error: 'Item not found' })
+    const balMap = new Map(balances.map(b => [b.packId, b]))
+    const merged = packs.map(p => ({
+      ...p,
+      remainingQty:    balMap.get(p.packId)?.remainingQty ?? null,
+      balanceTotalQty: balMap.get(p.packId)?.totalQty     ?? null,
+    }))
+    return res.json({ success: true, data: { rm, packs: merged } })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message })
+  }
+}
