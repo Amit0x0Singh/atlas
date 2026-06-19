@@ -2,6 +2,7 @@ import express from "express";
 import multer from "multer";
 import { authenticate, authorize } from "../../middleware/auth.js";
 import { listStock, listContainers, getItemStock } from "./stock/stock.controller.js";
+import { getDashboardStats } from "./stock/dashboard.controller.js";
 import { listLedger, getLedgerByItem, getLedgerEntry } from "./ledger/ledger.controller.js";
 import { listGrn, getGrnDetail } from "./grn/grn.controller.js";
 import { listRm, getRm, createRm, updateRm, deleteRm, listWarehouses } from "./row-material-master/rm-master.controller.js";
@@ -28,6 +29,7 @@ InventoryRouter.put("/rm/:itemCode", authenticate, managerOrAbove, updateRm);
 InventoryRouter.delete("/rm/:itemCode", authenticate, managerOrAbove, deleteRm);
 
 // ── Stock ─────────────────────────────────────────────────────────────────────
+InventoryRouter.get("/stock/dashboard", authenticate, getDashboardStats);
 InventoryRouter.get("/stock", authenticate, listStock);
 InventoryRouter.get("/stock/containers", authenticate, listContainers);
 InventoryRouter.get("/stock/:itemCode", authenticate, getItemStock);

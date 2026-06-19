@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
 import { recipeApi, productApi } from '../../../../api/masters.js'
-import BackButton from '../../../../components/erp/BackButton.jsx'
 import { rmApi, importApi } from '../../../../api/inventory.js'
 
 const CONFIDENCE_STYLES = {
@@ -188,10 +187,7 @@ export default function RecipeDB() {
       {/* Left: Product List */}
       <aside className="w-64 bg-white border-r border-gray-200 flex flex-col flex-shrink-0">
         <div className="px-4 py-3 border-b border-gray-100">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide">Products</h2>
-            <BackButton />
-          </div>
+          <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-2">Products</h2>
           <input
             value={prodSearch}
             onChange={e => setProdSearch(e.target.value)}

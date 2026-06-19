@@ -64,6 +64,7 @@ export const stockApi = {
   summary:    (params)   => api.get('/stock', { params }),
   item:       (itemCode) => api.get(`/stock/${itemCode}`),
   containers: ()         => api.get('/stock/containers'),
+  dashboard:  (period)   => api.get('/stock/dashboard', { params: { period } }),
 }
 
 export const ledgerApi = {
