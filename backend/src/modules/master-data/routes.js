@@ -3,6 +3,7 @@ import { authenticate, authorize } from "../../middleware/auth.js";
 import { listProducts, getProduct, createProduct, updateProduct, deleteProduct } from "./product-master/product-master.controller.js";
 import { listEquipment, createEquipment, updateEquipment, deleteEquipment } from "./equipment-master/equipment-master.controller.js";
 import { listItems, getItem, createItem, updateItem, listSuppliers, createSupplier, updateSupplier, listPlants, createPlant, listErpEquipment, createErpEquipment, patchErpEquipment, listErpProducts, createErpProduct, listBom, getBom, createBom, listStrains, createStrain, listCustomers, createCustomer, listReasonCodes, listErpContainers, createErpContainer } from "./erp-masters/erp-masters.controller.js";
+import { listPackingMaterials, createPackingMaterial, updatePackingMaterial, deletePackingMaterial } from "./packing-master/packing-master.controller.js";
 import rmMasterRouter from "./rm-master.js";
 
 const MasterDataRouter = express.Router();
@@ -69,5 +70,11 @@ MasterDataRouter.get("/erp/masters/reason-codes", authenticate, listReasonCodes)
 // ── Containers (for decanting) ────────────────────────────────────────────────
 MasterDataRouter.get("/erp/masters/containers", authenticate, listErpContainers);
 MasterDataRouter.post("/erp/masters/containers", authenticate, storeManager, createErpContainer);
+
+// ── Packing Material Master ───────────────────────────────────────────────────
+MasterDataRouter.get("/packing-materials",      authenticate, listPackingMaterials);
+MasterDataRouter.post("/packing-materials",     authenticate, storeManager, createPackingMaterial);
+MasterDataRouter.put("/packing-materials/:id",  authenticate, storeManager, updatePackingMaterial);
+MasterDataRouter.delete("/packing-materials/:id", authenticate, adminOnly, deletePackingMaterial);
 
 export default MasterDataRouter;

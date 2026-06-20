@@ -15,6 +15,7 @@ export const APP_NAV = [
       { to: "/employee-master", label: "Employee Data", icon: "👥" },
       { to: "/recipe", label: "Recipe / BOM", icon: "≡" },
       { to: "/microbes-master", label: "Microbes Master", icon: "🦠" },
+      { to: "/packing-master", label: "Packing Material", icon: "📦" },
     ],
   },
   {
