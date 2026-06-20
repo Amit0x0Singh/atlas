@@ -79,7 +79,7 @@ const MODELS = {
   // ── ERP Inventory ──────────────────────────────────────────────────────────
   'gate-inward':         { model: 'gateInward',       idField: 'inwardId',    orderBy: { createdAt: 'desc' } },
   'erp-packs':           { model: 'erpPack',          idField: 'packId',      orderBy: { createdAt: 'desc' } },
-  'gate-outward':        { model: 'gateOutward',      idField: 'outwardId',   orderBy: { entryTime: 'desc' } },
+  'gate-outward':        { model: 'gateOutward',      idField: 'outwardId',   orderBy: { createdAt: 'desc' } },
   'stock-adjustments':   { model: 'stockAdjustment',  idField: 'adjustmentId', orderBy: { raisedAt: 'desc' } },
   'warehouse-transfers': { model: 'warehouseTransfer', idField: 'transferId', orderBy: { initiatedAt: 'desc' } },
   'fifo-override-log':   { model: 'fifoOverrideLog',  idField: 'id',          orderBy: { createdAt: 'desc' } },
