@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import Pagination from '../../../components/erp/Pagination.jsx'
 import { planEngineApi as planningApi } from '../../../api/planning.js'
 import BackButton from '../../../components/erp/BackButton.jsx'
 import { indentApi, productionApi } from '../../../api/production.js'
@@ -683,6 +684,10 @@ function CapacityBar({ section, plans }) {
 // ── Section 2: Unplanned Orders Table ────────────────────────────────────────
 function UnplannedOrdersTable({ orders, onPlan }) {
   const today = new Date()
+  const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState(15)
+  const paginated = orders.slice((page - 1) * limit, page * limit)
+  useEffect(() => { setPage(1) }, [orders])
   if (!orders.length) return (
     <div className="text-center py-10 text-gray-400">
       <div className="text-4xl mb-2">🎉</div>
@@ -691,6 +696,7 @@ function UnplannedOrdersTable({ orders, onPlan }) {
     </div>
   )
   return (
+    <>
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
@@ -701,7 +707,7 @@ function UnplannedOrdersTable({ orders, onPlan }) {
           </tr>
         </thead>
         <tbody>
-          {orders.map(item => {
+          {paginated.map(item => {
             const so       = item.salesOrder || {}
             const etd      = so.estimatedDispatchDate ? new Date(so.estimatedDispatchDate) : null
             const daysLeft = etd ? Math.ceil((etd - today) / 86400000) : null
@@ -738,11 +744,17 @@ function UnplannedOrdersTable({ orders, onPlan }) {
         </tbody>
       </table>
     </div>
+    <Pagination page={page} total={orders.length} limit={limit} onChange={setPage} onLimitChange={l => { setLimit(l); setPage(1) }} />
+    </>
   )
 }
 
 // ── Section 3: Planned Tasks Table ────────────────────────────────────────────
 function PlannedTasksTable({ plans, onRowClick, onStatusChange, loading }) {
+  const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState(15)
+  const paginated = plans.slice((page - 1) * limit, page * limit)
+  useEffect(() => { setPage(1) }, [plans])
   if (loading) return <div className="text-center py-12 text-gray-400 text-sm">Loading tasks…</div>
   if (!plans.length) return (
     <div className="text-center py-12 text-gray-400">
@@ -752,6 +764,7 @@ function PlannedTasksTable({ plans, onRowClick, onStatusChange, loading }) {
     </div>
   )
   return (
+    <>
     <div className="overflow-x-auto">
       <table className="w-full text-sm min-w-[1200px]">
         <thead className="sticky top-0 z-10">
@@ -762,7 +775,7 @@ function PlannedTasksTable({ plans, onRowClick, onStatusChange, loading }) {
           </tr>
         </thead>
         <tbody>
-          {plans.map((plan, idx) => {
+          {paginated.map((plan, idx) => {
             const issueStatus = deriveIssueStatus(plan)
             const qcStatus    = deriveQcStatus(plan)
             const rowBg = plan.status === 'CANCELLED' ? 'bg-gray-50 opacity-60' : idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'
@@ -809,6 +822,8 @@ function PlannedTasksTable({ plans, onRowClick, onStatusChange, loading }) {
         </tbody>
       </table>
     </div>
+    <Pagination page={page} total={plans.length} limit={limit} onChange={setPage} onLimitChange={l => { setLimit(l); setPage(1) }} />
+    </>
   )
 }
 

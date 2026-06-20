@@ -5,6 +5,7 @@
  *   — grouped by microbe → type → containers → FIFO batches
  */
 import { useState, useEffect } from 'react'
+import Pagination from '../../../../components/erp/Pagination.jsx'
 import { microbialSfgApi } from '../../../../api/microbial.js'
 import { sfgApi } from '../../../../api/inventory.js'
 
@@ -53,6 +54,8 @@ function MicrobialTab() {
   const [loading, setLoading]       = useState(true)
   const [expanded, setExpanded]     = useState({})
   const [searchMicrobe, setSearch]  = useState('')
+  const [page, setPage]             = useState(1)
+  const [limit, setLimit]            = useState(15)
 
   useEffect(() => {
     Promise.all([
@@ -81,6 +84,7 @@ function MicrobialTab() {
   }
 
   const keys = Object.keys(grouped).filter(k => !searchMicrobe || k.toLowerCase().includes(searchMicrobe.toLowerCase()))
+  useEffect(() => { setPage(1) }, [searchMicrobe])
 
   if (loading) return <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>Loading cold room stock…</div>
 
@@ -94,10 +98,10 @@ function MicrobialTab() {
   return (
     <div>
       <div style={{ marginBottom: '16px' }}>
-        <input placeholder="Search microbe…" value={searchMicrobe} onChange={e => setSearch(e.target.value)}
+        <input placeholder="Search microbe…" value={searchMicrobe} onChange={e => { setSearch(e.target.value); setPage(1) }}
           style={{ padding: '9px 14px', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', width: '260px', outline: 'none' }} />
       </div>
-      {keys.map(mk => {
+      {keys.slice((page - 1) * limit, page * limit).map(mk => {
         const { microbe_code, microbe_name, types } = grouped[mk]
         const allBatches = Object.values(types).flatMap(t => t.containers.flatMap(c => batchByContainer[c.container_id] || []))
         const totalKg    = allBatches.reduce((s, b) => s + Number(b.remaining_qty_kg), 0)
@@ -188,6 +192,9 @@ function MicrobialTab() {
           </div>
         )
       })}
+      <div style={{ marginTop: '12px' }}>
+        <Pagination page={page} total={keys.length} limit={limit} onChange={setPage} onLimitChange={l => { setLimit(l); setPage(1) }} />
+      </div>
     </div>
   )
 }

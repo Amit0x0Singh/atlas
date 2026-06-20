@@ -2,6 +2,7 @@
  * Production Planning Engine — 8-step analysis, plan creation, submit/publish, batch job tracking
  */
 import { useState, useEffect, useCallback } from 'react'
+import Pagination from '../../components/erp/Pagination.jsx'
 import { planningApi } from '../../api/planning.js'
 import { erpReasonCodesApi } from '../../api/masters.js'
 import { salesApi } from '../../api/sales.js'
@@ -308,6 +309,9 @@ export default function PlanningEngine() {
   const { hasRole } = useAuth()
   const [tab, setTab] = useState(0) // 0=Plans, 1=Analyse, 2=Time-Motion
   const [plans, setPlans] = useState([])
+  const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState(15)
+  const paginatedPlans = plans.slice((page - 1) * limit, page * limit)
   const [loading, setLoading] = useState(true)
   const [selectedPlan, setSelectedPlan] = useState(null)
   const [plannerQueue, setPlannerQueue] = useState([])
@@ -407,7 +411,7 @@ export default function PlanningEngine() {
               <tbody>
                 {plans.length === 0 ? (
                   <tr><td colSpan={8} style={{ textAlign: 'center', color: '#94a3b8', padding: '60px' }}>No plans yet. Use Run Analysis to create one.</td></tr>
-                ) : plans.map(p => (
+                ) : paginatedPlans.map(p => (
                   <tr key={p.id} style={{ borderBottom: '1px solid #f1f5f9', cursor: 'pointer' }}
                     onClick={() => setSelectedPlan(p)}
                     onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
@@ -424,6 +428,11 @@ export default function PlanningEngine() {
                 ))}
               </tbody>
             </table>
+          )}
+          {!loading && (
+            <div style={{ padding: '8px 16px' }}>
+              <Pagination page={page} total={plans.length} limit={limit} onChange={setPage} onLimitChange={l => { setLimit(l); setPage(1) }} />
+            </div>
           )}
         </div>
       )}

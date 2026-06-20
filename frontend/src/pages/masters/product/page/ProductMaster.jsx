@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { productApi } from '../../../../api/masters.js'
 import BackButton from '../../../../components/erp/BackButton.jsx'
+import Pagination from '../../../../components/erp/Pagination.jsx'
 
 export default function ProductMaster() {
   const [items, setItems] = useState([])
@@ -11,6 +12,7 @@ export default function ProductMaster() {
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState('')
   const [search, setSearch] = useState('')
+  const [page, setPage] = useState(1)
 
   const load = async () => {
     try { setLoading(true); const r = await productApi.list({ search }); setItems(r.data || []) }
@@ -18,6 +20,7 @@ export default function ProductMaster() {
   }
 
   useEffect(() => { load() }, [search])
+  useEffect(() => { setPage(1) }, [items])
 
   const openAdd = () => { setEditing(null); setForm({ productCode: '', productName: '', plant: '' }); setShowForm(true); setMsg('') }
   const openEdit = (item) => { setEditing(item); setForm({ productCode: item.productCode, productName: item.productName, plant: item.plant }); setShowForm(true); setMsg('') }
@@ -36,6 +39,8 @@ export default function ProductMaster() {
     if (!confirm(`Delete product ${code}?`)) return
     try { await productApi.delete(code); load() } catch (e) { alert(e.message) }
   }
+  const [limit, setLimit] = useState(15)
+  const paginatedItems = items.slice((page - 1) * limit, page * limit)
 
   return (
     <div className="p-6">
@@ -71,7 +76,7 @@ export default function ProductMaster() {
             <tbody>
               {items.length === 0 ? (
                 <tr><td colSpan={4} className="text-center py-10 text-gray-400">No products yet. Click "Add New Product" to start.</td></tr>
-              ) : items.map(item => (
+              ) : paginatedItems.map(item => (
                 <tr key={item.productCode} className="border-b border-gray-100 hover:bg-gray-50">
                   <td className="px-4 py-3 font-mono text-green-700 font-medium">{item.productCode}</td>
                   <td className="px-4 py-3">{item.productName}</td>
@@ -84,6 +89,9 @@ export default function ProductMaster() {
               ))}
             </tbody>
           </table>
+          <div className="px-4 pb-3">
+            <Pagination page={page} total={items.length} limit={limit} onChange={setPage} onLimitChange={l => { setLimit(l); setPage(1) }} />
+          </div>
         </div>
       )}
 

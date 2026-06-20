@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { containerApi } from "../../../../../api/inventory.js";
 import { useContainers } from "../hooks/useContainers.js";
+import Pagination from "../../../../../components/erp/Pagination.jsx";
 
 function fillPct(c) {
   if (!c.capacity) return 0;
@@ -28,6 +30,9 @@ function PctBadge({ pct }) {
 
 export default function ContainerList() {
   const { containers, loading, error, reload } = useContainers();
+  const [limit, setLimit] = useState(15);
+  const [page, setPage] = useState(1);
+  const paginated = containers.slice((page - 1) * limit, page * limit);
 
   if (loading)
     return <p className="text-gray-400 text-sm p-6">Loading containers…</p>;
@@ -68,8 +73,8 @@ export default function ContainerList() {
       </div>
 
       {/* Rows */}
-      <div className="bg-white border border-gray-200 border-t-0 rounded-b-xl overflow-hidden divide-y divide-gray-100">
-        {containers.map((c) => {
+      <div className="bg-white border border-gray-200 border-t-0 rounded-b-xl divide-y divide-gray-100">
+        {paginated.map((c) => {
           const pct = fillPct(c);
           return (
             <div
@@ -127,6 +132,7 @@ export default function ContainerList() {
           );
         })}
       </div>
+      <Pagination page={page} total={containers.length} limit={limit} onChange={setPage} onLimitChange={l => { setLimit(l); setPage(1) }} />
     </div>
   );
 }

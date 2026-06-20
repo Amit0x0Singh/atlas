@@ -18,6 +18,7 @@ import DispatchOrder from "../component/dispatch-order.jsx";
 import OrderHistory from "../component/order-history.jsx";
 import SalesFilterBar from "../component/SalesFilterBar.jsx";
 import BackButton from "../../../../components/erp/BackButton.jsx";
+import Pagination from "../../../../components/erp/Pagination.jsx";
 
 const EMPTY_FILTERS = {
   search: "",
@@ -300,6 +301,9 @@ const SalesOrder = () => {
   const dispatchVisible = orders.filter((o) =>
     o.items.some((it) => it.status === "IN_INVENTORY"),
   );
+  const [dispatchPage, setDispatchPage] = useState(1);
+  const [dispatchLimit, setDispatchLimit] = useState(15);
+  const paginatedDispatch = dispatchVisible.slice((dispatchPage - 1) * dispatchLimit, dispatchPage * dispatchLimit);
 
   const TABS = [
     { key: "orders", label: "Sales Orders", count: orders.length },
@@ -492,7 +496,7 @@ const SalesOrder = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {dispatchVisible.map((order) => {
+                  {paginatedDispatch.map((order) => {
                     const days = etdDays(order.estimatedDispatchDate);
                     const overdue = days !== null && days < 0;
                     const totalQty = order.items.reduce(
@@ -685,6 +689,11 @@ const SalesOrder = () => {
                   })}
                 </tbody>
               </table>
+            </div>
+          )}
+          {!loading && dispatchVisible.length > dispatchLimit && (
+            <div className="px-4 pb-3 mt-2">
+              <Pagination page={dispatchPage} total={dispatchVisible.length} limit={dispatchLimit} onChange={setDispatchPage} onLimitChange={l => { setDispatchLimit(l); setDispatchPage(1) }} />
             </div>
           )}
         </div>

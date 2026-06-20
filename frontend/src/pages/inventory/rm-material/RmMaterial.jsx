@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { stockApi } from '../../../api/inventory.js'
 import BackButton from '../../../components/erp/BackButton.jsx'
+import Pagination from '../../../components/erp/Pagination.jsx'
 
 function fmt(n, dec = 3) {
   if (n == null) return '—'
@@ -38,6 +39,7 @@ export default function RmMaterial() {
   const [error,   setError]   = useState('')
   const [search,  setSearch]  = useState('')
   const [stockFilter, setStockFilter] = useState('all') // all | in_stock | out_of_stock
+  const [page, setPage] = useState(1)
 
   useEffect(() => { load() }, [])
 
@@ -64,6 +66,8 @@ export default function RmMaterial() {
 
   const inStockCount    = items.filter(i => i.totalStock  > 0).length
   const outOfStockCount = items.filter(i => i.totalStock <= 0).length
+  const [limit, setLimit] = useState(15)
+  const paginated = filtered.slice((page - 1) * limit, page * limit)
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -115,7 +119,7 @@ export default function RmMaterial() {
             </svg>
             <input
               value={search}
-              onChange={e => setSearch(e.target.value)}
+              onChange={e => { setSearch(e.target.value); setPage(1) }}
               placeholder="Search by raw material name or code…"
               className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-gray-900 focus:border-gray-900"
             />
@@ -126,7 +130,7 @@ export default function RmMaterial() {
               { key: 'in_stock',      label: 'In Stock'    },
               { key: 'out_of_stock',  label: 'Out of Stock'},
             ].map(f => (
-              <button key={f.key} onClick={() => setStockFilter(f.key)}
+              <button key={f.key} onClick={() => { setStockFilter(f.key); setPage(1) }}
                 className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
                   stockFilter === f.key
                     ? 'bg-white text-gray-900 shadow-sm'
@@ -137,7 +141,7 @@ export default function RmMaterial() {
             ))}
           </div>
           {(search || stockFilter !== 'all') && (
-            <button onClick={() => { setSearch(''); setStockFilter('all') }}
+            <button onClick={() => { setSearch(''); setStockFilter('all'); setPage(1) }}
               className="text-xs text-red-500 hover:text-red-700 px-3 py-2 border border-red-200 rounded-lg hover:bg-red-50">
               × Clear
             </button>
@@ -180,7 +184,7 @@ export default function RmMaterial() {
                     </td>
                   </tr>
                 ) : (
-                  filtered.map((it, idx) => {
+                  paginated.map((it, idx) => {
                     const hasStock = it.totalStock > 0
                     return (
                       <tr key={it.itemCode}
@@ -242,6 +246,9 @@ export default function RmMaterial() {
                 )}
               </tbody>
             </table>
+          </div>
+          <div className="px-5 pb-3">
+            <Pagination page={page} total={filtered.length} limit={limit} onChange={setPage} onLimitChange={l => { setLimit(l); setPage(1) }} />
           </div>
         </div>
 

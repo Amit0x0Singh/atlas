@@ -1,4 +1,5 @@
-import { Fragment } from 'react'
+import { Fragment, useState } from 'react'
+import Pagination from '../../../../components/erp/Pagination.jsx'
 import { STATUS_STYLE, STATUS_LABELS } from '../shared/constants.js'
 import { fmtDate, etdDays } from '../shared/utils.js'
 
@@ -13,6 +14,10 @@ const TH_INNER = {
 }
 
 export default function OrderHistory({ orders, loading, onOpenDispatch }) {
+  const [limit, setLimit] = useState(15)
+  const [page, setPage] = useState(1)
+  const paginated = orders.slice((page - 1) * limit, page * limit)
+
   if (loading)
     return <div className="text-center py-16 text-gray-400">Loading…</div>
 
@@ -26,6 +31,7 @@ export default function OrderHistory({ orders, loading, onOpenDispatch }) {
     )
 
   return (
+    <>
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
       <table className="w-full text-sm">
         <thead>
@@ -45,7 +51,7 @@ export default function OrderHistory({ orders, loading, onOpenDispatch }) {
           </tr>
         </thead>
         <tbody>
-          {orders.map((order) => {
+          {paginated.map((order) => {
             const days = etdDays(order.estimatedDispatchDate)
             const overdue = days !== null && days < 0
             const totalQty = order.items.reduce(
@@ -185,5 +191,7 @@ export default function OrderHistory({ orders, loading, onOpenDispatch }) {
         </tbody>
       </table>
     </div>
+    <Pagination page={page} total={orders.length} limit={limit} onChange={setPage} onLimitChange={l => { setLimit(l); setPage(1) }} />
+    </>
   )
 }

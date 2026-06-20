@@ -12,6 +12,7 @@
  */
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { bomSendApi } from '../../api/sales.js'
+import Pagination from '../../components/erp/Pagination.jsx'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function fmt(date) {
@@ -566,6 +567,10 @@ export default function BomIssuance() {
       b.batchNo?.toLowerCase().includes(q)
     )
   })
+  const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState(15)
+  const paginatedFiltered = filtered.slice((page - 1) * limit, page * limit)
+  useEffect(() => { setPage(1) }, [search, filterStatus, filterSection])
 
   const counts = {
     pending:  boms.filter(b => b.status === 'PENDING').length,
@@ -652,7 +657,7 @@ export default function BomIssuance() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((b, idx) => (
+              {paginatedFiltered.map((b, idx) => (
                 <tr key={b.id}
                   onClick={() => setSelected(b.id)}
                   className={`border-b border-gray-50 cursor-pointer hover:bg-indigo-50/40 transition-colors ${
@@ -688,6 +693,11 @@ export default function BomIssuance() {
               ))}
             </tbody>
           </table>
+        )}
+        {!loading && (
+          <div className="px-4 pb-3">
+            <Pagination page={page} total={filtered.length} limit={limit} onChange={setPage} onLimitChange={l => { setLimit(l); setPage(1) }} />
+          </div>
         )}
       </div>
 

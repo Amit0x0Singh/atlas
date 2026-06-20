@@ -17,6 +17,14 @@ export default function GRN() {
   const [loadingDetail, setLoadingDetail] = useState(false)
   const printRef = useRef(null)
 
+  const filteredGrns = list.filter(grn => {
+    if (!search.trim()) return true
+    const q = search.toLowerCase()
+    return (grn.invoiceNo || '').toLowerCase().includes(q) ||
+      (grn.supplier || '').toLowerCase().includes(q) ||
+      (grn.items || []).some(i => i.toLowerCase().includes(q))
+  })
+
   useEffect(() => { loadList() }, [])
 
   const loadList = async () => {
@@ -95,13 +103,7 @@ export default function GRN() {
           </div>
         ) : (
           <div className="divide-y divide-gray-100">
-            {list.filter(grn => {
-              if (!search.trim()) return true
-              const q = search.toLowerCase()
-              return (grn.invoiceNo || '').toLowerCase().includes(q) ||
-                (grn.supplier || '').toLowerCase().includes(q) ||
-                (grn.items || []).some(i => i.toLowerCase().includes(q))
-            }).map((grn) => (
+            {filteredGrns.map((grn) => (
               <button
                 key={grn.grnKey}
                 onClick={() => loadDetail(grn)}

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { rmApi } from '../../../../api/inventory.js'
 import BackButton from '../../../../components/erp/BackButton.jsx'
+import Pagination from '../../../../components/erp/Pagination.jsx'
 
 const TRACKING_BADGE = {
   PACK: 'bg-blue-100 text-blue-700',
@@ -18,6 +19,7 @@ export default function RmMaster() {
   const [form, setForm] = useState({ itemCode: '', itemName: '', uom: 'KG', trackingType: 'PACK' })
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState('')
+  const [page, setPage] = useState(1)
 
   const load = async () => {
     try {
@@ -56,6 +58,8 @@ export default function RmMaster() {
   }
 
   const visibleItems = items.filter(i => filterType === 'ALL' || (i.trackingType || 'PACK') === filterType)
+  const [limit, setLimit] = useState(15)
+  const paginatedItems = visibleItems.slice((page - 1) * limit, page * limit)
 
   return (
     <div className="p-6">
@@ -78,11 +82,11 @@ export default function RmMaster() {
 
       <div className="flex gap-3 mb-4">
         <input type="text" placeholder="Search by name or code..."
-          value={search} onChange={e => setSearch(e.target.value)}
+          value={search} onChange={e => { setSearch(e.target.value); setPage(1) }}
           className="border border-gray-300 rounded-lg px-4 py-2 w-72 focus:ring-2 focus:ring-blue-500 outline-none" />
         <div className="flex border border-gray-300 rounded-lg overflow-hidden">
           {['ALL', 'PACK', 'BULK'].map(t => (
-            <button key={t} onClick={() => setFilterType(t)}
+            <button key={t} onClick={() => { setFilterType(t); setPage(1) }}
               className={`px-4 py-2 text-sm font-medium transition ${filterType === t ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}>
               {t}
             </button>
@@ -106,7 +110,7 @@ export default function RmMaster() {
             <tbody>
               {visibleItems.length === 0 ? (
                 <tr><td colSpan={6} className="text-center py-10 text-gray-400">No items found. Click "Add New Item" to start.</td></tr>
-              ) : visibleItems.map(item => (
+              ) : paginatedItems.map(item => (
                 <tr key={item.itemCode} className="border-b border-gray-100 hover:bg-gray-50">
                   <td className="px-4 py-3 font-mono text-blue-700 font-medium">{item.itemCode}</td>
                   <td className="px-4 py-3">{item.itemName}</td>
@@ -127,6 +131,9 @@ export default function RmMaster() {
           </table>
           <div className="px-4 py-2.5 bg-gray-50 border-t text-xs text-gray-400">
             {items.length} total items · {items.filter(i => (i.trackingType || 'PACK') === 'PACK').length} PACK · {items.filter(i => i.trackingType === 'BULK').length} BULK
+          </div>
+          <div className="px-4 pb-3">
+            <Pagination page={page} total={visibleItems.length} limit={limit} onChange={setPage} onLimitChange={l => { setLimit(l); setPage(1) }} />
           </div>
         </div>
       )}

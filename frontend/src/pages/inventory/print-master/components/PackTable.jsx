@@ -1,6 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { packsApi } from "../../../../api/inventory.js";
 import { usePacks } from "../hooks/usePacks.js";
+import Pagination from "../../../../components/erp/Pagination.jsx";
 
 // ─── Status helpers ───────────────────────────────────────────────────────────
 const STATUS_COLORS = {
@@ -56,6 +57,7 @@ export default function PackTable({ reloadTrigger }) {
   const [filterCode, setFilterCode]     = useState("");
   const [expandedKeys, setExpandedKeys] = useState(new Set());
   const [showCompleted, setShowCompleted] = useState(false);
+  const [page, setPage]                  = useState(1);
   const { packs, loading }              = usePacks(filterCode, reloadTrigger);
 
   const allGroups = useMemo(() => groupPacks(packs), [packs]);
@@ -64,6 +66,12 @@ export default function PackTable({ reloadTrigger }) {
   const pendingGroups   = useMemo(() => allGroups.filter(g => g.bags.some(b => b.status === 'AWAITING_INWARD')), [allGroups]);
   const completedGroups = useMemo(() => allGroups.filter(g => g.bags.every(b => b.status !== 'AWAITING_INWARD')), [allGroups]);
   const groups          = showCompleted ? allGroups : pendingGroups;
+
+  const [limit, setLimit] = useState(15);
+  const paginatedGroups = groups.slice((page - 1) * limit, page * limit);
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { setPage(1) }, [showCompleted, filterCode]);
 
   const toggle = (key) =>
     setExpandedKeys((prev) => {
@@ -131,6 +139,7 @@ export default function PackTable({ reloadTrigger }) {
       {loading ? (
         <p className="text-gray-400 py-8 text-center">Loading…</p>
       ) : (
+        <>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-slate-700 text-white text-xs">
@@ -156,7 +165,7 @@ export default function PackTable({ reloadTrigger }) {
                   </td>
                 </tr>
               ) : (
-                groups.map((g) => {
+                paginatedGroups.map((g) => {
                   const isOpen   = expandedKeys.has(g.key);
                   const totalQty = g.bags.reduce((s, b) => s + (b.packQty || 0), 0);
                   const status   = groupStatus(g.bags);
@@ -299,6 +308,10 @@ export default function PackTable({ reloadTrigger }) {
             </tbody>
           </table>
         </div>
+        <div className="px-4 pb-3">
+          <Pagination page={page} total={groups.length} limit={limit} onChange={setPage} onLimitChange={l => { setLimit(l); setPage(1) }} />
+        </div>
+        </>
       )}
     </div>
   );

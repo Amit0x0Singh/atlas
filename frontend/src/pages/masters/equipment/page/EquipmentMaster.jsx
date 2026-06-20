@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { equipmentApi } from '../../../../api/masters.js'
 import BackButton from '../../../../components/erp/BackButton.jsx'
+import Pagination from '../../../../components/erp/Pagination.jsx'
 
 export default function EquipmentMaster() {
   const [items, setItems] = useState([])
@@ -10,6 +11,7 @@ export default function EquipmentMaster() {
   const [form, setForm] = useState({ equipName: '', plant: '' })
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState('')
+  const [page, setPage] = useState(1)
 
   const load = async () => {
     try { setLoading(true); const r = await equipmentApi.list(); setItems(r.data || []) }
@@ -19,6 +21,8 @@ export default function EquipmentMaster() {
   useEffect(() => { load() }, [])
 
   const openAdd = () => { setEditing(null); setForm({ equipName: '', plant: '' }); setShowForm(true); setMsg('') }
+  const [limit, setLimit] = useState(15)
+  const paginatedItems = items.slice((page - 1) * limit, page * limit)
   const openEdit = (item) => { setEditing(item); setForm({ equipName: item.equipName, plant: item.plant }); setShowForm(true); setMsg('') }
 
   const save = async () => {
@@ -64,7 +68,7 @@ export default function EquipmentMaster() {
             <tbody>
               {items.length === 0 ? (
                 <tr><td colSpan={3} className="text-center py-10 text-gray-400">No equipment added yet. Click "Add Equipment" to start.</td></tr>
-              ) : items.map(item => (
+              ) : paginatedItems.map(item => (
                 <tr key={item.equipId} className="border-b border-gray-100 hover:bg-gray-50">
                   <td className="px-4 py-3 font-medium">{item.equipName}</td>
                   <td className="px-4 py-3 text-gray-500">{item.plant || '—'}</td>
@@ -76,6 +80,9 @@ export default function EquipmentMaster() {
               ))}
             </tbody>
           </table>
+          <div className="px-4 pb-3">
+            <Pagination page={page} total={items.length} limit={limit} onChange={setPage} onLimitChange={l => { setLimit(l); setPage(1) }} />
+          </div>
         </div>
       )}
 

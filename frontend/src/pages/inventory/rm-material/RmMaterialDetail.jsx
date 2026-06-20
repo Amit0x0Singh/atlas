@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import Pagination from '../../../components/erp/Pagination.jsx'
 import { useParams, useNavigate } from 'react-router-dom'
 import { stockApi } from '../../../api/inventory.js'
 import BackButton from '../../../components/erp/BackButton.jsx'
@@ -149,7 +150,11 @@ export default function RmMaterialDetail() {
   const collapseAll = () => setExpanded(new Set())
 
   const hasFilters  = search || supplierFilter || statusFilter || dateFrom || dateTo
-  const clearAll    = () => { setSearch(''); setSupplierFilter(''); setStatusFilter(''); setDateFrom(''); setDateTo('') }
+  const clearAll    = () => { setSearch(''); setSupplierFilter(''); setStatusFilter(''); setDateFrom(''); setDateTo(''); setPage(1) }
+  const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState(15)
+  const paginatedGroups = filteredGroups.slice((page - 1) * limit, page * limit)
+  useEffect(() => { setPage(1) }, [search, supplierFilter, statusFilter, dateFrom, dateTo])
 
   const totalBags = filteredGroups.reduce((s, g) => s + g.bags.length, 0)
 
@@ -316,7 +321,7 @@ export default function RmMaterialDetail() {
                       </td>
                     </tr>
                   ) : (
-                    filteredGroups.map(g => {
+                    paginatedGroups.map(g => {
                       const isOpen    = expanded.has(g.key)
                       const totalQty  = g.bags.reduce((s, b) => s + (Number(b.packQty) || 0), 0)
                       const remQty    = g.bags.reduce((s, b) => s + (b.remainingQty != null ? Number(b.remainingQty) : 0), 0)
@@ -452,6 +457,9 @@ export default function RmMaterialDetail() {
                   )}
                 </tbody>
               </table>
+              <div className="px-4 pb-3">
+                <Pagination page={page} total={filteredGroups.length} limit={limit} onChange={setPage} onLimitChange={l => { setLimit(l); setPage(1) }} />
+              </div>
             </div>
           )}
         </div>

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { employeeApi } from '../../../../api/hr.js'
 import BackButton from '../../../../components/erp/BackButton.jsx'
+import Pagination from '../../../../components/erp/Pagination.jsx'
 
 const ROLES = ['ADMIN', 'SALES', 'PRODUCTION', 'QC', 'DISPATCH', 'PLANNING', 'ACCOUNTS']
 const SECTIONS = ['NANO', 'BOTANICAL', 'LIQUID', 'POWDER', 'GRANULES']
@@ -219,6 +220,7 @@ export default function EmployeeMaster() {
   const [editing, setEditing]     = useState(null)
   const [filterRole, setFilterRole] = useState('ALL')
   const [err, setErr]             = useState('')
+  const [page, setPage]           = useState(1)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -244,6 +246,9 @@ export default function EmployeeMaster() {
 
   const filtered = filterRole === 'ALL' ? employees : employees.filter(e => e.role === filterRole)
   const activeCount = employees.filter(e => e.isActive).length
+  const [limit, setLimit] = useState(15)
+  const activeFiltered = filtered.filter(e => e.isActive)
+  const paginatedEmployees = activeFiltered.slice((page - 1) * limit, page * limit)
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-6">
@@ -282,7 +287,7 @@ export default function EmployeeMaster() {
       {tab === 'employees' && (
         <div className="space-y-4">
           <div className="flex flex-wrap gap-2">
-            <button onClick={() => setFilterRole('ALL')}
+            <button onClick={() => { setFilterRole('ALL'); setPage(1) }}
               className={`px-3 py-1 rounded-full text-xs font-semibold ${filterRole === 'ALL' ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
               All ({employees.filter(e => e.isActive).length})
             </button>
@@ -290,7 +295,7 @@ export default function EmployeeMaster() {
               const cnt = employees.filter(e => e.role === r && e.isActive).length
               if (!cnt) return null
               return (
-                <button key={r} onClick={() => setFilterRole(r)}
+                <button key={r} onClick={() => { setFilterRole(r); setPage(1) }}
                   className={`px-3 py-1 rounded-full text-xs font-semibold ${filterRole === r ? ROLE_COLORS[r] : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
                   {r} ({cnt})
                 </button>
@@ -314,7 +319,7 @@ export default function EmployeeMaster() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.filter(e => e.isActive).map(emp => (
+                  {paginatedEmployees.map(emp => (
                     <tr key={emp.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50">
                       <td className="px-4 py-3 font-mono text-xs text-gray-400">{emp.empCode}</td>
                       <td className="px-4 py-3 font-semibold text-gray-800">{emp.name}</td>
@@ -335,6 +340,9 @@ export default function EmployeeMaster() {
                   ))}
                 </tbody>
               </table>
+              <div className="px-4 pb-3">
+                <Pagination page={page} total={activeFiltered.length} limit={limit} onChange={setPage} onLimitChange={l => { setLimit(l); setPage(1) }} />
+              </div>
             </div>
           )}
         </div>

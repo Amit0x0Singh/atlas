@@ -10,6 +10,7 @@
  *   location_position → Batch / Container Code
  */
 import { useState, useEffect, useCallback } from 'react'
+import Pagination from '../../components/erp/Pagination.jsx'
 import { microbialApi } from '../../api/microbial.js'
 import { erpStrainsApi } from '../../api/masters.js'
 import { useAuth } from '../../components/erp/AuthContext.jsx'
@@ -163,12 +164,16 @@ function StockTab({ containers, strains, loading, onRefresh }) {
   const [filterStrain, setFilterStrain] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
   const [expanded, setExpanded] = useState(null)
+  const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState(15)
   const { hasRole } = useAuth()
 
   const filtered = containers.filter(c =>
     (!filterStrain || c.strain_id === filterStrain) &&
     (!filterStatus || (c.computed_status || c.status) === filterStatus)
   )
+  const paginatedFiltered = filtered.slice((page - 1) * limit, page * limit)
+  useEffect(() => { setPage(1) }, [filterStrain, filterStatus])
 
   if (loading) return <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>Loading stock…</div>
 
@@ -207,7 +212,7 @@ function StockTab({ containers, strains, loading, onRefresh }) {
             {filtered.length === 0 && (
               <tr><td colSpan={11} style={{ padding: '32px', textAlign: 'center', color: '#94a3b8' }}>No batches found</td></tr>
             )}
-            {filtered.map(c => {
+            {paginatedFiltered.map(c => {
               const st = STATUS[c.computed_status || c.status] || STATUS.watch
               const cfuRatio = c.cfu_ratio_pct ?? 0
               const isExp = expanded === c.container_id
@@ -256,6 +261,9 @@ function StockTab({ containers, strains, loading, onRefresh }) {
             })}
           </tbody>
         </table>
+      </div>
+      <div style={{ padding: '8px 4px' }}>
+        <Pagination page={page} total={filtered.length} limit={limit} onChange={setPage} onLimitChange={l => { setLimit(l); setPage(1) }} />
       </div>
     </div>
   )

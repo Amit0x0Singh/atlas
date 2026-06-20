@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { packsApi } from '../../../../../api/inventory.js'
+import Pagination from '../../../../../components/erp/Pagination.jsx'
 
 const STATUS_COLORS = {
   INWARDED:         'bg-blue-100 text-blue-800',
@@ -63,6 +64,7 @@ export default function InwardHistory() {
   const [supplierFilter, setSupplierFilter] = useState('')
   const [dateFrom, setDateFrom]           = useState('')
   const [dateTo, setDateTo]               = useState('')
+  const [page, setPage]                   = useState(1)
 
   useEffect(() => { load() }, [])
 
@@ -107,9 +109,13 @@ export default function InwardHistory() {
   const collapseAll = () => setExpandedKeys(new Set())
 
   const hasFilters = searchText || supplierFilter || dateFrom || dateTo
-  const clearFilters = () => { setSearchText(''); setSupplierFilter(''); setDateFrom(''); setDateTo('') }
+  const clearFilters = () => { setSearchText(''); setSupplierFilter(''); setDateFrom(''); setDateTo(''); setPage(1) }
+
+  useEffect(() => { setPage(1) }, [searchText, supplierFilter, dateFrom, dateTo])
 
   const totalBags = filteredGroups.reduce((s, g) => s + g.bags.length, 0)
+  const [limit, setLimit] = useState(15)
+  const paginatedGroups = filteredGroups.slice((page - 1) * limit, page * limit)
 
   return (
     <div className="p-6">
@@ -189,6 +195,7 @@ export default function InwardHistory() {
         {loading ? (
           <p className="text-gray-400 text-center py-14">Loading inward history…</p>
         ) : (
+          <>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-slate-700 text-white text-xs">
@@ -212,7 +219,7 @@ export default function InwardHistory() {
                     </td>
                   </tr>
                 ) : (
-                  filteredGroups.map(g => {
+                  paginatedGroups.map(g => {
                     const isOpen   = expandedKeys.has(g.key)
                     const totalQty = g.bags.reduce((s, b) => s + (b.packQty || 0), 0)
                     const status   = aggregateStatus(g.bags)
@@ -325,6 +332,10 @@ export default function InwardHistory() {
               </tbody>
             </table>
           </div>
+          <div className="px-4 pb-3">
+            <Pagination page={page} total={filteredGroups.length} limit={limit} onChange={setPage} onLimitChange={l => { setLimit(l); setPage(1) }} />
+          </div>
+          </>
         )}
       </div>
     </div>

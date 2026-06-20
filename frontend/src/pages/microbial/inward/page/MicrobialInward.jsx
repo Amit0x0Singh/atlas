@@ -5,6 +5,7 @@
  *   Fill: FULL (e.g. SDPs), PARTIAL (biomass)
  */
 import { useState, useEffect, useRef } from 'react'
+import Pagination from '../../../../components/erp/Pagination.jsx'
 import * as XLSX from 'xlsx'
 import { microbialSfgApi } from '../../../../api/microbial.js'
 
@@ -165,6 +166,10 @@ export default function MicrobialInward() {
   }
 
   const filtered = records.filter(r => (!filterMicrobe || r.microbe_code === filterMicrobe) && (!filterType || r.microbe_type === filterType))
+  const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState(15)
+  const paginatedFiltered = filtered.slice((page - 1) * limit, page * limit)
+  useEffect(() => { setPage(1) }, [filterMicrobe, filterType, filterStatus])
 
   return (
     <div style={S.page}>
@@ -253,7 +258,7 @@ export default function MicrobialInward() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((r, i) => {
+                  {paginatedFiltered.map((r, i) => {
                     const fs = FILL_COLOR[r.fill_status] || FILL_COLOR.PARTIAL
                     const ss = STATUS_COLOR[r.status] || STATUS_COLOR.ACTIVE
                     return (
@@ -278,6 +283,9 @@ export default function MicrobialInward() {
               </table>
             </div>
           )}
+          <div style={{ padding: '8px 4px' }}>
+            <Pagination page={page} total={filtered.length} limit={limit} onChange={setPage} onLimitChange={l => { setLimit(l); setPage(1) }} />
+          </div>
         </div>
       )}
 

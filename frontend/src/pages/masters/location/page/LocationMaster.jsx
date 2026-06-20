@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { bulkApi, rmApi } from '../../../../api/inventory.js'
 import BackButton from '../../../../components/erp/BackButton.jsx'
+import Pagination from '../../../../components/erp/Pagination.jsx'
 import jsQR from 'jsqr'
 
 const STATUS_COLOR = {
@@ -15,6 +16,8 @@ export default function LocationMaster() {
   const [showForm, setShowForm]         = useState(false)
   const [expanded, setExpanded]         = useState(null)
   const [msg, setMsg]                   = useState({ type: '', text: '' })
+  const [page, setPage]                 = useState(1)
+  const [limit, setLimit]               = useState(15)
 
   const [form, setForm] = useState({ locationId: '', locationName: '', itemCode: '', itemName: '', uom: 'KG' })
   const [rmSearch, setRmSearch]         = useState('')
@@ -190,7 +193,7 @@ export default function LocationMaster() {
               <p className="text-lg">No locations yet</p>
               <p className="text-sm mt-1">Create a location to start bulk tracking</p>
             </div>
-          ) : locations.map(loc => {
+          ) : locations.slice((page - 1) * limit, page * limit).map(loc => {
             const isOpen = expanded === loc.locationId
             const activeQty = totalActive(loc)
             const activeLots = (loc.lotEntries || []).filter(e => e.status === 'ACTIVE')
@@ -288,6 +291,7 @@ export default function LocationMaster() {
               </div>
             )
           })}
+          <Pagination page={page} total={locations.length} limit={limit} onChange={setPage} onLimitChange={l => { setLimit(l); setPage(1) }} />
         </div>
       )}
 

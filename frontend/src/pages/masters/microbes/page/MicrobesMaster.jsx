@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import * as XLSX from 'xlsx'
 import { microbialSfgApi } from '../../../../api/microbial.js'
+import Pagination from '../../../../components/erp/Pagination.jsx'
 
 const S = {
   page: { padding: '24px', fontFamily: "'Inter',system-ui,sans-serif", maxWidth: '960px' },
@@ -31,6 +32,7 @@ export default function MicrobesMaster() {
   const [importRows, setImportRows]   = useState([])
   const [importStatus, setImportStatus] = useState(null)
   const [importLoading, setImportLoading] = useState(false)
+  const [page, setPage] = useState(1)
   const fileRef = useRef(null)
 
   const load = async () => {
@@ -111,6 +113,8 @@ export default function MicrobesMaster() {
     m.microbe_name.toLowerCase().includes(search.toLowerCase()) ||
     m.microbe_code.toLowerCase().includes(search.toLowerCase())
   )
+  const [limit, setLimit] = useState(15)
+  const paginated = filtered.slice((page - 1) * limit, page * limit)
 
   return (
     <div style={S.page}>
@@ -149,7 +153,7 @@ export default function MicrobesMaster() {
         <div style={S.card}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
             <span style={{ fontSize: '13px', color: '#64748b' }}>{filtered.length} microbe(s) registered</span>
-            <input placeholder="Search name or code…" value={search} onChange={e => setSearch(e.target.value)} style={{ ...S.input, width: '220px' }} />
+            <input placeholder="Search name or code…" value={search} onChange={e => { setSearch(e.target.value); setPage(1) }} style={{ ...S.input, width: '220px' }} />
           </div>
           {loading ? (
             <p style={{ color: '#94a3b8', textAlign: 'center', padding: '30px' }}>Loading…</p>
@@ -170,7 +174,7 @@ export default function MicrobesMaster() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((m, i) => (
+                {paginated.map((m, i) => (
                   <tr key={m.microbe_id} style={{ background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
                     <td style={{ ...S.td, color: '#94a3b8', width: '40px' }}>{i + 1}</td>
                     <td style={{ ...S.td, fontWeight: 600 }}>{m.microbe_name}</td>
@@ -187,6 +191,9 @@ export default function MicrobesMaster() {
               </tbody>
             </table>
           )}
+          <div style={{ padding: '8px 4px' }}>
+            <Pagination page={page} total={filtered.length} limit={limit} onChange={setPage} onLimitChange={l => { setLimit(l); setPage(1) }} />
+          </div>
         </div>
       )}
 

@@ -1,3 +1,6 @@
+import { useState } from "react";
+import Pagination from "../../../../components/erp/Pagination.jsx";
+
 const TH = {
   padding: "11px 14px",
   textAlign: "left",
@@ -61,6 +64,10 @@ function DeleteRequestBadge() {
 }
 
 export default function OutwardTable({ list, total, onRequestDelete }) {
+  const [limit, setLimit] = useState(15);
+  const [page, setPage] = useState(1);
+  const paginated = list.slice((page - 1) * limit, page * limit);
+
   if (!list.length) {
     return (
       <div
@@ -129,7 +136,8 @@ export default function OutwardTable({ list, total, onRequestDelete }) {
             </tr>
           </thead>
           <tbody>
-            {list.map((item, idx) => (
+            {paginated.map((item, idx) => (
+
               <tr
                 key={item.outward_id || item.outwardId}
                 style={{
@@ -183,6 +191,9 @@ export default function OutwardTable({ list, total, onRequestDelete }) {
             ))}
           </tbody>
         </table>
+      </div>
+      <div style={{ padding: "8px 16px" }}>
+        <Pagination page={page} total={list.length} limit={limit} onChange={setPage} onLimitChange={l => { setLimit(l); setPage(1) }} />
       </div>
     </div>
   );
