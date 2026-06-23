@@ -17,7 +17,7 @@ export async function createInwardSession({ itemCode, lotNo, warehouse }) {
   return { success: true, data: session, resumed: false }
 }
 
-export async function scanPackForSession(sessionId, packId) {
+export async function scanPackForSession(sessionId, packId, warehouse) {
   const session = await prisma.inwardSession.findUnique({ where: { sessionId } })
   if (!session) throw new Error('Session not found')
   if (session.status !== 'ACTIVE') throw new Error('Session is not active')
@@ -28,10 +28,21 @@ export async function scanPackForSession(sessionId, packId) {
   if (pack.status !== 'AWAITING_INWARD') throw new Error(`Pack ${packId} is already ${pack.status}`)
   if (session.scannedPackIds.includes(packId)) throw new Error('Pack already scanned in this session')
 
-  const updated = await prisma.inwardSession.update({
-    where: { sessionId },
-    data: { scannedPackIds: { push: packId } }
-  })
+  const resolvedWarehouse = warehouse || session.warehouse
+
+  // Update scannedPackIds via ORM; update packWarehouses via raw SQL because the
+  // Prisma query-engine binary wasn't regenerated with the new field yet (DLL was locked).
+  const [updated] = await Promise.all([
+    prisma.inwardSession.update({
+      where: { sessionId },
+      data: { scannedPackIds: { push: packId } },
+    }),
+    prisma.$executeRaw`
+      UPDATE inward_session
+      SET pack_warehouses = pack_warehouses || jsonb_build_object(${packId}::text, ${resolvedWarehouse}::text)
+      WHERE session_id = ${sessionId}
+    `,
+  ])
   return { success: true, data: updated }
 }
 
@@ -46,7 +57,11 @@ export async function removeScanFromSession(sessionId, packId) {
 }
 
 export async function submitInwardSession(sessionId, transactedBy) {
-  const session = await prisma.inwardSession.findUnique({ where: { sessionId } })
+  const [session, whRows] = await Promise.all([
+    prisma.inwardSession.findUnique({ where: { sessionId } }),
+    // Read packWarehouses via raw SQL — Prisma ORM doesn't see this new column yet
+    prisma.$queryRaw`SELECT pack_warehouses FROM inward_session WHERE session_id = ${sessionId}`,
+  ])
   if (!session) throw new Error('Session not found')
   if (session.scannedPackIds.length === 0) throw new Error('No packs scanned')
 
@@ -57,11 +72,16 @@ export async function submitInwardSession(sessionId, transactedBy) {
   // Set of item codes being inwarded - used to re-check pending indents
   const inwaredItemCodes = [...new Set(packs.map(p => p.itemCode))]
 
+  const packWarehouses = (whRows[0]?.pack_warehouses && typeof whRows[0].pack_warehouses === 'object')
+    ? whRows[0].pack_warehouses
+    : {}
+
   await prisma.$transaction(async (tx) => {
     await tx.inward.createMany({
       data: packs.map(p => ({
         packId: p.packId, itemCode: p.itemCode, itemName: p.itemName,
-        lotNo: p.lotNo, bagNo: p.bagNo, qty: p.packQty, warehouse: session.warehouse,
+        lotNo: p.lotNo, bagNo: p.bagNo, qty: p.packQty,
+        warehouse: packWarehouses[p.packId] || session.warehouse,
       }))
     })
     await tx.packBalance.createMany({
@@ -80,10 +100,11 @@ export async function submitInwardSession(sessionId, transactedBy) {
 
     const ledgerEntries = packs.map(p => {
       runningBalance += p.packQty
+      const wh = packWarehouses[p.packId] || session.warehouse
       return {
         itemCode: p.itemCode, sourceId: p.packId, transactionType: 'INWARD',
         inQty: p.packQty, outQty: 0, balance: runningBalance,
-        reference: `Lot ${p.lotNo} | Bag ${p.bagNo} | ${session.warehouse}`,
+        reference: `Lot ${p.lotNo} | Bag ${p.bagNo} | ${wh}`,
       }
     })
     await tx.stockLedger.createMany({ data: ledgerEntries })

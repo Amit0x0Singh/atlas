@@ -23,7 +23,7 @@ export const packsApi = {
 
 export const inwardApi = {
   createSession:  (data)                  => api.post('/inward/sessions', data),
-  scan:           (sessionId, packId)     => api.post(`/inward/sessions/${sessionId}/scan`, { packId }),
+  scan:           (sessionId, packId, warehouse) => api.post(`/inward/sessions/${sessionId}/scan`, { packId, warehouse }),
   removeScan:     (sessionId, packId)     => api.delete(`/inward/sessions/${sessionId}/scan/${encodeURIComponent(packId)}`),
   getSession:     (sessionId)             => api.get(`/inward/sessions/${sessionId}`),
   submit:         (sessionId, transactedBy) => api.post(`/inward/sessions/${sessionId}/submit`, { transactedBy }),

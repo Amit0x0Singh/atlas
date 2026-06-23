@@ -1,14 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
-import { packsApi } from '../../../../../api/inventory.js'
+import { packsApi, inwardApi } from '../../../../../api/inventory.js'
 import Pagination from '../../../../../components/erp/Pagination.jsx'
-
-const STATUS_COLORS = {
-  INWARDED:         'bg-blue-100 text-blue-800',
-  PARTIALLY_ISSUED: 'bg-orange-100 text-orange-800',
-  EXHAUSTED:        'bg-gray-100 text-gray-500',
-  AWAITING_INWARD:  'bg-yellow-100 text-yellow-800',
-}
-const statusColor = (s) => STATUS_COLORS[s] ?? 'bg-gray-100 text-gray-600'
 
 function groupPacks(packs) {
   const map = new Map()
@@ -41,14 +33,6 @@ function groupPacks(packs) {
   })
 }
 
-function aggregateStatus(bags) {
-  const statuses = new Set(bags.map(b => b.status))
-  if (statuses.size === 1) return [...statuses][0]
-  if (bags.some(b => b.status === 'PARTIALLY_ISSUED')) return 'PARTIALLY_ISSUED'
-  if (bags.some(b => b.status === 'INWARDED'))         return 'INWARDED'
-  return 'EXHAUSTED'
-}
-
 function fmtDate(d) {
   if (!d) return '—'
   return new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
@@ -71,9 +55,17 @@ export default function InwardHistory() {
   const load = async () => {
     setLoading(true)
     try {
-      const r = await packsApi.list({ limit: 1000 })
-      // Show only packs that have been inwarded (exclude AWAITING_INWARD)
-      setPacks((r.data || []).filter(p => p.status !== 'AWAITING_INWARD'))
+      const [packsRes, inwardRes] = await Promise.all([
+        packsApi.list({ limit: 1000 }),
+        inwardApi.history({ limit: 10000 }),
+      ])
+      // Build packId → warehouse map from inward records
+      const warehouseMap = {}
+      for (const r of (inwardRes.data || [])) {
+        warehouseMap[r.packId] = r.warehouse
+      }
+      const rawPacks = (packsRes.data || []).filter(p => p.status !== 'AWAITING_INWARD')
+      setPacks(rawPacks.map(p => ({ ...p, warehouse: warehouseMap[p.packId] || '' })))
     } catch { /* silent */ }
     finally { setLoading(false) }
   }
@@ -207,7 +199,7 @@ export default function InwardHistory() {
                   <th className="text-center px-3 py-2.5 font-semibold">Bags</th>
                   <th className="text-left px-3 py-2.5 font-semibold">Total Qty</th>
                   <th className="text-left px-3 py-2.5 font-semibold">Received</th>
-                  <th className="text-left px-3 py-2.5 font-semibold">Status</th>
+                  <th className="text-left px-3 py-2.5 font-semibold">Warehouse(s)</th>
                   <th className="text-left px-3 py-2.5 font-semibold">Print All QRs</th>
                 </tr>
               </thead>
@@ -220,9 +212,9 @@ export default function InwardHistory() {
                   </tr>
                 ) : (
                   paginatedGroups.map(g => {
-                    const isOpen   = expandedKeys.has(g.key)
-                    const totalQty = g.bags.reduce((s, b) => s + (b.packQty || 0), 0)
-                    const status   = aggregateStatus(g.bags)
+                    const isOpen        = expandedKeys.has(g.key)
+                    const totalQty      = g.bags.reduce((s, b) => s + (b.packQty || 0), 0)
+                    const groupWarehouses = [...new Set(g.bags.map(b => b.warehouse).filter(Boolean))]
 
                     return (
                       <>
@@ -272,11 +264,19 @@ export default function InwardHistory() {
                             {fmtDate(g.receivedDate)}
                           </td>
 
-                          {/* Status */}
+                          {/* Warehouse(s) summary */}
                           <td className="px-3 py-3">
-                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColor(status)}`}>
-                              {status.replace(/_/g, ' ')}
-                            </span>
+                            {groupWarehouses.length === 0 ? (
+                              <span className="text-gray-300 text-xs">—</span>
+                            ) : groupWarehouses.length === 1 ? (
+                              <span className="text-xs font-semibold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">
+                                {groupWarehouses[0]}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-indigo-600 font-medium" title={groupWarehouses.join(', ')}>
+                                {groupWarehouses.length} locations
+                              </span>
+                            )}
                           </td>
 
                           {/* Print all QRs */}
@@ -310,9 +310,13 @@ export default function InwardHistory() {
                                 <span className="text-xs text-gray-700 w-20 shrink-0">
                                   {b.packQty} {b.uom}
                                 </span>
-                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium w-36 text-center shrink-0 ${statusColor(b.status)}`}>
-                                  {b.status.replace(/_/g, ' ')}
-                                </span>
+                                {b.warehouse ? (
+                                  <span className="text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded w-36 text-center shrink-0 truncate">
+                                    🏭 {b.warehouse}
+                                  </span>
+                                ) : (
+                                  <span className="text-xs text-gray-300 w-36 text-center shrink-0">—</span>
+                                )}
                                 <a
                                   href={packsApi.labelUrl(b.packId)}
                                   target="_blank"

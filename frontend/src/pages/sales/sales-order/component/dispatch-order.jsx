@@ -7,19 +7,9 @@ import {
   STATUS_LABELS,
 } from "../shared/constants.js";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// DispatchOrder (was DispatchModal)
-// Full-screen modal for verifying production details before dispatch.
-// Left section: read-only production data per line (batch, dates, packing).
-// Right section: editable dispatch entry (invoice, transport, dispatched by).
-// Supports per-line partial dispatch toggle.
-//
-// Props:
-//   order    {object}  full SalesOrder including .items[]
-//   onSave   {fn}      () => void  — called after successful dispatch
-//   onDelete {fn}      (order) => void
-//   onClose  {fn}      () => void
-// ─────────────────────────────────────────────────────────────────────────────
+// Statuses that can be dispatched right now
+const DISPATCHABLE = ["IN_INVENTORY", "READY_TO_DISPATCH", "PACKED"];
+
 export default function DispatchOrder({ order, onSave, onDelete, onClose }) {
   const today = new Date().toISOString().split("T")[0];
 
@@ -28,8 +18,8 @@ export default function DispatchOrder({ order, onSave, onDelete, onClose }) {
   const [transportName, setTransportName] = useState(order.transportName || "");
   const [dispatchedBy, setDispatchedBy] = useState(order.dispatchedBy || "");
   const [remarks, setRemarks] = useState(order.remarks || "");
-  const [partialToggles, setPartialToggles] = useState({}); // { lineId: bool }
-  const [partialQty, setPartialQty] = useState({}); // { lineId: string }
+  const [partialToggles, setPartialToggles] = useState({});
+  const [partialQty, setPartialQty] = useState({});
 
   // ── Determine overall status for the header badge ─────────────────────────
   const dominantStatus = order.items.every((it) => it.status === "DISPATCHED")
@@ -42,7 +32,7 @@ export default function DispatchOrder({ order, onSave, onDelete, onClose }) {
 
   const isAlreadyDispatched = dominantStatus === "DISPATCHED";
 
-  // ── Normalise line data so the template stays clean ───────────────────────
+  // ── Normalise line data ───────────────────────────────────────────────────
   const lines = order.items.map((it) => ({
     id: it.id,
     productName: it.inhouseProductName || it.customerProductName,
@@ -65,7 +55,13 @@ export default function DispatchOrder({ order, onSave, onDelete, onClose }) {
       : "—",
     currentStatus: it.status,
     totalCSNum: parseInt(it.totalCS) || 0,
+    canDispatch: DISPATCHABLE.includes(it.status),
   }));
+
+  // Split into dispatchable vs. blocked
+  const readyLines   = lines.filter((l) => l.canDispatch);
+  const blockedLines = lines.filter((l) => !l.canDispatch);
+  const hasMixed     = readyLines.length > 0 && blockedLines.length > 0;
 
   // ── Mark as dispatched ────────────────────────────────────────────────────
   async function markDispatched() {
@@ -78,7 +74,8 @@ export default function DispatchOrder({ order, onSave, onDelete, onClose }) {
         remarks,
         invoiceDate: today,
       });
-      for (const line of lines) {
+      // Only dispatch lines that are ready — skip PLANNED, PENDING, IN_PRODUCTION, etc.
+      for (const line of readyLines) {
         if (partialToggles[line.id]) {
           const dispatched = parseInt(partialQty[line.id] || 0);
           const isFullyDispatched =
@@ -114,6 +111,11 @@ export default function DispatchOrder({ order, onSave, onDelete, onClose }) {
             <p className="text-xs text-white/70 mt-0.5">
               {order.items.length} product line
               {order.items.length !== 1 ? "s" : ""}
+              {hasMixed && (
+                <span className="ml-2 bg-white/20 px-2 py-0.5 rounded-full">
+                  {readyLines.length} ready · {blockedLines.length} pending production
+                </span>
+              )}
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -133,6 +135,22 @@ export default function DispatchOrder({ order, onSave, onDelete, onClose }) {
 
         {/* ── Body ────────────────────────────────────────────────────── */}
         <div className="overflow-y-auto flex-1 p-6 space-y-5">
+
+          {/* Mixed-status notice */}
+          {hasMixed && !isAlreadyDispatched && (
+            <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+              <span className="text-amber-500 text-lg mt-0.5">⚠</span>
+              <div>
+                <p className="text-sm font-bold text-amber-800">Partial dispatch — {readyLines.length} of {lines.length} items ready</p>
+                <p className="text-xs text-amber-700 mt-0.5">
+                  Items in <strong>Inventory</strong> status will be dispatched now.
+                  Items still in production (Planned / In Production) will remain unchanged
+                  and can be dispatched in a separate dispatch once ready.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Production details — read only */}
           <div>
             <div className="flex items-center gap-2 mb-3">
@@ -148,16 +166,30 @@ export default function DispatchOrder({ order, onSave, onDelete, onClose }) {
               {lines.map((line, idx) => (
                 <div
                   key={line.id}
-                  className="border border-gray-200 rounded-xl bg-gray-50 overflow-hidden"
+                  className={`border rounded-xl overflow-hidden ${
+                    line.canDispatch
+                      ? "border-gray-200 bg-gray-50"
+                      : "border-gray-200 bg-gray-50/50 opacity-75"
+                  }`}
                 >
                   {/* Line header */}
                   <div
                     className="px-4 py-2.5 flex items-center justify-between"
-                    style={{ background: "#f0fdf4" }}
+                    style={{ background: line.canDispatch ? "#f0fdf4" : "#f8fafc" }}
                   >
-                    <p className="text-sm font-bold" style={{ color: BRAND }}>
-                      Line {idx + 1}: {line.productName}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p
+                        className="text-sm font-bold"
+                        style={{ color: line.canDispatch ? BRAND : "#64748b" }}
+                      >
+                        Line {idx + 1}: {line.productName}
+                      </p>
+                      {!line.canDispatch && (
+                        <span className="text-[10px] bg-gray-200 text-gray-500 px-2 py-0.5 rounded-full font-semibold">
+                          🔒 Cannot dispatch
+                        </span>
+                      )}
+                    </div>
                     <span
                       className={`text-xs font-semibold px-2 py-0.5 rounded-full ${STATUS_STYLE[line.currentStatus] || "bg-gray-100 text-gray-600"}`}
                     >
@@ -190,65 +222,72 @@ export default function DispatchOrder({ order, onSave, onDelete, onClose }) {
                     ))}
                   </div>
 
-                  {/* Partial dispatch toggle */}
+                  {/* Bottom section — partial dispatch toggle OR blocked notice */}
                   {!isAlreadyDispatched && (
-                    <div className="px-4 pb-4">
-                      <label className="inline-flex items-center gap-2 cursor-pointer select-none">
-                        <div className="relative">
-                          <input
-                            type="checkbox"
-                            className="sr-only"
-                            checked={!!partialToggles[line.id]}
-                            onChange={(e) =>
-                              setPartialToggles((t) => ({
-                                ...t,
-                                [line.id]: e.target.checked,
-                              }))
-                            }
-                          />
-                          <div
-                            className={`w-9 h-5 rounded-full transition-colors ${partialToggles[line.id] ? "bg-green-500" : "bg-gray-300"}`}
-                          />
-                          <div
-                            className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${partialToggles[line.id] ? "translate-x-4" : ""}`}
-                          />
-                        </div>
-                        <span className="text-xs font-semibold text-gray-600">
-                          Partial Dispatch
-                        </span>
-                      </label>
+                    line.canDispatch ? (
+                      <div className="px-4 pb-4">
+                        <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                          <div className="relative">
+                            <input
+                              type="checkbox"
+                              className="sr-only"
+                              checked={!!partialToggles[line.id]}
+                              onChange={(e) =>
+                                setPartialToggles((t) => ({
+                                  ...t,
+                                  [line.id]: e.target.checked,
+                                }))
+                              }
+                            />
+                            <div
+                              className={`w-9 h-5 rounded-full transition-colors ${partialToggles[line.id] ? "bg-green-500" : "bg-gray-300"}`}
+                            />
+                            <div
+                              className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${partialToggles[line.id] ? "translate-x-4" : ""}`}
+                            />
+                          </div>
+                          <span className="text-xs font-semibold text-gray-600">
+                            Partial Dispatch
+                          </span>
+                        </label>
 
-                      {partialToggles[line.id] && (
-                        <div className="mt-2 flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                          <label className="text-xs text-amber-800 font-semibold whitespace-nowrap">
-                            Sec. Packs Dispatching Now:
-                          </label>
-                          <input
-                            type="number"
-                            min="0"
-                            max={line.totalCSNum || 9999}
-                            value={partialQty[line.id] || ""}
-                            onChange={(e) =>
-                              setPartialQty((q) => ({
-                                ...q,
-                                [line.id]: e.target.value,
-                              }))
-                            }
-                            className="w-24 border border-amber-300 rounded-lg px-2 py-1 text-sm text-center font-bold focus:outline-none focus:ring-2 focus:ring-amber-400"
-                            placeholder="0"
-                          />
-                          {line.totalCSNum > 0 && partialQty[line.id] && (
-                            <span className="text-xs text-amber-700">
-                              of {line.totalCSNum} total
-                              {parseInt(partialQty[line.id] || 0) >=
-                              line.totalCSNum
-                                ? " — full dispatch ✓"
-                                : ` — ${line.totalCSNum - parseInt(partialQty[line.id] || 0)} remaining`}
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </div>
+                        {partialToggles[line.id] && (
+                          <div className="mt-2 flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                            <label className="text-xs text-amber-800 font-semibold whitespace-nowrap">
+                              Sec. Packs Dispatching Now:
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              max={line.totalCSNum || 9999}
+                              value={partialQty[line.id] || ""}
+                              onChange={(e) =>
+                                setPartialQty((q) => ({
+                                  ...q,
+                                  [line.id]: e.target.value,
+                                }))
+                              }
+                              className="w-24 border border-amber-300 rounded-lg px-2 py-1 text-sm text-center font-bold focus:outline-none focus:ring-2 focus:ring-amber-400"
+                              placeholder="0"
+                            />
+                            {line.totalCSNum > 0 && partialQty[line.id] && (
+                              <span className="text-xs text-amber-700">
+                                of {line.totalCSNum} total
+                                {parseInt(partialQty[line.id] || 0) >= line.totalCSNum
+                                  ? " — full dispatch ✓"
+                                  : ` — ${line.totalCSNum - parseInt(partialQty[line.id] || 0)} remaining`}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="px-4 pb-4">
+                        <p className="text-xs text-gray-400 bg-gray-100 border border-gray-200 rounded-lg px-3 py-2">
+                          This item is <strong className="text-gray-500">{STATUS_LABELS[line.currentStatus] || line.currentStatus}</strong> — it will go to production first and can be dispatched separately once ready.
+                        </p>
+                      </div>
+                    )
                   )}
                 </div>
               ))}
@@ -256,7 +295,7 @@ export default function DispatchOrder({ order, onSave, onDelete, onClose }) {
           </div>
 
           {/* Dispatch entry fields */}
-          {!isAlreadyDispatched && (
+          {!isAlreadyDispatched && readyLines.length > 0 && (
             <div>
               <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
                 Dispatch Entry
@@ -331,14 +370,18 @@ export default function DispatchOrder({ order, onSave, onDelete, onClose }) {
             Delete Order
           </button>
           <div className="flex gap-3">
-            {!isAlreadyDispatched && (
+            {!isAlreadyDispatched && readyLines.length > 0 && (
               <button
                 onClick={markDispatched}
                 disabled={saving}
                 className="text-white px-6 py-2 rounded-lg text-sm font-bold flex items-center gap-2 disabled:opacity-50 shadow-sm"
                 style={{ background: BRAND }}
               >
-                {saving ? "Processing…" : "🚚 Mark as Dispatched"}
+                {saving
+                  ? "Processing…"
+                  : hasMixed
+                  ? `🚚 Dispatch ${readyLines.length} Ready Item${readyLines.length !== 1 ? "s" : ""}`
+                  : "🚚 Mark as Dispatched"}
               </button>
             )}
             <button

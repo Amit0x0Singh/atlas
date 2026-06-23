@@ -1,23 +1,17 @@
 import { useState, useEffect } from 'react'
 import { ledgerApi, rmApi } from '../../../../../api/inventory.js'
-import BackButton from '../../../../../components/erp/BackButton.jsx'
-import { DSection, DGrid, DRow } from '../components/DetailModal.jsx'
-
-const TX_COLORS = {
-  INWARD:           'bg-green-100 text-green-800',
-  BOM_ISSUANCE:     'bg-blue-100 text-blue-800',
-  PACK_TO_CONTAINER:'bg-purple-100 text-purple-800',
-  STOCK_RECON:      'bg-orange-100 text-orange-800',
-}
+import BackButton              from '../../../../../components/erp/BackButton.jsx'
+import LedgerTable             from '../components/LedgerTable.jsx'
+import TransactionDetailModal  from '../components/TransactionDetailModal.jsx'
 
 export default function Ledger() {
-  const [rows, setRows] = useState([])
-  const [rmList, setRmList] = useState([])
+  const [rows,       setRows]       = useState([])
+  const [rmList,     setRmList]     = useState([])
   const [filterItem, setFilterItem] = useState('')
-  const [loading, setLoading] = useState(true)
-  const [page, setPage] = useState(1)
-  const [total, setTotal] = useState(0)
-  const [detail, setDetail] = useState(null)
+  const [loading,    setLoading]    = useState(true)
+  const [page,       setPage]       = useState(1)
+  const [total,      setTotal]      = useState(0)
+  const [detail,     setDetail]     = useState(null)
   const LIMIT = 50
 
   useEffect(() => { loadLedger() }, [page, filterItem])
@@ -78,55 +72,7 @@ export default function Ledger() {
         <span className="text-xs text-gray-400 ml-auto">{total} total entries · Page {page} of {totalPages || 1}</span>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-800 text-white">
-              <tr>
-                <th className="text-left px-4 py-3">Date & Time</th>
-                <th className="text-left px-4 py-3">Item Name</th>
-                <th className="text-left px-4 py-3">Transaction</th>
-                <th className="text-right px-4 py-3">Qty</th>
-                <th className="text-left px-4 py-3">Reference</th>
-                <th className="px-4 py-3 text-center">Detail</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr><td colSpan={6} className="text-center py-8 text-gray-400">Loading...</td></tr>
-              ) : rows.length === 0 ? (
-                <tr><td colSpan={6} className="text-center py-8 text-gray-400">No transactions found</td></tr>
-              ) : rows.map(row => {
-                const isIn  = row.inQty  > 0
-                const isOut = row.outQty > 0
-                const qty   = isIn
-                  ? <span className="text-green-600 font-semibold">+{Number(row.inQty).toFixed(3)}</span>
-                  : isOut
-                    ? <span className="text-red-600 font-semibold">−{Number(row.outQty).toFixed(3)}</span>
-                    : <span className="text-gray-400">—</span>
-                return (
-                  <tr key={row.id} className="border-b border-gray-100 hover:bg-blue-50 transition cursor-pointer"
-                    onClick={() => openDetail(row)}>
-                    <td className="px-4 py-2.5 text-gray-500 text-xs whitespace-nowrap">
-                      {new Date(row.timestamp).toLocaleString('en-IN', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' })}
-                    </td>
-                    <td className="px-4 py-2.5 text-sm font-medium text-gray-800">{row.itemName || row.itemCode}</td>
-                    <td className="px-4 py-2.5">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${TX_COLORS[row.transactionType] || 'bg-gray-100 text-gray-600'}`}>
-                        {row.transactionType.replace(/_/g, ' ')}
-                      </span>
-                    </td>
-                    <td className="px-4 py-2.5 text-right">{qty}</td>
-                    <td className="px-4 py-2.5 text-gray-500 text-xs max-w-xs truncate">{row.reference || '—'}</td>
-                    <td className="px-4 py-2.5 text-center text-blue-400 hover:text-blue-600">🔍</td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <LedgerTable loading={loading} rows={rows} onOpenDetail={openDetail} />
 
       {/* Pagination */}
       {totalPages > 1 && (
@@ -148,86 +94,7 @@ export default function Ledger() {
         </div>
       )}
 
-      {/* Detail Modal */}
-      {detail && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setDetail(null)}>
-          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto"
-            onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-6 py-4 border-b sticky top-0 bg-white">
-              <h2 className="text-lg font-bold text-gray-900">Transaction Detail</h2>
-              <button onClick={() => setDetail(null)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
-            </div>
-            <div className="px-6 py-5 space-y-4">
-              {detail.loading ? (
-                <p className="text-gray-400">Loading details...</p>
-              ) : detail.error ? (
-                <p className="text-red-500">{detail.error}</p>
-              ) : (
-                <>
-                  <DSection title="📋 Transaction">
-                    <DGrid>
-                      <DRow label="Date & Time" value={new Date(detail.entry.timestamp).toLocaleString('en-IN')} />
-                      <DRow label="Item Code" value={detail.entry.itemCode} mono />
-                      <DRow label="Type" value={detail.entry.transactionType} />
-                      <DRow label="Source / Pack ID" value={detail.entry.sourceId} mono />
-                      <DRow label="In Qty" value={detail.entry.inQty > 0 ? `+${Number(detail.entry.inQty).toFixed(3)}` : '—'} />
-                      <DRow label="Out Qty" value={detail.entry.outQty > 0 ? `−${Number(detail.entry.outQty).toFixed(3)}` : '—'} />
-                      <DRow label="Balance After" value={Number(detail.entry.balance).toFixed(3)} />
-                      <DRow label="Reference" value={detail.entry.reference || '—'} />
-                    </DGrid>
-                  </DSection>
-
-                  {detail.detail?.pack && (
-                    <DSection title="📦 Pack / Bag Details">
-                      <DGrid>
-                        <DRow label="Pack ID" value={detail.detail.pack.packId} mono />
-                        <DRow label="Item Name" value={detail.detail.pack.itemName} />
-                        <DRow label="Lot No" value={detail.detail.pack.lotNo} />
-                        <DRow label="Bag No" value={`#${detail.detail.pack.bagNo}`} />
-                        <DRow label="Pack Qty" value={`${detail.detail.pack.packQty} ${detail.detail.pack.uom}`} />
-                        {detail.detail.pack.supplier && <DRow label="Supplier" value={detail.detail.pack.supplier} />}
-                        {detail.detail.pack.invoiceNo && <DRow label="Invoice No" value={detail.detail.pack.invoiceNo} />}
-                      </DGrid>
-                    </DSection>
-                  )}
-
-                  {detail.detail?.inward && (
-                    <DSection title="📥 Inward Details">
-                      <DGrid>
-                        <DRow label="Warehouse" value={detail.detail.inward.warehouse} />
-                        <DRow label="Inward Time" value={new Date(detail.detail.inward.inwardTime).toLocaleString('en-IN')} />
-                      </DGrid>
-                    </DSection>
-                  )}
-
-                  {detail.detail?.indent && (
-                    <DSection title="📝 Production Indent">
-                      <DGrid>
-                        <DRow label="Indent ID" value={detail.detail.indent.indentId} mono />
-                        <DRow label="Product" value={detail.detail.indent.productName} />
-                        <DRow label="DI No" value={detail.detail.indent.diNo} />
-                        <DRow label="Batch No" value={detail.detail.indent.batchNo} />
-                        <DRow label="Status" value={detail.detail.indent.status} />
-                      </DGrid>
-                    </DSection>
-                  )}
-
-                  {detail.detail?.sfg && (
-                    <DSection title="🧪 SFG Status">
-                      <DGrid>
-                        <DRow label="Formulated Qty" value={Number(detail.detail.sfg.formulatedQty).toFixed(2)} />
-                        <DRow label="Packed Qty" value={Number(detail.detail.sfg.packedQty).toFixed(2)} />
-                        <DRow label="SFG Balance" value={Number(detail.detail.sfg.sfgQty).toFixed(2)} />
-                        <DRow label="SFG Status" value={detail.detail.sfg.status} />
-                      </DGrid>
-                    </DSection>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      <TransactionDetailModal detail={detail} onClose={() => setDetail(null)} />
     </div>
   )
 }

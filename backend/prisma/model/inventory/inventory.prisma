@@ -102,15 +102,16 @@ model PrintMaster {
 }
 
 model InwardSession {
-  sessionId      String   @id @default(cuid()) @map("session_id")
-  itemCode       String   @map("item_code")
-  lotNo          String   @map("lot_no")
-  warehouse      String
-  expectedBags   Int      @map("expected_bags")
-  scannedPackIds String[] @map("scanned_pack_ids")
-  status         String   @default("ACTIVE")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  sessionId       String   @id @default(cuid()) @map("session_id")
+  itemCode        String   @map("item_code")
+  lotNo           String   @map("lot_no")
+  warehouse       String
+  expectedBags    Int      @map("expected_bags")
+  scannedPackIds  String[] @map("scanned_pack_ids")
+  packWarehouses  Json     @default("{}") @map("pack_warehouses")
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
   @@map("inward_session")
 }

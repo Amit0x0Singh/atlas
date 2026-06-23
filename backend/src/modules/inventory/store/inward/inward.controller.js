@@ -31,7 +31,7 @@ export async function getSession(req, res) {
 
 export async function scanPack(req, res) {
   try {
-    const result = await scanPackForSession(req.params.sessionId, req.body.packId)
+    const result = await scanPackForSession(req.params.sessionId, req.body.packId, req.body.warehouse)
     return res.json(result)
   } catch (e) {
     return res.status(400).json({ success: false, error: e.message })
