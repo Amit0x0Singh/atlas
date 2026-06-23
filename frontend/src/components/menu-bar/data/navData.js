@@ -4,6 +4,7 @@ export const APP_NAV = [
     items: [
       { to: "/stock", label: "Dashboard", icon: "▦" },
       { to: "/rm-material", label: "RM Material", icon: "▦" },
+      { to: "/packing-master", label: "Packing Material", icon: "📦" },
     ],
   },
   {
@@ -15,7 +16,6 @@ export const APP_NAV = [
       { to: "/employee-master", label: "Employee Data", icon: "👥" },
       { to: "/recipe", label: "Recipe / BOM", icon: "≡" },
       { to: "/microbes-master", label: "Microbes Master", icon: "🦠" },
-      { to: "/packing-master", label: "Packing Material", icon: "📦" },
     ],
   },
   {
