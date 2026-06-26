@@ -1,4 +1,4 @@
-import { sfgLoad } from '../planningConstants.js'
+import { sfgLoad } from '../utils/storage.js'
 
 export default function SFGStockModal({ onClose }) {
   const list = sfgLoad().sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt))

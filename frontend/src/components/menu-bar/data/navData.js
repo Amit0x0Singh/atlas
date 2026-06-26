@@ -50,8 +50,8 @@ export const APP_NAV = [
   {
     group: "PRODUCTION & PLANNING",
     items: [
-      { to: "/planning", label: "Production Planning", icon: "⚙️" },
-      { to: "/erp/planning", label: "ERP Planning", icon: "📋" },
+      { to: "/planning", label: "Production", icon: "⚙️" },
+      { to: "/erp/planning", label: "Planning", icon: "📋" },
       { to: "/erp/bom", label: "BOM Issuance", icon: "⚗️" },
       { to: "/tracker", label: "Batch Tracker", icon: "◈" },
       { to: "/production", label: "Production Master", icon: "🏭" },

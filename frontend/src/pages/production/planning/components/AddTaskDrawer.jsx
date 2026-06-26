@@ -1,13 +1,10 @@
 import { useState, useEffect } from 'react'
-import {
-  PLANT_CONFIG, SHIFTS, SK, lsLoad, lsSave,
-  genId, todayISO, fmtDateLabel,
-  getNextBatchCode, generateTaskId, sfgLoad,
-} from '../planningConstants.js'
+import { PLANT_CONFIG, PLANT_KEYS, SHIFTS } from '../data/plantConfig.js'
+import { SK, lsLoad, lsSave, genId, sfgLoad } from '../utils/storage.js'
+import { todayISO } from '../utils/date.js'
+import { getNextBatchCode, generateTaskId } from '../utils/batchCode.js'
 
-const PLANT_KEYS = ['Nano','Botanical','Liquid','Powder','Granules']
-
-// Field helper
+// ── Form primitive helpers ────────────────────────────────────────────────────
 function Field({ label, children, hint }) {
   return (
     <div className="flex flex-col gap-1">
@@ -17,27 +14,22 @@ function Field({ label, children, hint }) {
     </div>
   )
 }
-
 function Inp({ className = '', ...props }) {
   return (
-    <input
-      {...props}
+    <input {...props}
       className={`px-3 py-2 border-[1.5px] border-gray-200 rounded-lg text-sm font-[inherit] text-gray-800 bg-white
         focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition ${className}`}
     />
   )
 }
-
 function Sel({ className = '', ...props }) {
   return (
-    <select
-      {...props}
+    <select {...props}
       className={`px-3 py-2 border-[1.5px] border-gray-200 rounded-lg text-sm font-[inherit] text-gray-800 bg-white
         focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition ${className}`}
     />
   )
 }
-
 function SecLabel({ children }) {
   return (
     <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200 pb-1.5 mb-2.5 mt-4">
@@ -46,26 +38,26 @@ function SecLabel({ children }) {
   )
 }
 
+// ── Component ─────────────────────────────────────────────────────────────────
 export default function AddTaskDrawer({ task, defaultDate, onSave, onClose }) {
   const isEdit = !!task
 
-  const [plant,       setPlant]       = useState(task?.plant || 'Nano')
-  const [date,        setDate]        = useState(task?.date  || defaultDate || todayISO())
-  const [diNo,        setDiNo]        = useState(task?.diNo  || '')
-  const [shift,       setShift]       = useState(task?.shift || 'General')
-  const [productName, setProductName] = useState(task?.productName || '')
-  const [batchCode,   setBatchCode]   = useState(task?.batchCode   || '')
-  const [batchHint,   setBatchHint]   = useState('')
-  const [qty,         setQty]         = useState(task?.qty          || '')
-  const [process,     setProcess]     = useState(task?.process      || '')
-  const [incharge,    setIncharge]    = useState(task?.incharge     || '')
-  const [equipment,   setEquipment]   = useState(task?.equipment    || '')
-  const [location,    setLocation]    = useState(task?.location     || '')
-  const [carrier,     setCarrier]     = useState(task?.carrier      || '')
-  const [specs,       setSpecs]       = useState(task?.specs        || '')
-  const [status,      setStatus]      = useState(task?.status       || 'Not Started')
-  const [remarks,     setRemarks]     = useState(task?.remarks      || '')
-  // packing
+  const [plant,           setPlant]           = useState(task?.plant        || 'Nano')
+  const [date,            setDate]            = useState(task?.date         || defaultDate || todayISO())
+  const [diNo,            setDiNo]            = useState(task?.diNo         || '')
+  const [shift,           setShift]           = useState(task?.shift        || 'General')
+  const [productName,     setProductName]     = useState(task?.productName  || '')
+  const [batchCode,       setBatchCode]       = useState(task?.batchCode    || '')
+  const [batchHint,       setBatchHint]       = useState('')
+  const [qty,             setQty]             = useState(task?.qty          || '')
+  const [process,         setProcess]         = useState(task?.process      || '')
+  const [incharge,        setIncharge]        = useState(task?.incharge     || '')
+  const [equipment,       setEquipment]       = useState(task?.equipment    || '')
+  const [location,        setLocation]        = useState(task?.location     || '')
+  const [carrier,         setCarrier]         = useState(task?.carrier      || '')
+  const [specs,           setSpecs]           = useState(task?.specs        || '')
+  const [status,          setStatus]          = useState(task?.status       || 'Not Started')
+  const [remarks,         setRemarks]         = useState(task?.remarks      || '')
   const [primaryPack,     setPrimaryPack]     = useState(task?.primaryPack     || '')
   const [inners,          setInners]          = useState(task?.inners          || '')
   const [secondaryPack,   setSecondaryPack]   = useState(task?.secondaryPack   || '')
@@ -80,7 +72,7 @@ export default function AddTaskDrawer({ task, defaultDate, onSave, onClose }) {
 
   const cfg = PLANT_CONFIG[plant]
 
-  // Set default process & incharge when plant changes
+  // Reset process / incharge when plant changes (add mode only)
   useEffect(() => {
     if (!isEdit) {
       setProcess(cfg.process[0] || '')
@@ -91,7 +83,7 @@ export default function AddTaskDrawer({ task, defaultDate, onSave, onClose }) {
     }
   }, [plant])
 
-  // Recalculate packing units when qty or unitPackQty changes
+  // Auto-calculate packing units
   useEffect(() => {
     const q = parseFloat(qty) || 0
     const u = parseFloat(unitPackQty) || 0
@@ -103,21 +95,26 @@ export default function AddTaskDrawer({ task, defaultDate, onSave, onClose }) {
     }
   }, [qty, unitPackQty, unitsPerSecPack])
 
-  // Suggest batch code whenever relevant fields change
+  // Auto-suggest batch code
   useEffect(() => {
     if (!productName.trim()) return
     const result = getNextBatchCode(plant, productName.trim(), carrier, specs, date)
     setBatchCode(result.code)
-    setBatchHint(result.carried ? '⚠ Carrying forward — previous batch still active' : '✓ New batch code generated')
+    setBatchHint(result.carried
+      ? '⚠ Carrying forward — previous batch still active'
+      : '✓ New batch code generated')
   }, [plant, productName, carrier, specs, date])
 
-  // Check SFG availability when product name changes
+  // SFG availability hint
   useEffect(() => {
     if (!cfg.sfgEligible || !productName.trim()) return
-    const matches = sfgLoad().filter(s => s.status !== 'Consumed' && s.qtyRemaining > 0 && s.productName.toLowerCase() === productName.toLowerCase())
+    const matches = sfgLoad().filter(s =>
+      s.status !== 'Consumed' && s.qtyRemaining > 0 &&
+      s.productName.toLowerCase() === productName.toLowerCase()
+    )
     setSfgHint(matches.length > 0
-      ? `✓ ${matches.length} SFG batch(es) available for "${productName}" — select one below for direct packing.`
-      : 'No SFG stock found for this product — will be treated as fresh formulation/packing.')
+      ? `✓ ${matches.length} SFG batch(es) available for "${productName}"`
+      : 'No SFG stock found — will be fresh formulation/packing.')
   }, [productName, plant])
 
   const availableSfg = sfgLoad().filter(s => s.status !== 'Consumed' && s.qtyRemaining > 0)
@@ -129,38 +126,46 @@ export default function AddTaskDrawer({ task, defaultDate, onSave, onClose }) {
     if (!entry) return
     setBatchCode(entry.batchCode)
     if (!qty) setQty(String(entry.qtyRemaining))
-    setSfgHint(`Sourcing from SFG batch ${entry.batchCode} — ${entry.qtyRemaining} ${entry.qtyUom} @ ${entry.location||'—'}`)
+    setSfgHint(`Sourcing: ${entry.batchCode} — ${entry.qtyRemaining} ${entry.qtyUom} @ ${entry.location || '—'}`)
   }
 
   function handleSave() {
-    if (!plant||!date||!productName.trim()||!qty||!process||!incharge) {
-      alert('Fill all required fields marked with *'); return
+    if (!plant || !date || !productName.trim() || !qty || !process || !incharge) {
+      alert('Fill all required fields marked with *')
+      return
     }
-    const batchKey = ['Powder','Granules'].includes(plant) ? `${productName}|${carrier}|${specs}` : productName
+    const batchKey = ['Powder','Granules'].includes(plant)
+      ? `${productName}|${carrier}|${specs}`
+      : productName
+
     const newTask = {
-      id:          isEdit ? task.id : genId(),
-      taskId:      isEdit ? task.taskId : generateTaskId(plant, date),
-      plant, date, diNo, shift, productName: productName.trim(), batchCode, batchKey,
-      qty: parseFloat(qty), qtyUom: cfg.qtyLabel?.match(/\((.+?)\)/)?.[1] || '',
+      id:       isEdit ? task.id     : genId(),
+      taskId:   isEdit ? task.taskId : generateTaskId(plant, date),
+      plant, date, diNo, shift,
+      productName: productName.trim(),
+      batchCode, batchKey,
+      qty:    parseFloat(qty),
+      qtyUom: cfg.qtyLabel?.match(/\((.+?)\)/)?.[1] || '',
       process, incharge, equipment, location, carrier, specs, status, remarks,
-      primaryPack, inners, secondaryPack, unitPackQty, noUnits, unitsPerSecPack, totalSecPacks, labels,
-      packAfter: cfg.sfgEligible ? packAfter : '',
+      primaryPack, inners, secondaryPack, unitPackQty, noUnits,
+      unitsPerSecPack, totalSecPacks, labels,
+      packAfter:    cfg.sfgEligible ? packAfter : '',
       sfgSourceId,
-      sent: isEdit ? task.sent : false,
-      timerStart: isEdit ? task.timerStart : null,
-      timerEnd:   isEdit ? task.timerEnd   : null,
-      bmrSubmitted: isEdit ? task.bmrSubmitted : false,
-      bmrSubmittedAt: isEdit ? task.bmrSubmittedAt : null,
-      sentToQc: isEdit ? task.sentToQc : false,
-      sentToQcAt: isEdit ? task.sentToQcAt : null,
-      createdAt: isEdit ? task.createdAt : new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      sent:          isEdit ? task.sent          : false,
+      timerStart:    isEdit ? task.timerStart    : null,
+      timerEnd:      isEdit ? task.timerEnd      : null,
+      bmrSubmitted:  isEdit ? task.bmrSubmitted  : false,
+      bmrSubmittedAt:isEdit ? task.bmrSubmittedAt: null,
+      sentToQc:      isEdit ? task.sentToQc      : false,
+      sentToQcAt:    isEdit ? task.sentToQcAt    : null,
+      createdAt:     isEdit ? task.createdAt     : new Date().toISOString(),
+      updatedAt:     new Date().toISOString(),
     }
+
     const tasks = lsLoad(SK.tasks)
     if (isEdit) {
       const idx = tasks.findIndex(t => t.id === task.id)
-      if (idx >= 0) tasks[idx] = newTask
-      else tasks.push(newTask)
+      if (idx >= 0) tasks[idx] = newTask; else tasks.push(newTask)
     } else {
       tasks.push(newTask)
     }
@@ -169,31 +174,32 @@ export default function AddTaskDrawer({ task, defaultDate, onSave, onClose }) {
     onClose()
   }
 
-  const showPacking   = cfg.fields?.includes('packing')
-  const showCarrier   = cfg.fields?.includes('carrier')
-  const showSpecs     = cfg.fields?.includes('specs')
-  const showLocation  = cfg.fields?.includes('location')
-  const showEquipment = cfg.fields?.includes('equipment') || true
-  const isFormulation = process === 'Formulation'
-  const isPacking     = process === 'Packing'
+  const showPacking      = cfg.fields?.includes('packing')
+  const showCarrier      = cfg.fields?.includes('carrier')
+  const showSpecs        = cfg.fields?.includes('specs')
+  const showLocation     = cfg.fields?.includes('location')
+  const isFormulation    = process === 'Formulation'
+  const isPacking        = process === 'Packing'
   const showPackAfterWrap = cfg.sfgEligible && isFormulation
   const showPackingFields = showPacking && (!cfg.sfgEligible || !isFormulation || packAfter !== 'NO')
-  const showSfgPicker = cfg.sfgEligible && isPacking
+  const showSfgPicker    = cfg.sfgEligible && isPacking
 
   return (
     <div className="fixed inset-0 z-[200] flex justify-end">
       <div className="flex-1 bg-black/40" onClick={onClose} />
       <div className="w-full max-w-2xl bg-white flex flex-col h-full shadow-2xl overflow-hidden">
+
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white sticky top-0 z-10">
+        <div className="flex items-center justify-between px-6 py-4 border-b bg-white sticky top-0 z-10">
           <span className="font-bold text-base text-gray-900">
             {isEdit ? `Edit Task — ${task.taskId}` : 'Add New Task'}
           </span>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">✕</button>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
         </div>
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-6 py-4">
+
           <SecLabel>Basic Details</SecLabel>
           <div className="grid grid-cols-2 gap-3 mb-1">
             <Field label="Plant *">
@@ -217,11 +223,7 @@ export default function AddTaskDrawer({ task, defaultDate, onSave, onClose }) {
           <SecLabel>Product &amp; Batch</SecLabel>
           <div className="grid grid-cols-2 gap-3 mb-1">
             <Field label="Product Name *">
-              <Inp
-                value={productName}
-                onChange={e => setProductName(e.target.value)}
-                placeholder="e.g. Kohinoor, Trichoderma..."
-              />
+              <Inp value={productName} onChange={e => setProductName(e.target.value)} placeholder="e.g. Kohinoor, Trichoderma..." />
             </Field>
             <Field label="Batch Code" hint={batchHint}>
               <Inp value={batchCode} onChange={e => setBatchCode(e.target.value)} readOnly className="bg-gray-50 text-gray-500" />
@@ -278,7 +280,7 @@ export default function AddTaskDrawer({ task, defaultDate, onSave, onClose }) {
                   </Field>
                 )}
                 {showSpecs && (
-                  <Field label="Specs (CFU/g)" hint="Scientific notation e.g. 1.00E+09">
+                  <Field label="Specs (CFU/g)" hint="e.g. 1.00E+09">
                     <Inp value={specs} onChange={e => setSpecs(e.target.value)} placeholder="e.g. 1.00E+09" />
                   </Field>
                 )}
@@ -286,7 +288,6 @@ export default function AddTaskDrawer({ task, defaultDate, onSave, onClose }) {
             </>
           )}
 
-          {/* SFG / Packing Decision */}
           {showPackAfterWrap && (
             <>
               <SecLabel>SFG / Packing Decision</SecLabel>
@@ -294,19 +295,18 @@ export default function AddTaskDrawer({ task, defaultDate, onSave, onClose }) {
                 <Field label="Packing Also? (this formulation batch)">
                   <Sel value={packAfter} onChange={e => setPackAfter(e.target.value)}>
                     <option value="YES">Yes — Pack immediately after formulation</option>
-                    <option value="NO">No — Store as SFG (Semi-Finished Goods) for later packing</option>
+                    <option value="NO">No — Store as SFG for later packing</option>
                   </Sel>
                 </Field>
                 {packAfter === 'NO' && (
                   <p className="text-[11px] text-blue-600 mt-1 bg-blue-50 px-3 py-2 rounded-lg">
-                    After BMR sign-off, the post-sieving quantity will be stored as SFG stock for a future packing task.
+                    After BMR sign-off, the post-sieving quantity is stored as SFG for a future packing task.
                   </p>
                 )}
               </div>
             </>
           )}
 
-          {/* SFG Source Picker for Packing tasks */}
           {showSfgPicker && (
             <>
               <SecLabel>Pack from SFG Stock</SecLabel>
@@ -316,7 +316,7 @@ export default function AddTaskDrawer({ task, defaultDate, onSave, onClose }) {
                     <option value="">— Not from SFG —</option>
                     {availableSfg.map(s => (
                       <option key={s.id} value={s.id}>
-                        {s.productName} — Batch {s.batchCode} — {s.qtyRemaining} {s.qtyUom} @ {s.location||'—'}
+                        {s.productName} — {s.batchCode} — {s.qtyRemaining} {s.qtyUom} @ {s.location || '—'}
                       </option>
                     ))}
                   </Sel>
@@ -325,7 +325,6 @@ export default function AddTaskDrawer({ task, defaultDate, onSave, onClose }) {
             </>
           )}
 
-          {/* Packing Details */}
           {showPackingFields && (
             <>
               <SecLabel>Packing Details</SecLabel>
@@ -333,7 +332,7 @@ export default function AddTaskDrawer({ task, defaultDate, onSave, onClose }) {
                 <Field label="Primary Pack">
                   <Sel value={primaryPack} onChange={e => setPrimaryPack(e.target.value)}>
                     <option value="">— Select —</option>
-                    {(cfg.primaryPack||[]).map(p => <option key={p}>{p}</option>)}
+                    {(cfg.primaryPack || []).map(p => <option key={p}>{p}</option>)}
                   </Sel>
                 </Field>
                 {cfg.inners && (
@@ -347,25 +346,25 @@ export default function AddTaskDrawer({ task, defaultDate, onSave, onClose }) {
                 <Field label="Secondary Pack">
                   <Sel value={secondaryPack} onChange={e => setSecondaryPack(e.target.value)}>
                     <option value="">— Select —</option>
-                    {(cfg.secondaryPack||[]).map(s => <option key={s}>{s}</option>)}
+                    {(cfg.secondaryPack || []).map(s => <option key={s}>{s}</option>)}
                   </Sel>
                 </Field>
                 <Field label={`Unit Pack Qty (${plant === 'Liquid' ? 'L' : 'kg'})`}>
                   <Inp type="number" step="0.001" value={unitPackQty} onChange={e => setUnitPackQty(e.target.value)} placeholder="e.g. 0.1" />
                 </Field>
                 <Field label="No. of Units">
-                  <Inp value={noUnits} readOnly className="bg-gray-50 text-gray-500" placeholder="Auto-calculated" />
+                  <Inp value={noUnits} readOnly className="bg-gray-50 text-gray-500" />
                 </Field>
                 <Field label="Units per Secondary Pack">
                   <Inp type="number" step="1" value={unitsPerSecPack} onChange={e => setUnitsPerSecPack(e.target.value)} placeholder="e.g. 100" />
                 </Field>
                 <Field label="Total Secondary Packs">
-                  <Inp value={totalSecPacks} readOnly className="bg-gray-50 text-gray-500" placeholder="Auto-calculated" />
+                  <Inp value={totalSecPacks} readOnly className="bg-gray-50 text-gray-500" />
                 </Field>
                 <Field label="Labels">
                   <Sel value={labels} onChange={e => setLabels(e.target.value)}>
                     <option value="">— Select —</option>
-                    {(cfg.labels||[]).map(l => <option key={l}>{l}</option>)}
+                    {(cfg.labels || []).map(l => <option key={l}>{l}</option>)}
                   </Sel>
                 </Field>
               </div>
@@ -376,7 +375,7 @@ export default function AddTaskDrawer({ task, defaultDate, onSave, onClose }) {
           <div className="grid grid-cols-2 gap-3 mb-4">
             <Field label="Status">
               <Sel value={status} onChange={e => setStatus(e.target.value)}>
-                {(cfg.statuses||[]).map(s => <option key={s}>{s}</option>)}
+                {(cfg.statuses || []).map(s => <option key={s}>{s}</option>)}
               </Sel>
             </Field>
             <Field label="Remarks / Instructions">
@@ -386,7 +385,7 @@ export default function AddTaskDrawer({ task, defaultDate, onSave, onClose }) {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-200 bg-white sticky bottom-0 flex justify-end gap-3">
+        <div className="px-6 py-4 border-t bg-white sticky bottom-0 flex justify-end gap-3">
           <button onClick={onClose}
             className="px-5 py-2 border border-gray-200 rounded-lg text-sm font-semibold text-gray-600 hover:bg-gray-50 transition">
             Cancel
