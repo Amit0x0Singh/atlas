@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { ArrowDown, ArrowUp } from "lucide-react";
 import { gateApi } from "../../../../api/inventory.js";
 import { useAuth } from "../../../../components/erp/AuthContext.jsx";
-import BackButton from "../../../../components/erp/BackButton.jsx";
+import { Button, BackButton } from "../../../../components/Buttons/page/Button.js";
 import GateTabs from "../component/GateTabs.jsx";
 import GateFilterBar from "../component/GateFilterBar.jsx";
 import InwardForm from "../component/InwardForm.jsx";
@@ -22,28 +23,6 @@ const S = {
   loading:  { background: "#fff", borderRadius: "12px", border: "1px solid #e2e8f0", padding: "60px 20px", textAlign: "center", color: "#94a3b8", fontSize: "14px" },
   errBox:   { background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "8px", padding: "12px 16px", color: "#dc2626", fontSize: "13px", marginBottom: "16px" },
 };
-
-function Btn({ onClick, color = "#3b82f6", children }) {
-  return (
-    <button
-      onClick={onClick}
-      style={{ padding: "9px 18px", background: color, color: "#fff", border: "none", borderRadius: "8px", fontSize: "13px", fontWeight: 600, cursor: "pointer", flexShrink: 0 }}
-    >
-      {children}
-    </button>
-  );
-}
-
-function BackBtn({ onClick }) {
-  return (
-    <button
-      onClick={onClick}
-      style={{ padding: "8px 16px", background: "#fff", color: "#475569", border: "1px solid #e2e8f0", borderRadius: "8px", fontSize: "13px", fontWeight: 500, cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}
-    >
-      ← Back
-    </button>
-  );
-}
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function GateEntry() {
@@ -177,8 +156,8 @@ export default function GateEntry() {
             <div style={S.btnRow}>
               {canGate && (
                 <>
-                  <Btn onClick={() => openList("inward")} color="#3b82f6">⬇ Inward Entries</Btn>
-                  <Btn onClick={() => openList("outward")} color="#7c3aed">⬆ Outward Entries</Btn>
+                  <Button variant="primary" icon={ArrowDown} onClick={() => openList("inward")}>Inward Entries</Button>
+                  <Button variant="purple"  icon={ArrowUp}   onClick={() => openList("outward")}>Outward Entries</Button>
                 </>
               )}
               <BackButton />
@@ -217,7 +196,7 @@ export default function GateEntry() {
               <p style={S.subtitle}>{total} record{total !== 1 ? "s" : ""} found</p>
             </div>
             <div style={S.btnRow}>
-              <BackBtn onClick={goHome} />
+              <BackButton onClick={goHome} />
             </div>
           </div>
 
@@ -256,7 +235,7 @@ export default function GateEntry() {
               <p style={S.subtitle}>{total} record{total !== 1 ? "s" : ""} found</p>
             </div>
             <div style={S.btnRow}>
-              <BackBtn onClick={goHome} />
+              <BackButton onClick={goHome} />
             </div>
           </div>
 
