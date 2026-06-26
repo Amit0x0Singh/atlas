@@ -6,7 +6,11 @@ import SFG from "../../pages/production/sfg/page/SFG.jsx";
 import MicrobialSFG from "../../pages/microbial/sfg/page/MicrobialSFG.jsx";
 
 export const productionRoutes = [
-  <Route key="planning"    path="/planning"    element={<PlanningPage />} />,
+  <Route key="planning"    path="/planning"    element={
+    <div style={{ display:'flex', flexDirection:'column', height:'100vh', overflow:'hidden' }}>
+      <PlanningPage />
+    </div>
+  } />,
   <Route key="tracker"     path="/tracker"     element={<Tracker />} />,
   <Route key="production"  path="/production"  element={<Production />} />,
   <Route key="sfg"         path="/sfg"         element={<SFG />} />,
