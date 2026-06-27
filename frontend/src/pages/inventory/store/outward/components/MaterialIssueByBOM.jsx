@@ -1,9 +1,11 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+﻿import { useState, useEffect, useRef, useCallback } from 'react'
 import { outwardApi, containerApi } from '../../../../../api/inventory.js'
 import { recipeApi, productApi } from '../../../../../api/masters.js'
-import QRScanner from '../../../../../components/erp/QRScanner.jsx'
+import QRScanner from '../../../../../components/QRScanner/QRScanner.jsx'
+import { Button, BackButton, IconButton } from '../../../../../components/ui'
+import { Camera, X } from 'lucide-react'
 
-// ─── Session persistence ──────────────────────────────────────────────────────
+// �"?�"?�"? Session persistence �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
 const SESSIONS_KEY = 'bom_issue_sessions'
 const readSessions  = () => { try { return JSON.parse(localStorage.getItem(SESSIONS_KEY) || '[]') } catch { return [] } }
 const writeSessions = (list) => localStorage.setItem(SESSIONS_KEY, JSON.stringify(list))
@@ -14,9 +16,9 @@ function fmtDate(iso) {
   return new Date(iso).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
 }
 
-// ─── Main component ───────────────────────────────────────────────────────────
+// �"?�"?�"? Main component �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
 export default function MaterialIssueByBOM() {
-  // ── Step / product selection ──────────────────────────────────────────────
+  // �"?�"? Step / product selection �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
   const [step, setStep]             = useState('select')
   const [products, setProducts]     = useState([])
   const [prodSearch, setProdSearch] = useState('')
@@ -26,14 +28,14 @@ export default function MaterialIssueByBOM() {
   const [loadingBom, setLoadingBom] = useState(false)
   const [error, setError]           = useState('')
 
-  // ── Session ───────────────────────────────────────────────────────────────
+  // �"?�"? Session �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
   const [sessions, setSessions] = useState(() => readSessions())
   const [sessionId, setSessionId] = useState(null)
 
-  // ── BOM ───────────────────────────────────────────────────────────────────
+  // �"?�"? BOM �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
   const [bomLines, setBomLines] = useState([])
 
-  // ── Issue panel ───────────────────────────────────────────────────────────
+  // �"?�"? Issue panel �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
   const [activeIdx, setActiveIdx]   = useState(null)
   // pre-loaded silently for scan matching (never shown as dropdowns)
   const [packs, setPacks]           = useState([])
@@ -91,7 +93,7 @@ export default function MaterialIssueByBOM() {
     p.productCode?.toLowerCase().includes(prodSearch.toLowerCase())
   )
 
-  // ── Load BOM ──────────────────────────────────────────────────────────────
+  // �"?�"? Load BOM �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
   const loadBom = async () => {
     if (!selProduct || !batchQty || parseFloat(batchQty) <= 0) return
     setLoadingBom(true); setError('')
@@ -122,7 +124,7 @@ export default function MaterialIssueByBOM() {
     finally { setLoadingBom(false) }
   }
 
-  // ── Resume session ────────────────────────────────────────────────────────
+  // �"?�"? Resume session �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
   const resumeSession = (s) => {
     setSelProduct({ productCode: s.productCode, productName: s.productName })
     setBatchQty(s.batchQty)
@@ -137,7 +139,7 @@ export default function MaterialIssueByBOM() {
 
   const removeSession = (id) => { deleteSession(id); setSessions(readSessions()) }
 
-  // ── Load packs + containers silently (for scan matching only) ─────────────
+  // �"?�"? Load packs + containers silently (for scan matching only) �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
   const loadResources = useCallback(async (rmCode) => {
     setLoadingRes(true)
     setScanInput(''); setScanErr(''); setFoundSource(null); setIssueQty(''); setIssueError('')
@@ -163,7 +165,7 @@ export default function MaterialIssueByBOM() {
     await loadResources(bomLines[idx].rmCode)
   }
 
-  // ── Unified scan handler ──────────────────────────────────────────────────
+  // �"?�"? Unified scan handler �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
   const handleScan = useCallback((rawValue) => {
     const val = rawValue.trim()
     if (!val) return
@@ -206,7 +208,7 @@ export default function MaterialIssueByBOM() {
     handleScan(value)
   }, [handleScan])
 
-  // ── Submit issue ──────────────────────────────────────────────────────────
+  // �"?�"? Submit issue �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
   const submitIssue = async () => {
     const line = bomLines[activeIdx]
     const qty  = parseFloat(issueQty)
@@ -250,14 +252,14 @@ export default function MaterialIssueByBOM() {
     finally { setIssuing(false) }
   }
 
-  // ── Derived ───────────────────────────────────────────────────────────────
+  // �"?�"? Derived �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
   const totalRequired = bomLines.length
   const totalDone     = bomLines.filter(l => l.issued >= l.required - 0.001).length
   const progress      = totalRequired > 0 ? Math.round((totalDone / totalRequired) * 100) : 0
 
-  // ─────────────────────────────────────────────────────────────────────────
+  // �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
   // STEP: SELECT
-  // ─────────────────────────────────────────────────────────────────────────
+  // �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
   if (step === 'select') {
     const activeSessions = sessions.filter(s => s.bomLines?.some(l => l.issued < l.required - 0.001))
     return (
@@ -309,14 +311,12 @@ export default function MaterialIssueByBOM() {
                           {s.updatedAt ? fmtDate(s.updatedAt) : '—'}
                         </td>
                         <td className="px-4 py-2.5 text-right whitespace-nowrap">
-                          <button onClick={() => resumeSession(s)}
-                            className="text-xs font-bold bg-indigo-600 text-white px-3 py-1.5 rounded-lg hover:bg-indigo-700 mr-1.5">
+                          <Button onClick={() => resumeSession(s)} variant="purple" size="xs" className="mr-1.5">
                             Resume →
-                          </button>
-                          <button onClick={() => removeSession(s.id)}
-                            className="text-xs text-gray-400 hover:text-red-500 px-2 py-1.5 rounded-lg hover:bg-red-50">
+                          </Button>
+                          <Button onClick={() => removeSession(s.id)} variant="danger" size="xs">
                             Delete
-                          </button>
+                          </Button>
                         </td>
                       </tr>
                     )
@@ -348,7 +348,7 @@ export default function MaterialIssueByBOM() {
             <input
               value={prodSearch || selProduct?.productName || ''}
               onChange={e => { setProdSearch(e.target.value); setSelProduct(null) }}
-              placeholder="Search product name or code…"
+              placeholder="Search product name or code�?�"
               className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
             />
             {prodSearch && !selProduct && (
@@ -372,8 +372,7 @@ export default function MaterialIssueByBOM() {
               <div className="mt-2 flex items-center gap-2 bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2">
                 <span className="text-xs text-indigo-700 font-mono font-bold">{selProduct.productCode}</span>
                 <span className="text-sm font-medium text-indigo-900">{selProduct.productName}</span>
-                <button onClick={() => { setSelProduct(null); setProdSearch('') }}
-                  className="ml-auto text-gray-400 hover:text-indigo-700 text-xl leading-none">×</button>
+                <IconButton icon={X} onClick={() => { setSelProduct(null); setProdSearch('') }} variant="ghost" size="xs" tooltip="Clear" className="ml-auto" />
               </div>
             )}
           </div>
@@ -396,19 +395,21 @@ export default function MaterialIssueByBOM() {
             </div>
           </div>
 
-          <button onClick={loadBom}
+          <Button onClick={loadBom}
             disabled={loadingBom || !selProduct || !batchQty || parseFloat(batchQty) <= 0}
-            className="w-full bg-indigo-600 text-white py-3 rounded-lg font-bold hover:bg-indigo-700 disabled:opacity-50 text-sm transition">
-            {loadingBom ? 'Loading BOM…' : '📋 Load BOM & Start Issuing'}
-          </button>
+            loading={loadingBom}
+            variant="purple"
+            fullWidth>
+            {loadingBom ? 'Loading BOM�?�' : '�Y"< Load BOM & Start Issuing'}
+          </Button>
         </div>
       </div>
     )
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
+  // �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
   // STEP: BOM checklist
-  // ─────────────────────────────────────────────────────────────────────────
+  // �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
   return (
     <>
       {showScanner && (
@@ -440,10 +441,7 @@ export default function MaterialIssueByBOM() {
               }
             </p>
           </div>
-          <button onClick={() => { setStep('select'); setActiveIdx(null) }}
-            className="text-sm border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-50">
-            ← Back
-          </button>
+          <BackButton onClick={() => { setStep('select'); setActiveIdx(null) }} size="sm" label="Back" />
         </div>
 
         {/* Progress bar */}
@@ -475,7 +473,7 @@ export default function MaterialIssueByBOM() {
                     done    ? 'bg-green-500 text-white' :
                     partial ? 'bg-amber-400 text-white' :
                               'bg-gray-200 text-gray-600'
-                  }`}>{done ? '✓' : idx + 1}</span>
+                  }`}>{done ? '�o"' : idx + 1}</span>
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -499,7 +497,7 @@ export default function MaterialIssueByBOM() {
                       )}
                     </div>
                     {lineMsg[idx] && (
-                      <p className="text-xs text-green-600 mt-0.5 font-medium">✓ {lineMsg[idx]}</p>
+                      <p className="text-xs text-green-600 mt-0.5 font-medium">�o" {lineMsg[idx]}</p>
                     )}
                   </div>
 
@@ -512,17 +510,15 @@ export default function MaterialIssueByBOM() {
 
                   {done ? (
                     <span className="text-xs font-bold text-green-600 px-2.5 py-1 bg-green-100 rounded-lg flex-shrink-0">
-                      Done ✓
+                      Done �o"
                     </span>
                   ) : (
-                    <button onClick={() => openIssuePanel(idx)}
-                      className={`flex-shrink-0 text-xs font-bold px-3 py-1.5 rounded-lg transition ${
-                        isActive
-                          ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                          : 'bg-indigo-600 text-white hover:bg-indigo-700'
-                      }`}>
-                      {isActive ? '↑ Close' : partial ? 'Issue More' : 'Issue ↗'}
-                    </button>
+                    <Button onClick={() => openIssuePanel(idx)}
+                      variant={isActive ? 'secondary' : 'purple'}
+                      size="xs"
+                      className="flex-shrink-0">
+                      {isActive ? '→ Close' : partial ? 'Issue More' : 'Issue �?-'}
+                    </Button>
                   )}
                 </div>
 
@@ -559,17 +555,18 @@ export default function MaterialIssueByBOM() {
 
         {progress === 100 && (
           <div className="mt-5 bg-green-50 border border-green-200 rounded-xl p-5 text-center">
-            <p className="text-2xl mb-2">🎉</p>
+            <p className="text-2xl mb-2">�YZ?</p>
             <p className="font-bold text-green-800 text-lg">All Materials Issued!</p>
             <p className="text-sm text-green-600 mt-1">
               {selProduct?.productName} — {batchQty} KG batch ready for production
               {batchRef && ` (Ref: ${batchRef})`}
             </p>
-            <button
+            <Button
               onClick={() => { setStep('select'); setActiveIdx(null); setBomLines([]) }}
-              className="mt-4 bg-green-600 text-white px-6 py-2.5 rounded-lg text-sm font-semibold hover:bg-green-700">
+              variant="success"
+              className="mt-4">
               Issue Another Batch
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -577,7 +574,7 @@ export default function MaterialIssueByBOM() {
   )
 }
 
-// ─── Issue panel ──────────────────────────────────────────────────────────────
+// �"?�"?�"? Issue panel �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
 function IssuePanel({
   line, remaining, packs, containers, loadingRes,
   scanInput, setScanInput, scanInputRef,
@@ -592,7 +589,7 @@ function IssuePanel({
   return (
     <div className="border-t border-indigo-200 bg-white p-4">
       {loadingRes ? (
-        <p className="text-sm text-gray-400 text-center py-4">Checking available stock…</p>
+        <p className="text-sm text-gray-400 text-center py-4">Checking available stock�?�</p>
       ) : (
         <div className="space-y-4">
           {/* No stock warning */}
@@ -610,26 +607,23 @@ function IssuePanel({
             </label>
             <div className="flex gap-2">
               {/* Camera button */}
-              <button onClick={onOpenScanner}
-                title="Open camera scanner"
-                className="shrink-0 w-10 h-10 flex items-center justify-center bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition text-base">
-                📷
-              </button>
+              <IconButton icon={Camera} onClick={onOpenScanner} tooltip="Open camera scanner" variant="purple" size="md" />
               {/* Text / hardware scanner input */}
               <input
                 ref={scanInputRef}
                 value={scanInput}
                 onChange={e => { setScanInput(e.target.value); setScanErr(''); setFoundSource(null) }}
                 onKeyDown={e => { if (e.key === 'Enter' && scanInput.trim()) onScanInput(scanInput) }}
-                placeholder="Scan QR code or type Pack / Container ID…"
+                placeholder="Scan QR code or type Pack / Container ID�?�"
                 className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono outline-none focus:ring-2 focus:ring-indigo-400"
               />
-              <button
+              <Button
                 onClick={() => scanInput.trim() && onScanInput(scanInput)}
                 disabled={!scanInput.trim()}
-                className="shrink-0 bg-gray-800 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-gray-900 disabled:opacity-40">
+                variant="secondary"
+                size="sm">
                 Find
-              </button>
+              </Button>
             </div>
             <p className="text-xs text-gray-400 mt-1.5">
               Works with pack bags and containers — one scanner for both.
@@ -654,7 +648,7 @@ function IssuePanel({
                 foundSource.type === 'pack' ? 'bg-indigo-50' : 'bg-orange-50'
               }`}>
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-base">{foundSource.type === 'pack' ? '📦' : '🛢️'}</span>
+                  <span className="text-base">{foundSource.type === 'pack' ? '�Y"�' : '�Y>�️'}</span>
                   <span className={`font-bold text-sm ${foundSource.type === 'pack' ? 'text-indigo-800' : 'text-orange-800'}`}>
                     {foundSource.type === 'pack' ? 'Warehouse Pack Found' : 'Container Found'}
                   </span>
@@ -714,14 +708,12 @@ function IssuePanel({
                       Max: {Math.min(foundSource.availableQty, remaining).toFixed(3)} {line.uom}
                     </p>
                   </div>
-                  <button onClick={onSubmit} disabled={issuing || !issueQty || parseFloat(issueQty) <= 0}
-                    className={`shrink-0 py-2.5 px-5 rounded-lg text-sm font-bold text-white disabled:opacity-50 transition mb-5 ${
-                      foundSource.type === 'pack'
-                        ? 'bg-indigo-600 hover:bg-indigo-700'
-                        : 'bg-orange-600 hover:bg-orange-700'
-                    }`}>
-                    {issuing ? 'Issuing…' : 'Issue ↗'}
-                  </button>
+                  <Button onClick={onSubmit} disabled={issuing || !issueQty || parseFloat(issueQty) <= 0}
+                    loading={issuing}
+                    variant={foundSource.type === 'pack' ? 'purple' : 'warning'}
+                    className="shrink-0 mb-5">
+                    {issuing ? 'Issuing�?�' : 'Issue �?-'}
+                  </Button>
                 </div>
                 {issueError && (
                   <p className="text-xs text-red-600 bg-red-50 px-3 py-1.5 rounded border border-red-100 mt-1">
@@ -735,10 +727,9 @@ function IssuePanel({
           {/* Prompt when nothing scanned yet */}
           {!foundSource && !scanErr && !noStock && (
             <div className="text-center py-4">
-              <button onClick={onOpenScanner}
-                className="bg-indigo-50 border border-indigo-200 text-indigo-700 text-sm font-semibold px-5 py-2.5 rounded-lg hover:bg-indigo-100">
-                📷 Open Camera Scanner
-              </button>
+              <Button onClick={onOpenScanner} variant="outline" icon={Camera}>
+                Open Camera Scanner
+              </Button>
               <p className="text-xs text-gray-400 mt-2">or type/scan the ID in the field above</p>
             </div>
           )}

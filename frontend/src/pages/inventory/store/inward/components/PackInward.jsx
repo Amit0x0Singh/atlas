@@ -1,6 +1,8 @@
-import { useState, useEffect, useRef } from 'react'
+﻿import { useState, useEffect, useRef } from 'react'
 import { inwardApi, packsApi } from '../../../../../api/inventory.js'
 import jsQR from 'jsqr'
+import { Button, IconButton } from '../../../../../components/ui'
+import { X } from 'lucide-react'
 
 const STEPS = { SETUP: 'setup', SCANNING: 'scanning', DONE: 'done' }
 
@@ -207,12 +209,12 @@ export default function PackInward() {
   const allScanned = session && scanned.length >= session.expectedBags
   const canSubmit  = scanned.length > 0
 
-  // ── Done ──────────────────────────────────────────────────────────────────────
+  // �"?�"? Done �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
   if (step === STEPS.DONE) return (
     <div className="p-6 max-w-xl">
       {doneStats.leftOver > 0 ? (
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-8 text-center">
-          <div className="text-5xl mb-4">📦</div>
+          <div className="text-5xl mb-4">�Y"�</div>
           <h2 className="text-2xl font-bold text-blue-800 mb-2">Partial Inward Submitted</h2>
           <p className="text-blue-700 mb-1">
             <span className="font-bold">{doneStats.submitted} bag{doneStats.submitted !== 1 ? 's' : ''}</span> successfully inwarded
@@ -221,25 +223,21 @@ export default function PackInward() {
           <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mb-6 text-sm text-amber-800">
             ⏳ <span className="font-semibold">{doneStats.leftOver} bag{doneStats.leftOver !== 1 ? 's' : ''} still pending</span> — come back tomorrow and start a new session to scan the rest.
           </div>
-          <button onClick={pauseAndExit} className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 font-semibold">
-            Back to Setup
-          </button>
+          <Button onClick={pauseAndExit} variant="primary">Back to Setup</Button>
         </div>
       ) : (
         <div className="bg-green-50 border border-green-200 rounded-xl p-8 text-center">
-          <div className="text-5xl mb-4">✅</div>
+          <div className="text-5xl mb-4">�o.</div>
           <h2 className="text-2xl font-bold text-green-800 mb-2">Pack Inward Completed!</h2>
           <p className="text-green-700 mb-1">{doneStats.submitted} bags successfully inwarded</p>
           <p className="text-green-600 text-sm mb-6">Item: {selected?.itemName} | Lot: {selected?.lotNo}</p>
-          <button onClick={pauseAndExit} className="bg-green-600 text-white px-8 py-3 rounded-lg hover:bg-green-700 font-semibold">
-            Start New Inward
-          </button>
+          <Button onClick={pauseAndExit} variant="success">Start New Inward</Button>
         </div>
       )}
     </div>
   )
 
-  // ── Scanning ──────────────────────────────────────────────────────────────────
+  // �"?�"? Scanning �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
   if (step === STEPS.SCANNING) return (
     <div className="p-4">
       <div className="flex items-center justify-between mb-3">
@@ -247,10 +245,9 @@ export default function PackInward() {
           <h2 className="text-xl font-bold text-gray-900">{selected?.itemName}</h2>
           <p className="text-sm text-gray-500">Lot: {selected?.lotNo}</p>
         </div>
-        <button onClick={pauseAndExit}
-          className="text-sm text-amber-700 border border-amber-300 bg-amber-50 px-3 py-1.5 rounded-lg hover:bg-amber-100 font-medium">
+        <Button onClick={pauseAndExit} variant="warning" size="sm">
           ⏸ Pause &amp; Resume Later
-        </button>
+        </Button>
       </div>
 
       {/* Resumed session banner */}
@@ -264,10 +261,10 @@ export default function PackInward() {
         </div>
       )}
 
-      {/* ── Warehouse switcher ── */}
+      {/* �"?�"? Warehouse switcher �"?�"? */}
       <div className="bg-indigo-50 border border-indigo-200 rounded-xl px-4 py-3 mb-4 flex items-center gap-3 flex-wrap">
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          <span className="text-lg">🏭</span>
+          <span className="text-lg">�Y��</span>
           <div className="min-w-0">
             <p className="text-xs font-semibold text-indigo-600 leading-none mb-1">Scanning bags to warehouse</p>
             <p className="text-[11px] text-indigo-400">Change anytime — next scan goes to the selected warehouse</p>
@@ -284,14 +281,14 @@ export default function PackInward() {
 
       {warehouseFlash && (
         <div className="bg-indigo-600 text-white px-4 py-2 rounded-lg mb-3 text-sm font-semibold text-center animate-pulse">
-          ✓ Warehouse changed → {warehouseFlash}
+          �o" Warehouse changed → {warehouseFlash}
         </div>
       )}
 
       {/* Progress bar */}
       <div className="bg-white rounded-xl border border-gray-200 p-4 mb-4">
         <div className="flex justify-between text-sm font-medium mb-2">
-          <span className="text-green-700">✅ Scanned: {scanned.length}</span>
+          <span className="text-green-700">�o. Scanned: {scanned.length}</span>
           <span className="text-orange-600">⏳ Pending: {pending.length}</span>
           <span className="text-gray-700">Total: {session?.expectedBags}</span>
         </div>
@@ -303,12 +300,12 @@ export default function PackInward() {
 
       {scanError && (
         <div className="bg-red-50 border border-red-300 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm">
-          ❌ {scanError}
+          �O {scanError}
         </div>
       )}
       {lastScan && !scanError && !warehouseFlash && (
         <div className="bg-green-50 border border-green-300 text-green-700 px-4 py-2 rounded-lg mb-4 text-sm">
-          ✅ Scanned: {lastScan}
+          �o. Scanned: {lastScan}
         </div>
       )}
 
@@ -322,7 +319,7 @@ export default function PackInward() {
               <div className="w-48 h-48 border-2 border-blue-400 rounded-lg" />
             </div>
             <div className="absolute top-2 left-2 right-2 bg-indigo-700/80 rounded-lg px-3 py-1.5 text-center">
-              <span className="text-white text-xs font-semibold">🏭 {warehouse}</span>
+              <span className="text-white text-xs font-semibold">�Y�� {warehouse}</span>
             </div>
             <div className="absolute bottom-3 left-0 right-0 text-center text-white text-sm bg-black/40 py-1">
               Point camera at pack QR
@@ -332,27 +329,26 @@ export default function PackInward() {
             <input
               value={manualId}
               onChange={e => setManualId(e.target.value)}
-              placeholder="Or type / paste Pack ID…"
+              placeholder="Or type / paste Pack ID�?�"
               className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono outline-none focus:ring-2 focus:ring-blue-500"
             />
-            <button type="submit" disabled={!manualId.trim()}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-40">
+            <Button type="submit" disabled={!manualId.trim()} variant="primary" size="sm">
               Add
-            </button>
+            </Button>
           </form>
         </div>
 
         {/* Scanned / Pending lists */}
         <div className="flex flex-col gap-3">
           <div className="bg-white border border-gray-200 rounded-xl p-3 flex-1 overflow-hidden">
-            <h3 className="font-semibold text-green-700 mb-2">✅ Scanned ({scanned.length})</h3>
+            <h3 className="font-semibold text-green-700 mb-2">�o. Scanned ({scanned.length})</h3>
             <div className="overflow-y-auto max-h-36 space-y-1">
               {scanned.length === 0
                 ? <p className="text-gray-400 text-sm">No bags scanned yet</p>
                 : scanned.map(id => (
                   <div key={id} className="flex items-center justify-between bg-green-50 px-2 py-1 rounded text-sm">
                     <span className="font-mono text-green-800 truncate">{id}</span>
-                    <button onClick={() => removeScan(id)} className="text-red-400 hover:text-red-600 ml-2 flex-shrink-0">✕</button>
+                    <IconButton icon={X} onClick={() => removeScan(id)} variant="danger" size="xs" tooltip="Remove" className="ml-2 flex-shrink-0" />
                   </div>
                 ))}
             </div>
@@ -370,25 +366,23 @@ export default function PackInward() {
         </div>
       </div>
 
-      <button
+      <Button
         onClick={submit}
         disabled={!canSubmit || submitting}
-        className={`w-full mt-4 py-4 rounded-xl font-bold text-lg transition-colors ${
-          allScanned
-            ? 'bg-green-600 text-white hover:bg-green-700'
-            : canSubmit
-              ? 'bg-blue-600 text-white hover:bg-blue-700'
-              : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-        }`}
+        loading={submitting}
+        variant={allScanned ? 'success' : canSubmit ? 'primary' : 'secondary'}
+        fullWidth
+        size="lg"
+        className="mt-4"
       >
         {submitting
-          ? 'Submitting…'
+          ? 'Submitting�?�'
           : allScanned
-            ? `✅ Submit All ${scanned.length} Bags`
+            ? `�o. Submit All ${scanned.length} Bags`
             : canSubmit
-              ? `📦 Submit ${scanned.length} Scanned Bag${scanned.length !== 1 ? 's' : ''} (${pending.length} remaining for later)`
+              ? `�Y"� Submit ${scanned.length} Scanned Bag${scanned.length !== 1 ? 's' : ''} (${pending.length} remaining for later)`
               : 'Scan at least 1 bag to submit'}
-      </button>
+      </Button>
 
       <p className="text-center text-xs text-gray-400 mt-2">
         Progress is saved automatically — you can pause and resume anytime.
@@ -396,7 +390,7 @@ export default function PackInward() {
     </div>
   )
 
-  // ── Setup ─────────────────────────────────────────────────────────────────────
+  // �"?�"? Setup �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
   const selectedActiveSession = selected
     ? activeSessionMap[`${selected.itemCode}-${selected.lotNo}`]
     : null
@@ -413,7 +407,7 @@ export default function PackInward() {
       )}
 
       {loadingGroups ? (
-        <p className="text-gray-400">Loading pending items…</p>
+        <p className="text-gray-400">Loading pending items�?�</p>
       ) : pendingGroups.length === 0 && Object.keys(activeSessionMap).length === 0 ? (
         <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-4 rounded-lg">
           No packs pending inward. Go to <strong>Print Master</strong> to generate new packs first.
@@ -490,17 +484,20 @@ export default function PackInward() {
             )}
           </div>
 
-          <button
+          <Button
             onClick={startSession}
             disabled={!selected || !warehouse || creating}
-            className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 font-semibold text-lg disabled:opacity-50"
+            loading={creating}
+            variant="primary"
+            fullWidth
+            size="lg"
           >
             {creating
-              ? 'Starting…'
+              ? 'Starting�?�'
               : selectedActiveSession
-                ? `▶ Resume Session (${selectedActiveSession.scannedPackIds?.length || 0}/${selectedActiveSession.expectedBags} done)`
-                : '▶ Start Scanning Session'}
-          </button>
+                ? `�-� Resume Session (${selectedActiveSession.scannedPackIds?.length || 0}/${selectedActiveSession.expectedBags} done)`
+                : '�-� Start Scanning Session'}
+          </Button>
 
           {selectedActiveSession && (
             <p className="text-center text-xs text-gray-400 mt-2">

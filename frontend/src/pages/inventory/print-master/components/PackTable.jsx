@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect } from "react";
 import { packsApi } from "../../../../api/inventory.js";
 import { usePacks } from "../hooks/usePacks.js";
-import Pagination from "../../../../components/erp/Pagination.jsx";
+import Pagination from "../../../../components/pagination/Pagination.jsx";
+import { Button } from "../../../../components/ui";
 
 // ─── Status helpers ───────────────────────────────────────────────────────────
 const STATUS_COLORS = {
@@ -115,18 +116,8 @@ export default function PackTable({ reloadTrigger }) {
           )}
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={expandAll}
-            className="text-xs text-indigo-600 hover:text-indigo-800 px-2 py-1 border border-indigo-200 rounded-lg hover:bg-indigo-50"
-          >
-            Expand all
-          </button>
-          <button
-            onClick={collapseAll}
-            className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 border border-gray-200 rounded-lg hover:bg-gray-50"
-          >
-            Collapse all
-          </button>
+          <Button variant="outline" size="xs" onClick={expandAll}>Expand all</Button>
+          <Button variant="outline-gray" size="xs" onClick={collapseAll}>Collapse all</Button>
           <input
             value={filterCode}
             onChange={(e) => setFilterCode(e.target.value)}

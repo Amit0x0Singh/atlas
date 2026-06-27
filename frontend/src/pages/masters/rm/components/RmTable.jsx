@@ -1,4 +1,6 @@
-import Pagination from '../../../../components/erp/Pagination.jsx'
+import { Pencil, Trash2 } from 'lucide-react'
+import { IconButton } from '../../../../components/ui'
+import Pagination from '../../../../components/pagination/Pagination.jsx'
 
 const TRACKING_BADGE = {
   PACK: 'bg-blue-100 text-blue-700',
@@ -64,9 +66,9 @@ export default function RmTable({ items, visibleItems, page, limit, search, filt
                 <td className="px-4 py-3 text-gray-500">
                   {new Date(item.createdAt).toLocaleDateString('en-IN')}
                 </td>
-                <td className="px-4 py-3 flex gap-2">
-                  <button onClick={() => onEdit(item)} className="text-blue-600 hover:text-blue-800 px-2 py-1 rounded hover:bg-blue-50">Edit</button>
-                  <button onClick={() => onDelete(item.itemCode)} className="text-red-600 hover:text-red-800 px-2 py-1 rounded hover:bg-red-50">Delete</button>
+                <td className="px-4 py-3 flex gap-1">
+                  <IconButton icon={Pencil} tooltip="Edit" onClick={() => onEdit(item)} />
+                  <IconButton icon={Trash2} variant="danger" tooltip="Delete" onClick={() => onDelete(item.itemCode)} />
                 </td>
               </tr>
             ))}

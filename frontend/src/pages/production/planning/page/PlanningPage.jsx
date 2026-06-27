@@ -6,6 +6,8 @@ import AddTaskDrawer from '../components/AddTaskDrawer.jsx'
 import StatusDrawer from '../components/StatusDrawer.jsx'
 import SFGStockModal from '../components/SFGStockModal.jsx'
 import Toast from '../components/ui/Toast.jsx'
+import { Button, IconButton } from '../../../../components/ui'
+import { Plus, Send, Pencil, Trash2 } from 'lucide-react'
 
 function useToast() {
   const [toast, setToast] = useState(null)
@@ -79,10 +81,9 @@ function DashboardTab({ tasks, onStatusUpdate }) {
               </div>
               <div className="border-t border-gray-100 px-4 py-2.5 flex items-center justify-between">
                 <PlantBadge plant={t.plant} />
-                <button onClick={() => onStatusUpdate(t)}
-                  className="px-3 py-1 bg-blue-600 text-white text-[11px] font-semibold rounded hover:bg-blue-700 transition">
+                <Button variant="primary" size="xs" onClick={() => onStatusUpdate(t)}>
                   Update Status
-                </button>
+                </Button>
               </div>
             </div>
           ))}
@@ -134,14 +135,8 @@ function PlanningTab({ tasks, onChange, onAdd, onEdit, toastShow }) {
         <div className="flex items-center gap-2.5">
           <input type="date" value={planDate} onChange={e => { setPlanDate(e.target.value); setDateOffset(null) }}
             className="px-3 py-2 rounded-lg text-[13px] text-gray-800 border-0 focus:outline-none" />
-          <button onClick={onAdd}
-            className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-[13px] font-semibold transition">
-            + Add Task
-          </button>
-          <button onClick={sendSchedule}
-            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-[13px] font-semibold transition">
-            📤 Send Schedule
-          </button>
+          <Button variant="warning" icon={Plus} size="sm" onClick={onAdd}>Add Task</Button>
+          <Button variant="success" icon={Send} size="sm" onClick={sendSchedule}>Send Schedule</Button>
         </div>
       </div>
 
@@ -198,10 +193,8 @@ function PlanningTab({ tasks, onChange, onAdd, onEdit, toastShow }) {
                     </td>
                     <td className="px-3 py-2.5">
                       <div className="flex gap-1.5">
-                        <button onClick={() => onEdit(t)}
-                          className="px-2 py-0.5 text-[11px] font-semibold bg-gray-100 hover:bg-gray-200 rounded transition">Edit</button>
-                        <button onClick={() => deleteTask(t.id)}
-                          className="px-2 py-0.5 text-[11px] font-semibold bg-red-50 text-red-600 hover:bg-red-100 rounded transition">Del</button>
+                        <Button variant="secondary" size="xs" icon={Pencil} onClick={() => onEdit(t)}>Edit</Button>
+                        <Button variant="danger" size="xs" icon={Trash2} onClick={() => deleteTask(t.id)}>Del</Button>
                       </div>
                     </td>
                   </tr>
@@ -245,8 +238,8 @@ export default function PlanningPage() {
         </div>
         <div className="flex items-center gap-4">
           <button onClick={() => setSfgOpen(true)}
-            className="border border-white/30 bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg text-[11.5px] font-semibold transition">
-            📦 SFG Stock
+            className="border border-white/30 bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg text-[11.5px] font-semibold transition text-white">
+            SFG Stock
           </button>
           {activeTodayCount > 0 && (
             <span className="bg-white/15 text-[11px] px-2.5 py-1 rounded">{activeTodayCount} active today</span>

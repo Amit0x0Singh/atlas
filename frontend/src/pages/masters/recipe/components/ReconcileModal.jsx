@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
+import { X, Link, XCircle } from 'lucide-react'
 import { recipeApi } from '../../../../api/masters.js'
+import { Button, IconButton } from '../../../../components/ui'
 
 const CONFIDENCE_STYLES = {
   emerald: 'bg-emerald-100 text-emerald-700 border-emerald-200',
@@ -56,7 +58,7 @@ export default function ReconcileModal({ onClose, onFixed }) {
             <h2 className="text-lg font-bold text-gray-900">🔗 Fix RM Mapping</h2>
             <p className="text-xs text-gray-500 mt-0.5">Recipe rows with RMs not matching RM Master</p>
           </div>
-          <button onClick={handleClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+          <IconButton icon={X} tooltip="Close" onClick={handleClose} />
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 py-4">
@@ -144,18 +146,22 @@ export default function ReconcileModal({ onClose, onFixed }) {
 
         {data?.unmatched?.length > 0 && !fixResult && (
           <div className="px-6 pb-5 pt-3 border-t flex gap-3 flex-shrink-0">
-            <button onClick={applyFixes} disabled={fixing || Object.keys(pendingMappings).length === 0}
-              className="flex-1 bg-indigo-600 text-white py-2.5 rounded-lg font-semibold text-sm hover:bg-indigo-700 disabled:opacity-50 transition">
-              {fixing ? 'Applying…' : `🔗 Apply ${Object.keys(pendingMappings).length} Mapping(s)`}
-            </button>
-            <button onClick={handleClose} className="border border-gray-300 px-5 py-2.5 rounded-lg text-sm hover:bg-gray-50">Cancel</button>
+            <Button
+              variant="purple"
+              icon={Link}
+              onClick={applyFixes}
+              disabled={fixing || Object.keys(pendingMappings).length === 0}
+              loading={fixing}
+              fullWidth
+            >
+              {fixing ? 'Applying…' : `Apply ${Object.keys(pendingMappings).length} Mapping(s)`}
+            </Button>
+            <Button variant="secondary" icon={XCircle} onClick={handleClose}>Cancel</Button>
           </div>
         )}
         {(fixResult || data?.unmatched?.length === 0) && (
           <div className="px-6 pb-5 pt-3 border-t flex-shrink-0">
-            <button onClick={handleClose} className="w-full bg-slate-800 text-white py-2.5 rounded-lg font-semibold text-sm hover:bg-slate-900">
-              Close
-            </button>
+            <Button variant="primary" onClick={handleClose} fullWidth>Close</Button>
           </div>
         )}
       </div>

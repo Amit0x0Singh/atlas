@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import BackButton from "../../../../components/erp/BackButton.jsx";
+import { BackButton, Button } from "../../../../components/ui";
 import GenerateForm from "../components/GenerateForm.jsx";
 import GateInwardPanel from "../components/GateInwardPanel.jsx";
 
@@ -15,12 +15,9 @@ export default function PrintMaster() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Print Master — Generate Pack Labels</h1>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => navigate("/print-master/entries")}
-            className="flex items-center gap-1.5 px-10 py-2 text-sm font-semibold text-white bg-blue-500 border-indigo-200 rounded-lg hover:bg-blue-500 transition"
-          >
+          <Button variant="primary" onClick={() => navigate("/print-master/entries")}>
             Entries
-          </button>
+          </Button>
           <BackButton />
         </div>
       </div>

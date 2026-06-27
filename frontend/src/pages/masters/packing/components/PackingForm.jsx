@@ -1,3 +1,5 @@
+import { X, Save } from 'lucide-react'
+import { Button, IconButton } from '../../../../components/ui'
 import {
   CATEGORIES, CAT, SUB_TYPES, EMPTY_FORM,
   MATERIALS_BTL, MATERIALS_PCH, SHAPES,
@@ -26,7 +28,7 @@ export default function PackingForm({ editing, form, onChange, saving, msg, onSa
               </p>
             )}
           </div>
-          <button onClick={onClose} className="text-gray-300 hover:text-gray-600 text-2xl w-8 h-8 flex items-center justify-center">×</button>
+          <IconButton icon={X} tooltip="Close" onClick={onClose} />
         </div>
 
         <div className="px-6 py-5 space-y-5 max-h-[72vh] overflow-y-auto">
@@ -227,14 +229,10 @@ export default function PackingForm({ editing, form, onChange, saving, msg, onSa
 
         {/* Footer */}
         <div className="flex gap-3 px-6 py-4 border-t border-gray-100">
-          <button onClick={onSave} disabled={saving || !form.category}
-            className="flex-1 bg-indigo-600 text-white py-2.5 rounded-xl hover:bg-indigo-700 font-bold text-sm disabled:opacity-50 disabled:cursor-not-allowed">
+          <Button variant="purple" icon={Save} onClick={onSave} disabled={saving || !form.category} loading={saving} fullWidth>
             {saving ? 'Saving…' : editing ? 'Update' : 'Create'}
-          </button>
-          <button onClick={onClose}
-            className="flex-1 border border-gray-200 py-2.5 rounded-xl hover:bg-gray-50 text-gray-700 text-sm font-medium">
-            Cancel
-          </button>
+          </Button>
+          <Button variant="secondary" icon={X} onClick={onClose} fullWidth>Cancel</Button>
         </div>
       </div>
     </div>

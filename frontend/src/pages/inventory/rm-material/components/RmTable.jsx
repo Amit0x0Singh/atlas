@@ -1,5 +1,7 @@
 import { useNavigate } from 'react-router-dom'
-import Pagination from '../../../../components/erp/Pagination.jsx'
+import Pagination from '../../../../components/pagination/Pagination.jsx'
+import { Button } from '../../../../components/ui'
+import { ChevronRight } from 'lucide-react'
 
 function fmt(n, dec = 3) {
   if (n == null) return '—'
@@ -92,14 +94,15 @@ export default function RmTable({ loading, items, filtered, paginated, page, lim
                       {!hasStock && <div className="text-[10px] text-red-400 font-medium">OUT OF STOCK</div>}
                     </td>
                     <td className="px-4 py-3 text-center">
-                      <button
+                      <Button
+                        variant="primary"
+                        size="xs"
+                        icon={ChevronRight}
+                        iconPosition="right"
                         onClick={() => navigate(`/rm-material/${encodeURIComponent(it.itemCode)}`)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 text-white text-xs font-semibold rounded-lg hover:bg-gray-700 transition-colors">
+                      >
                         View Details
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </button>
+                      </Button>
                     </td>
                   </tr>
                 )

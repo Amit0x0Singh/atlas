@@ -1,3 +1,6 @@
+import { Button } from "../../../../components/ui";
+import { Plus, X } from "lucide-react";
+
 export default function GateHeader({ tab, showForm, canGate, onNewClick, backButton }) {
   return (
     <div
@@ -27,22 +30,13 @@ export default function GateHeader({ tab, showForm, canGate, onNewClick, backBut
 
       <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
         {canGate && (
-          <button
+          <Button
+            variant={showForm ? "secondary" : "primary"}
+            icon={showForm ? X : Plus}
             onClick={onNewClick}
-            style={{
-              padding: "9px 20px",
-              background: showForm ? "#64748b" : "#3b82f6",
-              color: "#fff",
-              border: "none",
-              borderRadius: "8px",
-              fontSize: "13px",
-              fontWeight: 600,
-              cursor: "pointer",
-              flexShrink: 0,
-            }}
           >
-            {showForm ? "✕ Cancel" : `+ New ${tab === "inward" ? "Inward" : "Outward"}`}
-          </button>
+            {showForm ? "Cancel" : `New ${tab === "inward" ? "Inward" : "Outward"}`}
+          </Button>
         )}
         {backButton}
       </div>

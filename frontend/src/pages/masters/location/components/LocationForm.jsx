@@ -1,3 +1,6 @@
+import { Check, X } from 'lucide-react'
+import { Button } from '../../../../components/ui'
+
 export default function LocationForm({ msg, form, onChange, rmSearch, setRmSearch, showRmDrop, setShowRmDrop, rmOptions, saving, onSelectRm, onSave, onClose }) {
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -79,14 +82,10 @@ export default function LocationForm({ msg, form, onChange, rmSearch, setRmSearc
         </div>
 
         <div className="flex gap-3 mt-5">
-          <button onClick={onSave} disabled={saving}
-            className="flex-1 bg-green-600 text-white py-2.5 rounded-lg hover:bg-green-700 font-semibold disabled:opacity-50">
-            {saving ? 'Creating...' : '✅ Create Location'}
-          </button>
-          <button onClick={onClose}
-            className="flex-1 border border-gray-300 py-2.5 rounded-lg hover:bg-gray-50">
-            Cancel
-          </button>
+          <Button variant="success" icon={Check} onClick={onSave} disabled={saving} loading={saving} fullWidth>
+            {saving ? 'Creating...' : 'Create Location'}
+          </Button>
+          <Button variant="secondary" icon={X} onClick={onClose} fullWidth>Cancel</Button>
         </div>
       </div>
     </div>

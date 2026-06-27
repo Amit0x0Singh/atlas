@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { recipeApi, productApi } from '../../../../api/masters.js'
 import { rmApi } from '../../../../api/inventory.js'
+import { DeleteModal, ErrorModal } from '../../../../components/ui'
 import ProductSidebar    from '../components/ProductSidebar.jsx'
 import BomEditor         from '../components/BomEditor.jsx'
 import RecipeImportModal from '../components/RecipeImportModal.jsx'
@@ -17,6 +18,8 @@ export default function RecipeDB() {
   const [loading, setLoading]             = useState(false)
   const [saving, setSaving]               = useState(false)
   const [msg, setMsg]                     = useState({ type: '', text: '' })
+  const [deleteRowIdx, setDeleteRowIdx]   = useState(null)
+  const [errModal, setErrModal]           = useState({ open: false, message: '' })
 
   const [importModal, setImportModal]     = useState(false)
   const [reconcileModal, setReconcileModal] = useState(false)
@@ -56,13 +59,21 @@ export default function RecipeDB() {
 
   const addRow = () => setBomRows(prev => [...prev, EMPTY_ROW()])
 
-  const removeRow = async (idx) => {
+  const removeRow = (idx) => {
     const row = bomRows[idx]
-    if (row.id && !confirm('Delete this RM from recipe?')) return
-    if (row.id) {
-      try { await recipeApi.deleteRow(row.id) }
-      catch (e) { alert(e.message); return }
-    }
+    if (row.id) { setDeleteRowIdx(idx); return }
+    setBomRows(prev => {
+      const updated = prev.filter((_, i) => i !== idx)
+      return updated.length === 0 ? [EMPTY_ROW()] : updated
+    })
+  }
+
+  const confirmRemoveRow = async () => {
+    const idx = deleteRowIdx
+    const row = bomRows[idx]
+    setDeleteRowIdx(null)
+    try { await recipeApi.deleteRow(row.id) }
+    catch (e) { setErrModal({ open: true, message: e.message }); return }
     setBomRows(prev => {
       const updated = prev.filter((_, i) => i !== idx)
       return updated.length === 0 ? [EMPTY_ROW()] : updated
@@ -145,6 +156,20 @@ export default function RecipeDB() {
           onFixed={handleFixedDone}
         />
       )}
+
+      <DeleteModal
+        open={deleteRowIdx !== null}
+        title="Remove RM from Recipe"
+        message="This will permanently remove this ingredient from the recipe."
+        deleteText="Remove"
+        onDelete={confirmRemoveRow}
+        onCancel={() => setDeleteRowIdx(null)}
+      />
+      <ErrorModal
+        open={errModal.open}
+        message={errModal.message}
+        onClose={() => setErrModal({ open: false, message: '' })}
+      />
     </div>
   )
 }

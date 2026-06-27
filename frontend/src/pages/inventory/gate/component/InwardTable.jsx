@@ -1,5 +1,6 @@
 import { useState } from "react";
-import Pagination from "../../../../components/erp/Pagination.jsx";
+import Pagination from "../../../../components/pagination/Pagination.jsx";
+import { Button } from "../../../../components/ui";
 
 const TH = {
   padding: "11px 14px",
@@ -205,42 +206,24 @@ export default function InwardTable({ list, total, onOpenDetail, onRequestDelete
                 </td>
                 <td style={{ padding: "12px 14px" }}>
                   <div style={{ display: "flex", gap: "6px", alignItems: "center", flexWrap: "wrap" }}>
-                    <button
+                    <Button
+                      variant="outline"
+                      size="xs"
                       onClick={() => onOpenDetail(item.inward_id || item.inwardId)}
-                      style={{
-                        padding: "5px 12px",
-                        background: "#eff6ff",
-                        color: "#3b82f6",
-                        border: "1px solid #bfdbfe",
-                        borderRadius: "6px",
-                        fontSize: "12px",
-                        fontWeight: 600,
-                        cursor: "pointer",
-                        whiteSpace: "nowrap",
-                      }}
                     >
                       Details
-                    </button>
+                    </Button>
 
                     {item.request_delete ? (
                       <DeleteRequestBadge />
                     ) : (
-                      <button
+                      <Button
+                        variant="warning"
+                        size="xs"
                         onClick={() => onRequestDelete(item.inward_id || item.inwardId)}
-                        style={{
-                          padding: "5px 12px",
-                          background: "#fff7ed",
-                          color: "#c2410c",
-                          border: "1px solid #fed7aa",
-                          borderRadius: "6px",
-                          fontSize: "12px",
-                          fontWeight: 600,
-                          cursor: "pointer",
-                          whiteSpace: "nowrap",
-                        }}
                       >
-                        🗑 Request Delete
-                      </button>
+                        Request Delete
+                      </Button>
                     )}
                   </div>
                 </td>

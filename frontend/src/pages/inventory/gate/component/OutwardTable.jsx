@@ -1,5 +1,6 @@
 import { useState } from "react";
-import Pagination from "../../../../components/erp/Pagination.jsx";
+import Pagination from "../../../../components/pagination/Pagination.jsx";
+import { Button } from "../../../../components/ui";
 
 const TH = {
   padding: "11px 14px",
@@ -169,22 +170,13 @@ export default function OutwardTable({ list, total, onRequestDelete }) {
                   {item.request_delete ? (
                     <DeleteRequestBadge />
                   ) : (
-                    <button
+                    <Button
+                      variant="warning"
+                      size="xs"
                       onClick={() => onRequestDelete(item.outward_id || item.outwardId)}
-                      style={{
-                        padding: "5px 12px",
-                        background: "#fff7ed",
-                        color: "#c2410c",
-                        border: "1px solid #fed7aa",
-                        borderRadius: "6px",
-                        fontSize: "12px",
-                        fontWeight: 600,
-                        cursor: "pointer",
-                        whiteSpace: "nowrap",
-                      }}
                     >
-                      🗑 Request Delete
-                    </button>
+                      Request Delete
+                    </Button>
                   )}
                 </td>
               </tr>

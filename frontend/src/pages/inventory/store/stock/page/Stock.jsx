@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { stockApi } from "../../../../../api/inventory.js";
-import BackButton from "../../../../../components/erp/BackButton.jsx";
+import { BackButton, IconButton } from "../../../../../components/ui";
 import { PERIODS } from "../components/utils.js";
 import RawMaterialsSection from "../components/RawMaterialsSection.jsx";
 import GateSection from "../components/GateSection.jsx";
 import StoreSection from "../components/StoreSection.jsx";
 import ProductionSection from "../components/ProductionSection.jsx";
 import SalesSection from "../components/SalesSection.jsx";
+import { RefreshCw } from "lucide-react";
 
 export default function Stock() {
   const [period, setPeriod] = useState("today");
@@ -65,13 +66,7 @@ export default function Stock() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={load}
-              className="w-8 h-8 flex items-center justify-center rounded-xl border border-gray-200 bg-white shadow-sm hover:bg-gray-50 text-gray-400 hover:text-gray-900 transition text-lg"
-              title="Refresh"
-            >
-              ↻
-            </button>
+            <IconButton icon={RefreshCw} onClick={load} tooltip="Refresh" variant="outline-gray" size="sm" />
             <BackButton />
           </div>
         </div>

@@ -1,5 +1,6 @@
-import Pagination from '../../../../components/erp/Pagination.jsx'
+import Pagination from '../../../../components/pagination/Pagination.jsx'
 import { fmtQty, fmtDate, statusMeta, groupStatus } from './rmDetailHelpers.js'
+import { Button } from '../../../../components/ui'
 
 export default function RmDetailTable({ loading, filteredGroups, paginatedGroups, allGroups, hasFilters, expanded, onToggle, onExpandAll, onCollapseAll, totalBags, uom, page, limit, onPageChange, onLimitChange }) {
   return (
@@ -17,12 +18,8 @@ export default function RmDetailTable({ loading, filteredGroups, paginatedGroups
           )}
         </div>
         <div className="flex gap-2">
-          <button onClick={onExpandAll} className="text-xs text-blue-600 px-2.5 py-1.5 border border-blue-200 rounded-lg hover:bg-blue-50">
-            Expand all
-          </button>
-          <button onClick={onCollapseAll} className="text-xs text-gray-500 px-2.5 py-1.5 border border-gray-200 rounded-lg hover:bg-gray-50">
-            Collapse all
-          </button>
+          <Button variant="outline" size="xs" onClick={onExpandAll}>Expand all</Button>
+          <Button variant="outline-gray" size="xs" onClick={onCollapseAll}>Collapse all</Button>
         </div>
       </div>
 

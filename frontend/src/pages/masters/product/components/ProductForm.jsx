@@ -1,3 +1,6 @@
+import { Save, X } from 'lucide-react'
+import { Button } from '../../../../components/ui'
+
 export default function ProductForm({ editing, form, onChange, saving, msg, onSave, onClose }) {
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -37,13 +40,10 @@ export default function ProductForm({ editing, form, onChange, saving, msg, onSa
           </div>
         </div>
         <div className="flex gap-3 mt-5">
-          <button onClick={onSave} disabled={saving}
-            className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 font-medium disabled:opacity-50">
+          <Button variant="success" icon={Save} onClick={onSave} disabled={saving} loading={saving} fullWidth>
             {saving ? 'Saving...' : 'Save'}
-          </button>
-          <button onClick={onClose} className="flex-1 border border-gray-300 py-2 rounded-lg hover:bg-gray-50">
-            Cancel
-          </button>
+          </Button>
+          <Button variant="secondary" icon={X} onClick={onClose} fullWidth>Cancel</Button>
         </div>
       </div>
     </div>

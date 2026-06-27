@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+﻿import { useState, useEffect, useRef, useCallback } from 'react'
 import { bulkApi } from '../../../../../api/inventory.js'
 import jsQR from 'jsqr'
+import { Button } from '../../../../../components/ui'
 
 export default function BulkInward() {
   const [scanPhase, setScanPhase]   = useState('idle')
@@ -93,14 +94,14 @@ export default function BulkInward() {
   if (scanPhase === 'done') return (
     <div className="p-6 max-w-xl">
       <div className="bg-green-50 border border-green-200 rounded-xl p-8 text-center">
-        <div className="text-5xl mb-4">✅</div>
+        <div className="text-5xl mb-4">�o.</div>
         <h2 className="text-2xl font-bold text-green-800 mb-2">Bulk Inward Recorded!</h2>
         <p className="text-green-700 font-semibold">{result?.lotNo}</p>
         <p className="text-green-600 text-sm mt-1">{result?.receivedQty} {location?.uom} received at {location?.locationId}</p>
         <p className="text-green-600 text-sm">{location?.itemName}</p>
-        <button onClick={reset} className="mt-6 bg-green-600 text-white px-8 py-3 rounded-lg hover:bg-green-700 font-semibold">
-          Record Another Inward
-        </button>
+        <div className="mt-6">
+          <Button variant="success" onClick={reset}>Record Another Inward</Button>
+        </div>
       </div>
     </div>
   )
@@ -112,7 +113,7 @@ export default function BulkInward() {
         Receive bulk lots (bags, labels, carrier material) into a location. Scan the location QR or enter its ID manually.
       </p>
 
-      {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm">❌ {error}</div>}
+      {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm">�O {error}</div>}
 
       {(scanPhase === 'idle' || scanPhase === 'scanning') && (
         <div className="space-y-4">
@@ -126,32 +127,29 @@ export default function BulkInward() {
                 </div>
                 <p className="absolute bottom-3 w-full text-center text-white text-xs">Point at LOCATION QR code</p>
               </div>
-              <button onClick={() => { stopCamera(); setScanPhase('idle') }}
-                className="mt-3 border border-gray-300 px-4 py-2 rounded-lg text-sm hover:bg-gray-50">
-                ⏹ Cancel Scan
-              </button>
+              <div className="mt-3">
+                <Button variant="outline-gray" size="sm" onClick={() => { stopCamera(); setScanPhase('idle') }}>
+                  Cancel Scan
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="bg-white border border-gray-200 rounded-xl p-5">
               <h3 className="font-semibold text-gray-700 mb-3">Step 1 — Identify Location</h3>
-              <button onClick={startCamera}
-                className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 font-semibold mb-4">
-                📷 Scan Location QR
-              </button>
-              <div className="flex items-center gap-2">
+              <Button variant="success" fullWidth onClick={startCamera}>
+                Scan Location QR
+              </Button>
+              <div className="flex items-center gap-2 my-4">
                 <div className="flex-1 border-t border-gray-200" />
                 <span className="text-xs text-gray-400">or type location ID</span>
                 <div className="flex-1 border-t border-gray-200" />
               </div>
-              <div className="flex gap-2 mt-4">
+              <div className="flex gap-2">
                 <input value={manualLocId} onChange={e => setManualLocId(e.target.value.toUpperCase())}
                   placeholder="LOC-001"
                   onKeyDown={e => e.key === 'Enter' && handleManualLookup()}
                   className="flex-1 border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-green-500 font-mono" />
-                <button onClick={handleManualLookup}
-                  className="bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-gray-900 text-sm font-medium">
-                  Look Up
-                </button>
+                <Button variant="primary" onClick={handleManualLookup}>Look Up</Button>
               </div>
             </div>
           )}
@@ -217,13 +215,16 @@ export default function BulkInward() {
               </div>
             </div>
             <div className="flex gap-3 mt-5">
-              <button onClick={submitInward} disabled={scanPhase === 'submitting'}
-                className="flex-1 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 font-semibold disabled:opacity-50">
-                {scanPhase === 'submitting' ? 'Saving...' : '✅ Confirm Bulk Inward'}
-              </button>
-              <button onClick={reset} className="border border-gray-300 px-5 py-3 rounded-lg hover:bg-gray-50 text-sm">
-                Cancel
-              </button>
+              <Button
+                variant="success"
+                fullWidth
+                loading={scanPhase === 'submitting'}
+                disabled={scanPhase === 'submitting'}
+                onClick={submitInward}
+              >
+                Confirm Bulk Inward
+              </Button>
+              <Button variant="outline-gray" onClick={reset}>Cancel</Button>
             </div>
           </div>
         </div>

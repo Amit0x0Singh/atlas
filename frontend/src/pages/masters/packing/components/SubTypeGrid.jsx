@@ -1,10 +1,12 @@
+import { ChevronLeft, Plus } from 'lucide-react'
+import { Button } from '../../../../components/ui'
 import { SUB_TYPES } from './packingConstants.jsx'
 
 export default function SubTypeGrid({ catMeta, catCounts, subCounts, onBack, onAdd, onSelect }) {
   return (
     <div className="px-6 py-5">
       <nav className="flex items-center gap-2 text-xs text-gray-400 mb-5">
-        <button onClick={onBack} className="hover:text-gray-600 font-medium">Packing Materials</button>
+        <Button variant="ghost" size="xs" onClick={onBack}>Packing Materials</Button>
         <span>›</span>
         <span className={`font-semibold ${catMeta.cls.text}`}>{catMeta.label}</span>
       </nav>
@@ -19,12 +21,8 @@ export default function SubTypeGrid({ catMeta, catCounts, subCounts, onBack, onA
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={onBack} className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 text-sm font-medium">
-            ← Back
-          </button>
-          <button onClick={onAdd} className={`${catMeta.cls.header} text-white px-4 py-2 rounded-xl text-sm font-semibold hover:opacity-90 shadow-sm`}>
-            + Add Item
-          </button>
+          <Button variant="outline-gray" icon={ChevronLeft} onClick={onBack} size="sm">Back</Button>
+          <Button variant="purple" icon={Plus} onClick={onAdd} size="sm">Add Item</Button>
         </div>
       </div>
 

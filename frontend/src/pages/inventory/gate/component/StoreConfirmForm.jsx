@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Button } from "../../../../components/ui";
 
 const INPUT = {
   padding: "8px 10px",
@@ -135,22 +136,13 @@ export default function StoreConfirmForm({ detail, items, onConfirm }) {
         </div>
       </div>
 
-      <button
-        onClick={() => itemCode && onConfirm(detail.inward_id, itemCode, unitPrice)}
+      <Button
+        variant="success"
         disabled={!itemCode}
-        style={{
-          padding: "9px 20px",
-          background: itemCode ? "#16a34a" : "#e2e8f0",
-          color: itemCode ? "#fff" : "#94a3b8",
-          border: "none",
-          borderRadius: "7px",
-          fontWeight: 700,
-          cursor: itemCode ? "pointer" : "not-allowed",
-          fontSize: "13px",
-        }}
+        onClick={() => itemCode && onConfirm(detail.inward_id, itemCode, unitPrice)}
       >
-        Generate Labels & Start QR Confirmation
-      </button>
+        Generate Labels &amp; Start QR Confirmation
+      </Button>
     </div>
   );
 }

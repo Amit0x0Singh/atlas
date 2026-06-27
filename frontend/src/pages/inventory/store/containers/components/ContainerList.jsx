@@ -1,7 +1,8 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { containerApi } from "../../../../../api/inventory.js";
 import { useContainers } from "../hooks/useContainers.js";
-import Pagination from "../../../../../components/erp/Pagination.jsx";
+import Pagination from "../../../../../components/pagination/Pagination.jsx";
+import { Button } from "../../../../../components/ui";
 
 function fillPct(c) {
   if (!c.capacity) return 0;
@@ -35,7 +36,7 @@ export default function ContainerList() {
   const paginated = containers.slice((page - 1) * limit, page * limit);
 
   if (loading)
-    return <p className="text-gray-400 text-sm p-6">Loading containers…</p>;
+    return <p className="text-gray-400 text-sm p-6">Loading containers�?�</p>;
   if (error) return <p className="text-red-500 text-sm p-6">{error}</p>;
 
   if (containers.length === 0)
@@ -55,12 +56,7 @@ export default function ContainerList() {
         <p className="text-sm text-gray-500 font-medium">
           {containers.length} container{containers.length !== 1 ? "s" : ""}
         </p>
-        <button
-          onClick={reload}
-          className="text-sm border border-gray-300 px-3 py-1.5 rounded-lg hover:bg-gray-50"
-        >
-          Refresh
-        </button>
+        <Button variant="outline-gray" size="sm" onClick={reload}>Refresh</Button>
       </div>
 
       {/* Header row */}

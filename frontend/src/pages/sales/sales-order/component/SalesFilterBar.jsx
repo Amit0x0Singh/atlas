@@ -1,4 +1,6 @@
 import { COMPANIES, STATUSES, STATUS_LABELS } from "../shared/constants.js";
+import { Button } from "../../../../components/ui";
+import { X } from "lucide-react";
 
 const INPUT = {
   padding: "8px 12px",
@@ -158,23 +160,9 @@ export default function SalesFilterBar({ filters, onChange, onClear, total }) {
         )}
 
         {active && (
-          <button
-            onClick={onClear}
-            style={{
-              padding: "7px 14px",
-              background: "#fef2f2",
-              color: "#dc2626",
-              border: "1px solid #fecaca",
-              borderRadius: "7px",
-              fontSize: "12px",
-              fontWeight: 700,
-              cursor: "pointer",
-              whiteSpace: "nowrap",
-              flexShrink: 0,
-            }}
-          >
-            ✕ Clear Filters
-          </button>
+          <Button variant="danger" size="xs" icon={X} onClick={onClear}>
+            Clear Filters
+          </Button>
         )}
       </div>
 
@@ -245,17 +233,8 @@ function Chip({ label, onRemove }) {
       {label}
       <button
         onClick={onRemove}
-        style={{
-          background: "none",
-          border: "none",
-          cursor: "pointer",
-          color: "#86efac",
-          fontSize: "12px",
-          padding: "0",
-          lineHeight: 1,
-          display: "flex",
-          alignItems: "center",
-        }}
+        className="bg-transparent border-0 cursor-pointer text-green-300 text-xs p-0 leading-none flex items-center hover:text-green-600"
+        type="button"
       >
         ✕
       </button>

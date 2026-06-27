@@ -1,5 +1,7 @@
 import { useRef } from 'react'
 import MetaField from './MetaField.jsx'
+import { Button } from '../../../../../components/ui'
+import { Printer } from 'lucide-react'
 
 const COMPANY = {
   name:     'SOM Phytopharma (India) Ltd',
@@ -68,12 +70,9 @@ export default function GrnDetail({ selected, detail, loading }) {
           <h2 className="font-bold text-gray-900">{grnNumber(selected)}</h2>
           <p className="text-sm text-gray-400 mt-0.5">{detail.supplier} — Invoice {detail.invoiceNo}</p>
         </div>
-        <button
-          onClick={handlePrint}
-          className="bg-slate-800 text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-slate-900 transition flex items-center gap-2"
-        >
-          🖨️ Print GRN
-        </button>
+        <Button variant="primary" icon={Printer} onClick={handlePrint}>
+          Print GRN
+        </Button>
       </div>
 
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">

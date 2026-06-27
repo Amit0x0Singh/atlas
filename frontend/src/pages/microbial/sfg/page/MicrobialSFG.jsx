@@ -5,9 +5,10 @@
  *   — grouped by microbe → type → containers → FIFO batches
  */
 import { useState, useEffect } from 'react'
-import Pagination from '../../../../components/erp/Pagination.jsx'
+import Pagination from '../../../../components/pagination/Pagination.jsx'
 import { microbialSfgApi } from '../../../../api/microbial.js'
 import { sfgApi } from '../../../../api/inventory.js'
+import { BackButton } from '../../../../components/ui'
 
 function fmtCfu(v) {
   if (!v) return '—'
@@ -217,20 +218,7 @@ export default function MicrobialSFG() {
   return (
     <div style={S.page}>
       <div style={{ marginBottom: '14px' }}>
-        <button
-          onClick={() => window.history.back()}
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: '8px',
-            padding: '7px 14px', borderRadius: '10px',
-            background: '#fff', border: '1px solid #e2e8f0',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-            fontSize: '13px', fontWeight: 500, color: '#475569', cursor: 'pointer',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.color = '#0f172a' }}
-          onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#475569' }}
-        >
-          ← Back
-        </button>
+        <BackButton />
       </div>
       <div style={{ marginBottom: '24px' }}>
         <h1 style={S.h1}>⚗️ SFG — Semi-Finished Goods</h1>

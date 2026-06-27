@@ -1,4 +1,6 @@
 import { sfgLoad } from '../utils/storage.js'
+import { IconButton } from '../../../../components/ui'
+import { X } from 'lucide-react'
 
 export default function SFGStockModal({ onClose }) {
   const list = sfgLoad().sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt))
@@ -18,9 +20,7 @@ export default function SFGStockModal({ onClose }) {
             <div className="text-base font-bold">📦 SFG Stock — Semi-Finished Goods</div>
             <div className="text-[12px] opacity-80 mt-0.5">Formulated batches awaiting packing</div>
           </div>
-          <button onClick={onClose}
-            className="w-8 h-8 rounded-lg text-white flex items-center justify-center text-lg transition"
-            style={{background:'rgba(255,255,255,.15)'}}>✕</button>
+          <IconButton icon={X} tooltip="Close" onClick={onClose} className="text-white" style={{background:'rgba(255,255,255,.15)'}} />
         </div>
 
         {/* Body */}

@@ -1,7 +1,8 @@
 import { Fragment, useState } from 'react'
-import Pagination from '../../../../components/erp/Pagination.jsx'
+import Pagination from '../../../../components/pagination/Pagination.jsx'
 import { STATUS_STYLE, STATUS_LABELS } from '../shared/constants.js'
 import { fmtDate, etdDays } from '../shared/utils.js'
+import { Button } from '../../../../components/ui'
 
 function TypeBadge({ type }) {
   const isExport = type === 'EXPORT'
@@ -64,14 +65,8 @@ export default function OrderHistory({ orders, loading, onOpenDispatch }) {
             </span>
           </div>
           <div className="flex gap-2">
-            <button onClick={expandAll}
-              className="text-xs text-blue-600 px-2.5 py-1 border border-blue-200 rounded-lg hover:bg-blue-50">
-              Expand all
-            </button>
-            <button onClick={collapseAll}
-              className="text-xs text-gray-500 px-2.5 py-1 border border-gray-200 rounded-lg hover:bg-gray-50">
-              Collapse all
-            </button>
+            <Button variant="outline" size="xs" onClick={expandAll}>Expand all</Button>
+            <Button variant="outline-gray" size="xs" onClick={collapseAll}>Collapse all</Button>
           </div>
         </div>
 
@@ -159,12 +154,7 @@ export default function OrderHistory({ orders, loading, onOpenDispatch }) {
 
                       {/* Edit button */}
                       <td className="px-3 py-3.5 text-right" onClick={e => e.stopPropagation()}>
-                        <button
-                          onClick={() => onOpenDispatch(order)}
-                          className="text-xs px-3 py-1 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-100 hover:border-gray-300 transition-colors"
-                        >
-                          Edit
-                        </button>
+                        <Button variant="outline-gray" size="xs" onClick={() => onOpenDispatch(order)}>Edit</Button>
                       </td>
                     </tr>
 

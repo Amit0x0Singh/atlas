@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { Plus, Camera, Square } from 'lucide-react'
 import { bulkApi, rmApi } from '../../../../api/inventory.js'
-import BackButton from '../../../../components/erp/BackButton.jsx'
-import Pagination from '../../../../components/erp/Pagination.jsx'
+import { Button, BackButton } from '../../../../components/ui'
+import Pagination from '../../../../components/pagination/Pagination.jsx'
 import jsQR from 'jsqr'
 import QRScanner    from '../components/QRScanner.jsx'
 import LocationCard from '../components/LocationCard.jsx'
@@ -135,15 +136,15 @@ export default function LocationMaster() {
           </p>
         </div>
         <div className="flex gap-2 items-center">
-          <button
+          <Button
+            variant={scanning ? 'danger-solid' : 'outline-gray'}
+            icon={scanning ? Square : Camera}
             onClick={scanning ? stopCamera : startCamera}
-            className={`px-4 py-2 rounded-lg font-medium text-sm ${scanning ? 'bg-red-500 text-white hover:bg-red-600' : 'border border-gray-300 hover:bg-gray-50'}`}
+            size="sm"
           >
-            {scanning ? '⏹ Stop Scanner' : '📷 Scan QR'}
-          </button>
-          <button onClick={openAdd} className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 font-medium text-sm">
-            + New Location
-          </button>
+            {scanning ? 'Stop Scanner' : 'Scan QR'}
+          </Button>
+          <Button variant="success" icon={Plus} onClick={openAdd} size="sm">New Location</Button>
           <BackButton />
         </div>
       </div>

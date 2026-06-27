@@ -9,6 +9,8 @@ import {
 import { suggestNextBatch, addDays, calcTotalCS } from "../shared/utils.js";
 import CustomerNamePicker from "./CustomerNamePicker.jsx";
 import LineItemRow from "./LineItemRow.jsx";
+import { Button } from "../../../../components/ui";
+import { Plus, Save } from "lucide-react";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CreateSalesOrder
@@ -276,13 +278,15 @@ export default function CreateSalesOrder({
           <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide">
             Product Lines
           </h3>
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="xs"
+            icon={Plus}
             onClick={() => setItems((it) => [...it, { ...BLANK_ITEM }])}
-            className="text-sm text-green-700 font-semibold hover:underline"
           >
-            + Add Line
-          </button>
+            Add Line
+          </Button>
         </div>
         <div className="space-y-3">
           {items.map((item, idx) => (
@@ -305,25 +309,28 @@ export default function CreateSalesOrder({
 
       {/* ── Submit / Cancel ───────────────────────────────────────────── */}
       <div className="flex gap-3 pt-2">
-        <button
+        <Button
           type="submit"
+          variant="success"
+          icon={Save}
+          fullWidth
+          loading={saving}
           disabled={saving}
-          className="flex-1 text-white py-2.5 rounded-lg font-semibold text-sm disabled:opacity-50"
-          style={{ background: BRAND }}
         >
           {saving
             ? "Saving…"
             : initial?.id
               ? "Update Order"
               : "Create Sales Order"}
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant="secondary"
+          fullWidth
           onClick={onCancel}
-          className="flex-1 border border-gray-300 py-2.5 rounded-lg text-sm hover:bg-gray-50"
         >
           Cancel
-        </button>
+        </Button>
       </div>
     </form>
   );

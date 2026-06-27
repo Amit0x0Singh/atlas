@@ -1,3 +1,5 @@
+import { Trash2 } from 'lucide-react'
+import { IconButton } from '../../../../components/ui'
 import { bulkApi } from '../../../../api/inventory.js'
 
 const STATUS_COLOR = {
@@ -47,12 +49,12 @@ export default function LocationCard({ loc, isOpen, onToggle, onDelete }) {
           >
             🖨️ Print QR
           </a>
-          <button
+          <IconButton
+            icon={Trash2}
+            variant="danger"
+            tooltip="Delete location"
             onClick={e => { e.stopPropagation(); onDelete(loc.locationId) }}
-            className="text-red-400 hover:text-red-600 text-xs px-2 py-1 rounded hover:bg-red-50"
-          >
-            Del
-          </button>
+          />
           <span className="text-gray-400 text-sm">{isOpen ? '▲' : '▼'}</span>
         </div>
       </div>

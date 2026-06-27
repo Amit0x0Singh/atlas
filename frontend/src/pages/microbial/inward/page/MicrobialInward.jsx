@@ -8,9 +8,11 @@
 */
 
 import { useState, useEffect, useRef } from "react";
-import Pagination from "../../../../components/erp/Pagination.jsx";
+import Pagination from "../../../../components/pagination/Pagination.jsx";
 import * as XLSX from "xlsx";
 import { microbialSfgApi } from "../../../../api/microbial.js";
+import { BackButton, Button } from "../../../../components/ui";
+import { RefreshCw } from "lucide-react";
 
 const MICROBE_TYPES = [
   { code: "BM", label: "Biomass", fill: "PARTIAL" },
@@ -348,34 +350,7 @@ export default function MicrobialInward() {
   return (
     <div style={S.page}>
       <div style={{ marginBottom: "14px" }}>
-        <button
-          onClick={() => window.history.back()}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "8px",
-            padding: "7px 14px",
-            borderRadius: "10px",
-            background: "#fff",
-            border: "1px solid #e2e8f0",
-            boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
-            fontSize: "13px",
-            fontWeight: 500,
-            color: "#475569",
-            cursor: "pointer",
-            transition: "all 0.15s",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = "#f8fafc";
-            e.currentTarget.style.color = "#0f172a";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = "#fff";
-            e.currentTarget.style.color = "#475569";
-          }}
-        >
-          ← Back
-        </button>
+        <BackButton />
       </div>
       <div style={S.head}>
         <div>
@@ -385,18 +360,18 @@ export default function MicrobialInward() {
           </p>
         </div>
         <div style={{ display: "flex", gap: "10px" }}>
-          <button style={S.btnO} onClick={() => setTab("import")}>
+          <Button variant="outline" onClick={() => setTab("import")}>
             ⇪ Import Excel
-          </button>
-          <button
-            style={S.btnP}
+          </Button>
+          <Button
+            variant="primary"
             onClick={() => {
               setForm(EMPTY_FORM);
               setTab("add");
             }}
           >
             + New Inward Entry
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -516,9 +491,9 @@ export default function MicrobialInward() {
               <option value="ACTIVE">Active</option>
               <option value="EXHAUSTED">Exhausted</option>
             </select>
-            <button style={{ ...S.btnO, marginLeft: "auto" }} onClick={load}>
-              ↻ Refresh
-            </button>
+            <Button variant="outline-gray" icon={RefreshCw} onClick={load} className="ml-auto">
+              Refresh
+            </Button>
           </div>
           {loading ? (
             <p
@@ -915,19 +890,19 @@ export default function MicrobialInward() {
             </div>
 
             <div style={{ display: "flex", gap: "10px" }}>
-              <button type="submit" style={S.btnP} disabled={saving}>
+              <Button type="submit" variant="primary" loading={saving}>
                 {saving ? "Saving…" : "✅ Save Inward Entry"}
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
-                style={S.btnO}
+                variant="outline-gray"
                 onClick={() => {
                   setForm(EMPTY_FORM);
                   setTab("list");
                 }}
               >
                 Cancel
-              </button>
+              </Button>
             </div>
           </form>
         </div>
@@ -954,12 +929,12 @@ export default function MicrobialInward() {
             Moisture, Shelf Life (days), Fill Status
           </p>
           <div style={{ display: "flex", gap: "10px", marginBottom: "16px" }}>
-            <button style={S.btnO} onClick={downloadTemplate}>
+            <Button variant="outline-gray" onClick={downloadTemplate}>
               ⬇ Download Template
-            </button>
-            <button style={S.btnP} onClick={() => fileRef.current?.click()}>
+            </Button>
+            <Button variant="primary" onClick={() => fileRef.current?.click()}>
               📂 Choose Excel File
-            </button>
+            </Button>
             <input
               ref={fileRef}
               type="file"
@@ -1023,15 +998,15 @@ export default function MicrobialInward() {
                   </p>
                 )}
               </div>
-              <button
-                style={S.btnP}
+              <Button
+                variant="success"
                 onClick={handleImport}
-                disabled={importLoading}
+                loading={importLoading}
               >
                 {importLoading
                   ? "Importing…"
                   : `✅ Import ${importRows.length} Record(s)`}
-              </button>
+              </Button>
             </>
           )}
           {importStatus && (

@@ -1,8 +1,11 @@
 import { useState, useEffect } from "react";
+import { X } from "lucide-react";
 import { packsApi, rmApi, gateApi } from "../../../../api/inventory.js";
+import { Button, IconButton } from "../../../../components/ui";
 import QRCodePreview from "./QRCodePreview.jsx";
 
 const todayStr = () => new Date().toISOString().split("T")[0];
+
 const BLANK_ITEM = { selectedRm: null, numberOfBags: "", packQty: "" };
 const BLANK_HDR  = { supplier: "", invoiceNo: "", receivedDate: todayStr() };
 
@@ -55,13 +58,13 @@ function ItemLine({ idx, item, rmList, onChange, onRemove, canRemove }) {
           Item {idx + 1}
         </span>
         {canRemove && (
-          <button
-            type="button"
+          <IconButton
+            icon={X}
+            variant="danger"
+            size="xs"
+            tooltip="Remove item"
             onClick={onRemove}
-            style={{ fontSize: "12px", color: "#ef4444", background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}
-          >
-            ✕ Remove
-          </button>
+          />
         )}
       </div>
 
@@ -180,7 +183,6 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Validate all item lines
     for (let i = 0; i < items.length; i++) {
       const it = items[i];
       if (!it.selectedRm) {
@@ -214,7 +216,6 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed }) {
       setResults(allResults);
       setItems([{ ...BLANK_ITEM }]);
       setHdr(BLANK_HDR);
-      // Mark the gate entry as approved so it leaves the "Incoming Gate Entries" panel
       if (linkedEntry?.inward_id) {
         try { await gateApi.updateInward(linkedEntry.inward_id, { status: "approved" }) } catch { /* ignore auth errors */ }
       }
@@ -248,13 +249,13 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed }) {
             {linkedEntry.invoice_no  && ` — ${linkedEntry.invoice_no}`}
             {linkedEntry.vehicle_no  && ` — Vehicle: ${linkedEntry.vehicle_no}`}
           </div>
-          <button
-            type="button"
+          <IconButton
+            icon={X}
+            variant="ghost"
+            size="sm"
+            tooltip="Unlink gate entry"
             onClick={() => { setLinkedEntry(null); setHdr(BLANK_HDR); }}
-            style={{ background: "none", border: "none", cursor: "pointer", color: "#15803d", fontWeight: 700, fontSize: "14px", flexShrink: 0 }}
-          >
-            ✕
-          </button>
+          />
         </div>
       )}
 
@@ -288,18 +289,11 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed }) {
               )}
             </div>
           ))}
-          <button
-            type="button"
-            onClick={() => setShowQR(true)}
-            style={{
-              marginTop: "8px", padding: "7px 16px",
-              background: "#1a3a6b", color: "#fff",
-              border: "none", borderRadius: "7px",
-              fontSize: "12px", fontWeight: 700, cursor: "pointer",
-            }}
-          >
-            📦 Show QR Labels
-          </button>
+          <div style={{ marginTop: "8px" }}>
+            <Button variant="primary" size="sm" onClick={() => setShowQR(true)}>
+              📦 Show QR Labels
+            </Button>
+          </div>
         </div>
       )}
 
@@ -365,37 +359,27 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed }) {
         </div>
 
         {/* + Add Item */}
-        <button
-          type="button"
+        <Button
+          variant="outline-gray"
+          fullWidth
+          className="border-dashed mb-3.5"
           onClick={addItem}
-          style={{
-            width: "100%", padding: "10px", background: "#f8fafc",
-            border: "1.5px dashed #94a3b8", borderRadius: "8px",
-            color: "#475569", fontSize: "13px", fontWeight: 600,
-            cursor: "pointer", marginBottom: "14px",
-          }}
-          onMouseEnter={e => { e.currentTarget.style.borderColor = "#3b82f6"; e.currentTarget.style.color = "#3b82f6"; }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor = "#94a3b8"; e.currentTarget.style.color = "#475569"; }}
         >
           + Add Item
-        </button>
+        </Button>
 
         {/* Submit */}
-        <button
+        <Button
           type="submit"
-          disabled={loading}
-          style={{
-            width: "100%", padding: "12px",
-            background: loading ? "#93c5fd" : "#2563eb",
-            color: "#fff", border: "none", borderRadius: "9px",
-            fontSize: "15px", fontWeight: 700,
-            cursor: loading ? "not-allowed" : "pointer",
-          }}
+          variant="primary"
+          size="lg"
+          fullWidth
+          loading={loading}
         >
           {loading
             ? "Generating…"
             : `🖨️ Generate Pack IDs${items.length > 1 ? ` (${items.length} items)` : ""}`}
-        </button>
+        </Button>
       </form>
     </div>
   );

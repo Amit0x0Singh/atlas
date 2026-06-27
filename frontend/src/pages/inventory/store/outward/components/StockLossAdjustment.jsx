@@ -1,6 +1,8 @@
-import { useState, useCallback } from 'react'
+﻿import { useState, useCallback } from 'react'
 import { outwardApi, packsApi } from '../../../../../api/inventory.js'
 import { useQrScanner } from '../../../../../hooks/useQrScanner.js'
+import { Button, IconButton } from '../../../../../components/ui'
+import { X } from 'lucide-react'
 
 
 const REASONS = [
@@ -23,7 +25,7 @@ export default function StockLossAdjustment() {
   const [error,      setError]      = useState('')
   const [success,    setSuccess]    = useState('')
 
-  // ── QR scanner ───────────────────────────────────────────────────────────────
+  // �"?�"? QR scanner �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
   const onScan = useCallback((raw) => {
     const id = raw.startsWith('PACK:') ? raw.slice(5) : raw
     scanner.stop()
@@ -31,7 +33,7 @@ export default function StockLossAdjustment() {
   }, [])
   const scanner = useQrScanner(onScan)
 
-  // ── Load pack by ID ───────────────────────────────────────────────────────────
+  // �"?�"? Load pack by ID �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
   const loadPack = async (packId) => {
     if (!packId) return
     setError(''); setSuccess(''); setPack(null); setLossQty(''); setReason(''); setCustomReason('')
@@ -56,7 +58,7 @@ export default function StockLossAdjustment() {
     }
   }
 
-  // ── Submit adjustment ─────────────────────────────────────────────────────────
+  // �"?�"? Submit adjustment �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
   const submit = async () => {
     const loss = parseFloat(lossQty)
     const finalReason = reason === 'Other' ? customReason.trim() : reason
@@ -92,7 +94,7 @@ export default function StockLossAdjustment() {
       {success && <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-4 text-sm">{success}</div>}
       {scanner.camError && <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded-lg mb-4 text-sm">{scanner.camError}</div>}
 
-      {/* ── Step 1: Scan bag ──────────────────────────────────────────────────── */}
+      {/* �"?�"? Step 1: Scan bag �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"? */}
       {!pack && (
         <div>
           <p className="text-sm text-gray-500 mb-5">
@@ -111,35 +113,35 @@ export default function StockLossAdjustment() {
             </div>
           </div>
 
-          <button
+          <Button
             onClick={scanner.active ? scanner.stop : scanner.start}
-            className={`w-full py-3 rounded-xl text-sm font-bold border-2 transition mb-4 ${
-              scanner.active
-                ? 'bg-red-50 border-red-300 text-red-600'
-                : 'bg-red-500 border-red-500 text-white hover:bg-red-600'
-            }`}>
-            {scanner.active ? '■  Stop Camera' : '⊡  Scan Bag QR'}
-          </button>
+            variant={scanner.active ? 'danger' : 'danger-solid'}
+            fullWidth
+            className="mb-4">
+            {scanner.active ? '�-�  Stop Camera' : '�S�  Scan Bag QR'}
+          </Button>
 
           <div className="flex gap-2">
             <input
               value={packInput}
               onChange={e => setPackInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && loadPack(packInput.trim())}
-              placeholder="Or enter pack ID manually…"
+              placeholder="Or enter pack ID manually�?�"
               className="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 text-sm font-mono outline-none focus:ring-2 focus:ring-red-400"
             />
-            <button
+            <Button
               onClick={() => loadPack(packInput.trim())}
               disabled={loading || !packInput.trim()}
-              className="bg-gray-700 text-white px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-gray-800 disabled:opacity-50">
-              {loading ? '…' : 'Load'}
-            </button>
+              loading={loading}
+              variant="secondary"
+              size="sm">
+              {loading ? '�?�' : 'Load'}
+            </Button>
           </div>
         </div>
       )}
 
-      {/* ── Step 2: Pack loaded — enter loss ─────────────────────────────────── */}
+      {/* �"?�"? Step 2: Pack loaded — enter loss �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"? */}
       {pack && (
         <div className="space-y-4">
 
@@ -154,7 +156,7 @@ export default function StockLossAdjustment() {
                   Lot: {pack.lotNo} · Bag #{pack.bagNo} · Supplier: {pack.supplier || '—'}
                 </div>
               </div>
-              <button onClick={reset} className="text-sm text-red-400 hover:text-red-700 font-bold">✕</button>
+              <IconButton icon={X} onClick={reset} variant="danger" size="sm" tooltip="Clear" />
             </div>
 
             {/* Available qty bar */}
@@ -211,19 +213,21 @@ export default function StockLossAdjustment() {
               <input
                 value={customReason}
                 onChange={e => setCustomReason(e.target.value)}
-                placeholder="Describe the reason…"
+                placeholder="Describe the reason�?�"
                 className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-red-400"
               />
             )}
           </div>
 
           {/* Submit */}
-          <button
+          <Button
             onClick={submit}
             disabled={submitting || !lossQty || !reason || (reason === 'Other' && !customReason.trim())}
-            className="w-full bg-red-500 text-white py-2.5 rounded-xl font-bold hover:bg-red-600 disabled:opacity-50 transition">
-            {submitting ? 'Adjusting…' : 'Record Stock Loss'}
-          </button>
+            loading={submitting}
+            variant="danger-solid"
+            fullWidth>
+            {submitting ? 'Adjusting�?�' : 'Record Stock Loss'}
+          </Button>
 
         </div>
       )}

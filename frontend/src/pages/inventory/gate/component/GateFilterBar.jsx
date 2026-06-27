@@ -1,3 +1,6 @@
+import { Button, IconButton } from "../../../../components/ui";
+import { X } from "lucide-react";
+
 const INPUT = {
   padding: "8px 12px",
   border: "1px solid #e2e8f0",
@@ -160,23 +163,9 @@ export default function GateFilterBar({ tab, filters, onChange, onClear, total }
 
         {/* Clear button */}
         {active && (
-          <button
-            onClick={onClear}
-            style={{
-              padding: "7px 14px",
-              background: "#fef2f2",
-              color: "#dc2626",
-              border: "1px solid #fecaca",
-              borderRadius: "7px",
-              fontSize: "12px",
-              fontWeight: 700,
-              cursor: "pointer",
-              whiteSpace: "nowrap",
-              flexShrink: 0,
-            }}
-          >
-            ✕ Clear Filters
-          </button>
+          <Button variant="danger" size="sm" onClick={onClear}>
+            Clear Filters
+          </Button>
         )}
       </div>
 
@@ -230,22 +219,7 @@ function Chip({ label, onRemove }) {
       }}
     >
       {label}
-      <button
-        onClick={onRemove}
-        style={{
-          background: "none",
-          border: "none",
-          cursor: "pointer",
-          color: "#93c5fd",
-          fontSize: "12px",
-          padding: "0",
-          lineHeight: 1,
-          display: "flex",
-          alignItems: "center",
-        }}
-      >
-        ✕
-      </button>
+      <IconButton icon={X} size="xs" onClick={onRemove} className="text-blue-300 hover:text-blue-500" />
     </span>
   );
 }

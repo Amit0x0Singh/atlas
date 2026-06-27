@@ -1,4 +1,6 @@
-import Pagination from '../../../../components/erp/Pagination.jsx'
+import { Pencil, Trash2 } from 'lucide-react'
+import { IconButton } from '../../../../components/ui'
+import Pagination from '../../../../components/pagination/Pagination.jsx'
 
 export default function EquipmentTable({ items, page, limit, onEdit, onDelete, onPageChange, onLimitChange }) {
   const paginated = items.slice((page - 1) * limit, page * limit)
@@ -24,9 +26,9 @@ export default function EquipmentTable({ items, page, limit, onEdit, onDelete, o
             <tr key={item.equipId} className="border-b border-gray-100 hover:bg-gray-50">
               <td className="px-4 py-3 font-medium">{item.equipName}</td>
               <td className="px-4 py-3 text-gray-500">{item.plant || '—'}</td>
-              <td className="px-4 py-3 flex gap-2">
-                <button onClick={() => onEdit(item)} className="text-blue-600 hover:text-blue-800 px-2 py-1 rounded hover:bg-blue-50">Edit</button>
-                <button onClick={() => onDelete(item.equipId, item.equipName)} className="text-red-600 hover:text-red-800 px-2 py-1 rounded hover:bg-red-50">Delete</button>
+              <td className="px-4 py-3 flex gap-1">
+                <IconButton icon={Pencil} tooltip="Edit" onClick={() => onEdit(item)} />
+                <IconButton icon={Trash2} variant="danger" tooltip="Delete" onClick={() => onDelete(item.equipId, item.equipName)} />
               </td>
             </tr>
           ))}

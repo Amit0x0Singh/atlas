@@ -1,6 +1,8 @@
-import { useState, useCallback } from 'react'
+﻿import { useState, useCallback } from 'react'
 import { containerApi, outwardApi, packsApi } from '../../../../../api/inventory.js'
 import { useQrScanner } from '../../../../../hooks/useQrScanner.js'
+import { Button, IconButton } from '../../../../../components/ui'
+import { X } from 'lucide-react'
 
 export default function WarehouseToContainer() {
   const [selectedPack, setPack]      = useState(null)   // the scanned/chosen bag
@@ -13,7 +15,7 @@ export default function WarehouseToContainer() {
   const [error,        setError]     = useState('')
   const [success,      setSuccess]   = useState('')
 
-  // ── QR scanner for the bag ──────────────────────────────────────────────────
+  // �"?�"? QR scanner for the bag �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
   const onBagScan = useCallback((raw) => {
     const id = raw.startsWith('PACK:') ? raw.slice(5) : raw
     bagScanner.stop()
@@ -21,7 +23,7 @@ export default function WarehouseToContainer() {
   }, [])
   const bagScanner = useQrScanner(onBagScan)
 
-  // ── Load bag → auto-detect container ─────────────────────────────────────────
+  // �"?�"? Load bag → auto-detect container �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
   const loadBag = async (packId) => {
     if (!packId) return
     setError(''); setSuccess(''); setPack(null); setContainer(null); setAvailPacks([]); setQty('')
@@ -66,7 +68,7 @@ export default function WarehouseToContainer() {
     }
   }
 
-  // ── Submit fill ───────────────────────────────────────────────────────────────
+  // �"?�"? Submit fill �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
   const submit = async () => {
     const q = parseFloat(qty)
     if (!q || q <= 0) { setError('Enter a valid quantity'); return }
@@ -97,7 +99,7 @@ export default function WarehouseToContainer() {
       {success && <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-4 text-sm">{success}</div>}
       {bagScanner.camError && <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded-lg mb-4 text-sm">{bagScanner.camError}</div>}
 
-      {/* ── Step 1: Scan bag — shown when no bag selected yet ─────────────────── */}
+      {/* �"?�"? Step 1: Scan bag — shown when no bag selected yet �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"? */}
       {!selectedPack && (
         <div>
           <p className="text-sm text-gray-500 mb-5">
@@ -117,15 +119,13 @@ export default function WarehouseToContainer() {
           </div>
 
           {/* Scan button */}
-          <button
+          <Button
             onClick={bagScanner.active ? bagScanner.stop : bagScanner.start}
-            className={`w-full py-3 rounded-xl text-sm font-bold border-2 transition mb-4 ${
-              bagScanner.active
-                ? 'bg-red-50 border-red-300 text-red-600'
-                : 'bg-orange-500 border-orange-500 text-white hover:bg-orange-600'
-            }`}>
-            {bagScanner.active ? '■  Stop Camera' : '⊡  Scan Bag QR'}
-          </button>
+            variant={bagScanner.active ? 'danger' : 'warning'}
+            fullWidth
+            className="mb-4">
+            {bagScanner.active ? '�-�  Stop Camera' : '�S�  Scan Bag QR'}
+          </Button>
 
           {/* Manual entry */}
           <div className="flex gap-2">
@@ -133,20 +133,22 @@ export default function WarehouseToContainer() {
               value={packInput}
               onChange={e => setPackInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && loadBag(packInput.trim())}
-              placeholder="Or enter pack ID manually…"
+              placeholder="Or enter pack ID manually�?�"
               className="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 text-sm font-mono outline-none focus:ring-2 focus:ring-orange-400"
             />
-            <button
+            <Button
               onClick={() => loadBag(packInput.trim())}
               disabled={loading || !packInput.trim()}
-              className="bg-gray-700 text-white px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-gray-800 disabled:opacity-50">
-              {loading ? '…' : 'Load'}
-            </button>
+              loading={loading}
+              variant="secondary"
+              size="sm">
+              {loading ? '�?�' : 'Load'}
+            </Button>
           </div>
         </div>
       )}
 
-      {/* ── Step 2: Bag + container auto-detected ─────────────────────────────── */}
+      {/* �"?�"? Step 2: Bag + container auto-detected �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"? */}
       {selectedPack && container && (
         <div className="space-y-4">
 
@@ -163,10 +165,7 @@ export default function WarehouseToContainer() {
                   <span className="text-xs font-mono text-orange-400 ml-1.5">({container.itemCode})</span>
                 </div>
               </div>
-              <button onClick={reset}
-                className="text-xs text-orange-500 hover:text-orange-700 border border-orange-200 px-2 py-1 rounded-lg">
-                Reset
-              </button>
+              <Button onClick={reset} variant="outline-gray" size="xs">Reset</Button>
             </div>
             <div className="grid grid-cols-3 gap-2 text-center">
               {[
@@ -192,7 +191,7 @@ export default function WarehouseToContainer() {
                 Available: <strong>{selectedPack.remainingQty} {container.uom}</strong>
               </div>
             </div>
-            <button onClick={reset} className="text-sm text-blue-400 hover:text-blue-700 font-bold ml-4">✕</button>
+            <IconButton icon={X} onClick={reset} variant="ghost" size="sm" tooltip="Clear" className="ml-4" />
           </div>
 
           {/* Other available bags (optional swap) */}
@@ -234,10 +233,9 @@ export default function WarehouseToContainer() {
               value={qty} onChange={e => setQty(e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-orange-400 mb-3"
             />
-            <button onClick={submit} disabled={submitting || !qty}
-              className="w-full bg-orange-500 text-white py-2.5 rounded-lg font-bold hover:bg-orange-600 disabled:opacity-50 transition">
-              {submitting ? 'Filling…' : 'Fill Container'}
-            </button>
+            <Button onClick={submit} disabled={submitting || !qty} loading={submitting} variant="warning" fullWidth>
+              {submitting ? 'Filling�?�' : 'Fill Container'}
+            </Button>
           </div>
 
         </div>

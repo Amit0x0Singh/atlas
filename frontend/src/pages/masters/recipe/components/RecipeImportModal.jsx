@@ -1,5 +1,7 @@
 import { useRef, useState } from 'react'
+import { X, Download, XCircle } from 'lucide-react'
 import { importApi } from '../../../../api/inventory.js'
+import { Button, IconButton } from '../../../../components/ui'
 
 export default function RecipeImportModal({ onClose, onDone }) {
   const fileRef = useRef(null)
@@ -25,7 +27,7 @@ export default function RecipeImportModal({ onClose, onDone }) {
       <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold text-gray-900">📥 Import Recipe from Excel</h2>
-          <button onClick={handleClose} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
+          <IconButton icon={X} tooltip="Close" onClick={handleClose} />
         </div>
 
         <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 mb-4 text-sm text-blue-800">
@@ -72,13 +74,10 @@ export default function RecipeImportModal({ onClose, onDone }) {
         )}
 
         <div className="flex gap-3 mt-4">
-          <button onClick={handleImport} disabled={!importFile || importing}
-            className="flex-1 bg-green-600 text-white py-2.5 rounded-lg hover:bg-green-700 font-semibold disabled:opacity-50">
-            {importing ? 'Importing...' : '📥 Import Now'}
-          </button>
-          <button onClick={handleClose} className="flex-1 border border-gray-300 py-2.5 rounded-lg hover:bg-gray-50">
-            Cancel
-          </button>
+          <Button variant="success" icon={Download} onClick={handleImport} disabled={!importFile || importing} loading={importing} fullWidth>
+            {importing ? 'Importing...' : 'Import Now'}
+          </Button>
+          <Button variant="secondary" icon={XCircle} onClick={handleClose} fullWidth>Cancel</Button>
         </div>
       </div>
     </div>

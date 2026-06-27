@@ -1,3 +1,6 @@
+import { IconButton } from "../../../../components/ui";
+import { X } from "lucide-react";
+
 const STATUS_STYLE = {
   pending:  { bg: "#fef3c7", color: "#92400e", border: "#fde68a" },
   approved: { bg: "#f0fdf4", color: "#15803d", border: "#bbf7d0" },
@@ -59,24 +62,7 @@ export default function InwardDetailPanel({ detail, onClose }) {
             {supplierName}
           </p>
         </div>
-        <button
-          onClick={onClose}
-          style={{
-            background: "#f1f5f9",
-            border: "none",
-            cursor: "pointer",
-            width: "32px",
-            height: "32px",
-            borderRadius: "8px",
-            fontSize: "16px",
-            color: "#64748b",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          ✕
-        </button>
+        <IconButton icon={X} tooltip="Close" onClick={onClose} />
       </div>
 
       <div

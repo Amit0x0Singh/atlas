@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
+import { RefreshCw } from 'lucide-react'
 import { packingMaterialApi } from '../../../../api/masters.js'
-import BackButton    from '../../../../components/erp/BackButton.jsx'
+import { Button, BackButton } from '../../../../components/ui'
 import CategoryList  from '../components/CategoryList.jsx'
 import SubTypeGrid   from '../components/SubTypeGrid.jsx'
 import ItemList      from '../components/ItemList.jsx'
@@ -110,7 +111,7 @@ export default function PackingMaster() {
       {loadErr && (
         <div className="mx-6 mt-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm flex items-center gap-3">
           <span>⚠️ {loadErr}</span>
-          <button onClick={load} className="ml-auto underline text-xs shrink-0">Retry</button>
+          <Button variant="ghost" icon={RefreshCw} size="xs" onClick={load} className="ml-auto shrink-0">Retry</Button>
         </div>
       )}
 

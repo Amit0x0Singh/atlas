@@ -1,3 +1,6 @@
+import { Download, Wrench } from 'lucide-react'
+import { Button } from '../../../../components/ui'
+
 export default function ProductSidebar({ productList, loading, selectedProduct, prodSearch, onSearchChange, onSelectProduct, onImport, onReconcile }) {
   const filtered = productList.filter(p =>
     !prodSearch ||
@@ -41,14 +44,8 @@ export default function ProductSidebar({ productList, loading, selectedProduct, 
       </div>
 
       <div className="px-3 py-3 border-t border-gray-100 space-y-2">
-        <button onClick={onImport}
-          className="w-full bg-indigo-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-indigo-700 font-medium">
-          📥 Import from Excel
-        </button>
-        <button onClick={onReconcile}
-          className="w-full bg-amber-500 text-white text-sm px-3 py-2 rounded-lg hover:bg-amber-600 font-medium">
-          🔗 Fix RM Mapping
-        </button>
+        <Button variant="purple" icon={Download} onClick={onImport} fullWidth size="sm">Import from Excel</Button>
+        <Button variant="warning" icon={Wrench} onClick={onReconcile} fullWidth size="sm">Fix RM Mapping</Button>
         <p className="text-xs text-gray-400 text-center leading-tight">
           Reconcile recipe RMs that don't match RM Master
         </p>

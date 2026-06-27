@@ -1,5 +1,6 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { outwardApi } from '../../../../../api/inventory.js'
+import { Button } from '../../../../../components/ui'
 
 const WAREHOUSES = ['Main Store', 'Cold Store', 'RM Store', 'FG Store', 'Quarantine Store']
 
@@ -62,10 +63,9 @@ export default function WarehouseToWarehouse() {
               placeholder="e.g. AZO-AZOS-2026-001-001"
               className="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 text-sm font-mono outline-none focus:ring-2 focus:ring-blue-500"
             />
-            <button onClick={lookupPack} disabled={loading}
-              className="bg-gray-700 text-white px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-gray-800 disabled:opacity-50">
-              {loading ? '…' : 'Lookup'}
-            </button>
+            <Button onClick={lookupPack} disabled={loading} loading={loading} variant="secondary" size="sm">
+              {loading ? '�?�' : 'Lookup'}
+            </Button>
           </div>
           {packInfo && (
             <div className="mt-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-sm">
@@ -113,10 +113,9 @@ export default function WarehouseToWarehouse() {
           />
         </div>
 
-        <button onClick={submit} disabled={submitting || !packId.trim() || !to}
-          className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 disabled:opacity-50">
-          {submitting ? 'Recording…' : 'Record Warehouse Transfer'}
-        </button>
+        <Button onClick={submit} disabled={submitting || !packId.trim() || !to} loading={submitting} variant="primary" fullWidth>
+          {submitting ? 'Recording�?�' : 'Record Warehouse Transfer'}
+        </Button>
       </div>
     </div>
   )

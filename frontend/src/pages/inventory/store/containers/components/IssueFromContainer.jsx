@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import jsQR from 'jsqr'
 import { containerApi } from '../../../../../api/inventory.js'
 import { indentApi } from '../../../../../api/production.js'
+import { Button } from '../../../../../components/ui'
 
 export default function IssueFromContainer({ preselected, onDone }) {
   const [container, setContainer]   = useState(preselected || null)
@@ -127,14 +128,21 @@ export default function IssueFromContainer({ preselected, onDone }) {
               placeholder="e.g. DRUM-AZOS-001"
               className="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 text-sm font-mono outline-none focus:ring-2 focus:ring-green-500"
             />
-            <button onClick={() => loadContainer(scanInput)} disabled={loadingCont || !scanInput.trim()}
-              className="bg-green-600 text-white px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-green-700 disabled:opacity-50">
-              {loadingCont ? '…' : 'Load'}
-            </button>
-            <button onClick={cameraOn ? stopCamera : startCamera}
-              className={`px-4 py-2.5 rounded-lg text-sm font-semibold border ${cameraOn ? 'bg-red-50 border-red-300 text-red-600' : 'border-gray-300 hover:bg-gray-50'}`}>
+            <Button
+              variant="success"
+              loading={loadingCont}
+              disabled={!scanInput.trim()}
+              onClick={() => loadContainer(scanInput)}
+            >
+              Load
+            </Button>
+            <Button
+              variant={cameraOn ? "danger" : "outline-gray"}
+              size="sm"
+              onClick={cameraOn ? stopCamera : startCamera}
+            >
               {cameraOn ? 'Stop Cam' : 'Scan QR'}
-            </button>
+            </Button>
           </div>
 
           {cameraOn && (
@@ -163,8 +171,13 @@ export default function IssueFromContainer({ preselected, onDone }) {
                   <span className="text-green-500 text-xs font-mono ml-1">({container.itemCode})</span>
                 </div>
               </div>
-              <button onClick={() => { setContainer(null); setError(''); setSuccess('') }}
-                className="text-xs text-green-600 hover:underline">Change</button>
+              <Button
+                variant="ghost"
+                size="xs"
+                onClick={() => { setContainer(null); setError(''); setSuccess('') }}
+              >
+                Change
+              </Button>
             </div>
             <div className="grid grid-cols-2 gap-3 mt-3 text-center text-sm">
               <div className="bg-white rounded-lg py-2">
@@ -218,10 +231,15 @@ export default function IssueFromContainer({ preselected, onDone }) {
                 />
               </div>
 
-              <button onClick={submit} disabled={submitting || !qty}
-                className="w-full bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700 disabled:opacity-50">
-                {submitting ? 'Issuing…' : 'Issue from Container'}
-              </button>
+              <Button
+                variant="success"
+                fullWidth
+                loading={submitting}
+                disabled={!qty}
+                onClick={submit}
+              >
+                Issue from Container
+              </Button>
             </div>
           )}
         </>

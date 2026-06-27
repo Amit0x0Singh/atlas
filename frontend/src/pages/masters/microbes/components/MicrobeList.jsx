@@ -1,14 +1,14 @@
-import Pagination from '../../../../components/erp/Pagination.jsx'
+import { Pencil, Trash2 } from 'lucide-react'
+import { IconButton } from '../../../../components/ui'
+import Pagination from '../../../../components/pagination/Pagination.jsx'
 
 const S = {
-  card:      { background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '20px', marginBottom: '20px' },
-  input:     { width: '100%', padding: '9px 12px', border: '1.5px solid #e2e8f0', borderRadius: '7px', fontSize: '13px', boxSizing: 'border-box', outline: 'none' },
-  btnDanger: { padding: '6px 12px', background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: '6px', fontWeight: 600, fontSize: '12px', cursor: 'pointer' },
-  btnEdit:   { padding: '6px 12px', background: '#eff6ff', color: '#2563eb', border: 'none', borderRadius: '6px', fontWeight: 600, fontSize: '12px', cursor: 'pointer', marginRight: '6px' },
-  table:     { width: '100%', borderCollapse: 'collapse', fontSize: '13px' },
-  th:        { textAlign: 'left', padding: '10px 14px', fontSize: '11px', fontWeight: 700, color: '#64748b', letterSpacing: '0.06em', borderBottom: '2px solid #e2e8f0', background: '#f8fafc' },
-  td:        { padding: '11px 14px', borderBottom: '1px solid #f1f5f9', color: '#0f172a', verticalAlign: 'middle' },
-  badge:     { display: 'inline-block', padding: '2px 10px', borderRadius: '99px', fontSize: '11px', fontWeight: 700, background: '#eff6ff', color: '#2563eb' },
+  card:  { background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '20px', marginBottom: '20px' },
+  input: { width: '100%', padding: '9px 12px', border: '1.5px solid #e2e8f0', borderRadius: '7px', fontSize: '13px', boxSizing: 'border-box', outline: 'none' },
+  table: { width: '100%', borderCollapse: 'collapse', fontSize: '13px' },
+  th:    { textAlign: 'left', padding: '10px 14px', fontSize: '11px', fontWeight: 700, color: '#64748b', letterSpacing: '0.06em', borderBottom: '2px solid #e2e8f0', background: '#f8fafc' },
+  td:    { padding: '11px 14px', borderBottom: '1px solid #f1f5f9', color: '#0f172a', verticalAlign: 'middle' },
+  badge: { display: 'inline-block', padding: '2px 10px', borderRadius: '99px', fontSize: '11px', fontWeight: 700, background: '#eff6ff', color: '#2563eb' },
 }
 
 export default function MicrobeList({ paginated, total, loading, search, page, limit, onSearch, onEdit, onDelete, onPageChange, onLimitChange }) {
@@ -52,8 +52,10 @@ export default function MicrobeList({ paginated, total, loading, search, page, l
                   {new Date(m.created_at).toLocaleDateString('en-IN')}
                 </td>
                 <td style={S.td}>
-                  <button style={S.btnEdit} onClick={() => onEdit(m)}>✏️ Edit</button>
-                  <button style={S.btnDanger} onClick={() => onDelete(m.microbe_id, m.microbe_name)}>🗑 Delete</button>
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    <IconButton icon={Pencil} tooltip="Edit" onClick={() => onEdit(m)} />
+                    <IconButton icon={Trash2} variant="danger" tooltip="Delete" onClick={() => onDelete(m.microbe_id, m.microbe_name)} />
+                  </div>
                 </td>
               </tr>
             ))}

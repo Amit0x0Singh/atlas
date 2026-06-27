@@ -1,6 +1,8 @@
-import { useState, useEffect, useMemo } from 'react'
+﻿import { useState, useEffect, useMemo } from 'react'
 import { packsApi, inwardApi } from '../../../../../api/inventory.js'
-import Pagination from '../../../../../components/erp/Pagination.jsx'
+import Pagination from '../../../../../components/pagination/Pagination.jsx'
+import { Button } from '../../../../../components/ui'
+import { RefreshCw } from 'lucide-react'
 
 function groupPacks(packs) {
   const map = new Map()
@@ -111,14 +113,14 @@ export default function InwardHistory() {
 
   return (
     <div className="p-6">
-      {/* ── Filters ─────────────────────────────────────────────────────────── */}
+      {/* �"?�"? Filters �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"? */}
       <div className="bg-white border border-gray-200 rounded-xl p-4 mb-4">
         <div className="flex items-center gap-2 flex-wrap">
           {/* Search */}
           <input
             value={searchText}
             onChange={e => setSearchText(e.target.value)}
-            placeholder="Search item, code, lot, invoice…"
+            placeholder="Search item, code, lot, invoice�?�"
             className="flex-1 min-w-48 border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
           />
 
@@ -144,20 +146,14 @@ export default function InwardHistory() {
           </div>
 
           {hasFilters && (
-            <button onClick={clearFilters}
-              className="text-sm text-red-500 hover:text-red-700 px-3 py-2 border border-red-200 rounded-lg hover:bg-red-50 whitespace-nowrap">
-              × Clear
-            </button>
+            <Button variant="danger" size="sm" onClick={clearFilters}>Clear</Button>
           )}
 
-          <button onClick={load}
-            className="text-sm border border-gray-300 px-3 py-2 rounded-lg hover:bg-gray-50 whitespace-nowrap">
-            ↻ Refresh
-          </button>
+          <Button variant="outline-gray" size="sm" icon={RefreshCw} onClick={load}>Refresh</Button>
         </div>
       </div>
 
-      {/* ── Table ───────────────────────────────────────────────────────────── */}
+      {/* �"?�"? Table �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"? */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         {/* Table toolbar */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
@@ -173,19 +169,13 @@ export default function InwardHistory() {
             )}
           </div>
           <div className="flex gap-2">
-            <button onClick={expandAll}
-              className="text-xs text-blue-600 px-2 py-1 border border-blue-200 rounded-lg hover:bg-blue-50">
-              Expand all
-            </button>
-            <button onClick={collapseAll}
-              className="text-xs text-gray-500 px-2 py-1 border border-gray-200 rounded-lg hover:bg-gray-50">
-              Collapse all
-            </button>
+            <Button variant="outline" size="xs" onClick={expandAll}>Expand all</Button>
+            <Button variant="outline-gray" size="xs" onClick={collapseAll}>Collapse all</Button>
           </div>
         </div>
 
         {loading ? (
-          <p className="text-gray-400 text-center py-14">Loading inward history…</p>
+          <p className="text-gray-400 text-center py-14">Loading inward history�?�</p>
         ) : (
           <>
           <div className="overflow-x-auto">
@@ -218,7 +208,7 @@ export default function InwardHistory() {
 
                     return (
                       <>
-                        {/* ── Main group row ──────────────────────────── */}
+                        {/* �"?�"? Main group row �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"? */}
                         <tr key={g.key}
                           onClick={() => toggle(g.key)}
                           className={`border-t border-gray-200 cursor-pointer select-none transition-colors ${
@@ -226,7 +216,7 @@ export default function InwardHistory() {
                           }`}>
                           {/* Toggle */}
                           <td className="px-3 py-3 text-center text-gray-400 text-xs">
-                            {isOpen ? '▼' : '▶'}
+                            {isOpen ? '�-�' : '�-�'}
                           </td>
 
                           {/* Item */}
@@ -287,12 +277,12 @@ export default function InwardHistory() {
                               rel="noreferrer"
                               className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-lg transition whitespace-nowrap"
                             >
-                              🖨️ Print All ({g.bags.length})
+                              �Y-�️ Print All ({g.bags.length})
                             </a>
                           </td>
                         </tr>
 
-                        {/* ── Bag sub-rows ─────────────────────────────── */}
+                        {/* �"?�"? Bag sub-rows �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"? */}
                         {isOpen && g.bags.map(b => (
                           <tr key={b.packId} className="bg-blue-50/30 border-t border-blue-100/60">
                             <td colSpan={9} className="px-0 py-0">
@@ -312,7 +302,7 @@ export default function InwardHistory() {
                                 </span>
                                 {b.warehouse ? (
                                   <span className="text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded w-36 text-center shrink-0 truncate">
-                                    🏭 {b.warehouse}
+                                    �Y�� {b.warehouse}
                                   </span>
                                 ) : (
                                   <span className="text-xs text-gray-300 w-36 text-center shrink-0">—</span>
@@ -323,7 +313,7 @@ export default function InwardHistory() {
                                   rel="noreferrer"
                                   className="text-xs text-blue-600 hover:text-blue-800 font-medium ml-4 shrink-0 whitespace-nowrap"
                                 >
-                                  🖨️ Label
+                                  �Y-�️ Label
                                 </a>
                               </div>
                             </td>

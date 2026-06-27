@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { outwardApi } from '../../../../../api/inventory.js'
 import { indentApi } from '../../../../../api/production.js'
+import { Button } from '../../../../../components/ui'
 
 export default function WarehouseToPlant() {
   const [rmCode, setRmCode]         = useState('')
@@ -85,10 +86,9 @@ export default function WarehouseToPlant() {
               placeholder="e.g. AZOS"
               className="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 text-sm font-mono outline-none focus:ring-2 focus:ring-blue-500"
             />
-            <button onClick={searchPacks} disabled={loadingPacks || !rmCode.trim()}
-              className="bg-blue-600 text-white px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-50">
+            <Button onClick={searchPacks} disabled={loadingPacks || !rmCode.trim()} loading={loadingPacks} variant="primary" size="sm">
               {loadingPacks ? '…' : 'Search'}
-            </button>
+            </Button>
           </div>
 
           {packs.length > 0 && (
@@ -180,10 +180,9 @@ export default function WarehouseToPlant() {
             </div>
           )}
 
-          <button onClick={submit} disabled={submitting || !selectedPack || !qty}
-            className="w-full mt-4 bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 disabled:opacity-50">
+          <Button onClick={submit} disabled={submitting || !selectedPack || !qty} loading={submitting} variant="primary" fullWidth className="mt-4">
             {submitting ? 'Issuing…' : 'Issue to Plant'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

@@ -1,3 +1,5 @@
+import { ChevronLeft, Plus, Pencil, X } from 'lucide-react'
+import { Button, IconButton } from '../../../../components/ui'
 import { SUB_TYPES, getChips, Chip } from './packingConstants.jsx'
 
 export default function ItemList({ catMeta, selSub, subItems, groupedByName, onBack, onBackToCategories, onAdd, onEdit, onDelete }) {
@@ -6,9 +8,9 @@ export default function ItemList({ catMeta, selSub, subItems, groupedByName, onB
   return (
     <div className="px-6 py-5">
       <nav className="flex items-center gap-2 text-xs text-gray-400 mb-5">
-        <button onClick={onBackToCategories} className="hover:text-gray-600 font-medium">Packing Materials</button>
+        <Button variant="ghost" size="xs" onClick={onBackToCategories}>Packing Materials</Button>
         <span>›</span>
-        <button onClick={onBack} className={`hover:text-gray-600 font-medium ${catMeta.cls.text}`}>{catMeta.label}</button>
+        <Button variant="ghost" size="xs" onClick={onBack} className={catMeta.cls.text}>{catMeta.label}</Button>
         <span>›</span>
         <span className="font-semibold text-gray-700">{selSub}</span>
       </nav>
@@ -25,12 +27,8 @@ export default function ItemList({ catMeta, selSub, subItems, groupedByName, onB
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={onBack} className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 text-sm font-medium">
-            ← Back
-          </button>
-          <button onClick={onAdd} className={`${catMeta.cls.header} text-white px-4 py-2 rounded-xl text-sm font-semibold hover:opacity-90 shadow-sm`}>
-            + Add Item
-          </button>
+          <Button variant="outline-gray" icon={ChevronLeft} onClick={onBack} size="sm">Back</Button>
+          <Button variant="purple" icon={Plus} onClick={onAdd} size="sm">Add Item</Button>
         </div>
       </div>
 
@@ -38,7 +36,7 @@ export default function ItemList({ catMeta, selSub, subItems, groupedByName, onB
         <div className="text-center py-20 text-gray-400">
           <div className="text-5xl mb-3">{subIcon}</div>
           <p className="font-semibold text-gray-500">No items yet</p>
-          <button onClick={onAdd} className={`mt-3 ${catMeta.cls.text} underline text-sm`}>Add the first item</button>
+          <Button variant="ghost" onClick={onAdd} className="mt-3">Add the first item</Button>
         </div>
       ) : (
         <div className="space-y-4">
@@ -73,12 +71,8 @@ export default function ItemList({ catMeta, selSub, subItems, groupedByName, onB
                     <span className="text-xs text-gray-400 shrink-0 font-medium">{item.uom || 'Nos'}</span>
 
                     <div className="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => onEdit(item)} className="text-blue-600 hover:text-blue-800 px-2.5 py-1 rounded-lg hover:bg-blue-50 text-xs font-semibold">
-                        Edit
-                      </button>
-                      <button onClick={() => onDelete(item.id, item.itemName)} className="text-red-400 hover:text-red-600 px-2 py-1 rounded-lg hover:bg-red-50 text-sm font-bold leading-none">
-                        ×
-                      </button>
+                      <IconButton icon={Pencil} tooltip="Edit" onClick={() => onEdit(item)} />
+                      <IconButton icon={X} variant="danger" tooltip="Delete" onClick={() => onDelete(item.id, item.itemName)} />
                     </div>
                   </div>
                 ))}

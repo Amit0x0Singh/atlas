@@ -2,8 +2,9 @@
  * ERP Login Page — full password + PIN login tab
  */
 import { useState } from 'react'
-import { useAuth } from '../../components/erp/AuthContext.jsx'
-import PINLogin from '../../components/erp/PINLogin.jsx'
+import { useAuth } from '../../components/auth/AuthContext.jsx'
+import PINLogin from '../../components/auth/PINLogin.jsx'
+import { Button } from '../../components/ui'
 
 export default function Login({ onLogin }) {
   const { login, loading } = useAuth()
@@ -80,17 +81,14 @@ export default function Login({ onLogin }) {
               />
             </div>
             {error && <div style={{ marginBottom: '14px', padding: '10px 12px', background: '#fef2f2', borderRadius: '7px', fontSize: '13px', color: '#dc2626' }}>{error}</div>}
-            <button
+            <Button
               type="submit"
-              disabled={loading}
-              style={{
-                width: '100%', padding: '13px', background: loading ? '#94a3b8' : '#1e3a5f', color: '#fff',
-                border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer',
-                letterSpacing: '0.02em', transition: 'background 0.15s',
-              }}
+              variant="primary"
+              loading={loading}
+              fullWidth
             >
               {loading ? 'Signing in…' : 'Sign In'}
-            </button>
+            </Button>
           </form>
         ) : (
           <PINLogin onSuccess={onLogin} />

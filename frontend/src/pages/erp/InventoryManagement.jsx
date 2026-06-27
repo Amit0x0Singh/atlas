@@ -4,7 +4,7 @@
 // import { useState, useEffect, useCallback } from 'react'
 // import { inventoryApi, gateApi } from '../../api/inventory.js'
 // import { erpItemsApi, erpReasonCodesApi, erpPlantsApi, erpContainersApi } from '../../api/masters.js'
-// import { useAuth } from '../../components/erp/AuthContext.jsx'
+// import { useAuth } from '../../components/auth/AuthContext.jsx'
 
 // const TABS = ['Stock Summary', 'Adjustments', 'Transfers', 'Decanting', 'FIFO Check']
 

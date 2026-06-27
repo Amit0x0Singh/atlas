@@ -1,3 +1,6 @@
+import { Save, X } from 'lucide-react'
+import { Button } from '../../../../components/ui'
+
 export default function RmForm({ editing, form, onChange, saving, msg, onSave, onClose }) {
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -62,13 +65,10 @@ export default function RmForm({ editing, form, onChange, saving, msg, onSave, o
         </div>
 
         <div className="flex gap-3 mt-5">
-          <button onClick={onSave} disabled={saving}
-            className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50">
+          <Button variant="primary" icon={Save} onClick={onSave} disabled={saving} loading={saving} fullWidth>
             {saving ? 'Saving...' : 'Save Item'}
-          </button>
-          <button onClick={onClose} className="flex-1 border border-gray-300 py-2 rounded-lg hover:bg-gray-50">
-            Cancel
-          </button>
+          </Button>
+          <Button variant="secondary" icon={X} onClick={onClose} fullWidth>Cancel</Button>
         </div>
       </div>
     </div>

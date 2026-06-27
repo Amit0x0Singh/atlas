@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { bulkApi } from '../../../../../api/inventory.js'
 import { indentApi } from '../../../../../api/production.js'
 import jsQR from 'jsqr'
+import { Button } from '../../../../../components/ui'
 
 export default function BulkIssuePanel({ onDone }) {
   const [phase, setPhase]               = useState('idle')
@@ -125,8 +126,8 @@ export default function BulkIssuePanel({ onDone }) {
           {selectedIndent && <p>Against indent: <strong>{selectedIndent.productName} / {selectedIndent.batchNo}</strong></p>}
         </div>
         <div className="flex gap-3 mt-5">
-          <button onClick={reset} className="flex-1 bg-green-600 text-white py-2.5 rounded-lg hover:bg-green-700 font-semibold">Issue Again</button>
-          <button onClick={onDone} className="flex-1 border border-gray-300 py-2.5 rounded-lg hover:bg-gray-50">Done</button>
+          <Button onClick={reset} variant="success" fullWidth>Issue Again</Button>
+          <Button onClick={onDone} variant="outline-gray" fullWidth>Done</Button>
         </div>
       </div>
     </div>
@@ -149,15 +150,13 @@ export default function BulkIssuePanel({ onDone }) {
                 </div>
                 <p className="absolute bottom-3 w-full text-center text-white text-xs">Scan LOCATION QR (green label on rack)</p>
               </div>
-              <button onClick={() => { stopCamera(); setPhase('idle') }}
-                className="mt-3 border border-gray-300 px-4 py-2 rounded-lg text-sm hover:bg-gray-50">⏹ Cancel</button>
+              <Button onClick={() => { stopCamera(); setPhase('idle') }} variant="outline-gray" size="sm" className="mt-3">⏹ Cancel</Button>
             </div>
           ) : (
             <>
-              <button onClick={startCamera}
-                className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 font-semibold mb-4">
+              <Button onClick={startCamera} variant="success" fullWidth className="mb-4">
                 📷 Scan Location QR
-              </button>
+              </Button>
               <div className="flex items-center gap-2">
                 <div className="flex-1 border-t border-gray-200" />
                 <span className="text-xs text-gray-400">or enter location ID</span>
@@ -167,8 +166,7 @@ export default function BulkIssuePanel({ onDone }) {
                 <input value={manualLocId} onChange={e => setManualLocId(e.target.value.toUpperCase())}
                   placeholder="LOC-001" onKeyDown={e => e.key === 'Enter' && handleManualLookup()}
                   className="flex-1 border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-green-500 font-mono" />
-                <button onClick={handleManualLookup}
-                  className="bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-gray-900 text-sm">Look Up</button>
+                <Button onClick={handleManualLookup} variant="secondary" size="sm">Look Up</Button>
               </div>
             </>
           )}
@@ -184,7 +182,7 @@ export default function BulkIssuePanel({ onDone }) {
                 <div className="font-semibold text-green-900">{location.locationName}</div>
                 <div className="text-xs text-green-700">{location.itemName} <span className="font-mono">[{location.itemCode}]</span></div>
               </div>
-              <button onClick={reset} className="ml-auto text-xs text-green-600 hover:underline">Change Location</button>
+              <Button onClick={reset} variant="ghost" size="xs" className="ml-auto">Change Location</Button>
             </div>
           </div>
 
@@ -259,10 +257,9 @@ export default function BulkIssuePanel({ onDone }) {
                       onChange={e => setIssueQty(e.target.value)}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-green-500 text-xl font-bold text-right" />
                   </div>
-                  <button onClick={submitIssue} disabled={submitting}
-                    className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 font-semibold text-lg disabled:opacity-50">
+                  <Button onClick={submitIssue} disabled={submitting} loading={submitting} variant="success" fullWidth size="lg">
                     {submitting ? 'Processing...' : '✅ Confirm Bulk Issue'}
-                  </button>
+                  </Button>
                 </div>
               )}
             </>

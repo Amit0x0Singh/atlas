@@ -1,15 +1,16 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { outwardApi } from '../../../../../api/inventory.js'
-import BackButton from '../../../../../components/erp/BackButton.jsx'
+import { BackButton, Button } from '../../../../../components/ui'
 import WarehouseToWarehouse from '../components/WarehouseToWarehouse.jsx'
 import WarehouseToContainer from '../components/WarehouseToContainer.jsx'
 import MaterialIssueByBOM from '../components/MaterialIssueByBOM.jsx'
 import StockLossAdjustment from '../components/StockLossAdjustment.jsx'
+import { RefreshCw } from 'lucide-react'
 
 const MODES = [
   {
     key: 'wh-wh',
-    icon: '🏭',
+    icon: '�Y��',
     label: 'Warehouse → Warehouse',
     desc: 'Transfer a pack from one warehouse/location to another',
     color: 'border-blue-300 hover:border-blue-500 hover:bg-blue-50',
@@ -17,7 +18,7 @@ const MODES = [
   },
   {
     key: 'bom-issue',
-    icon: '📋',
+    icon: '�Y"<',
     label: 'Material Issue by BOM',
     desc: 'Issue raw materials to plant based on product recipe — scan pack or container QR per RM',
     color: 'border-indigo-300 hover:border-indigo-500 hover:bg-indigo-50',
@@ -25,7 +26,7 @@ const MODES = [
   },
   {
     key: 'wh-cont',
-    icon: '🛢️',
+    icon: '�Y>�️',
     label: 'Warehouse → Container',
     desc: 'Fill a container from warehouse packs — scan bag QR to select material',
     color: 'border-orange-300 hover:border-orange-500 hover:bg-orange-50',
@@ -33,7 +34,7 @@ const MODES = [
   },
   {
     key: 'stock-loss',
-    icon: '⚠️',
+    icon: '�s�️',
     label: 'Stock Loss Adjustment',
     desc: 'Record material lost during production, spillage, damage or weighing errors — scan bag QR',
     color: 'border-red-300 hover:border-red-500 hover:bg-red-50',
@@ -73,13 +74,13 @@ export default function Outward() {
 
   const goBack = () => { setMode(null); loadHistory() }
 
-  // ── Mode panels ──────────────────────────────────────────────────────────────
+  // �"?�"? Mode panels �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
   if (mode === 'wh-wh')      return <Panel mode={MODES[0]} onBack={goBack}><WarehouseToWarehouse /></Panel>
   if (mode === 'bom-issue')  return <Panel mode={MODES[1]} onBack={goBack}><MaterialIssueByBOM /></Panel>
   if (mode === 'wh-cont')    return <Panel mode={MODES[2]} onBack={goBack}><WarehouseToContainer /></Panel>
   if (mode === 'stock-loss') return <Panel mode={MODES[3]} onBack={goBack}><StockLossAdjustment /></Panel>
 
-  // ── Landing: mode selector + recent history ──────────────────────────────────
+  // �"?�"? Landing: mode selector + recent history �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
   const totalPages = Math.ceil(histTotal / LIMIT)
 
   return (
@@ -107,7 +108,7 @@ export default function Outward() {
       <div>
         <div className="flex justify-between items-center mb-3">
           <h2 className="text-lg font-semibold text-gray-800">Recent Transactions</h2>
-          <button onClick={loadHistory} className="text-sm border border-gray-300 px-3 py-1.5 rounded-lg hover:bg-gray-50">Refresh</button>
+          <Button onClick={loadHistory} variant="outline-gray" size="sm" icon={RefreshCw}>Refresh</Button>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <table className="w-full text-sm">
@@ -159,7 +160,7 @@ function Panel({ mode, onBack, children }) {
   return (
     <div className="flex flex-col h-full">
       <div className="px-6 pt-5 pb-0 border-b border-gray-200 bg-white">
-        <button onClick={onBack} className="text-sm text-gray-500 hover:text-gray-700 mb-3">← Back to Outward</button>
+        <BackButton onClick={onBack} label="Back to Outward" size="sm" />
         <div className="flex items-center gap-3 pb-4">
           <span className="text-2xl">{mode.icon}</span>
           <div>

@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { containerApi } from '../../../../../api/inventory.js'
 import { indentApi } from '../../../../../api/production.js'
 import { useQrScanner } from '../../../../../hooks/useQrScanner.js'
+import { Button } from '../../../../../components/ui'
 
 export default function ContainerToPlant({ preselected, onDone }) {
   const [container, setContainer]   = useState(preselected || null)
@@ -98,14 +99,12 @@ export default function ContainerToPlant({ preselected, onDone }) {
               placeholder="e.g. CONT-AZOS"
               className="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 text-sm font-mono outline-none focus:ring-2 focus:ring-green-500"
             />
-            <button onClick={() => loadContainer(manualId)} disabled={loadingCont || !manualId.trim()}
-              className="bg-green-600 text-white px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-green-700 disabled:opacity-50">
+            <Button onClick={() => loadContainer(manualId)} disabled={loadingCont || !manualId.trim()} loading={loadingCont} variant="success" size="sm">
               {loadingCont ? '…' : 'Load'}
-            </button>
-            <button onClick={scanner.active ? scanner.stop : scanner.start}
-              className={`px-4 py-2.5 rounded-lg text-sm font-semibold border transition ${scanner.active ? 'bg-red-50 border-red-300 text-red-600' : 'border-gray-300 hover:bg-gray-50'}`}>
+            </Button>
+            <Button onClick={scanner.active ? scanner.stop : scanner.start} variant={scanner.active ? 'danger' : 'outline-gray'} size="sm">
               {scanner.active ? 'Stop' : 'Scan QR'}
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -119,8 +118,7 @@ export default function ContainerToPlant({ preselected, onDone }) {
                 <div className="font-bold text-green-900 font-mono">{container.containerId}</div>
                 <div className="text-sm text-green-700">{container.itemName} <span className="text-xs font-mono">({container.itemCode})</span></div>
               </div>
-              <button onClick={() => { setContainer(null); setError(''); setSuccess('') }}
-                className="text-xs text-green-600 hover:underline">Change</button>
+              <Button onClick={() => { setContainer(null); setError(''); setSuccess('') }} variant="ghost" size="xs">Change</Button>
             </div>
             <div className="grid grid-cols-2 gap-3 text-center">
               <div className="bg-white rounded-lg py-2">
@@ -180,10 +178,9 @@ export default function ContainerToPlant({ preselected, onDone }) {
                 />
               </div>
 
-              <button onClick={submit} disabled={submitting || !qty}
-                className="w-full bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700 disabled:opacity-50">
+              <Button onClick={submit} disabled={submitting || !qty} loading={submitting} variant="success" fullWidth>
                 {submitting ? 'Issuing…' : 'Issue from Container'}
-              </button>
+              </Button>
             </div>
           )}
         </>

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import jsQR from 'jsqr'
 import { containerApi, outwardApi } from '../../../../../api/inventory.js'
+import { Button } from '../../../../../components/ui'
 
 export default function FillContainer({ preselected, onDone }) {
   const [container, setContainer]   = useState(preselected || null)
@@ -130,19 +131,21 @@ export default function FillContainer({ preselected, onDone }) {
               placeholder="e.g. DRUM-AZOS-001"
               className="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 text-sm font-mono outline-none focus:ring-2 focus:ring-orange-400"
             />
-            <button
+            <Button
+              variant="warning"
+              loading={loadingCont}
+              disabled={!scanInput.trim()}
               onClick={() => loadContainer(scanInput)}
-              disabled={loadingCont || !scanInput.trim()}
-              className="bg-orange-500 text-white px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-orange-600 disabled:opacity-50"
             >
-              {loadingCont ? '…' : 'Load'}
-            </button>
-            <button
+              Load
+            </Button>
+            <Button
+              variant={cameraOn ? "danger" : "outline-gray"}
+              size="sm"
               onClick={cameraOn ? stopCamera : startCamera}
-              className={`px-4 py-2.5 rounded-lg text-sm font-semibold border ${cameraOn ? 'bg-red-50 border-red-300 text-red-600' : 'border-gray-300 hover:bg-gray-50'}`}
             >
               {cameraOn ? 'Stop Cam' : 'Scan QR'}
-            </button>
+            </Button>
           </div>
 
           {cameraOn && (
@@ -168,8 +171,13 @@ export default function FillContainer({ preselected, onDone }) {
               <div className="font-bold text-orange-900 font-mono">{container.containerId}</div>
               <div className="text-sm text-orange-700">{container.itemName} <span className="text-orange-500 text-xs font-mono">({container.itemCode})</span></div>
             </div>
-            <button onClick={() => { setContainer(null); setAvailPacks([]); setPack(null); setQty(''); setError(''); setSuccess('') }}
-              className="text-xs text-orange-600 hover:underline">Change</button>
+            <Button
+              variant="ghost"
+              size="xs"
+              onClick={() => { setContainer(null); setAvailPacks([]); setPack(null); setQty(''); setError(''); setSuccess('') }}
+            >
+              Change
+            </Button>
           </div>
           <div className="grid grid-cols-3 gap-3 mt-3 text-center text-sm">
             <div className="bg-white rounded-lg py-2">
@@ -236,10 +244,15 @@ export default function FillContainer({ preselected, onDone }) {
             onChange={e => setQty(e.target.value)}
             className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-orange-400 mb-3"
           />
-          <button onClick={submit} disabled={submitting || !qty}
-            className="w-full bg-orange-500 text-white py-3 rounded-lg font-bold hover:bg-orange-600 disabled:opacity-50">
-            {submitting ? 'Filling…' : 'Fill Container'}
-          </button>
+          <Button
+            variant="warning"
+            fullWidth
+            loading={submitting}
+            disabled={!qty}
+            onClick={submit}
+          >
+            Fill Container
+          </Button>
         </div>
       )}
     </div>

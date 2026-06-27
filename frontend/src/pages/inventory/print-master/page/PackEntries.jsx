@@ -1,4 +1,4 @@
-import BackButton from "../../../../components/erp/BackButton.jsx";
+import { BackButton } from "../../../../components/ui";
 import PackTable from "../components/PackTable.jsx";
 
 export default function PackEntries() {

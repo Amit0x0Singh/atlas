@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { ArrowDown, ArrowUp } from "lucide-react";
 import { gateApi } from "../../../../api/inventory.js";
-import { useAuth } from "../../../../components/erp/AuthContext.jsx";
-import { Button, BackButton } from "../../../../components/Buttons/page/Button.js";
+import { useAuth } from "../../../../components/auth/AuthContext.jsx";
+import { Button, BackButton, ErrorModal, ConfirmModal } from '../../../../components/ui'
 import GateTabs from "../component/GateTabs.jsx";
 import GateFilterBar from "../component/GateFilterBar.jsx";
 import InwardForm from "../component/InwardForm.jsx";
@@ -41,6 +41,8 @@ export default function GateEntry() {
   const [error, setError]     = useState(null);
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [detail, setDetail]   = useState(null);
+  const [errModal, setErrModal]           = useState({ open: false, message: '' });
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   const debounceRef = useRef(null);
 
@@ -103,9 +105,9 @@ export default function GateEntry() {
   const submitInward = async (form) => {
     try {
       await gateApi.createInward(form);
-      openList("inward"); // show the list so user can see the new entry
+      openList("inward");
     } catch (e) {
-      alert(e.message);
+      setErrModal({ open: true, message: e.message });
     }
   };
 
@@ -114,7 +116,7 @@ export default function GateEntry() {
       await gateApi.createOutward(form);
       openList("outward");
     } catch (e) {
-      alert(e.message);
+      setErrModal({ open: true, message: e.message });
     }
   };
 
@@ -123,18 +125,21 @@ export default function GateEntry() {
       const res = await gateApi.inwardDetail(id);
       setDetail(res.data);
     } catch (e) {
-      alert(e.message);
+      setErrModal({ open: true, message: e.message });
     }
   };
 
-  const handleRequestDelete = async (id, type) => {
-    if (!confirm("Send a delete request to admin?\n\nThis record will be flagged for review. Only an admin can permanently delete it.")) return;
+  const handleRequestDelete = (id, type) => setDeleteConfirm({ id, type });
+
+  const confirmDeleteRequest = async () => {
+    const { id, type } = deleteConfirm;
+    setDeleteConfirm(null);
     try {
       if (type === "inward") await gateApi.requestDeleteInward(id);
       else                   await gateApi.requestDeleteOutward(id);
       fetchList(listType, filters);
     } catch (e) {
-      alert(e.message);
+      setErrModal({ open: true, message: e.message });
     }
   };
 
@@ -259,6 +264,20 @@ export default function GateEntry() {
           }
         </>
       )}
+
+      <ErrorModal
+        open={errModal.open}
+        message={errModal.message}
+        onClose={() => setErrModal({ open: false, message: '' })}
+      />
+      <ConfirmModal
+        open={!!deleteConfirm}
+        title="Request Delete"
+        message="This record will be flagged for review. Only an admin can permanently delete it."
+        acceptText="Send Request"
+        onAccept={confirmDeleteRequest}
+        onCancel={() => setDeleteConfirm(null)}
+      />
     </div>
   );
 }

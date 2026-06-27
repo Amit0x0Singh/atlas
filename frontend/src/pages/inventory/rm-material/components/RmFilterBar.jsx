@@ -1,3 +1,5 @@
+import { Button } from '../../../../components/ui'
+
 export default function RmFilterBar({ search, stockFilter, onSearch, onStockFilter, onClear }) {
   const hasFilter = search || stockFilter !== 'all'
 
@@ -29,9 +31,7 @@ export default function RmFilterBar({ search, stockFilter, onSearch, onStockFilt
         ))}
       </div>
       {hasFilter && (
-        <button onClick={onClear} className="text-xs text-red-500 hover:text-red-700 px-3 py-2 border border-red-200 rounded-lg hover:bg-red-50">
-          × Clear
-        </button>
+        <Button variant="danger" size="xs" onClick={onClear}>Clear</Button>
       )}
     </div>
   )

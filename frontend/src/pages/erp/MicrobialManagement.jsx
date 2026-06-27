@@ -10,10 +10,12 @@
  *   location_position → Batch / Container Code
  */
 import { useState, useEffect, useCallback } from 'react'
-import Pagination from '../../components/erp/Pagination.jsx'
+import Pagination from '../../components/pagination/Pagination.jsx'
 import { microbialApi } from '../../api/microbial.js'
 import { erpStrainsApi } from '../../api/masters.js'
-import { useAuth } from '../../components/erp/AuthContext.jsx'
+import { useAuth } from '../../components/auth/AuthContext.jsx'
+import { Button } from '../../components/ui'
+import { RefreshCw } from 'lucide-react'
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 function fmtCfu(val) {
@@ -194,7 +196,7 @@ function StockTab({ containers, strains, loading, onRefresh }) {
           <option value="at_risk">At Risk</option>
           <option value="exhausted">Exhausted</option>
         </select>
-        <button onClick={onRefresh} style={{ ...BTN_SECONDARY, marginLeft: 'auto' }}>↻ Refresh</button>
+        <Button variant="outline-gray" icon={RefreshCw} onClick={onRefresh} className="ml-auto">Refresh</Button>
         <span style={{ fontSize: '12px', color: '#94a3b8' }}>{filtered.length} batches</span>
       </div>
 
@@ -395,9 +397,9 @@ function InwardTab({ strains, onRefresh }) {
             {error && <div style={{ padding: '10px 12px', background: '#fef2f2', borderRadius: '7px', fontSize: '12px', color: '#dc2626' }}>{error}</div>}
             {success && <div style={{ padding: '10px 12px', background: '#dcfce7', borderRadius: '7px', fontSize: '12px', color: '#166534' }}>{success}</div>}
 
-            <button type="submit" disabled={saving || !canInward} style={{ ...BTN_PRIMARY, opacity: (!canInward || saving) ? 0.5 : 1 }}>
+            <Button type="submit" variant="primary" loading={saving} disabled={!canInward} fullWidth>
               {saving ? 'Saving…' : '+ Add to Cold Room'}
-            </button>
+            </Button>
           </div>
         </form>
       </div>
@@ -592,9 +594,9 @@ function IssueCalculatorTab({ strains, onRefresh }) {
             <input type="number" step="0.01" min="1" max="2" value={inputs.mf} onChange={e => set('mf', e.target.value)} style={INPUT} />
           </div>
           <div>
-            <button onClick={calculate} style={{ ...BTN_PRIMARY, width: '100%', padding: '11px' }}>
+            <Button variant="primary" onClick={calculate} fullWidth>
               Calculate FIFO →
-            </button>
+            </Button>
           </div>
         </div>
         {calcError && <div style={{ marginTop: '12px', padding: '10px 12px', background: '#fef2f2', borderRadius: '7px', fontSize: '12px', color: '#dc2626' }}>{calcError}</div>}
@@ -674,9 +676,9 @@ function IssueCalculatorTab({ strains, onRefresh }) {
                 </div>
               </div>
               {issueError && <div style={{ marginBottom: '12px', padding: '10px 12px', background: '#fef2f2', borderRadius: '7px', fontSize: '12px', color: '#dc2626' }}>{issueError}</div>}
-              <button onClick={handleIssue} disabled={issuing} style={{ ...BTN_PRIMARY, background: '#16a34a', minWidth: '200px' }}>
+              <Button variant="success" onClick={handleIssue} loading={issuing}>
                 {issuing ? 'Issuing…' : `🚀 Issue ${allocation.plan.length} Container${allocation.plan.length > 1 ? 's' : ''} (${allocation.total_biomass_available.toFixed(3)} kg)`}
-              </button>
+              </Button>
             </div>
           )}
           {!canIssue && (
@@ -696,9 +698,9 @@ function IssueCalculatorTab({ strains, onRefresh }) {
             Notifications have been triggered. Check the Notification Bell for delivery confirmation.
           </div>
           <div style={{ marginTop: '12px', display: 'flex', gap: '10px' }}>
-            <button onClick={() => { setIssueResult(null); setInputs(f => ({ ...f, strain_id: '', order_qty: '', ordered_cfu: '' })) }} style={BTN_PRIMARY}>
+            <Button variant="primary" onClick={() => { setIssueResult(null); setInputs(f => ({ ...f, strain_id: '', order_qty: '', ordered_cfu: '' })) }}>
               + New Issue
-            </button>
+            </Button>
           </div>
         </div>
       )}

@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { gateApi } from "../../../../api/inventory.js";
+import { Button } from "../../../../components/ui";
+import { RefreshCw } from "lucide-react";
 
 const STATUS_COLORS = {
   pending:  { bg: "#fef3c7", color: "#92400e" },
@@ -64,17 +66,9 @@ export default function GateInwardPanel({ onSelect, selectedId, reloadTrigger })
             Click an entry to auto-fill invoice details in the form
           </p>
         </div>
-        <button
-          onClick={load}
-          style={{
-            padding: "6px 12px", background: "#f1f5f9",
-            border: "1px solid #e2e8f0", borderRadius: "7px",
-            fontSize: "12px", fontWeight: 600, cursor: "pointer", color: "#64748b",
-            flexShrink: 0,
-          }}
-        >
-          ↻ Refresh
-        </button>
+        <Button variant="secondary" size="sm" icon={RefreshCw} onClick={load}>
+          Refresh
+        </Button>
       </div>
 
       {err && (

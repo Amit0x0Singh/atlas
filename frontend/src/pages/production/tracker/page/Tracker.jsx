@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { trackerApi } from '../../../../api/sales.js'
-import BackButton from '../../../../components/erp/BackButton.jsx'
+import { BackButton } from '../../../../components/ui'
 import InfoChip from '../components/InfoChip.jsx'
 import Stat from '../components/Stat.jsx'
 

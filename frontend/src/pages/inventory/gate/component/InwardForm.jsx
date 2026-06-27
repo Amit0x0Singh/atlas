@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Button } from "../../../../components/ui"; 
 
 const EMPTY = { supplier_name: "", invoice_no: "", vehicle_no: "" };
 
@@ -53,6 +54,7 @@ export default function InwardForm({ onSubmit, onCancel }) {
     >
       <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "18px" }}>
         <span style={{ fontSize: "18px" }}>⬇</span>
+         
         <h3 style={{ margin: 0, fontSize: "15px", fontWeight: 700, color: "#0f172a" }}>
           New Gate Inward
         </h3>
@@ -82,36 +84,12 @@ export default function InwardForm({ onSubmit, onCancel }) {
       </div>
 
       <div style={{ display: "flex", gap: "8px" }}>
-        <button
-          onClick={handleSubmit}
-          style={{
-            padding: "9px 22px",
-            background: "#3b82f6",
-            color: "#fff",
-            border: "none",
-            borderRadius: "7px",
-            fontSize: "13px",
-            fontWeight: 600,
-            cursor: "pointer",
-          }}
-        >
+        <Button variant="primary" onClick={handleSubmit}>
           Create Inward Entry
-        </button>
-        <button
-          onClick={onCancel}
-          style={{
-            padding: "9px 18px",
-            background: "#f1f5f9",
-            color: "#64748b",
-            border: "1px solid #e2e8f0",
-            borderRadius: "7px",
-            fontSize: "13px",
-            fontWeight: 600,
-            cursor: "pointer",
-          }}
-        >
+        </Button>
+        <Button variant="secondary" onClick={onCancel}>
           Cancel
-        </button>
+        </Button>
       </div>
     </div>
   );

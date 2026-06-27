@@ -3,6 +3,8 @@ import { PLANT_CONFIG, PLANT_KEYS, SHIFTS } from '../data/plantConfig.js'
 import { SK, lsLoad, lsSave, genId, sfgLoad } from '../utils/storage.js'
 import { todayISO } from '../utils/date.js'
 import { getNextBatchCode, generateTaskId } from '../utils/batchCode.js'
+import { Button, IconButton } from '../../../../components/ui'
+import { X, Save } from 'lucide-react'
 
 // ── Form primitive helpers ────────────────────────────────────────────────────
 function Field({ label, children, hint }) {
@@ -194,7 +196,7 @@ export default function AddTaskDrawer({ task, defaultDate, onSave, onClose }) {
           <span className="font-bold text-base text-gray-900">
             {isEdit ? `Edit Task — ${task.taskId}` : 'Add New Task'}
           </span>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+          <IconButton icon={X} tooltip="Close" onClick={onClose} />
         </div>
 
         {/* Body */}
@@ -386,14 +388,10 @@ export default function AddTaskDrawer({ task, defaultDate, onSave, onClose }) {
 
         {/* Footer */}
         <div className="px-6 py-4 border-t bg-white sticky bottom-0 flex justify-end gap-3">
-          <button onClick={onClose}
-            className="px-5 py-2 border border-gray-200 rounded-lg text-sm font-semibold text-gray-600 hover:bg-gray-50 transition">
-            Cancel
-          </button>
-          <button onClick={handleSave}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition">
+          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button variant="primary" icon={Save} onClick={handleSave}>
             {isEdit ? 'Update Task' : 'Save Task'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

@@ -8,6 +8,8 @@ import StatusDrawer from '../components/StatusDrawer.jsx'
 import BMROverlay from '../components/BMROverlay.jsx'
 import SFGStockModal from '../components/SFGStockModal.jsx'
 import Toast from '../components/ui/Toast.jsx'
+import { Button } from '../../../../components/ui'
+import { Download } from 'lucide-react'
 
 function useToast() {
   const [toast, setToast] = useState(null)
@@ -59,18 +61,9 @@ function PlantTab({ plant, tasks, onEdit, onStatusUpdate, onBMR }) {
           <span className="text-[13px] text-gray-400">{fmtDateLabel(date)}</span>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => setDate(addDays(todayISO(), -1))}
-            className="px-3 py-1.5 border border-gray-200 rounded-lg text-[12px] font-semibold text-gray-500 hover:border-gray-300 bg-white transition">
-            ← Yesterday
-          </button>
-          <button onClick={() => setDate(todayISO())}
-            className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-[12px] font-semibold hover:bg-blue-700 transition">
-            Today
-          </button>
-          <button onClick={() => setDate(addDays(todayISO(), 1))}
-            className="px-3 py-1.5 border border-gray-200 rounded-lg text-[12px] font-semibold text-gray-500 hover:border-gray-300 bg-white transition">
-            Tomorrow →
-          </button>
+          <Button variant="outline-gray" size="sm" onClick={() => setDate(addDays(todayISO(), -1))}>← Yesterday</Button>
+          <Button variant="primary" size="sm" onClick={() => setDate(todayISO())}>Today</Button>
+          <Button variant="outline-gray" size="sm" onClick={() => setDate(addDays(todayISO(), 1))}>Tomorrow →</Button>
         </div>
       </div>
 
@@ -154,10 +147,7 @@ function HistoryTab({ tasks }) {
           className="px-3 py-2 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-blue-400" />
         <input type="date" value={toDate} onChange={e => setToDate(e.target.value)}
           className="px-3 py-2 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-blue-400" />
-        <button onClick={exportCSV}
-          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-[13px] font-semibold transition">
-          ⬇ Export CSV
-        </button>
+        <Button variant="secondary" icon={Download} size="sm" onClick={exportCSV}>Export CSV</Button>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
@@ -247,8 +237,8 @@ export default function ProductionPage() {
         </div>
         <div className="flex items-center gap-4">
           <button onClick={() => setSfgOpen(true)}
-            className="border border-white/30 bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg text-[11.5px] font-semibold transition">
-            📦 SFG Stock
+            className="border border-white/30 bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg text-[11.5px] font-semibold transition text-white">
+            SFG Stock
           </button>
           {activeTodayCount > 0 && (
             <span className="bg-white/15 text-[11px] px-2.5 py-1 rounded">{activeTodayCount} active today</span>

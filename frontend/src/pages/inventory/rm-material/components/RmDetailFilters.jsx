@@ -1,3 +1,6 @@
+import { Button } from '../../../../components/ui'
+import { RefreshCw } from 'lucide-react'
+
 export default function RmDetailFilters({ search, supplierFilter, statusFilter, dateFrom, dateTo, suppliers, hasFilters, onChange, onClear, onRefresh }) {
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-4 mb-4">
@@ -29,13 +32,9 @@ export default function RmDetailFilters({ search, supplierFilter, statusFilter, 
             className="border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-gray-900" />
         </div>
         {hasFilters && (
-          <button onClick={onClear} className="text-sm text-red-500 hover:text-red-700 px-3 py-2 border border-red-200 rounded-lg hover:bg-red-50">
-            × Clear
-          </button>
+          <Button variant="danger" size="sm" onClick={onClear}>Clear</Button>
         )}
-        <button onClick={onRefresh} className="text-sm border border-gray-200 px-3 py-2 rounded-lg hover:bg-gray-50">
-          ↻ Refresh
-        </button>
+        <Button variant="outline-gray" size="sm" icon={RefreshCw} onClick={onRefresh}>Refresh</Button>
       </div>
     </div>
   )

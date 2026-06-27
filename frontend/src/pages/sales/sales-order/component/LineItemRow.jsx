@@ -10,6 +10,8 @@ import {
 import { calcTotalCS, addDays } from "../shared/utils.js";
 import InhouseProductPicker from "./InhouseProductPicker.jsx";
 import CustomerProductPicker from "./CustomerProductPicker.jsx";
+import { Button } from "../../../../components/ui";
+import { X } from "lucide-react";
 
 const field = "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none";
 const label = "block text-xs font-semibold text-gray-500 mb-1";
@@ -60,13 +62,15 @@ export default function LineItemRow({
             </span>
           )}
         </div>
-        <button
+        <Button
           type="button"
+          variant="danger"
+          size="xs"
+          icon={X}
           onClick={() => onRemove(idx)}
-          style={{ fontSize: "12px", color: "#f87171", background: "none", border: "none", cursor: "pointer" }}
         >
           Remove
-        </button>
+        </Button>
       </div>
 
       {/* ── Product names — 2 cols ── */}

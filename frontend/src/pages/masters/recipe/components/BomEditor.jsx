@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react'
+import { Plus, Save, Trash2, Download } from 'lucide-react'
+import { Button, IconButton } from '../../../../components/ui'
 
 const ROLE_TYPE_STYLE = {
   INGREDIENT: 'bg-gray-100 text-gray-600',
@@ -37,9 +39,9 @@ export default function BomEditor({ selectedProduct, bomRows, rmList, saving, ms
           <div className="text-5xl mb-3">📋</div>
           <p className="text-lg font-medium">Select a product to view its BOM</p>
           <p className="text-sm mt-1">Use the left panel to choose a product</p>
-          <button onClick={onImportClick} className="mt-4 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm font-medium">
-            📥 Import Recipe from Excel
-          </button>
+          <Button variant="success" icon={Download} onClick={onImportClick} className="mt-4">
+            Import Recipe from Excel
+          </Button>
         </div>
       </div>
     )
@@ -62,13 +64,10 @@ export default function BomEditor({ selectedProduct, bomRows, rmList, saving, ms
           </div>
         </div>
         <div className="flex gap-2">
-          <button onClick={onAddRow} className="border border-gray-300 px-3 py-2 rounded-lg hover:bg-gray-50 text-sm font-medium">
-            + Add Item Row
-          </button>
-          <button onClick={onSaveAll} disabled={saving}
-            className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 font-semibold text-sm disabled:opacity-50">
-            {saving ? 'Saving...' : '💾 Save BOM'}
-          </button>
+          <Button variant="outline-gray" icon={Plus} onClick={onAddRow} size="sm">Add Item Row</Button>
+          <Button variant="primary" icon={Save} onClick={onSaveAll} disabled={saving} loading={saving} size="sm">
+            {saving ? 'Saving...' : 'Save BOM'}
+          </Button>
         </div>
       </div>
 
@@ -156,7 +155,7 @@ export default function BomEditor({ selectedProduct, bomRows, rmList, saving, ms
                     </select>
                   </td>
                   <td className="px-2 py-1 text-center">
-                    <button onClick={() => onRemoveRow(idx)} className="text-red-400 hover:text-red-600 text-xl font-bold leading-none">×</button>
+                    <IconButton icon={Trash2} variant="danger" tooltip="Remove row" onClick={() => onRemoveRow(idx)} />
                   </td>
                 </tr>
               ))}
@@ -193,10 +192,9 @@ export default function BomEditor({ selectedProduct, bomRows, rmList, saving, ms
             <span className="text-xs text-gray-400">
               {bomRows.filter(r => r.rmCode).length} items configured · All quantities per 1 KG finished product
             </span>
-            <button onClick={onSaveAll} disabled={saving}
-              className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 font-semibold text-sm disabled:opacity-50">
-              {saving ? 'Saving...' : '💾 Save BOM'}
-            </button>
+            <Button variant="primary" icon={Save} onClick={onSaveAll} disabled={saving} loading={saving} size="sm">
+              {saving ? 'Saving...' : 'Save BOM'}
+            </Button>
           </div>
         </div>
       </div>

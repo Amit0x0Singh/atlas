@@ -6,6 +6,8 @@ import {
   STATUS_STYLE,
   STATUS_LABELS,
 } from "../shared/constants.js";
+import { Button, IconButton } from "../../../../components/ui";
+import { X, Trash2, Truck } from "lucide-react";
 
 // Statuses that can be dispatched right now
 const DISPATCHABLE = ["IN_INVENTORY", "READY_TO_DISPATCH", "PACKED"];
@@ -124,12 +126,7 @@ export default function DispatchOrder({ order, onSave, onDelete, onClose }) {
             >
               {STATUS_LABELS[dominantStatus] || dominantStatus}
             </span>
-            <button
-              onClick={onClose}
-              className="text-white/70 hover:text-white text-xl leading-none"
-            >
-              ×
-            </button>
+            <IconButton icon={X} tooltip="Close" variant="ghost" onClick={onClose} className="text-white/70 hover:text-white" />
           </div>
         </div>
 
@@ -363,33 +360,30 @@ export default function DispatchOrder({ order, onSave, onDelete, onClose }) {
 
         {/* ── Footer ──────────────────────────────────────────────────── */}
         <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100 bg-gray-50 rounded-b-2xl">
-          <button
+          <Button
+            variant="danger"
+            icon={Trash2}
             onClick={() => onDelete(order)}
-            className="text-sm text-red-500 border border-red-200 px-4 py-2 rounded-lg hover:bg-red-50"
           >
             Delete Order
-          </button>
+          </Button>
           <div className="flex gap-3">
             {!isAlreadyDispatched && readyLines.length > 0 && (
-              <button
-                onClick={markDispatched}
+              <Button
+                variant="success"
+                icon={Truck}
+                loading={saving}
                 disabled={saving}
-                className="text-white px-6 py-2 rounded-lg text-sm font-bold flex items-center gap-2 disabled:opacity-50 shadow-sm"
-                style={{ background: BRAND }}
+                onClick={markDispatched}
               >
                 {saving
                   ? "Processing…"
                   : hasMixed
-                  ? `🚚 Dispatch ${readyLines.length} Ready Item${readyLines.length !== 1 ? "s" : ""}`
-                  : "🚚 Mark as Dispatched"}
-              </button>
+                  ? `Dispatch ${readyLines.length} Ready Item${readyLines.length !== 1 ? "s" : ""}`
+                  : "Mark as Dispatched"}
+              </Button>
             )}
-            <button
-              onClick={onClose}
-              className="border border-gray-300 px-4 py-2 rounded-lg text-sm hover:bg-gray-50"
-            >
-              Close
-            </button>
+            <Button variant="secondary" onClick={onClose}>Close</Button>
           </div>
         </div>
       </div>

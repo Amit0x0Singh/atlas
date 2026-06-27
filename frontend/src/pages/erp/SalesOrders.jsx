@@ -4,7 +4,7 @@
 // import { useState, useEffect, useCallback } from 'react'
 // import { salesApi } from '../../api/sales.js'
 // import { erpProductsApi, erpCustomersApi, erpPlantsApi } from '../../api/masters.js'
-// import { useAuth } from '../../components/erp/AuthContext.jsx'
+// import { useAuth } from '../../components/auth/AuthContext.jsx'
 
 // const STATUS_COLORS = {
 //   new: 'slate', confirmed: 'blue', at_risk: 'amber', in_production: 'purple',
