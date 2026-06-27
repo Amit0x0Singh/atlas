@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, Fragment } from "react";
+﻿import { useState, useEffect, useCallback, Fragment } from "react";
 import {
   salesOrderApi,
   customerProfileApi,
@@ -10,13 +10,12 @@ import {
   STATUSES,
   STATUS_STYLE,
   STATUS_LABELS,
-  BRAND,
 } from "../shared/constants.js";
 import { fmtDate, etdDays } from "../shared/utils.js";
-import CreateSalesOrder from "../component/create-sales-order.jsx";
-import DispatchOrder from "../component/dispatch-order.jsx";
-import OrderHistory from "../component/order-history.jsx";
-import SalesFilterBar from "../component/SalesFilterBar.jsx";
+import CreateSalesOrder from "../component/create-sales-order/create-sales-order.jsx";
+import DispatchOrder from "../component/dispatch-order/dispatch-order.jsx";
+import OrderHistory from "../component/order-history/order-history.jsx";
+import SalesFilterBar from "../component/sales-filter-bar/SalesFilterBar.jsx";
 import { BackButton, Button, IconButton } from "../../../../components/ui";
 import Pagination from "../../../../components/pagination/Pagination.jsx";
 import { Plus, X } from "lucide-react";

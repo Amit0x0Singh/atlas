@@ -1,9 +1,10 @@
+﻿import './RmMaterialDetail.css'
 import { useState, useEffect, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { stockApi } from '../../../api/inventory.js'
 import { BackButton, IconButton } from '../../../components/ui'
-import RmDetailFilters   from './components/RmDetailFilters.jsx'
-import RmDetailTable     from './components/RmDetailTable.jsx'
+import RmDetailFilters   from './components/rm-detail-filters/RmDetailFilters.jsx'
+import RmDetailTable     from './components/rm-detail-table/RmDetailTable.jsx'
 import { groupPacks, groupStatus } from './components/rmDetailHelpers.js'
 import { RefreshCw } from 'lucide-react'
 

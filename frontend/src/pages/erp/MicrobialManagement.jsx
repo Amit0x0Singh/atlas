@@ -65,9 +65,6 @@ function Card({ label, value, sub, accent }) {
 
 const INPUT = { width: '100%', padding: '9px 12px', border: '1.5px solid #e2e8f0', borderRadius: '7px', fontSize: '13px', boxSizing: 'border-box', outline: 'none' }
 const LABEL = { display: 'block', fontSize: '11px', color: '#64748b', fontWeight: 700, marginBottom: '4px', letterSpacing: '0.06em' }
-const BTN_PRIMARY = { padding: '10px 22px', background: '#1e3a5f', color: '#fff', border: 'none', borderRadius: '7px', fontWeight: 700, fontSize: '13px', cursor: 'pointer', letterSpacing: '0.02em' }
-const BTN_SECONDARY = { padding: '9px 18px', background: '#f1f5f9', color: '#1e293b', border: '1px solid #e2e8f0', borderRadius: '7px', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }
-
 // ── Tab 1: Dashboard ──────────────────────────────────────────────────────────
 function DashboardTab({ containers, transactions, loading }) {
   if (loading) return <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>Loading dashboard…</div>
@@ -496,7 +493,6 @@ function IssueCalculatorTab({ strains, onRefresh }) {
       const totalBiomassNeeded = orderQtyNum * orderedCfuNum / inhouseCfu * mfNum
       // Fraction of this container needed
       const available = Number(c.volume_litres)
-      const totalNeededAcrossAll = orderQtyNum * orderedCfuNum / inhouseCfu * mfNum
       // Simpler: allocate pro-rata of total biomass needed
       if (plan.length === 0) {
         // recalculate total biomass based on first container's CFU

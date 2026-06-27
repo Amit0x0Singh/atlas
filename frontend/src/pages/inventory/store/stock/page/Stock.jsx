@@ -1,12 +1,13 @@
+﻿import './Stock.css'
 import { useState, useEffect, useCallback } from "react";
 import { stockApi } from "../../../../../api/inventory.js";
 import { BackButton, IconButton } from "../../../../../components/ui";
 import { PERIODS } from "../components/utils.js";
-import RawMaterialsSection from "../components/RawMaterialsSection.jsx";
-import GateSection from "../components/GateSection.jsx";
-import StoreSection from "../components/StoreSection.jsx";
-import ProductionSection from "../components/ProductionSection.jsx";
-import SalesSection from "../components/SalesSection.jsx";
+import RawMaterialsSection from "../components/raw-materials-section/RawMaterialsSection.jsx";
+import GateSection from "../components/gate-section/GateSection.jsx";
+import StoreSection from "../components/store-section/StoreSection.jsx";
+import ProductionSection from "../components/production-section/ProductionSection.jsx";
+import SalesSection from "../components/sales-section/SalesSection.jsx";
 import { RefreshCw } from "lucide-react";
 
 export default function Stock() {

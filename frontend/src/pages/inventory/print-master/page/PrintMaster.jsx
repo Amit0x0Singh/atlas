@@ -1,8 +1,9 @@
+﻿import './PrintMaster.css';
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { BackButton, Button } from "../../../../components/ui";
-import GenerateForm from "../components/GenerateForm.jsx";
-import GateInwardPanel from "../components/GateInwardPanel.jsx";
+import GenerateForm from "../components/generate-form/GenerateForm.jsx";
+import GateInwardPanel from "../components/gate-inward-panel/GateInwardPanel.jsx";
 
 export default function PrintMaster() {
   const navigate = useNavigate();

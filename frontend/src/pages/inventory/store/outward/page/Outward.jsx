@@ -1,11 +1,12 @@
 ﻿import { useState, useEffect } from 'react'
 import { outwardApi } from '../../../../../api/inventory.js'
 import { BackButton, Button } from '../../../../../components/ui'
-import WarehouseToWarehouse from '../components/WarehouseToWarehouse.jsx'
-import WarehouseToContainer from '../components/WarehouseToContainer.jsx'
-import MaterialIssueByBOM from '../components/MaterialIssueByBOM.jsx'
-import StockLossAdjustment from '../components/StockLossAdjustment.jsx'
+import WarehouseToWarehouse from '../components/warehouse-to-warehouse/WarehouseToWarehouse.jsx'
+import WarehouseToContainer from '../components/warehouse-to-container/WarehouseToContainer.jsx'
+import MaterialIssueByBOM from '../components/material-issue-by-bom/MaterialIssueByBOM.jsx'
+import StockLossAdjustment from '../components/stock-loss-adjustment/StockLossAdjustment.jsx'
 import { RefreshCw } from 'lucide-react'
+import './Outward.css'
 
 const MODES = [
   {

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { sfgApi } from '../../../../api/inventory.js'
-import { Button, BackButton, IconButton } from '../../../../components/ui'
+import { Button, BackButton } from '../../../../components/ui'
 import { RefreshCw, Save } from 'lucide-react'
+import './SFG.css'
 
 const STATUS_COLOR = {
   OPEN:     'bg-gray-100 text-gray-600',

@@ -1,5 +1,6 @@
+﻿import './PackEntries.css';
 import { BackButton } from "../../../../components/ui";
-import PackTable from "../components/PackTable.jsx";
+import PackTable from "../components/pack-table/PackTable.jsx";
 
 export default function PackEntries() {
   return (

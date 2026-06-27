@@ -1,10 +1,11 @@
+﻿import './RmMaterial.css'
 import { useState, useEffect, useMemo } from 'react'
 import { stockApi } from '../../../api/inventory.js'
 import { BackButton, IconButton } from '../../../components/ui'
 import { RefreshCw } from 'lucide-react'
-import RmStatsBar    from './components/RmStatsBar.jsx'
-import RmFilterBar   from './components/RmFilterBar.jsx'
-import RmTable       from './components/RmTable.jsx'
+import RmStatsBar    from './components/rm-stats-bar/RmStatsBar.jsx'
+import RmFilterBar   from './components/rm-filter-bar/RmFilterBar.jsx'
+import RmTable       from './components/rm-table/RmTable.jsx'
 
 export default function RmMaterial() {
   const [items,       setItems]       = useState([])

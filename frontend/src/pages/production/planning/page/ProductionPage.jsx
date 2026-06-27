@@ -1,15 +1,16 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { PLANT_CONFIG, PLANT_KEYS, TAB_TO_PLANT, PLANT_BADGE, statusBadgeCls } from '../data/plantConfig.js'
 import { SK, lsLoad } from '../utils/storage.js'
 import { todayISO, addDays, fmtDateLabel } from '../utils/date.js'
-import TaskCard from '../components/TaskCard.jsx'
-import AddTaskDrawer from '../components/AddTaskDrawer.jsx'
-import StatusDrawer from '../components/StatusDrawer.jsx'
-import BMROverlay from '../components/BMROverlay.jsx'
-import SFGStockModal from '../components/SFGStockModal.jsx'
-import Toast from '../components/ui/Toast.jsx'
+import TaskCard from '../components/task-card/TaskCard.jsx'
+import AddTaskDrawer from '../components/add-task-drawer/AddTaskDrawer.jsx'
+import StatusDrawer from '../components/status-drawer/StatusDrawer.jsx'
+import BMROverlay from '../components/bmr-overlay/BMROverlay.jsx'
+import SFGStockModal from '../components/sfg-stock-modal/SFGStockModal.jsx'
+import Toast from '../components/ui/toast/Toast.jsx'
 import { Button } from '../../../../components/ui'
 import { Download } from 'lucide-react'
+import './ProductionPage.css'
 
 function useToast() {
   const [toast, setToast] = useState(null)
@@ -56,6 +57,7 @@ function PlantTab({ plant, tasks, onEdit, onStatusUpdate, onBMR }) {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <span className="px-4 py-1.5 rounded-full text-[12px] font-bold text-white" style={{ background: cfg.color }}>
+
             {cfg.label}
           </span>
           <span className="text-[13px] text-gray-400">{fmtDateLabel(date)}</span>
@@ -85,7 +87,7 @@ function PlantTab({ plant, tasks, onEdit, onStatusUpdate, onBMR }) {
           <div className="text-[12px] mt-1">Ensure the schedule has been sent from the Planning page</div>
         </div>
       ) : (
-        <div className="grid gap-3.5" style={{ gridTemplateColumns: 'repeat(auto-fill,minmax(320px,1fr))' }}>
+        <div className="prodp-task-grid grid gap-3.5">
           {filtered.map(t => (
             <TaskCard key={t.id} task={t} onEdit={onEdit} onStatusUpdate={onStatusUpdate} onBMR={onBMR} />
           ))}
@@ -136,8 +138,8 @@ function HistoryTab({ tasks }) {
     <div className="p-6">
       <div className="flex gap-2.5 mb-4 flex-wrap items-center">
         <input type="text" value={search} onChange={e => setSearch(e.target.value)}
-          placeholder="Search product, task ID, DI number..." style={{ minWidth: 260 }}
-          className="px-3 py-2 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-blue-400" />
+          placeholder="Search product, task ID, DI number..."
+          className="px-3 py-2 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-blue-400 prodp-history-search" />
         <select value={plant} onChange={e => setPlant(e.target.value)}
           className="px-3 py-2 border border-gray-200 rounded-lg text-[13px] bg-white focus:outline-none focus:border-blue-400">
           <option value="">All Plants</option>
@@ -228,9 +230,9 @@ export default function ProductionPage() {
   }
 
   return (
-    <div className="flex flex-col overflow-hidden bg-[#f0f4f8]" style={{ height: '100%' }}>
+    <div className="prodp-root flex flex-col overflow-hidden bg-[#f0f4f8]">
       {/* Top bar */}
-      <div className="bg-[#0f1923] text-white px-6 flex items-center justify-between flex-shrink-0" style={{ height: 56 }}>
+      <div className="prodp-topbar bg-[#0f1923] text-white px-6 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2.5">
           <span className="font-bold text-[15px]">🏭 SOM Phyto Pharma</span>
           <span className="text-[12px] opacity-60 font-normal">Production Operations</span>

@@ -1,9 +1,10 @@
 ﻿import { useState, useEffect, useRef } from 'react'
 import { indentApi } from '../../../../api/production.js'
+import './Indent.css'
 import { productApi, equipmentApi } from '../../../../api/masters.js'
-import IndentCard from '../components/IndentCard.jsx'
+import IndentCard from '../components/indent-card/IndentCard.jsx'
 import { Button, BackButton, IconButton } from '../../../../components/ui'
-import { Plus, X, RefreshCw, Download, Mail, Printer } from 'lucide-react'
+import { Plus, X, RefreshCw } from 'lucide-react'
 
 const TABS = ['Production Indent', 'Purchase Indent', 'Pending Indents']
 

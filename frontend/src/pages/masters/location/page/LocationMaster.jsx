@@ -1,12 +1,12 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+﻿import { useState, useEffect, useRef, useCallback } from 'react'
 import { Plus, Camera, Square } from 'lucide-react'
 import { bulkApi, rmApi } from '../../../../api/inventory.js'
 import { Button, BackButton } from '../../../../components/ui'
 import Pagination from '../../../../components/pagination/Pagination.jsx'
 import jsQR from 'jsqr'
-import QRScanner    from '../components/QRScanner.jsx'
-import LocationCard from '../components/LocationCard.jsx'
-import LocationForm from '../components/LocationForm.jsx'
+import QRScanner    from '../components/qr-scanner/QRScanner.jsx'
+import LocationCard from '../components/location-card/LocationCard.jsx'
+import LocationForm from '../components/location-form/LocationForm.jsx'
 
 export default function LocationMaster() {
   const [locations, setLocations] = useState([])

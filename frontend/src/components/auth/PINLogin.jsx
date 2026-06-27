@@ -1,9 +1,9 @@
-/**
+﻿/**
  * PIN Login — shared shop-floor device PIN entry
  * Shows a numeric keypad for 4-digit PIN entry
  */
 import { useState } from 'react'
-import { useAuth } from './AuthContext.jsx'
+import { useAuth } from '../auth-context/AuthContext.jsx'
 
 export default function PINLogin({ onSuccess }) {
   const { pinLogin, loading } = useAuth()

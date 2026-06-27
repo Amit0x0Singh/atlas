@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { recipeApi, productApi } from '../../../../api/masters.js'
+import './RecipeDB.css'
 import { rmApi } from '../../../../api/inventory.js'
 import { DeleteModal, ErrorModal } from '../../../../components/ui'
-import ProductSidebar    from '../components/ProductSidebar.jsx'
-import BomEditor         from '../components/BomEditor.jsx'
-import RecipeImportModal from '../components/RecipeImportModal.jsx'
-import ReconcileModal    from '../components/ReconcileModal.jsx'
+import ProductSidebar    from '../components/product-sidebar/ProductSidebar.jsx'
+import BomEditor         from '../components/bom-editor/BomEditor.jsx'
+import RecipeImportModal from '../components/recipe-import-modal/RecipeImportModal.jsx'
+import ReconcileModal    from '../components/reconcile-modal/ReconcileModal.jsx'
 
 const EMPTY_ROW = () => ({ id: null, rmCode: '', rmName: '', qtyPerUnit: '', uom: 'KG', roleType: 'INGREDIENT', _dirty: true })
 
@@ -115,7 +116,7 @@ export default function RecipeDB() {
   }
 
   return (
-    <div className="flex h-full" style={{ height: 'calc(100vh - 0px)' }}>
+    <div className="flex h-full rdb-root">
       <ProductSidebar
         productList={productList}
         loading={loading}

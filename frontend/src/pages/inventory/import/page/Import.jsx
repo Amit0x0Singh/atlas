@@ -1,8 +1,8 @@
-import { useState, useRef } from 'react'
+﻿import { useState, useRef } from 'react'
 import { importApi } from '../../../../api/inventory.js'
 import { BackButton, Button } from '../../../../components/ui'
-import ResultCard from '../components/ResultCard.jsx'
-import FormatGuide from '../components/FormatGuide.jsx'
+import ResultCard from '../components/result-card/ResultCard.jsx'
+import FormatGuide from '../components/format-guide/FormatGuide.jsx'
 
 export default function Import() {
   const [file, setFile] = useState(null)

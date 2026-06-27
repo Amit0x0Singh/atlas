@@ -1,8 +1,9 @@
-import { useState } from 'react'
-import PackInward from '../components/PackInward.jsx'
-import BulkInward from '../components/BulkInward.jsx'
-import InwardHistory from '../components/InwardHistory.jsx'
+﻿import { useState } from 'react'
+import PackInward from '../components/pack-inward/PackInward.jsx'
+import BulkInward from '../components/bulk-inward/BulkInward.jsx'
+import InwardHistory from '../components/inward-history/InwardHistory.jsx'
 import { BackButton } from '../../../../../components/ui'
+import './Inward.css'
 
 const TABS = ['📦 Pack Inward', '🗄️ Bulk Inward', '📋 Inward History']
 

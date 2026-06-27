@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { Upload, Plus } from 'lucide-react'
 import { microbialSfgApi } from '../../../../api/microbial.js'
 import { Button, BackButton } from '../../../../components/ui'
-import MicrobeList   from '../components/MicrobeList.jsx'
-import MicrobeForm   from '../components/MicrobeForm.jsx'
-import MicrobeImport from '../components/MicrobeImport.jsx'
+import MicrobeList   from '../components/microbe-list/MicrobeList.jsx'
+import MicrobeForm   from '../components/microbe-form/MicrobeForm.jsx'
+import MicrobeImport from '../components/microbe-import/MicrobeImport.jsx'
 
 const S = {
   page:       { padding: '24px', fontFamily: "'Inter',system-ui,sans-serif", maxWidth: '960px' },

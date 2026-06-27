@@ -11,7 +11,6 @@ import { Button } from '../../components/ui'
 
 const inputStyle = { width: '100%', padding: '9px 12px', border: '1.5px solid #e2e8f0', borderRadius: '7px', fontSize: '13px', boxSizing: 'border-box', outline: 'none' }
 const labelStyle = { display: 'block', fontSize: '11px', color: '#64748b', fontWeight: 600, marginBottom: '4px' }
-const btnPrimary = (disabled) => ({ padding: '9px 18px', background: disabled ? '#94a3b8' : '#1e3a5f', color: '#fff', border: 'none', borderRadius: '7px', fontSize: '13px', fontWeight: 600, cursor: disabled ? 'not-allowed' : 'pointer' })
 
 const statusBadge = (status) => {
   const cfg = {

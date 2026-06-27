@@ -1,15 +1,15 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+﻿import { useState, useEffect, useRef, useCallback } from "react";
 import { ArrowDown, ArrowUp } from "lucide-react";
 import { gateApi } from "../../../../api/inventory.js";
 import { useAuth } from "../../../../components/auth/AuthContext.jsx";
 import { Button, BackButton, ErrorModal, ConfirmModal } from '../../../../components/ui'
-import GateTabs from "../component/GateTabs.jsx";
-import GateFilterBar from "../component/GateFilterBar.jsx";
-import InwardForm from "../component/InwardForm.jsx";
-import OutwardForm from "../component/OutwardForm.jsx";
-import InwardDetailPanel from "../component/InwardDetailPanel.jsx";
-import InwardTable from "../component/InwardTable.jsx";
-import OutwardTable from "../component/OutwardTable.jsx";
+import GateTabs from "../component/gate-tabs/GateTabs.jsx";
+import GateFilterBar from "../component/gate-filter-bar/GateFilterBar.jsx";
+import InwardForm from "../component/inward-form/InwardForm.jsx";
+import OutwardForm from "../component/outward-form/OutwardForm.jsx";
+import InwardDetailPanel from "../component/inward-detail-panel/InwardDetailPanel.jsx";
+import InwardTable from "../component/inward-table/InwardTable.jsx";
+import OutwardTable from "../component/outward-table/OutwardTable.jsx";
 
 const EMPTY_FILTERS = { search: "", invoice_no: "", status: "", from_date: "", to_date: "" };
 

@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { Plus } from 'lucide-react'
 import { equipmentApi } from '../../../../api/masters.js'
 import { Button, BackButton } from '../../../../components/ui'
-import EquipmentTable from '../components/EquipmentTable.jsx'
-import EquipmentForm from '../components/EquipmentForm.jsx'
+import EquipmentTable from '../components/equipment-table/EquipmentTable.jsx'
+import EquipmentForm from '../components/equipment-form/EquipmentForm.jsx'
 
 export default function EquipmentMaster() {
   const [items, setItems]   = useState([])

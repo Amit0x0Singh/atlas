@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
+import './GRN.css'
 import { grnApi } from '../../../../../api/inventory.js'
 import { ErrorModal } from '../../../../../components/ui'
-import GrnList   from '../components/GrnList.jsx'
-import GrnDetail from '../components/GrnDetail.jsx'
+import GrnList   from '../components/grn-list/GrnList.jsx'
+import GrnDetail from '../components/grn-detail/GrnDetail.jsx'
 
 function fmtDate(d) {
   if (!d) return '—'
@@ -47,7 +48,7 @@ export default function GRN() {
   }
 
   return (
-    <div className="flex flex-col h-full" style={{ minHeight: 0 }}>
+    <div className="flex flex-col h-full grn-layout">
       <div className="flex flex-1 min-h-0">
         <GrnList
           list={filteredGrns}

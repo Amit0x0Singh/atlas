@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { ledgerApi, rmApi } from '../../../../../api/inventory.js'
 import { BackButton, Button } from '../../../../../components/ui'
-import LedgerTable             from '../components/LedgerTable.jsx'
-import TransactionDetailModal  from '../components/TransactionDetailModal.jsx'
+import LedgerTable             from '../components/ledger-table/LedgerTable.jsx'
+import TransactionDetailModal  from '../components/transaction-detail-modal/TransactionDetailModal.jsx'
 import { RefreshCw, X } from 'lucide-react'
+import './Ledger.css'
 
 export default function Ledger() {
   const [rows,       setRows]       = useState([])

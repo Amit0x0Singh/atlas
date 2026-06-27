@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { Plus } from 'lucide-react'
 import { rmApi } from '../../../../api/inventory.js'
+import './RmMaster.css'
 import { Button, BackButton } from '../../../../components/ui'
-import RmTable from '../components/RmTable.jsx'
-import RmForm  from '../components/RmForm.jsx'
+import RmTable from '../components/rm-table/RmTable.jsx'
+import RmForm  from '../components/rm-form/RmForm.jsx'
 
 export default function RmMaster() {
   const [items, setItems]       = useState([])

@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { Plus } from 'lucide-react'
 import { productApi } from '../../../../api/masters.js'
 import { Button, BackButton } from '../../../../components/ui'
-import ProductTable from '../components/ProductTable.jsx'
-import ProductForm from '../components/ProductForm.jsx'
+import ProductTable from '../components/product-table/ProductTable.jsx'
+import ProductForm from '../components/product-form/ProductForm.jsx'
 
 export default function ProductMaster() {
   const [items, setItems]      = useState([])

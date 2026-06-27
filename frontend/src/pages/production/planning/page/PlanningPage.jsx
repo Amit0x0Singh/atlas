@@ -1,13 +1,14 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { PLANT_CONFIG, PLANT_KEYS, PLANT_BADGE, statusBadgeCls } from '../data/plantConfig.js'
 import { SK, lsLoad, lsSave } from '../utils/storage.js'
 import { todayISO, addDays, fmtDateLabel } from '../utils/date.js'
-import AddTaskDrawer from '../components/AddTaskDrawer.jsx'
-import StatusDrawer from '../components/StatusDrawer.jsx'
-import SFGStockModal from '../components/SFGStockModal.jsx'
-import Toast from '../components/ui/Toast.jsx'
+import AddTaskDrawer from '../components/add-task-drawer/AddTaskDrawer.jsx'
+import StatusDrawer from '../components/status-drawer/StatusDrawer.jsx'
+import SFGStockModal from '../components/sfg-stock-modal/SFGStockModal.jsx'
+import Toast from '../components/ui/toast/Toast.jsx'
 import { Button, IconButton } from '../../../../components/ui'
 import { Plus, Send, Pencil, Trash2 } from 'lucide-react'
+import './PlanningPage.css'
 
 function useToast() {
   const [toast, setToast] = useState(null)
@@ -47,6 +48,7 @@ function DashboardTab({ tasks, onStatusUpdate }) {
           const count = todayTasks.filter(t => t.plant === plant).length
           return (
             <div key={plant} className="bg-white rounded-xl p-4 shadow-sm" style={{ borderTop: `4px solid ${cfg.color}` }}>
+
               <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">{plant}</div>
               <div className="text-[22px] font-bold text-gray-900">{count}</div>
               <div className="text-[11px] text-gray-400 mt-0.5">active tasks today</div>
@@ -62,7 +64,7 @@ function DashboardTab({ tasks, onStatusUpdate }) {
           <div className="text-[12px] mt-1">Go to Planning tab → create tasks → Send Schedule</div>
         </div>
       ) : (
-        <div className="grid gap-3.5" style={{ gridTemplateColumns: 'repeat(auto-fill,minmax(320px,1fr))' }}>
+        <div className="pp-task-grid grid gap-3.5">
           {todayTasks.map(t => (
             <div key={t.id} className="bg-white rounded-xl shadow-sm overflow-hidden"
               style={{ borderLeft: `5px solid ${PLANT_CONFIG[t.plant]?.color || '#64748b'}` }}>
@@ -124,8 +126,7 @@ function PlanningTab({ tasks, onChange, onAdd, onEdit, toastShow }) {
 
   return (
     <div className="p-6">
-      <div className="rounded-xl p-4 mb-5 flex items-center justify-between text-white"
-        style={{ background: 'linear-gradient(135deg,#0f1923 0%,#2d3a47 100%)' }}>
+      <div className="pp-schedule-banner rounded-xl p-4 mb-5 flex items-center justify-between text-white">
         <div>
           <div className="font-bold text-[14px] mb-0.5">📅 Production Schedule</div>
           <div className="text-[13px] opacity-80">
@@ -229,9 +230,9 @@ export default function PlanningPage() {
   const activeTodayCount = tasks.filter(t => t.date === today && t.sent && t.status !== 'Completed').length
 
   return (
-    <div className="flex flex-col overflow-hidden bg-[#f0f4f8]" style={{ height: '100%' }}>
+    <div className="pp-root flex flex-col overflow-hidden bg-[#f0f4f8]">
       {/* Top bar */}
-      <div className="bg-[#0f1923] text-white px-6 flex items-center justify-between flex-shrink-0" style={{ height: 56 }}>
+      <div className="pp-topbar bg-[#0f1923] text-white px-6 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2.5">
           <span className="font-bold text-[15px]">🏭 SOM Phyto Pharma</span>
           <span className="text-[12px] opacity-60 font-normal">Production Planning ERP</span>
