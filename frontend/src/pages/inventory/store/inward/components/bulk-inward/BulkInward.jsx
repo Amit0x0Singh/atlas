@@ -95,7 +95,7 @@ export default function BulkInward() {
   if (scanPhase === 'done') return (
     <div className="p-6 max-w-xl">
       <div className="bg-green-50 border border-green-200 rounded-xl p-8 text-center">
-        <div className="text-5xl mb-4">�o.</div>
+        <div className="text-5xl mb-4">o.</div>
         <h2 className="text-2xl font-bold text-green-800 mb-2">Bulk Inward Recorded!</h2>
         <p className="text-green-700 font-semibold">{result?.lotNo}</p>
         <p className="text-green-600 text-sm mt-1">{result?.receivedQty} {location?.uom} received at {location?.locationId}</p>
@@ -114,7 +114,7 @@ export default function BulkInward() {
         Receive bulk lots (bags, labels, carrier material) into a location. Scan the location QR or enter its ID manually.
       </p>
 
-      {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm">�O {error}</div>}
+      {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm">O {error}</div>}
 
       {(scanPhase === 'idle' || scanPhase === 'scanning') && (
         <div className="space-y-4">

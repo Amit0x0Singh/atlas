@@ -84,6 +84,7 @@ export default function PackingMaster() {
       shape: item.shape || '', color: item.color || '', laminate: item.laminate || '',
       contentsSpec: item.contentsSpec || '',
       packCount: item.packCount != null ? String(item.packCount) : '',
+      quantity: item.quantity != null ? String(item.quantity) : '0',
       notes: item.notes || '',
     })
     setMsg(''); setShowForm(true)
@@ -92,9 +93,11 @@ export default function PackingMaster() {
     if (!form.itemName || !form.category) { setMsg('Item Name and Category are required'); return }
     if (form.category === 'CORRUGATED_BOXES' && !form.ply) { setMsg('Ply is required for Corrugated Boxes'); return }
     setSaving(true); setMsg('')
+    // Strip UI-only helper fields before sending to backend
+    const { _customPly, ...payload } = form
     try {
-      if (editing) await packingMaterialApi.update(editing.id, form)
-      else         await packingMaterialApi.create(form)
+      if (editing) await packingMaterialApi.update(editing.id, payload)
+      else         await packingMaterialApi.create(payload)
       setShowForm(false); load()
     } catch (e) { setMsg(e.message) }
     finally { setSaving(false) }

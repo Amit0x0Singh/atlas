@@ -74,7 +74,7 @@ export default function PrintMaster() {
         />
         <GateInwardPanel
           onSelect={setSelectedGate}
-          selectedId={selectedGate?.inward_id}
+          selectedId={selectedGate?.inwardId}
           reloadTrigger={gatePanelTrigger}
         />
       </div>

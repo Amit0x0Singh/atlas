@@ -114,14 +114,14 @@ export default function InwardHistory() {
 
   return (
     <div className="p-6">
-      {/* �"?�"? Filters �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"? */}
+      {/*  Filters   */}
       <div className="bg-white border border-gray-200 rounded-xl p-4 mb-4">
         <div className="flex items-center gap-2 flex-wrap">
           {/* Search */}
           <input
             value={searchText}
             onChange={e => setSearchText(e.target.value)}
-            placeholder="Search item, code, lot, invoice�?�"
+            placeholder="Search item, code, lot, invoice?"
             className="flex-1 min-w-48 border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
           />
 
@@ -154,7 +154,7 @@ export default function InwardHistory() {
         </div>
       </div>
 
-      {/* �"?�"? Table �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"? */}
+      {/* "?"? Table "?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"? */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         {/* Table toolbar */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
@@ -176,7 +176,7 @@ export default function InwardHistory() {
         </div>
 
         {loading ? (
-          <p className="text-gray-400 text-center py-14">Loading inward history�?�</p>
+          <p className="text-gray-400 text-center py-14">Loading inward history?</p>
         ) : (
           <>
           <div className="overflow-x-auto">
@@ -209,7 +209,7 @@ export default function InwardHistory() {
 
                     return (
                       <>
-                        {/* �"?�"? Main group row �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"? */}
+                        {/*  Main group row  */}
                         <tr key={g.key}
                           onClick={() => toggle(g.key)}
                           className={`border-t border-gray-200 cursor-pointer select-none transition-colors ${
@@ -217,7 +217,7 @@ export default function InwardHistory() {
                           }`}>
                           {/* Toggle */}
                           <td className="px-3 py-3 text-center text-gray-400 text-xs">
-                            {isOpen ? '�-�' : '�-�'}
+                            {isOpen ? '-' : '-'}
                           </td>
 
                           {/* Item */}
@@ -277,13 +277,12 @@ export default function InwardHistory() {
                               target="_blank"
                               rel="noreferrer"
                               className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-lg transition whitespace-nowrap"
-                            >
-                              �Y-�️ Print All ({g.bags.length})
+                            >Print All ({g.bags.length})
                             </a>
                           </td>
                         </tr>
 
-                        {/* �"?�"? Bag sub-rows �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"? */}
+                        {/* "?"? Bag sub-rows "?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"? */}
                         {isOpen && g.bags.map(b => (
                           <tr key={b.packId} className="bg-blue-50/30 border-t border-blue-100/60">
                             <td colSpan={9} className="px-0 py-0">
@@ -303,7 +302,7 @@ export default function InwardHistory() {
                                 </span>
                                 {b.warehouse ? (
                                   <span className="text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded w-36 text-center shrink-0 truncate">
-                                    �Y�� {b.warehouse}
+                                    Y {b.warehouse}
                                   </span>
                                 ) : (
                                   <span className="text-xs text-gray-300 w-36 text-center shrink-0">—</span>
@@ -314,7 +313,7 @@ export default function InwardHistory() {
                                   rel="noreferrer"
                                   className="text-xs text-blue-600 hover:text-blue-800 font-medium ml-4 shrink-0 whitespace-nowrap"
                                 >
-                                  �Y-�️ Label
+                                  Y-️ Label
                                 </a>
                               </div>
                             </td>

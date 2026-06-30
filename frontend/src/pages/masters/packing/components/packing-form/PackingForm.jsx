@@ -1,12 +1,14 @@
-﻿import { X, Save } from 'lucide-react'
+﻿import { X, Save, Plus } from 'lucide-react'
 import { Button, IconButton } from '../../../../../components/ui'
 import {
   CATEGORIES, CAT, SUB_TYPES,
   MATERIALS_BTL, MATERIALS_PCH, SHAPES,
-  COLORS_BTL, COLORS_PCH, COLORS_CBB,
-  CAPACITY_UNITS, PLY_OPTIONS, LAMINATES,
+  COLORS_PCH, COLORS_CBB,
+  CAPACITY_UNITS, LAMINATES,
   inp, Lbl, Field,
 } from '../packing-constants/packingConstants.jsx'
+
+const PLY_PRESETS = [3, 5, 7]
 
 export default function PackingForm({ editing, form, onChange, saving, msg, onSave, onClose }) {
   const set = (k, v) => onChange(k, v)
@@ -113,25 +115,6 @@ export default function PackingForm({ editing, form, onChange, saving, msg, onSa
                       </select>
                     </div>
                   </div>
-                  <div>
-                    <Lbl text="Color" />
-                    <div className="flex flex-wrap gap-2">
-                      {COLORS_BTL.map(c => (
-                        <button key={c} type="button" onClick={() => set('color', form.color === c ? '' : c)}
-                          className={`px-3 py-1 rounded-lg text-xs font-medium border transition-all ${form.color === c ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
-                          {c}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <Lbl text="Outer Dimensions — L × W × H (mm)" />
-                    <div className="grid grid-cols-3 gap-3">
-                      {[['length','Length'],['width','Width'],['height','Height']].map(([k,p]) => (
-                        <input key={k} type="number" min="0" step="any" value={form[k]} onChange={e => set(k, e.target.value)} placeholder={p} className={inp} />
-                      ))}
-                    </div>
-                  </div>
                 </>
               )}
 
@@ -176,16 +159,46 @@ export default function PackingForm({ editing, form, onChange, saving, msg, onSa
                 <>
                   <div>
                     <Lbl text="Ply" req />
-                    <div className="flex gap-3">
-                      {PLY_OPTIONS.map(p => (
+                    <div className="flex flex-wrap gap-2 items-center">
+                      {PLY_PRESETS.map(p => (
                         <button key={p} type="button"
                           onClick={() => set('ply', form.ply === String(p) ? '' : String(p))}
-                          className={`flex-1 py-2.5 rounded-xl text-sm font-bold border-2 transition-all ${form.ply === String(p) ? 'border-emerald-500 bg-emerald-50 text-emerald-700 ring-2 ring-emerald-500' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
+                          className={`px-5 py-2.5 rounded-xl text-sm font-bold border-2 transition-all ${form.ply === String(p) ? 'border-emerald-500 bg-emerald-50 text-emerald-700 ring-2 ring-emerald-500' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
                           {p} PLY
                         </button>
                       ))}
+
+                      {/* Custom ply input */}
+                      <div className="flex items-center gap-1.5 ml-1">
+                        <input
+                          type="number" min="1" max="99" step="1"
+                          value={form._customPly || ''}
+                          onChange={e => set('_customPly', e.target.value)}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter' && form._customPly) {
+                              e.preventDefault()
+                              set('ply', String(parseInt(form._customPly)))
+                            }
+                          }}
+                          placeholder="Other"
+                          className="w-20 border border-dashed border-gray-300 rounded-lg px-2 py-2 text-sm text-center outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400"
+                        />
+                        <button type="button"
+                          onClick={() => { if (form._customPly) set('ply', String(parseInt(form._customPly))) }}
+                          className="flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors">
+                          <Plus size={12} /> PLY
+                        </button>
+                      </div>
                     </div>
+
+                    {/* Show custom selected ply indicator if not a preset */}
+                    {form.ply && !PLY_PRESETS.includes(Number(form.ply)) && (
+                      <div className="mt-2 inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-50 border border-emerald-300 rounded-lg text-sm font-bold text-emerald-700">
+                        ✓ {form.ply} PLY selected
+                      </div>
+                    )}
                   </div>
+
                   <div>
                     <Lbl text="Outer Dimensions — L × W × H (mm OD)" req />
                     <div className="grid grid-cols-3 gap-3">
@@ -194,6 +207,7 @@ export default function PackingForm({ editing, form, onChange, saving, msg, onSa
                       ))}
                     </div>
                   </div>
+
                   <div className="grid grid-cols-2 gap-4">
                     <Field label="Color / Board">
                       <select value={form.color} onChange={e => set('color', e.target.value)} className={inp}>
@@ -208,16 +222,26 @@ export default function PackingForm({ editing, form, onChange, saving, msg, onSa
                       </select>
                     </Field>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <Field label="Contents Spec">
-                      <input value={form.contentsSpec} onChange={e => set('contentsSpec', e.target.value)} placeholder="e.g. 20 × 500ml Round Bottles" className={inp} />
-                    </Field>
-                    <Field label="Pack Count">
-                      <input type="number" min="0" step="1" value={form.packCount} onChange={e => set('packCount', e.target.value)} placeholder="e.g. 20" className={inp} />
-                    </Field>
-                  </div>
                 </>
               )}
+
+              {/* Stock Quantity */}
+              <div className="grid grid-cols-2 gap-4">
+                <Field label="Quantity in Stock">
+                  <div className="relative">
+                    <input
+                      type="number" min="0" step="1"
+                      value={form.quantity}
+                      onChange={e => set('quantity', e.target.value)}
+                      placeholder="0"
+                      className={inp}
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-medium pointer-events-none">
+                      {form.uom || 'Nos'}
+                    </span>
+                  </div>
+                </Field>
+              </div>
 
               <Field label="Notes / Remarks">
                 <textarea value={form.notes} onChange={e => set('notes', e.target.value)} rows={2}

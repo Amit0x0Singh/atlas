@@ -77,7 +77,7 @@ const BYPASS_AUTH =
   process.env.NODE_ENV !== "production";
 
 const DEV_USER = {
-  user_id: "dev-user",
+  user_id: "00000000-0000-0000-0000-000000000001",
   username: "dev",
   full_name: "Dev Admin",
   role: "admin",

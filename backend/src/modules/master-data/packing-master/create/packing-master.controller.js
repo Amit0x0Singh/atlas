@@ -33,7 +33,7 @@ export const createPackingMaterial = async (req, res) => {
     const {
       itemName, category, subType, material,
       capacity, capacityUnit, length, width, height,
-      ply, shape, color, laminate, contentsSpec, packCount, uom, notes,
+      ply, shape, color, laminate, contentsSpec, packCount, quantity, uom, notes,
     } = req.body
 
     if (!itemName || !category) {
@@ -60,6 +60,7 @@ export const createPackingMaterial = async (req, res) => {
         laminate:     laminate     || null,
         contentsSpec: contentsSpec || null,
         packCount:    parseInt2(packCount),
+        quantity:     parseInt2(quantity) ?? 0,
         uom:          uom          || 'Nos',
         notes:        notes        || null,
       },

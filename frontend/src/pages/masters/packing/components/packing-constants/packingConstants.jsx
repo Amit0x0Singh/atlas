@@ -109,7 +109,9 @@ export const LAMINATES      = ['ITC Laminated', 'ITC Top', 'ITC White Board', 'W
 export const EMPTY_FORM = {
   itemName: '', category: '', subType: '', material: '',
   capacity: '', capacityUnit: 'ML', length: '', width: '', height: '',
-  ply: '', shape: '', color: '', laminate: '', contentsSpec: '', packCount: '', notes: '',
+  ply: '', shape: '', color: '', laminate: '', contentsSpec: '', packCount: '',
+  quantity: '0', notes: '',
+  _customPly: '',
 }
 
 export const inp = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500 bg-white'

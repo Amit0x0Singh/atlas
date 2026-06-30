@@ -51,11 +51,27 @@ export default function ItemList({ catMeta, selSub, subItems, groupedByName, onB
                     </span>
                   )}
                 </div>
-                <span className="text-xs text-gray-400 font-medium">{catMeta.prefix}</span>
+                <div className="flex items-center gap-3">
+                  {/* Total stock across all variants of this product */}
+                  {(() => {
+                    const total = variants.reduce((s, v) => s + (Number(v.quantity) || 0), 0)
+                    return (
+                      <span className={`flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full ${
+                        total === 0 ? 'bg-red-50 text-red-500 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'
+                      }`}>
+                        <span>📦</span>
+                        {total.toLocaleString()} {variants[0]?.uom || 'Nos'} total
+                      </span>
+                    )
+                  })()}
+                  <span className="text-xs text-gray-400 font-medium">{catMeta.prefix}</span>
+                </div>
               </div>
 
               <div className="divide-y divide-gray-50">
-                {variants.map(item => (
+                {variants.map(item => {
+                  const qty = Number(item.quantity) || 0
+                  return (
                   <div key={item.id} className="flex items-center gap-4 px-5 py-3.5 group hover:bg-gray-50 transition-colors">
                     <span className={`font-mono text-[11px] font-bold ${catMeta.cls.text} w-16 shrink-0`}>
                       {item.itemCode}
@@ -68,14 +84,26 @@ export default function ItemList({ catMeta, selSub, subItems, groupedByName, onB
                       }
                     </div>
 
-                    <span className="text-xs text-gray-400 shrink-0 font-medium">{item.uom || 'Nos'}</span>
+                    {/* Per-variant stock quantity */}
+                    <div className={`shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold border ${
+                      qty === 0
+                        ? 'bg-red-50 text-red-500 border-red-200'
+                        : qty <= 50
+                        ? 'bg-amber-50 text-amber-700 border-amber-200'
+                        : 'bg-green-50 text-green-700 border-green-200'
+                    }`}>
+                      {qty === 0 && <span className="text-[10px]">⚠</span>}
+                      {qty.toLocaleString()}
+                      <span className="font-normal text-[10px] opacity-70">{item.uom || 'Nos'}</span>
+                    </div>
 
                     <div className="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                       <IconButton icon={Pencil} tooltip="Edit" onClick={() => onEdit(item)} />
                       <IconButton icon={X} variant="danger" tooltip="Delete" onClick={() => onDelete(item.id, item.itemName)} />
                     </div>
                   </div>
-                ))}
+                )})}
+
               </div>
             </div>
           ))}

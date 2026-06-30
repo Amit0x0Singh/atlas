@@ -90,10 +90,10 @@ export default function GateInwardPanel({ onSelect, selectedId, reloadTrigger })
       ) : (
         <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "8px" }}>
           {records.map((r) => {
-            const isSelected = selectedId === r.inward_id;
+            const isSelected = selectedId === r.inwardId;
             return (
               <button
-                key={r.inward_id}
+                key={r.inwardId}
                 type="button"
                 onClick={() => onSelect(r)}
                 style={{
@@ -111,24 +111,24 @@ export default function GateInwardPanel({ onSelect, selectedId, reloadTrigger })
                 {/* Row 1: supplier + status */}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "5px" }}>
                   <span style={{ fontWeight: 700, fontSize: "13px", color: "#0f172a" }}>
-                    {r.supplier_name}
+                    {r.supplierName}
                   </span>
                   <StatusBadge status={r.status} />
                 </div>
 
                 {/* Row 2: meta */}
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", fontSize: "11px", color: "#64748b" }}>
-                  {r.invoice_no && (
+                  {r.invoiceNo && (
                     <span style={{ display: "flex", alignItems: "center", gap: "3px" }}>
-                      📄 {r.invoice_no}
+                      📄 {r.invoiceNo}
                     </span>
                   )}
-                  {r.vehicle_no && (
+                  {r.vehicleNo && (
                     <span style={{ display: "flex", alignItems: "center", gap: "3px" }}>
-                      🚛 {r.vehicle_no}
+                      🚛 {r.vehicleNo}
                     </span>
                   )}
-                  <span style={{ marginLeft: "auto" }}>{fmtDate(r.created_at)}</span>
+                  <span style={{ marginLeft: "auto" }}>{fmtDate(r.createdAt)}</span>
                 </div>
 
                 {isSelected && (

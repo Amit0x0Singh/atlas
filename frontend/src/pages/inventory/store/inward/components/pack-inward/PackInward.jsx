@@ -210,12 +210,12 @@ export default function PackInward() {
   const allScanned = session && scanned.length >= session.expectedBags
   const canSubmit  = scanned.length > 0
 
-  // �"?�"? Done �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
+  // "?"? Done "?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?
   if (step === STEPS.DONE) return (
     <div className="p-6 max-w-xl">
       {doneStats.leftOver > 0 ? (
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-8 text-center">
-          <div className="text-5xl mb-4">�Y"�</div>
+          <div className="text-5xl mb-4">Y"</div>
           <h2 className="text-2xl font-bold text-blue-800 mb-2">Partial Inward Submitted</h2>
           <p className="text-blue-700 mb-1">
             <span className="font-bold">{doneStats.submitted} bag{doneStats.submitted !== 1 ? 's' : ''}</span> successfully inwarded
@@ -228,7 +228,7 @@ export default function PackInward() {
         </div>
       ) : (
         <div className="bg-green-50 border border-green-200 rounded-xl p-8 text-center">
-          <div className="text-5xl mb-4">�o.</div>
+          <div className="text-5xl mb-4">o.</div>
           <h2 className="text-2xl font-bold text-green-800 mb-2">Pack Inward Completed!</h2>
           <p className="text-green-700 mb-1">{doneStats.submitted} bags successfully inwarded</p>
           <p className="text-green-600 text-sm mb-6">Item: {selected?.itemName} | Lot: {selected?.lotNo}</p>
@@ -238,7 +238,7 @@ export default function PackInward() {
     </div>
   )
 
-  // �"?�"? Scanning �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
+  // "?"? Scanning "?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?
   if (step === STEPS.SCANNING) return (
     <div className="p-4">
       <div className="flex items-center justify-between mb-3">
@@ -262,10 +262,10 @@ export default function PackInward() {
         </div>
       )}
 
-      {/* �"?�"? Warehouse switcher �"?�"? */}
+      {/* "?"? Warehouse switcher "?"? */}
       <div className="bg-indigo-50 border border-indigo-200 rounded-xl px-4 py-3 mb-4 flex items-center gap-3 flex-wrap">
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          <span className="text-lg">�Y��</span>
+          <span className="text-lg">Y</span>
           <div className="min-w-0">
             <p className="text-xs font-semibold text-indigo-600 leading-none mb-1">Scanning bags to warehouse</p>
             <p className="text-[11px] text-indigo-400">Change anytime — next scan goes to the selected warehouse</p>
@@ -282,14 +282,14 @@ export default function PackInward() {
 
       {warehouseFlash && (
         <div className="bg-indigo-600 text-white px-4 py-2 rounded-lg mb-3 text-sm font-semibold text-center animate-pulse">
-          �o" Warehouse changed → {warehouseFlash}
+          o" Warehouse changed → {warehouseFlash}
         </div>
       )}
 
       {/* Progress bar */}
       <div className="bg-white rounded-xl border border-gray-200 p-4 mb-4">
         <div className="flex justify-between text-sm font-medium mb-2">
-          <span className="text-green-700">�o. Scanned: {scanned.length}</span>
+          <span className="text-green-700">o. Scanned: {scanned.length}</span>
           <span className="text-orange-600">⏳ Pending: {pending.length}</span>
           <span className="text-gray-700">Total: {session?.expectedBags}</span>
         </div>
@@ -301,12 +301,12 @@ export default function PackInward() {
 
       {scanError && (
         <div className="bg-red-50 border border-red-300 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm">
-          �O {scanError}
+          O {scanError}
         </div>
       )}
       {lastScan && !scanError && !warehouseFlash && (
         <div className="bg-green-50 border border-green-300 text-green-700 px-4 py-2 rounded-lg mb-4 text-sm">
-          �o. Scanned: {lastScan}
+          o. Scanned: {lastScan}
         </div>
       )}
 
@@ -320,7 +320,7 @@ export default function PackInward() {
               <div className="w-48 h-48 border-2 border-blue-400 rounded-lg" />
             </div>
             <div className="absolute top-2 left-2 right-2 bg-indigo-700/80 rounded-lg px-3 py-1.5 text-center">
-              <span className="text-white text-xs font-semibold">�Y�� {warehouse}</span>
+              <span className="text-white text-xs font-semibold">Y {warehouse}</span>
             </div>
             <div className="absolute bottom-3 left-0 right-0 text-center text-white text-sm bg-black/40 py-1">
               Point camera at pack QR
@@ -330,7 +330,7 @@ export default function PackInward() {
             <input
               value={manualId}
               onChange={e => setManualId(e.target.value)}
-              placeholder="Or type / paste Pack ID�?�"
+              placeholder="Or type / paste Pack ID?"
               className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono outline-none focus:ring-2 focus:ring-blue-500"
             />
             <Button type="submit" disabled={!manualId.trim()} variant="primary" size="sm">
@@ -342,7 +342,7 @@ export default function PackInward() {
         {/* Scanned / Pending lists */}
         <div className="flex flex-col gap-3">
           <div className="bg-white border border-gray-200 rounded-xl p-3 flex-1 overflow-hidden">
-            <h3 className="font-semibold text-green-700 mb-2">�o. Scanned ({scanned.length})</h3>
+            <h3 className="font-semibold text-green-700 mb-2">o. Scanned ({scanned.length})</h3>
             <div className="overflow-y-auto max-h-36 space-y-1">
               {scanned.length === 0
                 ? <p className="text-gray-400 text-sm">No bags scanned yet</p>
@@ -377,11 +377,11 @@ export default function PackInward() {
         className="mt-4"
       >
         {submitting
-          ? 'Submitting�?�'
+          ? 'Submitting?'
           : allScanned
-            ? `�o. Submit All ${scanned.length} Bags`
+            ? `o. Submit All ${scanned.length} Bags`
             : canSubmit
-              ? `�Y"� Submit ${scanned.length} Scanned Bag${scanned.length !== 1 ? 's' : ''} (${pending.length} remaining for later)`
+              ? `Y" Submit ${scanned.length} Scanned Bag${scanned.length !== 1 ? 's' : ''} (${pending.length} remaining for later)`
               : 'Scan at least 1 bag to submit'}
       </Button>
 
@@ -391,7 +391,7 @@ export default function PackInward() {
     </div>
   )
 
-  // �"?�"? Setup �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
+  // "?"? Setup "?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?
   const selectedActiveSession = selected
     ? activeSessionMap[`${selected.itemCode}-${selected.lotNo}`]
     : null
@@ -408,7 +408,7 @@ export default function PackInward() {
       )}
 
       {loadingGroups ? (
-        <p className="text-gray-400">Loading pending items�?�</p>
+        <p className="text-gray-400">Loading pending items?</p>
       ) : pendingGroups.length === 0 && Object.keys(activeSessionMap).length === 0 ? (
         <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-4 rounded-lg">
           No packs pending inward. Go to <strong>Print Master</strong> to generate new packs first.
@@ -494,10 +494,10 @@ export default function PackInward() {
             size="lg"
           >
             {creating
-              ? 'Starting�?�'
+              ? 'Starting?'
               : selectedActiveSession
-                ? `�-� Resume Session (${selectedActiveSession.scannedPackIds?.length || 0}/${selectedActiveSession.expectedBags} done)`
-                : '�-� Start Scanning Session'}
+                ? ` Resume Session (${selectedActiveSession.scannedPackIds?.length || 0}/${selectedActiveSession.expectedBags} done)`
+                : ' Start Scanning Session'}
           </Button>
 
           {selectedActiveSession && (
