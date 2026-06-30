@@ -9,7 +9,7 @@ export const syncFromExcelHandler = async (req, reply) => {
   }
 }
 
-async function syncFromExcel() {
+const syncFromExcel = async () => {
   const MS365_ENABLED = process.env.MS365_ENABLED === 'true'
   if (!MS365_ENABLED)
     return { message: 'MS365 sync disabled. Set MS365_ENABLED=true to enable.', synced: 0 }

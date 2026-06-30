@@ -1,6 +1,5 @@
-import { api, erpApi } from '../context/context.jsx'
+import { api } from '../context/context.jsx'
 
-// ── Legacy unauthenticated production APIs ────────────────────────────────────
 
 export const productionApi = {
   list:          (params)            => api.get('/production', { params }),
@@ -31,13 +30,12 @@ export const indentApi = {
   markPoSent:      (indentIds)             => api.post('/indent/mark-po-sent', { indentIds }),
 }
 
-// ── ERP BOM issuance (authenticated) ─────────────────────────────────────────
 
 export const bomIssuanceApi = {
-  pendingJobs:  ()         => erpApi.get('/erp/bom-issuance/pending-jobs'),
-  getJob:       (id)       => erpApi.get(`/erp/bom-issuance/job/${id}`),
-  issue:        (data)     => erpApi.post('/erp/bom-issuance/issue', data),
-  scrapJob:     (id, data) => erpApi.post(`/erp/bom-issuance/jobs/${id}/scrap`, data),
-  reprocessJob: (id)       => erpApi.post(`/erp/bom-issuance/jobs/${id}/reprocess`),
-  history:      (params)   => erpApi.get('/erp/bom-issuance/history', { params }),
+  pendingJobs:  ()         => api.get('/bom-issuance/pending-jobs'),
+  getJob:       (id)       => api.get(`/bom-issuance/job/${id}`),
+  issue:        (data)     => api.post('/bom-issuance/issue', data),
+  scrapJob:     (id, data) => api.post(`/bom-issuance/jobs/${id}/scrap`, data),
+  reprocessJob: (id)       => api.post(`/bom-issuance/jobs/${id}/reprocess`),
+  history:      (params)   => api.get('/bom-issuance/history', { params }),
 }

@@ -2,7 +2,6 @@
 import { X } from "lucide-react";
 import { packsApi, rmApi, gateApi } from "../../../../../api/inventory.js";
 import { Button, IconButton } from "../../../../../components/ui";
-import QRCodePreview from "../qr-code-preview/QRCodePreview.jsx";
 
 const todayStr = () => new Date().toISOString().split("T")[0];
 
@@ -151,9 +150,7 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed }) {
   const [items, setItems]           = useState([{ ...BLANK_ITEM }]);
   const [loading, setLoading]       = useState(false);
   const [error, setError]           = useState("");
-  const [results, setResults]       = useState([]);
   const [linkedEntry, setLinkedEntry] = useState(null);
-  const [showQR, setShowQR]         = useState(false);
 
   // Load shared RM list once
   useEffect(() => {
@@ -171,7 +168,6 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed }) {
         : todayStr(),
     });
     setLinkedEntry(prefill);
-    setResults([]);
     setError("");
   }, [prefill]);
 
@@ -201,7 +197,6 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed }) {
 
     setLoading(true);
     setError("");
-    setResults([]);
     try {
       const allResults = [];
       for (const it of items) {
@@ -213,14 +208,14 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed }) {
         });
         allResults.push(res.data);
       }
-      setResults(allResults);
       setItems([{ ...BLANK_ITEM }]);
       setHdr(BLANK_HDR);
       if (linkedEntry?.inward_id) {
         try { await gateApi.updateInward(linkedEntry.inward_id, { status: "approved" }) } catch { /* ignore auth errors */ }
       }
       setLinkedEntry(null);
-      onGenerated?.();
+      const totalPacks = allResults.reduce((n, r) => n + (r?.packs?.length || 0), 0);
+      onGenerated?.({ results: allResults, totalPacks });
       onGateUsed?.();
     } catch (ex) {
       setError(ex.message);
@@ -228,8 +223,6 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed }) {
       setLoading(false);
     }
   };
-
-  const totalPacks = results.reduce((n, r) => n + (r?.packs?.length || 0), 0);
 
   return (
     <div style={{ background: "#fff", borderRadius: "12px", border: "1px solid #e2e8f0", padding: "22px" }}>
@@ -264,41 +257,6 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed }) {
         <div style={{ marginBottom: "12px", padding: "10px 14px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "8px", fontSize: "13px", color: "#dc2626" }}>
           {error}
         </div>
-      )}
-
-      {/* Success results */}
-      {results.length > 0 && (
-        <div style={{ marginBottom: "16px", padding: "12px 14px", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "8px" }}>
-          <p style={{ margin: "0 0 8px", fontWeight: 700, color: "#15803d", fontSize: "13px" }}>
-            ✅ Generated {totalPacks} packs across {results.length} item{results.length !== 1 ? "s" : ""}
-          </p>
-          {results.map((r, i) => r && (
-            <div key={i} style={{ fontSize: "12px", color: "#166534", marginBottom: "6px", display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
-              <span style={{ fontWeight: 600 }}>{r.packs?.[0]?.itemName || r.packs?.[0]?.itemCode || `Item ${i + 1}`}</span>
-              <span>Lot: <strong>{r.lotNo}</strong></span>
-              <span>{r.packs?.length} packs</span>
-              {r.packs?.[0] && (
-                <a
-                  href={packsApi.batchLabelsUrl(r.packs[0].itemCode, r.lotNo)}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{ color: "#2563eb", textDecoration: "underline", fontWeight: 600 }}
-                >
-                  🖨️ PDF Labels
-                </a>
-              )}
-            </div>
-          ))}
-          <div style={{ marginTop: "8px" }}>
-            <Button variant="primary" size="sm" onClick={() => setShowQR(true)}>
-              📦 Show QR Labels
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {showQR && (
-        <QRCodePreview results={results} onClose={() => setShowQR(false)} />
       )}
 
       <form onSubmit={handleSubmit}>

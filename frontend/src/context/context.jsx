@@ -3,27 +3,16 @@ import axios from 'axios'
 
 const BASE = import.meta.env.VITE_API_BASE || '/api'
 
-// ── Legacy API instance (no auth) ─────────────────────────────────────────────
+// ── Single API instance (attaches token when present) ─────────────────────────
 export const api = axios.create({ baseURL: BASE, timeout: 30000 })
 
-api.interceptors.response.use(
-  (res) => res.data,
-  (err) => {
-    const message = err.response?.data?.error || err.message || 'Network error'
-    return Promise.reject(new Error(message))
-  }
-)
-
-// ── ERP API instance (attaches token if present) ──────────────────────────────
-export const erpApi = axios.create({ baseURL: BASE, timeout: 45000 })
-
-erpApi.interceptors.request.use((config) => {
+api.interceptors.request.use((config) => {
   const token = localStorage.getItem('erp_token')
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config
 })
 
-erpApi.interceptors.response.use(
+api.interceptors.response.use(
   (res) => res.data,
   (err) => {
     const message = err.response?.data?.error || err.message || 'Network error'
@@ -42,7 +31,7 @@ export function AppProvider({ children }) {
 
   // Kept for future RBAC — not enforced in routes yet
   const login = useCallback(async (username, password) => {
-    const res = await erpApi.post('/auth/login', { username, password })
+    const res = await api.post('/auth/login', { username, password })
     localStorage.setItem('erp_token', res.token)
     localStorage.setItem('erp_user', JSON.stringify(res.user))
     setUser(res.user)
@@ -50,7 +39,7 @@ export function AppProvider({ children }) {
   }, [])
 
   const pinLogin = useCallback(async (username, pin) => {
-    const res = await erpApi.post('/auth/pin-login', { username, pin })
+    const res = await api.post('/auth/pin-login', { username, pin })
     localStorage.setItem('erp_token', res.token)
     localStorage.setItem('erp_user', JSON.stringify(res.user))
     setUser(res.user)

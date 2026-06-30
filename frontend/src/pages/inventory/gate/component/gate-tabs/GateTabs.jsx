@@ -1,6 +1,8 @@
+import { ArrowDown, ArrowUp } from "lucide-react";
+
 const TABS = [
-  { key: "inward", label: "⬇ Inward" },
-  { key: "outward", label: "⬆ Outward" },
+  { key: "inward",  label: "Inward",  Icon: ArrowDown },
+  { key: "outward", label: "Outward", Icon: ArrowUp   },
 ];
 
 export default function GateTabs({ tab, onChange }) {
@@ -16,7 +18,7 @@ export default function GateTabs({ tab, onChange }) {
         width: "fit-content",
       }}
     >
-      {TABS.map(({ key, label }) => (
+      {TABS.map(({ key, label, Icon }) => (
         <button
           key={key}
           onClick={() => onChange(key)}
@@ -31,8 +33,12 @@ export default function GateTabs({ tab, onChange }) {
             background: tab === key ? "#fff" : "transparent",
             color: tab === key ? "#0f172a" : "#64748b",
             boxShadow: tab === key ? "0 1px 4px rgba(0,0,0,0.1)" : "none",
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
           }}
         >
+          <Icon size={14} />
           {label}
         </button>
       ))}

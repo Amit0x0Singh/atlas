@@ -6,7 +6,7 @@ import {
 } from "../../../middleware/auth.js";
 import { writeAudit } from "../../../middleware/audit.js";
 
-export async function login(req, res) {
+export const login = async (req, res) => {
   const { username, password } = req.body;
 
   const user = await prisma.user.findUnique({
@@ -22,10 +22,10 @@ export async function login(req, res) {
   });
 
   if (!user || !user.isActive)
-    return res.status(401).json({ success: false, error: "Invalid credentials" });
+    return res.status(401).json({ success: false, error: "Invalid credentials", code: 'UNAUTHORIZED' });
 
   if (!verifyPassword(password, user.passwordHash))
-    return res.status(401).json({ success: false, error: "Invalid credentials" });
+    return res.status(401).json({ success: false, error: "Invalid credentials", code: 'UNAUTHORIZED' });
 
   const token = signJwt({
     user_id: user.userId,
@@ -55,7 +55,7 @@ export async function login(req, res) {
   });
 }
 
-export async function pinLogin(req, res) {
+export const pinLogin = async (req, res) => {
   const { username, pin } = req.body;
 
   const user = await prisma.user.findUnique({
@@ -71,13 +71,13 @@ export async function pinLogin(req, res) {
   });
 
   if (!user || !user.isActive)
-    return res.status(401).json({ success: false, error: "Invalid credentials" });
+    return res.status(401).json({ success: false, error: "Invalid credentials", code: 'UNAUTHORIZED' });
 
   if (!user.pinHash)
-    return res.status(401).json({ success: false, error: "PIN not set for this user" });
+    return res.status(401).json({ success: false, error: "PIN not set for this user", code: 'UNAUTHORIZED' });
 
   if (!verifyPin(pin, user.pinHash))
-    return res.status(401).json({ success: false, error: "Invalid PIN" });
+    return res.status(401).json({ success: false, error: "Invalid PIN", code: 'UNAUTHORIZED' });
 
   const token = signJwt(
     {

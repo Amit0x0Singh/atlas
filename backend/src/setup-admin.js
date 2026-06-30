@@ -18,25 +18,18 @@ async function main() {
   console.log("Generating password hash…");
   const hash = hashPassword(ADMIN_PASSWORD);
 
-  const existing = await prisma.$queryRaw`
-    SELECT user_id FROM users WHERE username = ${ADMIN_USER} LIMIT 1
-  `;
+  const existing = await prisma.user.findFirst({ where: { username: ADMIN_USER } });
 
-  if (existing.length > 0) {
-    await prisma.$executeRaw`
-      UPDATE users SET
-        password_hash = ${hash},
-        full_name     = ${ADMIN_NAME},
-        role          = 'admin',
-        is_active     = true
-      WHERE username = ${ADMIN_USER}
-    `;
+  if (existing) {
+    await prisma.user.update({
+      where: { userId: existing.userId },
+      data: { passwordHash: hash, fullName: ADMIN_NAME, role: 'admin', isActive: true },
+    });
     console.log("✅ Admin user password updated.");
   } else {
-    await prisma.$executeRaw`
-      INSERT INTO users (username, password_hash, full_name, role, email, is_active)
-      VALUES (${ADMIN_USER}, ${hash}, ${ADMIN_NAME}, 'admin', ${ADMIN_EMAIL}, true)
-    `;
+    await prisma.user.create({
+      data: { username: ADMIN_USER, passwordHash: hash, fullName: ADMIN_NAME, role: 'admin', email: ADMIN_EMAIL, isActive: true },
+    });
     console.log("✅ Admin user created.");
   }
 
@@ -44,7 +37,7 @@ async function main() {
   console.log("  Username : admin");
   console.log("  Password : Admin@2026!");
   console.log("");
-  console.log("Login at: http://localhost:5173/erp/login");
+  console.log("Login at: http://localhost:5173/login");
   await prisma.$disconnect();
 }
 

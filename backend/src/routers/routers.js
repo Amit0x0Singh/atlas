@@ -13,13 +13,12 @@ import ExportRouter from "../modules/export/routes.js";
 
 // Admin Panel Router
 import AdminPanelRouter from "../modules/admin_panel/router.js";
-import GateRouter from "../modules/inventory/gate/router.js";
 
 // Import controller
 import {
   previewImport,
   executeImport,
-} from "../modules/inventory/import/import.controller.js";
+} from "../modules/inventory/import/create/import.controller.js";
 import { authenticate, managerOrAbove } from "../middleware/auth.js";
 
 const upload = multer({
@@ -34,43 +33,43 @@ const router = express.Router();
 // router.use("/auth", UserRouter);
 
 // ── Inventory ─────────────────────────────────────────────────────────────────
+
 // Handles: /api/rm, /api/packs, /api/inward, /api/outward, /api/stock,
 //          /api/ledger, /api/grn, /api/import, /api/bulk,
-//          /api/erp/gate, /api/erp/inventory
-router.use("/", InventoryRouter);
+//          /api/gate, /api/inventory
 
-// ── Gate (Inward + Outward) ───────────────────────────────────────────────────
-router.use("/erp/gate", GateRouter);
+router.use("/", InventoryRouter);
+ 
 
 // ── Sales ─────────────────────────────────────────────────────────────────────
 // Handles: /api/customer-profiles, /api/cp-profiles, /api/tracker,
-//          /api/bom-sends, /api/erp/sales, /api/erp/sales-orders,
-//          /api/erp/notifications
+//          /api/bom-sends, /api/sales, /api/sales-orders,
+//          /api/notifications
 router.use("/", SalesRouter);
 
 // ── Production ────────────────────────────────────────────────────────────────
 // Handles: /api/production, /api/indent, /api/sfg, /api/recipe,
-//          /api/erp/bom-issuance
+//          /api/bom-issuance
 router.use("/", ProductionRouter);
 
 // ── Planning ──────────────────────────────────────────────────────────────────
-// Handles: /api/plan-engine/*, /api/erp/planning/*, /api/sales/planner-queue
+// Handles: /api/plan-engine/*, /api/planning/*, /api/sales/planner-queue
 // router.use("/", PlanningRouter);
 
 // ── Master Data ───────────────────────────────────────────────────────────────
-// Handles: /api/rm, /api/products, /api/equipment, /api/erp/masters/*
+// Handles: /api/rm, /api/products, /api/equipment, /api/masters/*
 router.use("/", MasterDataRouter);
 
 // ── HR ────────────────────────────────────────────────────────────────────────
-// Handles: /api/erp/employees/*
+// Handles: /api/employees/*
 // router.use("/", HRRouter);
 
 // ── Microbial ─────────────────────────────────────────────────────────────────
-// Handles: /api/microbial-sfg/*, /api/erp/microbial/*
+// Handles: /api/microbial-sfg/*, /api/microbial/*
 // router.use("/", MicrobialRouter);
 
 // ── Export ────────────────────────────────────────────────────────────────────
-// Handles: /api/erp/export/*
+// Handles: /api/export/*
 // router.use("/", ExportRouter);
 
 // ── Import (Excel file upload → DB) ──────────────────────────────────────────
@@ -81,6 +80,7 @@ router.post(
   upload.single("file"),
   previewImport,
 );
+
 router.post(
   "/import/execute",
   authenticate,

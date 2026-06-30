@@ -1,5 +1,5 @@
 ﻿import { Button, IconButton } from "../../../../../components/ui";
-import { X } from "lucide-react";
+import { X, Search } from "lucide-react";
 
 const INPUT = {
   padding: "8px 12px",
@@ -62,19 +62,17 @@ export default function GateFilterBar({ tab, filters, onChange, onClear, total }
         <div>
           <label style={LABEL}>Search by {searchLabel}</label>
           <div style={{ position: "relative" }}>
-            <span
+            <Search
+              size={14}
               style={{
                 position: "absolute",
                 left: "10px",
                 top: "50%",
                 transform: "translateY(-50%)",
-                fontSize: "14px",
                 color: "#94a3b8",
                 pointerEvents: "none",
               }}
-            >
-              🔍
-            </span>
+            />
             <input
               value={filters.search}
               onChange={(e) => onChange("search", e.target.value)}

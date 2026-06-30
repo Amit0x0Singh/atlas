@@ -1,4 +1,4 @@
-import { erpApi as api } from '../context/context.jsx'
+import { api } from '../context/context.jsx'
 
 export const authApi = {
   login:          (data)     => api.post('/auth/login', data),

@@ -7,11 +7,12 @@ import MaterialIssueByBOM from '../components/material-issue-by-bom/MaterialIssu
 import StockLossAdjustment from '../components/stock-loss-adjustment/StockLossAdjustment.jsx'
 import { RefreshCw } from 'lucide-react'
 import './Outward.css'
+import { Warehouse, ClipboardList, Container, TriangleAlert } from 'lucide-react'
 
 const MODES = [
   {
     key: 'wh-wh',
-    icon: '�Y��',
+    icon: <Warehouse />,
     label: 'Warehouse → Warehouse',
     desc: 'Transfer a pack from one warehouse/location to another',
     color: 'border-blue-300 hover:border-blue-500 hover:bg-blue-50',
@@ -19,7 +20,7 @@ const MODES = [
   },
   {
     key: 'bom-issue',
-    icon: '�Y"<',
+    icon: <ClipboardList />,
     label: 'Material Issue by BOM',
     desc: 'Issue raw materials to plant based on product recipe — scan pack or container QR per RM',
     color: 'border-indigo-300 hover:border-indigo-500 hover:bg-indigo-50',
@@ -27,7 +28,7 @@ const MODES = [
   },
   {
     key: 'wh-cont',
-    icon: '�Y>�️',
+    icon: <Container />,
     label: 'Warehouse → Container',
     desc: 'Fill a container from warehouse packs — scan bag QR to select material',
     color: 'border-orange-300 hover:border-orange-500 hover:bg-orange-50',
@@ -35,7 +36,7 @@ const MODES = [
   },
   {
     key: 'stock-loss',
-    icon: '�s�️',
+    icon: <TriangleAlert />,
     label: 'Stock Loss Adjustment',
     desc: 'Record material lost during production, spillage, damage or weighing errors — scan bag QR',
     color: 'border-red-300 hover:border-red-500 hover:bg-red-50',

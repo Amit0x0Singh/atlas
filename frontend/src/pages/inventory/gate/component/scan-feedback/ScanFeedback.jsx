@@ -1,8 +1,12 @@
+import { Loader2, CheckCircle, XCircle, X } from "lucide-react";
+
 export default function ScanFeedback({ feedback, onClose }) {
   if (!feedback) return null;
 
   const isSuccess = feedback.success === true;
   const isLoading = feedback.loading === true;
+
+  const Icon = isLoading ? Loader2 : isSuccess ? CheckCircle : XCircle;
 
   return (
     <div
@@ -25,9 +29,10 @@ export default function ScanFeedback({ feedback, onClose }) {
         minWidth: "260px",
       }}
     >
-      <span style={{ fontSize: "16px" }}>
-        {isLoading ? "⏳" : isSuccess ? "✅" : "❌"}
-      </span>
+      <Icon
+        size={16}
+        style={isLoading ? { animation: "spin 1s linear infinite" } : undefined}
+      />
       <span style={{ flex: 1 }}>{feedback.msg}</span>
       <button
         onClick={onClose}
@@ -36,12 +41,12 @@ export default function ScanFeedback({ feedback, onClose }) {
           border: "none",
           cursor: "pointer",
           opacity: 0.5,
-          fontSize: "16px",
           padding: "0",
           lineHeight: 1,
+          display: "flex",
         }}
       >
-        ✕
+        <X size={14} />
       </button>
     </div>
   );

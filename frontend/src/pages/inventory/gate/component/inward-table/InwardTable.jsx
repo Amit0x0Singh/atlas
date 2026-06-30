@@ -66,7 +66,7 @@ function DeleteRequestBadge() {
         whiteSpace: "nowrap",
       }}
     >
-      ⏳ Delete Requested
+      Delete Requested
     </span>
   );
 }
@@ -87,7 +87,7 @@ export default function InwardTable({ list, total, onOpenDetail, onRequestDelete
           textAlign: "center",
         }}
       >
-        <div style={{ fontSize: "40px", marginBottom: "10px" }}>📋</div>
+        <div style={{ marginBottom: "10px", color: "#cbd5e1" }}><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg></div>
         <div style={{ fontSize: "14px", fontWeight: 600, color: "#64748b" }}>
           No inward entries found
         </div>

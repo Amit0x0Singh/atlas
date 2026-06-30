@@ -1,4 +1,5 @@
 ﻿import { useState } from "react";
+import { ArrowUp } from "lucide-react";
 import { Button } from "../../../../../components/ui";
 
 const EMPTY = { receiver_name: "", invoice_no: "", vehicle_no: "" };
@@ -52,7 +53,7 @@ export default function OutwardForm({ onSubmit, onCancel }) {
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "18px" }}>
-        <span style={{ fontSize: "18px" }}>⬆</span>
+        <ArrowUp size={18} style={{ color: "#8b5cf6", flexShrink: 0 }} />
         <h3 style={{ margin: 0, fontSize: "15px", fontWeight: 700, color: "#0f172a" }}>
           New Gate Outward
         </h3>

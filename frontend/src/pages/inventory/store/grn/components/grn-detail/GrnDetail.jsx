@@ -65,7 +65,7 @@ export default function GrnDetail({ selected, detail, loading }) {
   if (!detail) return null
 
   return (
-    <div className="max-w-3xl">
+    <div className="max-w-4xl">
       <div className="flex items-center justify-between mb-5">
         <div>
           <h2 className="font-bold text-gray-900">{grnNumber(selected)}</h2>

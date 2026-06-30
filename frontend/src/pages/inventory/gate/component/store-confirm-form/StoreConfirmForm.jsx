@@ -44,7 +44,7 @@ export default function StoreConfirmForm({ detail, items, onConfirm }) {
           gap: "6px",
         }}
       >
-        📦 Store: Confirm Item Details
+        Store: Confirm Item Details
       </div>
 
       <div

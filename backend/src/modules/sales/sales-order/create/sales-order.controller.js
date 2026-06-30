@@ -1,6 +1,6 @@
 import prisma from "../../../../db.js";
 
-async function nextSoId() {
+const nextSoId = async () => {
   const year = new Date().getFullYear();
   const seq = await prisma.soSequence.upsert({
     where: { year },
@@ -33,14 +33,12 @@ const createSalesOrder = async (req, res) => {
   if (!company || !diNo || !customerName || !orderType)
     return res.status(400).json({
       success: false,
-      error: "company, diNo, customerName, orderType are required",
-    });
+      error: "company, diNo, customerName, orderType are required", code: 'VALIDATION_ERROR' });
 
   if (!items || !Array.isArray(items) || items.length === 0)
     return res.status(400).json({
       success: false,
-      error: "At least one order item is required",
-    });
+      error: "At least one order item is required", code: 'VALIDATION_ERROR' });
 
   const soId = await nextSoId();
 
@@ -102,7 +100,7 @@ const addCompany = async (req, res) => {
   try {
     const { code, name } = req.body;
     if (!code || !name)
-      return res.status(400).json({ success: false, error: "code and name are required" });
+      return res.status(400).json({ success: false, error: "code and name are required", code: 'VALIDATION_ERROR' });
 
     const company = await prisma.companyMaster.upsert({
       where:  { code: code.trim().toUpperCase() },
@@ -111,7 +109,7 @@ const addCompany = async (req, res) => {
     });
     return res.json({ success: true, data: company });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
   }
 };
 

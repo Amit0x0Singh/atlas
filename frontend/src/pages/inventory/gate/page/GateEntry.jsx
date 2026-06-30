@@ -1,5 +1,5 @@
 ﻿import { useState, useEffect, useRef, useCallback } from "react";
-import { ArrowDown, ArrowUp } from "lucide-react";
+import { ArrowDown, ArrowUp, CheckCircle } from "lucide-react";
 import { gateApi } from "../../../../api/inventory.js";
 import { useAuth } from "../../../../components/auth/AuthContext.jsx";
 import { Button, BackButton, ErrorModal, ConfirmModal } from '../../../../components/ui'
@@ -43,6 +43,7 @@ export default function GateEntry() {
   const [detail, setDetail]   = useState(null);
   const [errModal, setErrModal]           = useState({ open: false, message: '' });
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [successMsg, setSuccessMsg]       = useState('');
 
   const debounceRef = useRef(null);
 
@@ -102,10 +103,17 @@ export default function GateEntry() {
     fetchList(listType, EMPTY_FILTERS);
   };
 
+  const showSuccess = (msg) => {
+    setSuccessMsg(msg);
+    setTimeout(() => setSuccessMsg(''), 4000);
+  };
+
   const submitInward = async (form) => {
     try {
-      await gateApi.createInward(form);
-      openList("inward");
+      const res = await gateApi.createInward(form);
+      const entry = res.data;
+      showSuccess(`Inward entry created${entry?.supplier_name ? ` for ${entry.supplier_name}` : ''}${entry?.invoice_no ? ` · ${entry.invoice_no}` : ''}`);
+      setFormKey(k => k + 1);
     } catch (e) {
       setErrModal({ open: true, message: e.message });
     }
@@ -113,8 +121,10 @@ export default function GateEntry() {
 
   const submitOutward = async (form) => {
     try {
-      await gateApi.createOutward(form);
-      openList("outward");
+      const res = await gateApi.createOutward(form);
+      const entry = res.data;
+      showSuccess(`Outward entry recorded${entry?.receiver_name ? ` for ${entry.receiver_name}` : ''}${entry?.invoice_no ? ` · ${entry.invoice_no}` : ''}`);
+      setFormKey(k => k + 1);
     } catch (e) {
       setErrModal({ open: true, message: e.message });
     }
@@ -169,6 +179,13 @@ export default function GateEntry() {
             </div>
           </div>
 
+          {/* Success banner */}
+          {successMsg && (
+            <div style={{ marginBottom: '16px', padding: '12px 16px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '10px', color: '#15803d', fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <CheckCircle size={16} /> {successMsg}
+            </div>
+          )}
+
           {/* Inward / Outward tab selector */}
           <GateTabs tab={formTab} onChange={(t) => { setFormTab(t); setFormKey(k => k + 1) }} />
 
@@ -197,7 +214,7 @@ export default function GateEntry() {
         <>
           <div style={S.header}>
             <div>
-              <h1 style={S.title}>⬇ Inward Entries</h1>
+              <h1 style={{ ...S.title, display: 'flex', alignItems: 'center', gap: '10px' }}><ArrowDown size={22} /> Inward Entries</h1>
               <p style={S.subtitle}>{total} record{total !== 1 ? "s" : ""} found</p>
             </div>
             <div style={S.btnRow}>
@@ -236,7 +253,7 @@ export default function GateEntry() {
         <>
           <div style={S.header}>
             <div>
-              <h1 style={S.title}>⬆ Outward Entries</h1>
+              <h1 style={{ ...S.title, display: 'flex', alignItems: 'center', gap: '10px' }}><ArrowUp size={22} /> Outward Entries</h1>
               <p style={S.subtitle}>{total} record{total !== 1 ? "s" : ""} found</p>
             </div>
             <div style={S.btnRow}>
