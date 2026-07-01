@@ -4,7 +4,7 @@ import {
   customerProfileApi,
   cpProfileApi,
 } from "../../../../api/sales.js";
-import { productApi } from "../../../../api/masters.js";
+import { productApi, packingMaterialApi } from "../../../../api/masters.js";
 import { STATIC_CUSTOMER_PROFILES } from "../../../../data/customerProfiles";
 import {
   STATUSES,
@@ -31,7 +31,7 @@ const EMPTY_FILTERS = {
 // ─────────────────────────────────────────────────────────────────────────────
 // NewOrderModal — centered overlay with the CreateSalesOrder form inside
 // ─────────────────────────────────────────────────────────────────────────────
-function NewOrderModal({ editing, products, profiles, onSave, onClose }) {
+function NewOrderModal({ editing, products, profiles, packingMaterials, onSave, onClose }) {
   return (
     <div
       style={{
@@ -101,6 +101,7 @@ function NewOrderModal({ editing, products, profiles, onSave, onClose }) {
             initial={editing || undefined}
             products={products}
             profiles={profiles}
+            packingMaterials={packingMaterials}
             onSave={onSave}
             onCancel={onClose}
           />
@@ -118,6 +119,7 @@ const SalesOrder = () => {
   const [orders, setOrders] = useState([]);
   const [products, setProducts] = useState([]);
   const [profiles, setProfiles] = useState(STATIC_CUSTOMER_PROFILES);
+  const [packingMaterials, setPackingMaterials] = useState({ primary: [], secondary: [] });
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
 
@@ -159,6 +161,17 @@ const SalesOrder = () => {
     } catch {
       /* non-critical */
     }
+
+    try {
+      const pmRes = await packingMaterialApi.list()
+      const all = pmRes.data || []
+      // BOTTLES_TINS + POUCHES_BAGS → primary (individual unit containers)
+      // CORRUGATED_BOXES → secondary (outer bulk packaging)
+      setPackingMaterials({
+        primary:   all.filter(m => ['BOTTLES_TINS', 'POUCHES_BAGS'].includes(m.category)),
+        secondary: all.filter(m => m.category === 'CORRUGATED_BOXES'),
+      })
+    } catch { /* non-critical */ }
 
     try {
       const profRes = await customerProfileApi.list();
@@ -697,6 +710,7 @@ const SalesOrder = () => {
           editing={editing}
           products={products}
           profiles={profiles}
+          packingMaterials={packingMaterials}
           onSave={handleSave}
           onClose={() => {
             setShowForm(false);

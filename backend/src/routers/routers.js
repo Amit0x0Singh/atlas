@@ -6,6 +6,7 @@ import InventoryRouter from "../modules/inventory/routes.js";
 import SalesRouter from "../modules/sales/routes.js";
 import ProductionRouter from "../modules/production/routes.js";
 import PlanningRouter from "../modules/planning/routes.js";
+import TasksRouter from "../modules/production/tasks/tasks.router.js";
 import MasterDataRouter from "../modules/master-data/routes.js";
 import HRRouter from "../modules/hr/routes.js";
 import MicrobialRouter from "../modules/microbial/routes.js";
@@ -54,7 +55,11 @@ router.use("/", ProductionRouter);
 
 // ── Planning ──────────────────────────────────────────────────────────────────
 // Handles: /api/plan-engine/*, /api/planning/*, /api/sales/planner-queue
-// router.use("/", PlanningRouter);
+router.use("/", PlanningRouter);
+
+// ── Production Tasks (plant scheduling) ──────────────────────────────────────
+// Handles: /api/production/tasks, /api/production/search/*
+router.use("/", TasksRouter);
 
 // ── Master Data ───────────────────────────────────────────────────────────────
 // Handles: /api/rm, /api/products, /api/equipment, /api/masters/*

@@ -1,6 +1,5 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { PLANT_CONFIG, PLANT_KEYS, TAB_TO_PLANT, PLANT_BADGE, statusBadgeCls } from '../data/plantConfig.js'
-import { SK, lsLoad } from '../utils/storage.js'
 import { todayISO, addDays, fmtDateLabel } from '../utils/date.js'
 import TaskCard from '../components/task-card/TaskCard.jsx'
 import AddTaskDrawer from '../components/add-task-drawer/AddTaskDrawer.jsx'
@@ -10,6 +9,7 @@ import SFGStockModal from '../components/sfg-stock-modal/SFGStockModal.jsx'
 import Toast from '../components/ui/toast/Toast.jsx'
 import { Button } from '../../../../components/ui'
 import { Download } from 'lucide-react'
+import { planTasksApi } from '../../../../api/production.js'
 import './ProductionPage.css'
 
 function useToast() {
@@ -57,7 +57,6 @@ function PlantTab({ plant, tasks, onEdit, onStatusUpdate, onBMR }) {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <span className="px-4 py-1.5 rounded-full text-[12px] font-bold text-white" style={{ background: cfg.color }}>
-
             {cfg.label}
           </span>
           <span className="text-[13px] text-gray-400">{fmtDateLabel(date)}</span>
@@ -213,21 +212,33 @@ const TABS = [
 export default function ProductionPage() {
   const [activeTab,    setActiveTab]    = useState('nano')
   const [tasks,        setTasks]        = useState([])
+  const [loading,      setLoading]      = useState(false)
   const [drawer,       setDrawer]       = useState(null)
   const [statusTarget, setStatusTarget] = useState(null)
-  const [bmrTaskIds,   setBmrTaskIds]   = useState([])
+  const [bmrTasks,     setBmrTasks]     = useState([])   // array of full task objects
   const [sfgOpen,      setSfgOpen]      = useState(false)
   const { toast, show: toastShow } = useToast()
 
-  function loadTasks() { setTasks(lsLoad(SK.tasks)) }
+  const loadTasks = useCallback(async () => {
+    setLoading(true)
+    try {
+      const r = await planTasksApi.list()
+      setTasks(r.data || [])
+    } catch (e) {
+      toastShow('Failed to load tasks: ' + e.message, 'err')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
   useEffect(() => { loadTasks() }, [])
+
+  function openBMR(task) {
+    setBmrTasks(prev => prev.find(t => t.id === task.id) ? prev : [...prev, task])
+  }
 
   const today = todayISO()
   const activeTodayCount = tasks.filter(t => t.date === today && t.sent && t.status !== 'Completed').length
-
-  function openBMR(taskId) {
-    setBmrTaskIds(prev => prev.includes(taskId) ? prev : [...prev, taskId])
-  }
 
   return (
     <div className="prodp-root flex flex-col overflow-hidden bg-[#f0f4f8]">
@@ -245,6 +256,7 @@ export default function ProductionPage() {
           {activeTodayCount > 0 && (
             <span className="bg-white/15 text-[11px] px-2.5 py-1 rounded">{activeTodayCount} active today</span>
           )}
+          {loading && <span className="text-[11px] opacity-60">Loading…</span>}
           <span className="text-[12px] opacity-70">
             {new Date().toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}
           </span>
@@ -294,11 +306,11 @@ export default function ProductionPage() {
         />
       )}
 
-      {bmrTaskIds.length > 0 && (
+      {bmrTasks.length > 0 && (
         <BMROverlay
-          openTaskIds={bmrTaskIds}
-          onClose={() => { setBmrTaskIds([]); loadTasks() }}
-          onTasksChange={ids => { setBmrTaskIds(ids); loadTasks() }}
+          openTasks={bmrTasks}
+          onClose={() => { setBmrTasks([]); loadTasks() }}
+          onTasksChange={tasks => { setBmrTasks(tasks); loadTasks() }}
         />
       )}
 

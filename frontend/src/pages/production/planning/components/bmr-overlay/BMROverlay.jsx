@@ -1,5 +1,6 @@
 ﻿import { useState, useEffect, useRef } from 'react'
 import { sfgAddEntry } from '../../utils/storage.js'
+import { planTasksApi } from '../../../../../api/production.js'
 import './BMROverlay.css'
 
 const BMR_STORE = 'erp_bmr_drafts'
@@ -522,17 +523,16 @@ function QCHandoffModal({ task, bmrData, sfgCreated, onClose }) {
     ? `SFG — ${sfgCreated.location}`
     : (task.process === 'Packing' ? 'Packed & ready for dispatch' : task.location || '—')
 
-  function confirmSend() {
+  async function confirmSend() {
     const qcQueue = (() => { try { return JSON.parse(localStorage.getItem('erp_qc_queue'))||[] } catch { return [] } })()
     const id = () => Date.now().toString(36) + Math.random().toString(36).slice(2,5)
     qcQueue.push({ id: id(), taskId:task.id, productName:task.productName, batchCode:task.batchCode,
       diNo:task.diNo, plant:task.plant, qty:task.qty, qtyUom:task.qtyUom,
       remarks, sentAt:new Date().toISOString(), qcStatus:'Pending' })
     localStorage.setItem('erp_qc_queue', JSON.stringify(qcQueue))
-    const tasks = lsLoad('erp_tasks')
-    const idx = tasks.findIndex(t => t.id === task.id)
-    if (idx >= 0) { tasks[idx].sentToQc = true; tasks[idx].sentToQcAt = new Date().toISOString() }
-    lsSave('erp_tasks', tasks)
+    try {
+      await planTasksApi.update(task.id, { sentToQc: true, sentToQcAt: new Date().toISOString() })
+    } catch { /* best-effort */ }
     onClose('sent')
   }
 
@@ -568,22 +568,19 @@ function QCHandoffModal({ task, bmrData, sfgCreated, onClose }) {
 }
 
 // ── Main BMR Overlay ──────────────────────────────────────────────────────────
-export default function BMROverlay({ openTaskIds, onClose, onTasksChange }) {
-  const [activeId,    setActiveId]    = useState(openTaskIds[0] || null)
+// openTasks: array of full task objects
+export default function BMROverlay({ openTasks, onClose, onTasksChange }) {
+  const [activeId,    setActiveId]    = useState(openTasks[0]?.id || null)
   const [saveStatus,  setSaveStatus]  = useState('All changes auto-saved')
   const [qcHandoff,   setQcHandoff]   = useState(null)
   const panelRef  = useRef(null)
   const debTimer  = useRef(null)
 
-  const allTasks    = lsLoad('erp_tasks')
-  const openEntries = openTaskIds.map(id => {
-    const t = allTasks.find(t => t.id === id)
-    return t ? { taskId: id, task: t } : null
-  }).filter(Boolean)
+  const openEntries = openTasks.map(t => ({ taskId: t.id, task: t }))
 
   useEffect(() => {
     if (!activeId && openEntries.length) setActiveId(openEntries[0].taskId)
-  }, [openTaskIds])
+  }, [openTasks])
 
   function saveCurrentDraft() {
     if (!activeId || !panelRef.current) return
@@ -604,24 +601,18 @@ export default function BMROverlay({ openTaskIds, onClose, onTasksChange }) {
 
   function handleCloseTask(id) {
     saveCurrentDraft()
-    const remaining = openTaskIds.filter(tid => tid !== id)
+    const remaining = openTasks.filter(t => t.id !== id)
     if (!remaining.length) { onClose(); return }
     onTasksChange(remaining)
-    if (activeId === id) setActiveId(remaining[remaining.length - 1])
+    if (activeId === id) setActiveId(remaining[remaining.length - 1]?.id || null)
   }
 
-  function handleSubmit(taskId) {
+  async function handleSubmit(taskId) {
     saveCurrentDraft()
     if (!confirm('Submit BMR? This will mark the task as Completed.')) return
-    const tasks = lsLoad('erp_tasks')
-    const idx   = tasks.findIndex(t => t.id === taskId)
-    if (idx < 0) return
-    const task    = tasks[idx]
+    const task    = openTasks.find(t => t.id === taskId)
+    if (!task) return
     const bmrData = bmrLoad()[taskId] || {}
-
-    tasks[idx].bmrSubmitted    = true
-    tasks[idx].bmrSubmittedAt  = new Date().toISOString()
-    tasks[idx].status          = 'Completed'
 
     let sfgCreated = null
     if (task.process === 'Formulation' && task.packAfter === 'NO') {
@@ -646,16 +637,26 @@ export default function BMROverlay({ openTaskIds, onClose, onTasksChange }) {
       }
     }
 
-    lsSave('erp_tasks', tasks)
+    try {
+      await planTasksApi.update(taskId, {
+        bmrSubmitted:   true,
+        bmrSubmittedAt: new Date().toISOString(),
+        status:         'Completed',
+      })
+    } catch (e) {
+      alert('Failed to submit BMR: ' + e.message)
+      return
+    }
+
     setQcHandoff({ task, bmrData, sfgCreated })
-    const remaining = openTaskIds.filter(id => id !== taskId)
+    const remaining = openTasks.filter(t => t.id !== taskId)
     onTasksChange(remaining)
-    if (!remaining.length || activeId === taskId) setActiveId(remaining[0] || null)
+    if (!remaining.length || activeId === taskId) setActiveId(remaining[0]?.id || null)
   }
 
   function handleQcClose() {
     setQcHandoff(null)
-    if (!openTaskIds.filter(id => id !== qcHandoff?.task?.id).length) onClose()
+    if (!openTasks.filter(t => t.id !== qcHandoff?.task?.id).length) onClose()
   }
 
   const entry     = openEntries.find(e => e.taskId === activeId)

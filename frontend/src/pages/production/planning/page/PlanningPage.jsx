@@ -1,6 +1,5 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { PLANT_CONFIG, PLANT_KEYS, PLANT_BADGE, statusBadgeCls } from '../data/plantConfig.js'
-import { SK, lsLoad, lsSave } from '../utils/storage.js'
 import { todayISO, addDays, fmtDateLabel } from '../utils/date.js'
 import AddTaskDrawer from '../components/add-task-drawer/AddTaskDrawer.jsx'
 import StatusDrawer from '../components/status-drawer/StatusDrawer.jsx'
@@ -8,6 +7,7 @@ import SFGStockModal from '../components/sfg-stock-modal/SFGStockModal.jsx'
 import Toast from '../components/ui/toast/Toast.jsx'
 import { Button, IconButton } from '../../../../components/ui'
 import { Plus, Send, Pencil, Trash2 } from 'lucide-react'
+import { planTasksApi } from '../../../../api/production.js'
 import './PlanningPage.css'
 
 function useToast() {
@@ -48,7 +48,6 @@ function DashboardTab({ tasks, onStatusUpdate }) {
           const count = todayTasks.filter(t => t.plant === plant).length
           return (
             <div key={plant} className="bg-white rounded-xl p-4 shadow-sm" style={{ borderTop: `4px solid ${cfg.color}` }}>
-
               <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">{plant}</div>
               <div className="text-[22px] font-bold text-gray-900">{count}</div>
               <div className="text-[11px] text-gray-400 mt-0.5">active tasks today</div>
@@ -96,9 +95,10 @@ function DashboardTab({ tasks, onStatusUpdate }) {
 }
 
 // ── Planning Tab ──────────────────────────────────────────────────────────────
-function PlanningTab({ tasks, onChange, onAdd, onEdit, toastShow }) {
+function PlanningTab({ tasks, onRefresh, onAdd, onEdit, onDelete, toastShow }) {
   const [planDate,   setPlanDate]   = useState(todayISO())
   const [dateOffset, setDateOffset] = useState(0)
+  const [sending,    setSending]    = useState(false)
 
   function setOffset(n) {
     setDateOffset(n)
@@ -107,21 +107,19 @@ function PlanningTab({ tasks, onChange, onAdd, onEdit, toastShow }) {
 
   const filtered = tasks.filter(t => t.date === planDate)
 
-  function sendSchedule() {
+  async function sendSchedule() {
     const unsent = filtered.filter(t => !t.sent)
     if (!unsent.length) { toastShow('No unsent tasks for this date', 'err'); return }
-    const all = lsLoad(SK.tasks)
-    let count = 0
-    all.forEach(t => { if (t.date === planDate && !t.sent) { t.sent = true; count++ } })
-    lsSave(SK.tasks, all)
-    onChange()
-    toastShow(`✓ Schedule sent — ${count} task(s) pushed to plant pages`, 'ok')
-  }
-
-  function deleteTask(id) {
-    if (!confirm('Delete this task?')) return
-    lsSave(SK.tasks, lsLoad(SK.tasks).filter(t => t.id !== id))
-    onChange()
+    setSending(true)
+    try {
+      await planTasksApi.sendSchedule(planDate)
+      onRefresh()
+      toastShow(`✓ Schedule sent — ${unsent.length} task(s) pushed to plant pages`, 'ok')
+    } catch (e) {
+      toastShow(e.message, 'err')
+    } finally {
+      setSending(false)
+    }
   }
 
   return (
@@ -136,8 +134,8 @@ function PlanningTab({ tasks, onChange, onAdd, onEdit, toastShow }) {
         <div className="flex items-center gap-2.5">
           <input type="date" value={planDate} onChange={e => { setPlanDate(e.target.value); setDateOffset(null) }}
             className="px-3 py-2 rounded-lg text-[13px] text-gray-800 border-0 focus:outline-none" />
-          <Button variant="warning" icon={Plus} size="sm" onClick={onAdd}>Add Task</Button>
-          <Button variant="success" icon={Send} size="sm" onClick={sendSchedule}>Send Schedule</Button>
+          <Button variant="warning" icon={Plus} size="sm" onClick={() => onAdd(planDate)}>Add Task</Button>
+          <Button variant="success" icon={Send} size="sm" onClick={sendSchedule} loading={sending}>Send Schedule</Button>
         </div>
       </div>
 
@@ -195,7 +193,7 @@ function PlanningTab({ tasks, onChange, onAdd, onEdit, toastShow }) {
                     <td className="px-3 py-2.5">
                       <div className="flex gap-1.5">
                         <Button variant="secondary" size="xs" icon={Pencil} onClick={() => onEdit(t)}>Edit</Button>
-                        <Button variant="danger" size="xs" icon={Trash2} onClick={() => deleteTask(t.id)}>Del</Button>
+                        <Button variant="danger" size="xs" icon={Trash2} onClick={() => onDelete(t)}>Del</Button>
                       </div>
                     </td>
                   </tr>
@@ -218,13 +216,36 @@ const TABS = [
 export default function PlanningPage() {
   const [activeTab,    setActiveTab]    = useState('dashboard')
   const [tasks,        setTasks]        = useState([])
-  const [drawer,       setDrawer]       = useState(null)
+  const [loading,      setLoading]      = useState(false)
+  const [drawer,       setDrawer]       = useState(null)   // null | { defaultDate? } | { task }
   const [statusTarget, setStatusTarget] = useState(null)
   const [sfgOpen,      setSfgOpen]      = useState(false)
   const { toast, show: toastShow } = useToast()
 
-  function loadTasks() { setTasks(lsLoad(SK.tasks)) }
+  const loadTasks = useCallback(async () => {
+    setLoading(true)
+    try {
+      const r = await planTasksApi.list()
+      setTasks(r.data || [])
+    } catch (e) {
+      toastShow('Failed to load tasks: ' + e.message, 'err')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
   useEffect(() => { loadTasks() }, [])
+
+  async function deleteTask(t) {
+    if (!confirm('Delete this task?')) return
+    try {
+      await planTasksApi.delete(t.id)
+      loadTasks()
+      toastShow('Task deleted', 'ok')
+    } catch (e) {
+      toastShow(e.message, 'err')
+    }
+  }
 
   const today = todayISO()
   const activeTodayCount = tasks.filter(t => t.date === today && t.sent && t.status !== 'Completed').length
@@ -260,6 +281,7 @@ export default function PlanningPage() {
             {tab.label}
           </button>
         ))}
+        {loading && <span className="ml-auto self-center text-[11px] text-gray-400 pr-4">Loading…</span>}
       </div>
 
       {/* Content */}
@@ -270,9 +292,10 @@ export default function PlanningPage() {
         {activeTab === 'planning' && (
           <PlanningTab
             tasks={tasks}
-            onChange={loadTasks}
-            onAdd={() => setDrawer('add')}
+            onRefresh={loadTasks}
+            onAdd={(defaultDate) => setDrawer({ defaultDate })}
             onEdit={t => setDrawer({ task: t })}
+            onDelete={deleteTask}
             toastShow={toastShow}
           />
         )}
@@ -280,9 +303,9 @@ export default function PlanningPage() {
 
       {drawer && (
         <AddTaskDrawer
-          task={drawer === 'add' ? null : drawer.task}
-          defaultDate={todayISO()}
-          onSave={t => toastShow(drawer === 'add' ? `Task added — ${t.taskId}` : 'Task updated', 'ok')}
+          task={drawer.task || null}
+          defaultDate={drawer.defaultDate || todayISO()}
+          onSave={() => toastShow(drawer.task ? 'Task updated' : 'Task added', 'ok')}
           onClose={() => { setDrawer(null); loadTasks() }}
         />
       )}

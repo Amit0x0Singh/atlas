@@ -96,7 +96,7 @@ function PackLabel({ pack }) {
       </div>
 
       {/* Footer */}
-      <div
+      {/* <div
         style={{
           background: "#d6e4f0",
           color: "#1a3a6b",
@@ -107,7 +107,8 @@ function PackLabel({ pack }) {
         }}
       >
         LOT: {pack.lotNo}
-      </div>
+      </div> */}
+      
     </div>
   );
 }

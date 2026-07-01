@@ -36,7 +36,16 @@ export default function OrderHistory({ orders, loading, onOpenDispatch }) {
   const [page,         setPage]         = useState(1)
   const [expandedKeys, setExpandedKeys] = useState(new Set())
 
-  const paginated = orders.slice((page - 1) * limit, page * limit)
+  const sorted = [...orders].sort((a, b) => {
+    const da = a.estimatedDispatchDate || null
+    const db = b.estimatedDispatchDate || null
+    if (!da && !db) return 0
+    if (!da) return 1
+    if (!db) return -1
+    return new Date(da) - new Date(db)
+  })
+
+  const paginated = sorted.slice((page - 1) * limit, page * limit)
 
   const toggle      = (id) => setExpandedKeys(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
   const expandAll   = () => setExpandedKeys(new Set(paginated.map(o => o.id)))

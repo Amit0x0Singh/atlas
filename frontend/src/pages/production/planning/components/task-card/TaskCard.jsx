@@ -70,7 +70,7 @@ export default function TaskCard({ task, onEdit, onStatusUpdate, onBMR }) {
             Edit
           </button>
           <button
-            onClick={() => onBMR(task.id)}
+            onClick={() => onBMR(task)}
             className="tc-bmr-btn px-2.5 py-1 text-[11px] font-semibold rounded text-white transition"
           >
             📋 BMR

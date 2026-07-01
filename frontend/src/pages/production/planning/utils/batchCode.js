@@ -51,8 +51,9 @@ export function getNextBatchCode(plant, productName, carrier, specs, today) {
 
 export function generateTaskId(plant, date) {
   const prefix = PLANT_CONFIG[plant]?.prefix || 'XX'
-  const d      = date.replace(/-/g,'')
-  const tasks  = lsLoad(SK.tasks).filter(t => t.plant === plant && t.date === date)
-  const seq    = String(tasks.length + 1).padStart(2,'0')
-  return `${prefix}-${d}-${seq}`
+  const d      = date.replace(/-/g, '')
+  // Use timestamp+random to avoid collisions (tasks are now in the backend, not localStorage)
+  const rand   = Date.now().toString(36).slice(-3).toUpperCase() +
+                 Math.random().toString(36).slice(2, 4).toUpperCase()
+  return `${prefix}-${d}-${rand}`
 }

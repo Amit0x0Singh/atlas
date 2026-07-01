@@ -31,6 +31,20 @@ export const indentApi = {
 }
 
 
+// ── Plant scheduling tasks (planning/production pages) ────────────────────────
+export const planTasksApi = {
+  list:         (params) => api.get('/plan-tasks', { params }),
+  create:       (data)   => api.post('/plan-tasks', data),
+  update:       (id, data) => api.put(`/plan-tasks/${id}`, data),
+  delete:       (id)     => api.delete(`/plan-tasks/${id}`),
+  sendSchedule: (date)   => api.post('/plan-tasks/send-schedule', { date }),
+  // Autocomplete lookups
+  searchSalesOrders:    (q)      => api.get('/plan-tasks/search/sales-orders',      { params: { q } }),
+  getSalesOrderItems:   (diNo)   => api.get('/plan-tasks/search/sales-order-items', { params: { diNo } }),
+  searchProducts:       (q, plant) => api.get('/plan-tasks/search/products',        { params: { q, plant } }),
+  searchEquipment:      (plant)   => api.get('/plan-tasks/search/equipment',        { params: { plant } }),
+}
+
 export const bomIssuanceApi = {
   pendingJobs:  ()         => api.get('/bom-issuance/pending-jobs'),
   getJob:       (id)       => api.get(`/bom-issuance/job/${id}`),
