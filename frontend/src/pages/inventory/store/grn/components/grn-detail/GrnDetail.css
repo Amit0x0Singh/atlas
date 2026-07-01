@@ -200,10 +200,10 @@
 }
 
 .gd-sig-strip {
-  margin: 8px 32px 28px;
+  margin: 20px 42px 28px;
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 24px;
+  grid-template-columns: 1fr 1fr;
+  gap: 200px;
 }
 
 .gd-sig-line {
@@ -216,4 +216,38 @@
   font-size: 10px;
   color: #64748b;
   font-weight: 600;
+}
+
+/* ─── Print ────────────────────────────────────────────────────────────────── */
+@media print {
+  /* Force backgrounds and colours to appear in print */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide everything on the page */
+  body * {
+    visibility: hidden !important;
+  }
+
+  /* Un-hide the printable GRN content and all its children */
+  .grn-printable,
+  .grn-printable * {
+    visibility: visible !important;
+  }
+
+  /* Stretch the printable block to fill the page at the top-left corner */
+  .grn-printable {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100% !important;
+    background: #ffffff !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
 }

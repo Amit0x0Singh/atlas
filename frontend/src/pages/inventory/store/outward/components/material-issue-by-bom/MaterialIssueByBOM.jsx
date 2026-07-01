@@ -1,6 +1,7 @@
 ﻿import { useState, useEffect, useRef, useCallback } from 'react'
 import { outwardApi, containerApi } from '../../../../../../api/inventory.js'
 import { recipeApi, productApi } from '../../../../../../api/masters.js'
+import { planTasksApi, indentApi } from '../../../../../../api/production.js'
 import QRScanner from '../../../../../../components/QRScanner/QRScanner.jsx'
 import { Button, BackButton, IconButton } from '../../../../../../components/ui'
 import { Camera, X } from 'lucide-react'
@@ -26,8 +27,14 @@ export default function MaterialIssueByBOM() {
   const [selProduct, setSelProduct] = useState(null)
   const [batchQty, setBatchQty]     = useState('')
   const [batchRef, setBatchRef]     = useState('')
+  const [diNo,     setDiNo]         = useState('')
   const [loadingBom, setLoadingBom] = useState(false)
   const [error, setError]           = useState('')
+
+  // Production task picker
+  const [tasks,        setTasks]        = useState([])
+  const [loadingTasks, setLoadingTasks] = useState(false)
+  const [taskFilter,   setTaskFilter]   = useState({ plant: '', date: new Date().toISOString().slice(0, 10) })
 
   // �"?�"? Session �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
   const [sessions, setSessions] = useState(() => readSessions())
@@ -60,6 +67,31 @@ export default function MaterialIssueByBOM() {
     productApi.list().then(r => setProducts(r.data || [])).catch(() => {})
   }, [])
 
+  // Load production tasks
+  useEffect(() => {
+    setLoadingTasks(true)
+    planTasksApi.list().then(r => setTasks(r.data || [])).catch(() => {}).finally(() => setLoadingTasks(false))
+  }, [])
+
+  const filteredTasks = tasks.filter(t =>
+    t.sent &&
+    t.status !== 'Completed' &&
+    (!taskFilter.plant || t.plant === taskFilter.plant) &&
+    (!taskFilter.date  || t.date  === taskFilter.date)
+  )
+
+  function selectTask(task) {
+    const match = products.find(p =>
+      p.productName?.toLowerCase() === task.productName?.toLowerCase() ||
+      (task.productCode && p.productCode === task.productCode)
+    )
+    setSelProduct(match || { productCode: task.productCode || '', productName: task.productName })
+    setBatchQty(String(task.qty || ''))
+    setBatchRef(task.batchCode || task.taskId || '')
+    setDiNo(task.diNo || '')
+    setError('')
+  }
+
   // Refresh sessions when returning to select screen
   useEffect(() => {
     if (step === 'select') setSessions(readSessions())
@@ -72,7 +104,7 @@ export default function MaterialIssueByBOM() {
       id: sessionId,
       productCode: selProduct?.productCode || '',
       productName: selProduct?.productName || '',
-      batchQty, batchRef,
+      batchQty, batchRef, diNo,
       startedAt: readSessions().find(s => s.id === sessionId)?.startedAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       bomLines,
@@ -130,6 +162,7 @@ export default function MaterialIssueByBOM() {
     setSelProduct({ productCode: s.productCode, productName: s.productName })
     setBatchQty(s.batchQty)
     setBatchRef(s.batchRef || '')
+    setDiNo(s.diNo || '')
     setBomLines(s.bomLines)
     setSessionId(s.id)
     setActiveIdx(null)
@@ -261,10 +294,37 @@ export default function MaterialIssueByBOM() {
   // �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
   // STEP: SELECT
   // �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
+
+
   if (step === 'select') {
     const activeSessions = sessions.filter(s => s.bomLines?.some(l => l.issued < l.required - 0.001))
+
+    // Session-level status counts (matches the reference image cards)
+    const pendingCount  = sessions.filter(s => s.bomLines?.every(l => (l.issued || 0) <= 0.001)).length
+    const partialCount  = sessions.filter(s => s.bomLines?.some(l => (l.issued || 0) > 0.001) && s.bomLines?.some(l => (l.issued || 0) < (l.required || 0) - 0.001)).length
+    const completeCount = sessions.filter(s => (s.bomLines?.length || 0) > 0 && s.bomLines?.every(l => (l.issued || 0) >= (l.required || 0) - 0.001)).length
+
     return (
       <div className="p-6 max-w-3xl">
+
+        {/* ── Session status cards ── */}
+        {sessions.length > 0 && (
+          <div className="grid grid-cols-3 gap-3 mb-6">
+            <div className="bg-white rounded-xl border border-gray-200 p-5 text-center shadow-sm">
+              <div className="text-3xl font-bold text-yellow-500 mb-0.5">{pendingCount}</div>
+              <div className="text-xs font-semibold text-yellow-600">BOM Sessions Pending</div>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-200 p-5 text-center shadow-sm">
+              <div className="text-3xl font-bold text-blue-600 mb-0.5">{partialCount}</div>
+              <div className="text-xs font-semibold text-blue-600">Partially Issued</div>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-200 p-5 text-center shadow-sm">
+              <div className="text-3xl font-bold text-green-600 mb-0.5">{completeCount}</div>
+              <div className="text-xs font-semibold text-green-600">Fully Issued</div>
+            </div>
+          </div>
+        )}
+
         {/* In-progress sessions */}
         {activeSessions.length > 0 && (
           <div className="mb-7">
@@ -334,76 +394,84 @@ export default function MaterialIssueByBOM() {
           <div className="h-px flex-1 bg-gray-200" />
         </div>
 
-        <p className="text-sm text-gray-500 mb-5">
-          Select a product and enter the batch size. Scan each pack or container QR code to issue materials.
-          Progress is auto-saved — you can leave and resume any time.
+        <p className="text-sm text-gray-500 mb-4">
+          Select a production task to issue raw materials by BOM. Progress is auto-saved — you can leave and resume any time.
         </p>
 
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm">{error}</div>
         )}
 
-        <div className="space-y-5">
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Product *</label>
-            <input
-              value={prodSearch || selProduct?.productName || ''}
-              onChange={e => { setProdSearch(e.target.value); setSelProduct(null) }}
-              placeholder="Search product name or code�?�"
-              className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-            {prodSearch && !selProduct && (
-              <div className="relative z-10">
-                <div className="absolute top-1 left-0 right-0 border border-gray-200 rounded-lg bg-white shadow-lg max-h-52 overflow-y-auto">
-                  {filteredProducts.slice(0, 10).map(p => (
-                    <button key={p.productCode} type="button"
-                      onMouseDown={() => { setSelProduct(p); setProdSearch('') }}
-                      className="w-full text-left px-4 py-2.5 hover:bg-indigo-50 text-sm border-b border-gray-50 last:border-0">
-                      <div className="font-medium text-gray-900">{p.productName}</div>
-                      <div className="text-xs text-gray-400 font-mono">{p.productCode}</div>
-                    </button>
-                  ))}
-                  {filteredProducts.length === 0 && (
-                    <p className="text-gray-400 text-sm px-4 py-3">No products found</p>
-                  )}
-                </div>
-              </div>
-            )}
-            {selProduct && (
-              <div className="mt-2 flex items-center gap-2 bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2">
-                <span className="text-xs text-indigo-700 font-mono font-bold">{selProduct.productCode}</span>
-                <span className="text-sm font-medium text-indigo-900">{selProduct.productName}</span>
-                <IconButton icon={X} onClick={() => { setSelProduct(null); setProdSearch('') }} variant="ghost" size="xs" tooltip="Clear" className="ml-auto" />
-              </div>
-            )}
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Batch Size (KG) *</label>
-              <input type="number" min="0.001" step="0.001"
-                value={batchQty} onChange={e => setBatchQty(e.target.value)}
-                placeholder="e.g. 1000"
-                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Batch Ref / Notes</label>
-              <input value={batchRef} onChange={e => setBatchRef(e.target.value)}
-                placeholder="e.g. B-2026-001"
-                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-          </div>
-
-          <Button onClick={loadBom}
-            disabled={loadingBom || !selProduct || !batchQty || parseFloat(batchQty) <= 0}
-            loading={loadingBom}
-            variant="purple"
-            fullWidth>
-            {loadingBom ? 'Loading BOM�?�' : '�Y"< Load BOM & Start Issuing'}
-          </Button>
+        {/* Task picker filters */}
+        <div className="flex gap-3 mb-4 flex-wrap">
+          <select value={taskFilter.plant} onChange={e => setTaskFilter(f => ({ ...f, plant: e.target.value }))}
+            className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white outline-none focus:ring-2 focus:ring-indigo-400">
+            <option value="">All Plants</option>
+            {['Nano', 'Botanical', 'Liquid', 'Powder', 'Granules'].map(p => <option key={p}>{p}</option>)}
+          </select>
+          <input type="date" value={taskFilter.date} onChange={e => setTaskFilter(f => ({ ...f, date: e.target.value }))}
+            className="border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-400" />
         </div>
+
+        {/* Task list */}
+        {loadingTasks ? (
+          <p className="text-sm text-gray-400 py-6 text-center">Loading tasks...</p>
+        ) : filteredTasks.length === 0 ? (
+          <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-6 text-center mb-4">
+            <p className="text-sm text-gray-500 font-medium">No active tasks for selected date / plant</p>
+            <p className="text-xs text-gray-400 mt-1">Tasks must be sent from the Planning page first</p>
+          </div>
+        ) : (
+          <div className="space-y-2 mb-4">
+            {filteredTasks.map(task => {
+              const isSelected = selProduct?.productName === task.productName && batchQty === String(task.qty)
+              return (
+                <button key={task.id} type="button"
+                  onClick={() => selectTask(task)}
+                  className={`w-full text-left border rounded-xl px-4 py-3 transition hover:border-indigo-400 hover:bg-indigo-50/60 ${
+                    isSelected ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200 bg-white'
+                  }`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-gray-900 text-sm">{task.productName}</div>
+                      <div className="flex items-center gap-3 mt-0.5 flex-wrap text-xs text-gray-400">
+                        <span className="font-medium text-gray-600">{task.qty} {task.qtyUom || 'KG'}</span>
+                        {task.batchCode && <span className="font-mono">{task.batchCode}</span>}
+                        {task.diNo      && <span>{task.diNo}</span>}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-bold">{task.plant}</span>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                        task.status === 'Under Process' ? 'bg-blue-100 text-blue-700' :
+                        task.status === 'Not Started'   ? 'bg-gray-100 text-gray-500'  :
+                                                          'bg-amber-100 text-amber-700'
+                      }`}>{task.status}</span>
+                    </div>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        )}
+
+        {/* Selected task summary */}
+        {selProduct && (
+          <div className="mb-4 flex items-center gap-2 bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2">
+            <span className="text-sm font-semibold text-indigo-900">{selProduct.productName}</span>
+            <span className="text-xs text-indigo-500">· {batchQty} KG</span>
+            {batchRef && <span className="text-xs font-mono text-gray-400">· {batchRef}</span>}
+            <IconButton icon={X} onClick={() => { setSelProduct(null); setBatchQty(''); setBatchRef('') }} variant="ghost" size="xs" tooltip="Clear" className="ml-auto" />
+          </div>
+        )}
+
+        <Button onClick={loadBom}
+          disabled={loadingBom || !selProduct || !batchQty || parseFloat(batchQty) <= 0}
+          loading={loadingBom}
+          variant="purple"
+          fullWidth>
+          {loadingBom ? 'Loading BOM...' : 'Load BOM & Start Issuing'}
+        </Button>
       </div>
     )
   }
@@ -450,6 +518,29 @@ export default function MaterialIssueByBOM() {
           <div className="h-full bg-indigo-500 rounded-full transition-all duration-500"
             style={{ width: `${progress}%` }} />
         </div>
+
+        {/* Status matrix */}
+        {bomLines.length > 0 && (() => {
+          const pending   = bomLines.filter(l => l.issued <= 0).length
+          const partial   = bomLines.filter(l => l.issued > 0 && (l.required - l.issued) > 0.001).length
+          const complete  = bomLines.filter(l => (l.required - l.issued) <= 0.001).length
+          return (
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-center">
+                <p className="text-2xl font-bold text-gray-700">{pending}</p>
+                <p className="text-xs font-medium text-gray-500 mt-0.5">Pending</p>
+              </div>
+              <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-center">
+                <p className="text-2xl font-bold text-amber-700">{partial}</p>
+                <p className="text-xs font-medium text-amber-600 mt-0.5">Partially Issued</p>
+              </div>
+              <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-center">
+                <p className="text-2xl font-bold text-green-700">{complete}</p>
+                <p className="text-xs font-medium text-green-600 mt-0.5">Fully Issued</p>
+              </div>
+            </div>
+          )
+        })()}
 
         {/* BOM rows */}
         <div className="space-y-2">
@@ -547,6 +638,10 @@ export default function MaterialIssueByBOM() {
                     onSubmit={submitIssue}
                     bomLines={bomLines}
                     activeIdx={idx}
+                    selProduct={selProduct}
+                    batchQty={batchQty}
+                    batchRef={batchRef}
+                    diNo={diNo}
                   />
                 )}
               </div>
@@ -575,7 +670,7 @@ export default function MaterialIssueByBOM() {
   )
 }
 
-// �"?�"?�"? Issue panel �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
+// ─── Issue panel ──────────────────────────────────────────────────────────────
 function IssuePanel({
   line, remaining, packs, containers, loadingRes,
   scanInput, setScanInput, scanInputRef,
@@ -584,47 +679,264 @@ function IssuePanel({
   issueQty, setIssueQty,
   issuing, issueError,
   onScanInput, onOpenScanner, onSubmit,
+  // context for purchase indent
+  selProduct, batchQty, batchRef, diNo,
 }) {
-  const noStock = !loadingRes && packs.length === 0 && containers.length === 0
+  const totalAvailable   = packs.reduce((s, p) => s + (p.remainingQty || 0), 0)
+                         + containers.reduce((s, c) => s + (c.currentQty || 0), 0)
+  const noStock          = !loadingRes && packs.length === 0 && containers.length === 0
+  const insufficientStock = !loadingRes && !noStock && totalAvailable < remaining
+
+  // Indent state (local — each panel instance is independent)
+  const [showIndent,    setShowIndent]    = useState(false)
+  const [indentDiNo,    setIndentDiNo]    = useState(diNo || '')
+  const [indentBatchNo, setIndentBatchNo] = useState(batchRef || '')
+  const [indentPlant,   setIndentPlant]   = useState('')
+  const [indentLoading, setIndentLoading] = useState(false)
+  const [indentResult,  setIndentResult]  = useState(null)
+  const [indentErr,     setIndentErr]     = useState('')
+
+  // Keep local copies in sync if parent values change (e.g. task re-selected)
+  useEffect(() => { setIndentDiNo(diNo || '') },    [diNo])
+  useEffect(() => { setIndentBatchNo(batchRef || '') }, [batchRef])
+
+  async function handleIndentSubmit() {
+    if (!selProduct?.productCode || !indentDiNo.trim() || !indentBatchNo.trim() || !batchQty) {
+      setIndentErr('Product, DI No, Batch No and Batch Size are all required')
+      return
+    }
+    setIndentLoading(true); setIndentErr('')
+    try {
+      const r = await indentApi.create({
+        productCode: selProduct.productCode,
+        productName: selProduct.productName,
+        diNo:        indentDiNo.trim(),
+        batchNo:     indentBatchNo.trim(),
+        batchSize:   parseFloat(batchQty),
+        plant:       indentPlant,
+      })
+      setIndentResult(r)
+      setShowIndent(false)
+    } catch (e) {
+      setIndentErr(e?.response?.data?.error || e.message)
+    } finally {
+      setIndentLoading(false)
+    }
+  }
 
   return (
     <div className="border-t border-indigo-200 bg-white p-4">
       {loadingRes ? (
-        <p className="text-sm text-gray-400 text-center py-4">Checking available stock�?�</p>
+        <p className="text-sm text-gray-400 text-center py-4">Checking available stock...</p>
       ) : (
         <div className="space-y-4">
-          {/* No stock warning */}
+
+          {/* ── No stock: shortage banner + indent ── */}
           {noStock && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-3 text-xs text-yellow-800">
-              No warehouse packs or containers found with stock for <strong>{line.rmName}</strong>.
-              Please inward stock or fill a container before issuing.
+            <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-amber-800">No stock found for {line.rmName}</p>
+                  <p className="text-xs text-amber-700 mt-0.5 leading-relaxed">
+                    No warehouse packs or containers have stock for this raw material.
+                    Raise a purchase indent so the purchasing team can procure it.
+                  </p>
+                </div>
+                {!showIndent && !indentResult && (
+                  <button
+                    type="button"
+                    onClick={() => setShowIndent(true)}
+                    className="shrink-0 text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap">
+                    Raise Purchase Indent
+                  </button>
+                )}
+              </div>
+
+              {/* ── Indent form ── */}
+              {showIndent && !indentResult && (
+                <div className="mt-3 pt-3 border-t border-amber-200">
+                  <p className="text-[10px] font-bold text-amber-700 uppercase tracking-wider mb-2">
+                    Purchase Indent — {selProduct?.productName || 'Product'}
+                  </p>
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    <div>
+                      <label className="text-[10px] font-semibold text-gray-500 block mb-1">DI No. *</label>
+                      <input value={indentDiNo} onChange={e => setIndentDiNo(e.target.value)}
+                        placeholder="e.g. LT-26-018"
+                        className="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:ring-2 focus:ring-amber-400" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-semibold text-gray-500 block mb-1">Batch No. *</label>
+                      <input value={indentBatchNo} onChange={e => setIndentBatchNo(e.target.value)}
+                        placeholder="e.g. NP-20260701-01"
+                        className="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:ring-2 focus:ring-amber-400" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-semibold text-gray-500 block mb-1">Batch Size (KG)</label>
+                      <input value={batchQty} readOnly
+                        className="w-full border border-gray-100 bg-gray-50 rounded-lg px-2.5 py-1.5 text-xs text-gray-500 cursor-not-allowed" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-semibold text-gray-500 block mb-1">Plant</label>
+                      <select value={indentPlant} onChange={e => setIndentPlant(e.target.value)}
+                        className="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs bg-white outline-none focus:ring-2 focus:ring-amber-400">
+                        <option value="">— Select —</option>
+                        {['Nano', 'Botanical', 'Liquid', 'Powder', 'Granules'].map(p => (
+                          <option key={p}>{p}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  {indentErr && (
+                    <p className="text-xs text-red-600 bg-red-50 px-3 py-1.5 rounded-lg border border-red-100 mb-2">{indentErr}</p>
+                  )}
+                  <div className="flex gap-2">
+                    <button type="button" onClick={() => { setShowIndent(false); setIndentErr('') }}
+                      className="flex-1 text-xs font-semibold border border-gray-300 rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors">
+                      Cancel
+                    </button>
+                    <button type="button" onClick={handleIndentSubmit} disabled={indentLoading || !indentDiNo.trim() || !indentBatchNo.trim()}
+                      className="flex-1 text-xs font-bold bg-amber-600 hover:bg-amber-700 disabled:opacity-40 text-white px-3 py-1.5 rounded-lg transition-colors">
+                      {indentLoading ? 'Raising...' : 'Submit Indent'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* ── Indent success ── */}
+              {indentResult && (
+                <div className="mt-3 pt-3 border-t border-amber-200">
+                  <p className="text-xs font-bold text-green-700 mb-1">Indent raised successfully!</p>
+                  {indentResult.stockChecks?.length > 0 && (
+                    <div className="space-y-0.5 mb-1">
+                      {indentResult.stockChecks.map((c, i) => (
+                        <div key={i} className="flex justify-between text-xs text-red-700">
+                          <span>{c.rmName}</span>
+                          <span className="font-semibold">Short: {Number(c.shortfall).toFixed(3)} kg</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <p className="text-xs text-amber-700">{indentResult.message}</p>
+                </div>
+              )}
             </div>
           )}
 
-          {/* Scan row */}
+          {/* ── Insufficient stock: shortage warning + indent ── */}
+          {insufficientStock && (
+            <div className="rounded-xl border border-orange-300 bg-orange-50 px-4 py-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-orange-800">Stock insufficient for {line.rmName}</p>
+                  <p className="text-xs text-orange-700 mt-0.5 leading-relaxed">
+                    Only <strong>{totalAvailable.toFixed(3)} {line.uom}</strong> available but{' '}
+                    <strong>{remaining} {line.uom}</strong> still needed.
+                    You can issue what's available now and raise an indent for the shortfall.
+                  </p>
+                </div>
+                {!showIndent && !indentResult && (
+                  <button
+                    type="button"
+                    onClick={() => setShowIndent(true)}
+                    className="shrink-0 text-xs font-bold bg-orange-500 hover:bg-orange-600 text-white px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap">
+                    Raise Purchase Indent
+                  </button>
+                )}
+              </div>
+
+              {/* Shared indent form (same as noStock case below) */}
+              {showIndent && !indentResult && (
+                <div className="mt-3 pt-3 border-t border-orange-200">
+                  <p className="text-[10px] font-bold text-orange-700 uppercase tracking-wider mb-2">
+                    Purchase Indent — {selProduct?.productName || 'Product'}
+                  </p>
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    <div>
+                      <label className="text-[10px] font-semibold text-gray-500 block mb-1">DI No. *</label>
+                      <input value={indentDiNo} onChange={e => setIndentDiNo(e.target.value)}
+                        placeholder="e.g. LT-26-018"
+                        className="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:ring-2 focus:ring-orange-400" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-semibold text-gray-500 block mb-1">Batch No. *</label>
+                      <input value={indentBatchNo} onChange={e => setIndentBatchNo(e.target.value)}
+                        placeholder="e.g. NP-20260701-01"
+                        className="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:ring-2 focus:ring-orange-400" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-semibold text-gray-500 block mb-1">Batch Size (KG)</label>
+                      <input value={batchQty} readOnly
+                        className="w-full border border-gray-100 bg-gray-50 rounded-lg px-2.5 py-1.5 text-xs text-gray-500 cursor-not-allowed" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-semibold text-gray-500 block mb-1">Plant</label>
+                      <select value={indentPlant} onChange={e => setIndentPlant(e.target.value)}
+                        className="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs bg-white outline-none focus:ring-2 focus:ring-orange-400">
+                        <option value="">— Select —</option>
+                        {['Nano', 'Botanical', 'Liquid', 'Powder', 'Granules'].map(p => (
+                          <option key={p}>{p}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  {indentErr && (
+                    <p className="text-xs text-red-600 bg-red-50 px-3 py-1.5 rounded-lg border border-red-100 mb-2">{indentErr}</p>
+                  )}
+                  <div className="flex gap-2">
+                    <button type="button" onClick={() => { setShowIndent(false); setIndentErr('') }}
+                      className="flex-1 text-xs font-semibold border border-gray-300 rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors">
+                      Cancel
+                    </button>
+                    <button type="button" onClick={handleIndentSubmit} disabled={indentLoading || !indentDiNo.trim() || !indentBatchNo.trim()}
+                      className="flex-1 text-xs font-bold bg-orange-500 hover:bg-orange-600 disabled:opacity-40 text-white px-3 py-1.5 rounded-lg transition-colors">
+                      {indentLoading ? 'Raising...' : 'Submit Indent'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {indentResult && (
+                <div className="mt-3 pt-3 border-t border-orange-200">
+                  <p className="text-xs font-bold text-green-700 mb-1">Indent raised successfully!</p>
+                  {indentResult.stockChecks?.length > 0 && (
+                    <div className="space-y-0.5 mb-1">
+                      {indentResult.stockChecks.map((c, i) => (
+                        <div key={i} className="flex justify-between text-xs text-red-700">
+                          <span>{c.rmName}</span>
+                          <span className="font-semibold">Short: {Number(c.shortfall).toFixed(3)} kg</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <p className="text-xs text-orange-700">{indentResult.message}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Scan row ── */}
           <div>
             <label className="text-xs font-semibold text-gray-700 mb-1.5 block">
               Scan Pack or Container QR Code
             </label>
             <div className="flex gap-2">
-              {/* Camera button */}
               <IconButton icon={Camera} onClick={onOpenScanner} tooltip="Open camera scanner" variant="purple" size="md" />
-              {/* Text / hardware scanner input */}
               <input
                 ref={scanInputRef}
                 value={scanInput}
                 onChange={e => { setScanInput(e.target.value); setScanErr(''); setFoundSource(null) }}
                 onKeyDown={e => { if (e.key === 'Enter' && scanInput.trim()) onScanInput(scanInput) }}
-                placeholder="Scan QR code or type Pack / Container ID�?�"
+                placeholder="Scan QR code or type Pack / Container ID..."
                 className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono outline-none focus:ring-2 focus:ring-indigo-400"
               />
-              <Button
+              <button
+                type="button"
                 onClick={() => scanInput.trim() && onScanInput(scanInput)}
                 disabled={!scanInput.trim()}
-                variant="secondary"
-                size="sm">
+                className="px-3 py-2 text-xs font-semibold border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-40 transition-colors">
                 Find
-              </Button>
+              </button>
             </div>
             <p className="text-xs text-gray-400 mt-1.5">
               Works with pack bags and containers — one scanner for both.
@@ -632,24 +944,23 @@ function IssuePanel({
             </p>
           </div>
 
-          {/* Scan error */}
+          {/* ── Scan error ── */}
           {scanErr && (
             <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2.5 text-xs text-red-700">
               {scanErr}
             </div>
           )}
 
-          {/* Found source card + issue form */}
+          {/* ── Found source card + issue form ── */}
           {foundSource && (
             <div className={`rounded-xl border overflow-hidden ${
               foundSource.type === 'pack' ? 'border-indigo-200' : 'border-orange-200'
             }`}>
-              {/* Source info */}
               <div className={`px-4 py-3 text-xs ${
                 foundSource.type === 'pack' ? 'bg-indigo-50' : 'bg-orange-50'
               }`}>
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-base">{foundSource.type === 'pack' ? '�Y"�' : '�Y>�️'}</span>
+                  <span className="text-base">{foundSource.type === 'pack' ? '📦' : '🏺'}</span>
                   <span className={`font-bold text-sm ${foundSource.type === 'pack' ? 'text-indigo-800' : 'text-orange-800'}`}>
                     {foundSource.type === 'pack' ? 'Warehouse Pack Found' : 'Container Found'}
                   </span>
@@ -688,7 +999,6 @@ function IssuePanel({
                 </div>
               </div>
 
-              {/* Issue form */}
               <div className="px-4 py-3 bg-white">
                 <div className="flex items-end gap-3">
                   <div className="flex-1">
@@ -709,12 +1019,16 @@ function IssuePanel({
                       Max: {Math.min(foundSource.availableQty, remaining).toFixed(3)} {line.uom}
                     </p>
                   </div>
-                  <Button onClick={onSubmit} disabled={issuing || !issueQty || parseFloat(issueQty) <= 0}
-                    loading={issuing}
-                    variant={foundSource.type === 'pack' ? 'purple' : 'warning'}
-                    className="shrink-0 mb-5">
-                    {issuing ? 'Issuing�?�' : 'Issue �?-'}
-                  </Button>
+                  <button type="button"
+                    onClick={onSubmit}
+                    disabled={issuing || !issueQty || parseFloat(issueQty) <= 0}
+                    className={`shrink-0 mb-5 px-4 py-2 text-xs font-bold text-white rounded-lg transition-colors disabled:opacity-40 ${
+                      foundSource.type === 'pack'
+                        ? 'bg-indigo-600 hover:bg-indigo-700'
+                        : 'bg-orange-500 hover:bg-orange-600'
+                    }`}>
+                    {issuing ? 'Issuing...' : 'Issue'}
+                  </button>
                 </div>
                 {issueError && (
                   <p className="text-xs text-red-600 bg-red-50 px-3 py-1.5 rounded border border-red-100 mt-1">
@@ -725,13 +1039,14 @@ function IssuePanel({
             </div>
           )}
 
-          {/* Prompt when nothing scanned yet */}
+          {/* ── Prompt when nothing scanned yet ── */}
           {!foundSource && !scanErr && !noStock && (
             <div className="text-center py-4">
-              <Button onClick={onOpenScanner} variant="outline" icon={Camera}>
+              <button type="button" onClick={onOpenScanner}
+                className="flex items-center gap-2 mx-auto px-4 py-2 border border-indigo-300 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-50 transition-colors">
                 Open Camera Scanner
-              </Button>
-              <p className="text-xs text-gray-400 mt-2">or type/scan the ID in the field above</p>
+              </button>
+              <p className="text-xs text-gray-400 mt-2">or type / scan the ID in the field above</p>
             </div>
           )}
         </div>

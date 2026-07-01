@@ -22,31 +22,7 @@ function fmtDate(d) {
 export default function GrnDetail({ selected, detail, loading }) {
   const printRef = useRef(null)
 
-  const handlePrint = () => {
-    const content = printRef.current?.innerHTML
-    if (!content) return
-    const win = window.open('', '_blank')
-    win.document.write(`
-      <!DOCTYPE html><html><head>
-        <title>GRN — ${detail?.invoiceNo}</title>
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
-        <style>
-          * { box-sizing: border-box; margin: 0; padding: 0; }
-          body { font-family: 'Inter', Arial, sans-serif; font-size: 12px; color: #1e293b; }
-          .grn-wrap { max-width: 900px; margin: 0 auto; padding: 32px; }
-          h1 { font-size: 20px; font-weight: 800; letter-spacing: 0.04em; }
-          table { width: 100%; border-collapse: collapse; margin-top: 16px; }
-          th { background: #0f172a; color: #f8fafc; padding: 8px 12px; text-align: left; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; }
-          td { padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-size: 12px; }
-          tr:nth-child(even) td { background: #f8fafc; }
-          @media print { body { print-color-adjust: exact; -webkit-print-color-adjust: exact; } }
-        </style>
-      </head><body><div class="grn-wrap">${content}</div></body></html>
-    `)
-    win.document.close()
-    win.focus()
-    setTimeout(() => { win.print(); win.close() }, 500)
-  }
+  const handlePrint = () => window.print()
 
   if (!selected) {
     return (
@@ -77,7 +53,7 @@ export default function GrnDetail({ selected, detail, loading }) {
       </div>
 
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-        <div ref={printRef}>
+        <div ref={printRef} className="grn-printable">
           {/* Letterhead */}
           <div className="gd-letterhead">
             <div className="gd-letterhead-inner">
@@ -138,15 +114,15 @@ export default function GrnDetail({ selected, detail, loading }) {
           </div>
 
           {/* Remarks */}
-          <div className="gd-remarks">
+       {/*    <div className="gd-remarks">
             <p className="gd-remarks-text">
               Received in good condition. All quantities verified at the time of receipt.
             </p>
-          </div>
+          </div> */}
 
           {/* Signature strip */}
           <div className="gd-sig-strip">
-            {['Received By (Stores)', 'Verified By (QC)', 'Approved By (Manager)'].map(s => (
+            {['Received By (Stores)', 'Approved By (Manager)'].map(s => (
               <div key={s}>
                 <div className="gd-sig-line" />
                 <p className="gd-sig-label">{s}</p>

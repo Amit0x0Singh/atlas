@@ -133,6 +133,7 @@ export default function AddTaskDrawer({ task, defaultDate, onSave, onClose }) {
   // DI → product picker
   const [diItems,        setDiItems]        = useState([])
   const [loadingDiItems, setLoadingDiItems] = useState(false)
+  const [packingInfo,    setPackingInfo]    = useState(null) // packing details from SO after DI selection
 
   // Live data from backend
   const [equipmentList, setEquipmentList] = useState([])
@@ -297,7 +298,7 @@ export default function AddTaskDrawer({ task, defaultDate, onSave, onClose }) {
             <Field label="DI Number" hint="Type to search sales orders">
               <AutocompleteInput
                 value={diNo}
-                onChange={v => { setDiNo(v); if (!v.trim()) setDiItems([]) }}
+                onChange={v => { setDiNo(v); if (!v.trim()) { setDiItems([]); setPackingInfo(null) } }}
                 onSelect={async so => {
                   setDiNo(so.diNumber)
                   // Auto-fill plant from sectionName
@@ -316,8 +317,14 @@ export default function AddTaskDrawer({ task, defaultDate, onSave, onClose }) {
                     const r = await planTasksApi.getSalesOrderItems(so.diNumber)
                     const items = r.data || []
                     if (items.length === 1) {
-                      setProductName(items[0].productName)
-                      if (items[0].orderQty) setQty(String(items[0].orderQty))
+                      const it = items[0]
+                      setProductName(it.productName)
+                      if (it.orderQty) setQty(String(it.orderQty))
+                      if (it.primaryPack)   setPrimaryPack(it.primaryPack)
+                      if (it.secondaryPack) setSecondaryPack(it.secondaryPack)
+                      if (it.unitPackQty)   setUnitPackQty(String(it.unitPackQty))
+                      if (it.labelType)     setLabels(it.labelType)
+                      setPackingInfo({ primaryPack: it.primaryPack, secondaryPack: it.secondaryPack, unitPackQty: it.unitPackQty, labelType: it.labelType })
                     } else {
                       setDiItems(items)
                     }
@@ -369,6 +376,11 @@ export default function AddTaskDrawer({ task, defaultDate, onSave, onClose }) {
                           const autoPlant = sectionToPlant[item.sectionName.toUpperCase()]
                           if (autoPlant && PLANT_KEYS.includes(autoPlant)) setPlant(autoPlant)
                         }
+                        if (item.primaryPack)   setPrimaryPack(item.primaryPack)
+                        if (item.secondaryPack) setSecondaryPack(item.secondaryPack)
+                        if (item.unitPackQty)   setUnitPackQty(String(item.unitPackQty))
+                        if (item.labelType)     setLabels(item.labelType)
+                        setPackingInfo({ primaryPack: item.primaryPack, secondaryPack: item.secondaryPack, unitPackQty: item.unitPackQty, labelType: item.labelType })
                         setDiItems([])
                       }}
                       className="w-full text-left px-3 py-2.5 bg-white border-[1.5px] border-gray-200 rounded-lg
@@ -381,6 +393,34 @@ export default function AddTaskDrawer({ task, defaultDate, onSave, onClose }) {
                       )}
                     </button>
                   ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Packing info banner — shown after a product is chosen from a DI */}
+          {packingInfo !== null && !loadingDiItems && diItems.length === 0 && (
+            <div className={`mt-2 mb-3 rounded-xl border px-4 py-3 ${
+              (packingInfo.primaryPack || packingInfo.secondaryPack || packingInfo.unitPackQty)
+                ? 'border-green-200 bg-green-50'
+                : 'border-amber-200 bg-amber-50'
+            }`}>
+              {(packingInfo.primaryPack || packingInfo.secondaryPack || packingInfo.unitPackQty) ? (
+                <>
+                  <div className="text-[10px] font-bold text-green-700 uppercase tracking-wider mb-1.5">
+                    Packing details auto-filled from sales order
+                  </div>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-green-800">
+                    {packingInfo.primaryPack   && <span>Primary: <strong>{packingInfo.primaryPack}</strong></span>}
+                    {packingInfo.unitPackQty   && <span>Unit pack: <strong>{packingInfo.unitPackQty} kg</strong></span>}
+                    {packingInfo.secondaryPack && <span>Secondary: <strong>{packingInfo.secondaryPack}</strong></span>}
+                    {packingInfo.labelType     && <span>Label: <strong>{packingInfo.labelType}</strong></span>}
+                  </div>
+                </>
+              ) : (
+                <div className="text-[12px] text-amber-800">
+                  <span className="font-semibold">No packing details in sales order.</span>
+                  <span className="ml-1 text-amber-700">Packing materials are available in the company — please coordinate with the packaging team.</span>
                 </div>
               )}
             </div>

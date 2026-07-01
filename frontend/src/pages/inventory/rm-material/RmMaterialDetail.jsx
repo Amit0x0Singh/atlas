@@ -6,7 +6,7 @@ import { BackButton, IconButton } from '../../../components/ui'
 import RmDetailFilters   from './components/rm-detail-filters/RmDetailFilters.jsx'
 import RmDetailTable     from './components/rm-detail-table/RmDetailTable.jsx'
 import { groupPacks, groupStatus } from './components/rmDetailHelpers.js'
-import { RefreshCw } from 'lucide-react'
+import  { RefreshCw } from 'lucide-react'
 
 function fmtQty(n) {
   if (n == null) return '—'

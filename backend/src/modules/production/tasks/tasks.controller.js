@@ -1,5 +1,43 @@
 import prisma from '../../../db.js'
 
+// ── SO status sync helper ─────────────────────────────────────────────────────
+const IN_PRODUCTION_STATUSES = new Set([
+  'Under Process', 'QC Pending', 'QC Results Awaiting',
+  'Unloading', 'Cooling', 'Heating', 'Under Observation', 'On Hold',
+])
+const SO_STATUS_ORDER = ['PENDING', 'PLANNED', 'UNDER_PRODUCTION', 'PACKED', 'IN_INVENTORY', 'READY_TO_DISPATCH', 'DISPATCHED']
+
+function taskStatusToSoStatus(taskStatus, sent) {
+  if (!sent) return null
+  if (taskStatus === 'Completed') return 'PACKED'
+  if (IN_PRODUCTION_STATUSES.has(taskStatus)) return 'UNDER_PRODUCTION'
+  if (taskStatus === 'Not Started') return 'PLANNED'
+  return null
+}
+
+async function syncSoStatus(diNo, productName, taskStatus, sent) {
+  if (!diNo || !productName) return
+  const soStatus = taskStatusToSoStatus(taskStatus, sent)
+  if (!soStatus) return
+  try {
+    const soOrders = await prisma.salesOrder.findMany({
+      where: { diNo: { equals: diNo, mode: 'insensitive' } },
+      select: { items: { select: { id: true, inhouseProductName: true, status: true } } },
+    })
+    for (const so of soOrders) {
+      for (const item of so.items) {
+        if (item.inhouseProductName?.toLowerCase() === productName.toLowerCase()) {
+          const currentIdx = SO_STATUS_ORDER.indexOf(item.status || 'PENDING')
+          const newIdx     = SO_STATUS_ORDER.indexOf(soStatus)
+          if (newIdx > currentIdx) {
+            await prisma.salesOrderItem.update({ where: { id: item.id }, data: { status: soStatus } })
+          }
+        }
+      }
+    }
+  } catch { /* SalesOrder table may not exist in all environments */ }
+}
+
 // ── list ──────────────────────────────────────────────────────────────────────
 export const listTasks = async (req, res) => {
   try {
@@ -116,6 +154,12 @@ export const updateTask = async (req, res) => {
     dt('timerStart'); dt('timerEnd'); dt('bmrSubmittedAt'); dt('sentToQcAt')
 
     const task = await prisma.productionTask.update({ where: { id }, data })
+
+    // Keep SalesOrderItem.status in sync whenever status or sent flag changes
+    if (body.status !== undefined || body.sent !== undefined) {
+      await syncSoStatus(task.diNo, task.productName, task.status, task.sent)
+    }
+
     return res.json({ success: true, data: task })
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message })
@@ -128,10 +172,22 @@ export const sendSchedule = async (req, res) => {
     const { date } = req.body || {}
     if (!date) return res.status(400).json({ success: false, error: 'date required' })
 
+    // Capture tasks before marking sent so we can sync their SO status
+    const toSend = await prisma.productionTask.findMany({
+      where:  { date, sent: false },
+      select: { diNo: true, productName: true, status: true },
+    })
+
     const result = await prisma.productionTask.updateMany({
       where: { date, sent: false },
       data:  { sent: true },
     })
+
+    // Mark each task's sales order item as PLANNED (fire-and-forget, non-blocking)
+    for (const t of toSend) {
+      await syncSoStatus(t.diNo, t.productName, t.status || 'Not Started', true)
+    }
+
     return res.json({ success: true, updated: result.count })
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message })
@@ -257,7 +313,7 @@ export const getSalesOrderItems = async (req, res) => {
         select: {
           customerName: true,
           items: {
-            select: { inhouseProductName: true, inhouseProductCode: true, totalQty: true, totalUom: true, sectionName: true },
+            select: { inhouseProductName: true, inhouseProductCode: true, totalQty: true, totalUom: true, sectionName: true, unitQty: true, unitUom: true, unitPackType: true, packingType: true, labelType: true, totalCS: true },
           },
         },
       })
@@ -266,12 +322,17 @@ export const getSalesOrderItems = async (req, res) => {
           const dup = items.find(r => r.productName?.toLowerCase() === item.inhouseProductName?.toLowerCase())
           if (dup) continue
           items.push({
-            productName:  item.inhouseProductName || '',
-            productCode:  item.inhouseProductCode || '',
-            orderQty:     item.totalQty ? Number(item.totalQty) : null,
-            qtyUnit:      item.totalUom || 'KG',
-            sectionName:  item.sectionName || null,
-            source:       'local',
+            productName:   item.inhouseProductName || '',
+            productCode:   item.inhouseProductCode || '',
+            orderQty:      item.totalQty ? Number(item.totalQty) : null,
+            qtyUnit:       item.totalUom || 'KG',
+            sectionName:   item.sectionName || null,
+            primaryPack:   item.unitPackType || null,
+            secondaryPack: item.packingType  || null,
+            unitPackQty:   item.unitQty ? Number(item.unitQty) : null,
+            labelType:     item.labelType    || null,
+            totalCS:       item.totalCS      || null,
+            source:        'local',
           })
         }
       }

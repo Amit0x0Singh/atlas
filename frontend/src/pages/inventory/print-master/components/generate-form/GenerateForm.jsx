@@ -12,6 +12,7 @@ const BLANK_ITEM = {
   numberOfBags: "",
   packQty: "",
   customerBatchCode: "",
+  expiryDate: "",
 };
 const BLANK_HDR = { supplier: "", invoiceNo: "", receivedDate: todayStr() };
 
@@ -264,6 +265,22 @@ function ItemLine({ idx, item, rmList, pmList, onChange, onRemove, canRemove }) 
           style={{ ...inp, background: "#fafafa" }}
         />
       </div>
+
+      {/* Expiry date — only for Raw Materials */}
+      {!isPm && (
+        <div style={{ marginTop: "10px" }}>
+          <label style={{ ...lbl, color: "#6b7280" }}>
+            Expiry Date
+            <span style={{ fontWeight: 400, fontSize: "11px", marginLeft: "4px", color: "#9ca3af" }}>(optional)</span>
+          </label>
+          <input
+            type="date"
+            value={item.expiryDate || ""}
+            onChange={e => onChange({ ...item, expiryDate: e.target.value })}
+            style={{ ...inp, background: "#fafafa" }}
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -335,6 +352,7 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed }) {
           numberOfBags:      parseInt(it.numberOfBags),
           packQty:           parseFloat(it.packQty),
           customerBatchCode: it.customerBatchCode || undefined,
+          expiryDate:        it.expiryDate        || undefined,
         });
         allResults.push(res.data);
       }

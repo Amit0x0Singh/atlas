@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { BackButton, Button } from "../../../../components/ui";
-import { CheckCircle, Printer, QrCode } from "lucide-react";
+import { CheckCircle, Printer, QrCode, ArrowLeftRight } from "lucide-react";
 import GenerateForm from "../components/generate-form/GenerateForm.jsx";
 import GateInwardPanel from "../components/gate-inward-panel/GateInwardPanel.jsx";
 import QRCodePreview from "../components/qr-code-preview/QRCodePreview.jsx";
@@ -28,6 +28,12 @@ export default function PrintMaster() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Print Master — Generate Pack Labels</h1>
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline-gray"
+            icon={ArrowLeftRight}
+            onClick={() => navigate("/print-master/return-material")}>
+            Return Material
+          </Button>
           <Button variant="primary" onClick={() => navigate("/print-master/entries")}>
             Entries
           </Button>
