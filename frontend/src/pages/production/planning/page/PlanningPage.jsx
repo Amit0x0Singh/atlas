@@ -5,7 +5,7 @@ import AddTaskDrawer from '../components/add-task-drawer/AddTaskDrawer.jsx'
 import StatusDrawer from '../components/status-drawer/StatusDrawer.jsx'
 import SFGStockModal from '../components/sfg-stock-modal/SFGStockModal.jsx'
 import Toast from '../components/ui/toast/Toast.jsx'
-import BomIssuancePage from './BomIssuancePage.jsx'
+import BomIssuance from '../bom-issuance/components/BomIssuance.jsx'
 import { Button, IconButton } from '../../../../components/ui'
 import { Plus, Send, Pencil, Trash2 } from 'lucide-react'
 import { planTasksApi } from '../../../../api/production.js'
@@ -306,7 +306,7 @@ export default function PlanningPage() {
           </div>
         )}
         {activeTab === 'bom-issuance' && (
-          <BomIssuancePage />
+          <BomIssuance />
         )}
       </div>
 

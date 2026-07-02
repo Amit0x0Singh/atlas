@@ -6,6 +6,7 @@ import QRScanner from '../../../../../../components/QRScanner/QRScanner.jsx'
 import { Button, BackButton, IconButton } from '../../../../../../components/ui'
 import { Camera, X } from 'lucide-react'
 import { readSessions, saveSession, deleteSession } from './bomSessions.js'
+import { taskKey, readIssuedKeys, markIssued } from './issuedTasks.js'
 import './MaterialIssueByBOM.css'
 
 export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
@@ -24,6 +25,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
   const [tasks,        setTasks]        = useState([])
   const [loadingTasks, setLoadingTasks] = useState(false)
   const [taskFilter,   setTaskFilter]   = useState({ plant: '', date: new Date().toISOString().slice(0, 10) })
+  const [issuedKeys,   setIssuedKeys]   = useState(() => readIssuedKeys())
 
   // �"?�"? Session �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
   const [sessionId, setSessionId] = useState(null)
@@ -64,6 +66,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
   const filteredTasks = tasks.filter(t =>
     t.sent &&
     t.status !== 'Completed' &&
+    !issuedKeys.has(taskKey(t.productCode, t.batchCode || t.taskId)) &&
     (!taskFilter.plant || t.plant === taskFilter.plant) &&
     (!taskFilter.date  || t.date  === taskFilter.date)
   )
@@ -136,6 +139,8 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
       setActiveIdx(null)
       setLineMsg({})
       setStep('bom')
+      markIssued(taskKey(selProduct.productCode, batchRef))
+      setIssuedKeys(readIssuedKeys())
     } catch (e) { setError(e.message) }
     finally { setLoadingBom(false) }
   }
