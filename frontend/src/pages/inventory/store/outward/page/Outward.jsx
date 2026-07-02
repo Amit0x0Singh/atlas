@@ -4,8 +4,9 @@ import { BackButton, Button } from '../../../../../components/ui'
 import WarehouseToWarehouse   from '../components/warehouse-to-warehouse/WarehouseToWarehouse.jsx'
 import WarehouseToContainer   from '../components/warehouse-to-container/WarehouseToContainer.jsx'
 import MaterialIssueByBOM     from '../components/material-issue-by-bom/MaterialIssueByBOM.jsx'
+import BomIssuedHistory       from '../components/material-issue-by-bom/BomIssuedHistory.jsx'
 import StockLossAdjustment    from '../components/stock-loss-adjustment/StockLossAdjustment.jsx'
-import { RefreshCw, Warehouse, ClipboardList, Container, TriangleAlert } from 'lucide-react'
+import { RefreshCw, Warehouse, ClipboardList, Container, TriangleAlert, History } from 'lucide-react'
 import './Outward.css'
 
 const MODES = [
@@ -54,7 +55,7 @@ const TYPE_COLOR = {
   STOCK_ADJUSTMENT:   'bg-red-100 text-red-700',
 }
 
-function Panel({ mode, onBack, children }) {
+function Panel({ mode, onBack, actions, children }) {
   const m = MODE_MAP[mode]
   return (
     <div className="flex flex-col h-full">
@@ -66,7 +67,10 @@ function Panel({ mode, onBack, children }) {
             <p className="text-xs text-gray-500 truncate">{m?.desc}</p>
           </div>
         </div>
-        <BackButton onClick={onBack} label="Back to Outward" size="sm" />
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {actions}
+          <BackButton onClick={onBack} label="Back to Outward" size="sm" />
+        </div>
       </div>
       <div className="flex-1 overflow-y-auto">{children}</div>
     </div>
@@ -75,6 +79,8 @@ function Panel({ mode, onBack, children }) {
 
 export default function Outward() {
   const [mode,      setMode]      = useState(null)
+  const [bomView,   setBomView]   = useState('select') // 'select' | 'history' — bom-issue mode only
+  const [resumeId,  setResumeId]  = useState(null)
   const [history,   setHistory]   = useState([])
   const [histPage,  setHistPage]  = useState(1)
   const [histTotal, setHistTotal] = useState(0)
@@ -90,14 +96,37 @@ export default function Outward() {
     } catch { /* silent */ }
   }
 
-  const goBack = () => { setMode(null); loadHistory() }
+  const goBack = () => { setMode(null); setBomView('select'); loadHistory() }
 
-  if (mode) return <Panel mode={mode} onBack={goBack}>{
-    mode === 'bom-issue'  ? <MaterialIssueByBOM /> :
-    mode === 'wh-wh'      ? <WarehouseToWarehouse /> :
-    mode === 'wh-cont'    ? <WarehouseToContainer /> :
-    mode === 'stock-loss' ? <StockLossAdjustment /> : null
-  }</Panel>
+  const resumeFromHistory = (session) => {
+    setResumeId(session.id)
+    setBomView('select')
+  }
+
+  if (mode) {
+    const bomActions = mode === 'bom-issue' && (
+      <Button
+        onClick={() => setBomView(v => v === 'history' ? 'select' : 'history')}
+        variant={bomView === 'history' ? 'outline-gray' : 'purple'}
+        size="sm"
+        icon={History}>
+        {bomView === 'history' ? 'Back to BOM Issue' : 'BOM Issued'}
+      </Button>
+    )
+
+    return (
+      <Panel mode={mode} onBack={goBack} actions={bomActions}>{
+        mode === 'bom-issue' ? (
+          bomView === 'history'
+            ? <BomIssuedHistory onResume={resumeFromHistory} />
+            : <MaterialIssueByBOM resumeSessionId={resumeId} onAutoResumed={() => setResumeId(null)} />
+        ) :
+        mode === 'wh-wh'      ? <WarehouseToWarehouse /> :
+        mode === 'wh-cont'    ? <WarehouseToContainer /> :
+        mode === 'stock-loss' ? <StockLossAdjustment /> : null
+      }</Panel>
+    )
+  }
 
   const totalPages = Math.ceil(histTotal / LIMIT)
 

@@ -4,23 +4,11 @@ import { recipeApi, productApi } from '../../../../../../api/masters.js'
 import { planTasksApi, indentApi } from '../../../../../../api/production.js'
 import QRScanner from '../../../../../../components/QRScanner/QRScanner.jsx'
 import { Button, BackButton, IconButton } from '../../../../../../components/ui'
-import { Camera, X, History } from 'lucide-react'
-import BomIssuedHistory from './BomIssuedHistory.jsx'
+import { Camera, X } from 'lucide-react'
+import { readSessions, saveSession, deleteSession } from './bomSessions.js'
 import './MaterialIssueByBOM.css'
 
-// �"?�"?�"? Session persistence �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
-const SESSIONS_KEY = 'bom_issue_sessions'
-const readSessions  = () => { try { return JSON.parse(localStorage.getItem(SESSIONS_KEY) || '[]') } catch { return [] } }
-const writeSessions = (list) => localStorage.setItem(SESSIONS_KEY, JSON.stringify(list))
-const saveSession   = (s) => { const all = readSessions(); const i = all.findIndex(x => x.id === s.id); if (i >= 0) all[i] = s; else all.push(s); writeSessions(all) }
-const deleteSession = (id) => writeSessions(readSessions().filter(s => s.id !== id))
-
-function fmtDate(iso) {
-  return new Date(iso).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
-}
-
-// �"?�"?�"? Main component �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
-export default function MaterialIssueByBOM() {
+export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
   // �"?�"? Step / product selection �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
   const [step, setStep]             = useState('select')
   const [products, setProducts]     = useState([])
@@ -38,7 +26,6 @@ export default function MaterialIssueByBOM() {
   const [taskFilter,   setTaskFilter]   = useState({ plant: '', date: new Date().toISOString().slice(0, 10) })
 
   // �"?�"? Session �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
-  const [sessions, setSessions] = useState(() => readSessions())
   const [sessionId, setSessionId] = useState(null)
 
   // �"?�"? BOM �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
@@ -92,11 +79,6 @@ export default function MaterialIssueByBOM() {
     setDiNo(task.diNo || '')
     setError('')
   }
-
-  // Refresh sessions when returning to select / history screen
-  useEffect(() => {
-    if (step === 'select' || step === 'history') setSessions(readSessions())
-  }, [step])
 
   // Auto-save on every bomLines change
   useEffect(() => {
@@ -172,7 +154,14 @@ export default function MaterialIssueByBOM() {
     setStep('bom')
   }
 
-  const removeSession = (id) => { deleteSession(id); setSessions(readSessions()) }
+  // Resume a session requested from outside (e.g. the BOM Issued history page)
+  useEffect(() => {
+    if (!resumeSessionId) return
+    const s = readSessions().find(x => x.id === resumeSessionId)
+    if (s) resumeSession(s)
+    onAutoResumed?.()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resumeSessionId])
 
   // �"?�"? Load packs + containers silently (for scan matching only) �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
   const loadResources = useCallback(async (rmCode) => {
@@ -297,33 +286,13 @@ export default function MaterialIssueByBOM() {
   // �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
 
 
-  if (step === 'history') {
-    return (
-      <BomIssuedHistory
-        sessions={sessions}
-        onResume={resumeSession}
-        onRemove={removeSession}
-        onBack={() => setStep('select')}
-      />
-    )
-  }
-
   if (step === 'select') {
     return (
       <div className="p-6 max-w-3xl">
 
-        {/* Header actions */}
-        <div className="flex items-start justify-between gap-3 mb-5 flex-wrap">
-          <div>
-            <h2 className="text-lg font-bold text-gray-900">Material Issue by BOM</h2>
-            <p className="text-sm text-gray-500 mt-0.5">
-              Select a production task to issue raw materials by BOM. Progress is auto-saved — you can leave and resume any time.
-            </p>
-          </div>
-          <Button onClick={() => setStep('history')} variant="purple" size="sm" icon={History}>
-            BOM Issued
-          </Button>
-        </div>
+        <p className="text-sm text-gray-500 mb-5">
+          Select a production task to issue raw materials by BOM. Progress is auto-saved — you can leave and resume any time.
+        </p>
 
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm">{error}</div>
