@@ -28,7 +28,7 @@ const emptyForm = () => ({
   batchSize: '', batchSizeUom: 'L',
   dateRequisition: todayISO(), datePlanned: '',
   remarks: '', section: '',
-  firstBomNo: '', cycles: 1,
+  cycles: 1,
 })
 
 const defaultSettings = () => ({
@@ -86,6 +86,20 @@ export default function BomIssuance() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.batchSize, form.batchSizeUom])
 
+  // Auto-load the recipe whenever the Product Name field ends up holding an
+  // exact match from the Recipe Master — not just when a suggestion is
+  // clicked. This is what makes "Paste from Schedule" work too, since that
+  // fills the field directly without ever going through the dropdown.
+  useEffect(() => {
+    const name = form.product.trim().toLowerCase()
+    if (!name || !recipeProducts.length) return
+    const match = recipeProducts.find(p => p.productName?.trim().toLowerCase() === name)
+    if (match && match.productCode !== form.productCode) {
+      onSelectProduct(match.productCode, match.productName)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.product, form.productCode, recipeProducts])
+
   // Re-scale the loaded recipe whenever batch size changes
   useEffect(() => {
     if (!activeRecipe) return
@@ -101,15 +115,17 @@ export default function BomIssuance() {
     const pn = form.product.trim()
     const comps = toComponents(rows)
     if (!pn) return setError('Product name is required')
-    if (!form.firstBomNo.trim()) return setError('Enter First BOM Number in Issuance Settings')
     if (!comps.length) return setError('Add at least one component')
 
     setGenerating(true)
     const n = Math.max(1, parseInt(form.cycles, 10) || 1)
     const batchBase = form.batchNo.trim() || 'BAT/001'
+    // BOM No is no longer entered by hand — auto-generated from today's date
+    // plus a short random tag, then incremented per cycle like the batch no.
+    const bomBase = `BOM-${form.dateRequisition.replace(/-/g, '')}-${genId().slice(0, 4).toUpperCase()}-001`
     const built = Array.from({ length: n }, (_, i) => ({
       id: genId(),
-      bomNo: incrCode(form.firstBomNo.trim(), i),
+      bomNo: incrCode(bomBase, i),
       batchNo: incrCode(batchBase, i),
       productName: pn, batchSize: form.batchSize, batchSizeUom: form.batchSizeUom,
       diNumber: form.diNumber, batchType: form.batchType,
@@ -152,9 +168,8 @@ export default function BomIssuance() {
       setMeta(newMeta)
       setBanner({ type: 'success', msg: `✓ ${previews.length} production task(s) created — visible in Store Outward → Material Issue by BOM` })
 
-      // Advance BOM number for next issuance, clear the form for the next entry
-      const lastBomNo = newMeta.lastBomNo
-      setForm({ ...emptyForm(), firstBomNo: incrCode(lastBomNo, 1) })
+      // Clear the form for the next entry
+      setForm(emptyForm())
       setRows(makeRows(25))
       setActiveRecipe(null)
       setRecipeLoadedMsg('')

@@ -159,7 +159,7 @@ export default function Indent() {
     const lines = [
       'PURCHASE REQUISITION', 'SOM Phytopharma (India) Ltd',
       'Plot No 154/A5-1, SVCIE, IDA Bollaram, Sangareddy, Hyderabad - 502325', '',
-      `Date: ${date}`, `Covering ${uniqueIndents.length} pending production indent(s)`, '', 'Items Required:', '�"?'.repeat(60),
+      `Date: ${date}`, `Covering ${uniqueIndents.length} pending production indent(s)`, '', 'Items Required:', '"?'.repeat(60),
     ]
     purchaseSummary.forEach((rm, i) => {
       const qty = orderQtys[rm.rmCode] || rm.suggestedOrderQty
@@ -169,7 +169,7 @@ export default function Indent() {
       if (rm.indents?.length) lines.push(`   For indents: ${rm.indents.map(x => x.productName).join(', ')}`)
       lines.push('')
     })
-    lines.push('�"?'.repeat(60), 'Please arrange procurement at the earliest.', '', 'Regards,', 'Stores Department — SOM Phytopharma (India) Ltd')
+    lines.push('"?'.repeat(60), 'Please arrange procurement at the earliest.', '', 'Regards,', 'Stores Department — SOM Phytopharma (India) Ltd')
     return lines.join('\n')
   }
 
@@ -226,7 +226,7 @@ export default function Indent() {
         <>
           {productList.length === 0 && (
             <div className="bg-orange-50 border border-orange-200 text-orange-800 px-4 py-3 rounded-lg mb-4 text-sm">
-              �s�️ No products found. Add products in <strong>Product Master</strong> and recipes in <strong>Recipe DB</strong> first.
+              s️ No products found. Add products in <strong>Product Master</strong> and recipes in <strong>Recipe DB</strong> first.
             </div>
           )}
           {loading ? <p className="text-gray-400">Loading...</p> : (
@@ -243,7 +243,7 @@ export default function Indent() {
               {totalPages > 1 && (
                 <div className="flex items-center justify-center gap-2 mt-4">
                   <button disabled={page <= 1} onClick={() => setPage(p => p - 1)}
-                    className="px-3 py-1.5 border rounded-lg text-sm disabled:opacity-40 hover:bg-gray-50">�?� Prev</button>
+                    className="px-3 py-1.5 border rounded-lg text-sm disabled:opacity-40 hover:bg-gray-50">? Prev</button>
                   <span className="text-sm text-gray-600">Page {page} of {totalPages}</span>
                   <button disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}
                     className="px-3 py-1.5 border rounded-lg text-sm disabled:opacity-40 hover:bg-gray-50">Next →</button>
@@ -276,7 +276,7 @@ export default function Indent() {
           {purchaseLoading ? <p className="text-gray-400">Loading...</p>
             : purchaseSummary.length === 0 ? (
               <div className="bg-white border border-gray-200 rounded-xl p-10 text-center text-gray-400">
-                <p className="text-lg">�o. No purchase requirements</p>
+                <p className="text-lg">o. No purchase requirements</p>
                 <p className="text-sm mt-1">All pending indents have sufficient stock</p>
               </div>
             ) : (
@@ -315,7 +315,7 @@ export default function Indent() {
                         <td className="px-4 py-3 text-center">
                           {rm.indents?.some(x => x.poSentAt) ? (
                             <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded font-semibold">
-                              �o" Sent {new Date(rm.indents.find(x=>x.poSentAt)?.poSentAt).toLocaleDateString('en-IN')}
+                              o" Sent {new Date(rm.indents.find(x=>x.poSentAt)?.poSentAt).toLocaleDateString('en-IN')}
                             </span>
                           ) : <span className="text-xs text-gray-400">Pending</span>}
                         </td>
@@ -342,7 +342,7 @@ export default function Indent() {
           {loading ? <p className="text-gray-400">Loading...</p>
             : visibleIndents.length === 0 ? (
               <div className="bg-white border border-gray-200 rounded-xl p-10 text-center text-gray-400">
-                �o. No pending indents. All indents have sufficient stock.
+                o. No pending indents. All indents have sufficient stock.
               </div>
             ) : (
               <div className="space-y-3">
@@ -360,7 +360,7 @@ export default function Indent() {
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="px-6 py-4 border-b flex items-center justify-between sticky top-0 bg-white z-10">
-              <h2 className="text-lg font-bold">�Y"" Purchase Requisition</h2>
+              <h2 className="text-lg font-bold">Y"" Purchase Requisition</h2>
               <IconButton icon={X} tooltip="Close" onClick={() => setShowPO(false)} />
             </div>
             <div className="px-6 py-4 space-y-4">
@@ -369,7 +369,7 @@ export default function Indent() {
               </pre>
               <div className="border border-indigo-200 rounded-xl overflow-hidden">
                 <div className="bg-indigo-50 px-4 py-2 border-b border-indigo-200">
-                  <p className="text-sm font-semibold text-indigo-800">�o?️ Send via Email</p>
+                  <p className="text-sm font-semibold text-indigo-800">o?️ Send via Email</p>
                 </div>
                 <div className="px-4 py-4 space-y-3">
                   <div className="grid grid-cols-2 gap-3">
@@ -415,7 +415,7 @@ export default function Indent() {
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-6">
             <div className="flex items-center gap-3 mb-4">
-              <div className="bg-red-100 text-red-600 rounded-full p-2">�s�️</div>
+              <div className="bg-red-100 text-red-600 rounded-full p-2">s️</div>
               <h2 className="text-lg font-bold text-red-700">Insufficient Stock Warning</h2>
             </div>
             <p className="text-sm text-gray-600 mb-4">
@@ -453,7 +453,7 @@ export default function Indent() {
               <IconButton icon={X} tooltip="Close" onClick={closeForm} />
             </div>
             <div className="px-6 py-5 space-y-4">
-              {error && <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-sm">�O {error}</div>}
+              {error && <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-sm">O {error}</div>}
 
               <div className="relative">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Product Name *</label>
@@ -478,14 +478,14 @@ export default function Indent() {
 
               {form.productCode && (
                 <div className="bg-blue-50 border border-blue-100 px-3 py-2 rounded-lg text-sm text-blue-800 flex items-center gap-2">
-                  �o. <strong>{form.productName}</strong>
+                  o. <strong>{form.productName}</strong>
                   <span className="text-blue-400 font-mono text-xs">[{form.productCode}]</span>
                 </div>
               )}
 
               {sfgInfo && sfgInfo.totalSfg > 0 && (
                 <div className="bg-amber-50 border border-amber-200 px-4 py-3 rounded-lg text-sm text-amber-800">
-                  �"�️ Available SFG: <strong>{Number(sfgInfo.totalSfg).toFixed(2)}</strong> units from previous batches.
+                  "️ Available SFG: <strong>{Number(sfgInfo.totalSfg).toFixed(2)}</strong> units from previous batches.
                 </div>
               )}
 
@@ -511,10 +511,10 @@ export default function Indent() {
                 <div className="border rounded-lg overflow-hidden">
                   <div className="px-3 py-2 bg-gray-50 border-b flex items-center justify-between">
                     <span className="text-xs font-semibold text-gray-500 uppercase">BOM Preview — {recipePreview.length} Items</span>
-                    {checkingStock && <span className="text-xs text-blue-500 animate-pulse">Checking stock�?�</span>}
+                    {checkingStock && <span className="text-xs text-blue-500 animate-pulse">Checking stock?</span>}
                     {stockCheck && !checkingStock && (
                       <span className={`text-xs font-semibold ${stockCheck.allOk ? 'text-green-600' : 'text-red-600'}`}>
-                        {stockCheck.allOk ? '�o. All available' : `�s� ${shortfallItems.length} short`}
+                        {stockCheck.allOk ? 'o. All available' : `s ${shortfallItems.length} short`}
                       </span>
                     )}
                   </div>
@@ -537,8 +537,8 @@ export default function Indent() {
                               {Number(r.available || r.availableQty).toFixed(3)}
                             </td>
                             <td className="px-3 py-1.5 text-center">
-                              {r.ok ? <span className="text-green-600 font-bold">�o"</span>
-                                : <span className="text-red-600 text-xs font-bold">�^'{Number(r.shortfall).toFixed(3)}</span>}
+                              {r.ok ? <span className="text-green-600 font-bold">o"</span>
+                                : <span className="text-red-600 text-xs font-bold">^'{Number(r.shortfall).toFixed(3)}</span>}
                             </td>
                           </tr>
                         ))}
@@ -577,7 +577,7 @@ export default function Indent() {
               {form.equipment && (
                 <div className="border border-indigo-200 bg-indigo-50 rounded-xl p-4">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-indigo-700 font-semibold text-sm">�sT️ Multi-Cycle Production</span>
+                    <span className="text-indigo-700 font-semibold text-sm">sT️ Multi-Cycle Production</span>
                     <span className="text-xs text-indigo-500">Equipment selected: {form.equipment}</span>
                   </div>
                   <p className="text-xs text-indigo-600 mb-3">

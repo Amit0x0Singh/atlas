@@ -16,11 +16,18 @@ api.interceptors.response.use(
   (res) => res.data,
   (err) => {
     const message = err.response?.data?.error || err.message || 'Network error'
+    if (err.response?.status === 401 && !err.config?.url?.includes('/auth/login')) {
+      localStorage.removeItem('erp_token')
+      localStorage.removeItem('erp_user')
+      if (!window.location.pathname.startsWith('/login')) {
+        window.location.href = '/login'
+      }
+    }
     return Promise.reject(new Error(message))
   }
 )
 
-// ── App Context (ready for future RBAC) ───────────────────────────────────────
+// ── App Context ────────────────────────────────────────────────────────────
 const AppContext = createContext(null)
 
 export function AppProvider({ children }) {
@@ -28,22 +35,19 @@ export function AppProvider({ children }) {
     try { return JSON.parse(localStorage.getItem('erp_user')) || null }
     catch { return null }
   })
+  const [loading, setLoading] = useState(false)
 
-  // Kept for future RBAC — not enforced in routes yet
-  const login = useCallback(async (username, password) => {
-    const res = await api.post('/auth/login', { username, password })
-    localStorage.setItem('erp_token', res.token)
-    localStorage.setItem('erp_user', JSON.stringify(res.user))
-    setUser(res.user)
-    return res.user
-  }, [])
-
-  const pinLogin = useCallback(async (username, pin) => {
-    const res = await api.post('/auth/pin-login', { username, pin })
-    localStorage.setItem('erp_token', res.token)
-    localStorage.setItem('erp_user', JSON.stringify(res.user))
-    setUser(res.user)
-    return res.user
+  const login = useCallback(async (email, password) => {
+    setLoading(true)
+    try {
+      const res = await api.post('/auth/login', { email, password })
+      localStorage.setItem('erp_token', res.token)
+      localStorage.setItem('erp_user', JSON.stringify(res.user))
+      setUser(res.user)
+      return res.user
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
   const logout = useCallback(() => {
@@ -52,14 +56,31 @@ export function AppProvider({ children }) {
     setUser(null)
   }, [])
 
-  // Role helpers — always true for now; will enforce when RBAC is ready
-  const hasRole = useCallback((..._roles) => true, [])
-  const isAdmin = useCallback(() => true, [])
-  const canApprove = useCallback(() => true, [])
-  const canPublish = useCallback(() => true, [])
+  // 'admin' operation is super-admin — always passes. Otherwise the user's
+  // operation must match the one requested (e.g. a 'store' account can't
+  // reach a 'gate'-only page).
+  const canAccess = useCallback((operation) => {
+    if (!operation) return true
+    if (!user) return false
+    return user.operation === 'admin' || user.operation === operation
+  }, [user])
+
+  const isAdmin      = useCallback(() => user?.operation === 'admin', [user])
+  const isReadOnly    = user?.role === 'employee'
+  // The old fine-grained role names (store_manager, plant_supervisor, qc_person...)
+  // no longer exist — every call site used them to gate a mutating action behind
+  // "is this a full-access account", which is exactly what user.role === 'admin'
+  // means now. Arguments are accepted (and ignored) so existing call sites
+  // (both hasRole(['a','b']) and hasRole('a','b') styles) keep working unchanged.
+  const hasRole       = useCallback(() => user?.role === 'admin', [user])
+  const canApprove    = useCallback(() => user?.role === 'admin', [user])
+  const canPublish    = useCallback(() => user?.role === 'admin', [user])
 
   return (
-    <AppContext.Provider value={{ user, login, pinLogin, logout, hasRole, isAdmin, canApprove, canPublish }}>
+    <AppContext.Provider value={{
+      user, loading, login, logout,
+      canAccess, isAdmin, isReadOnly, hasRole, canApprove, canPublish,
+    }}>
       {children}
     </AppContext.Provider>
   )

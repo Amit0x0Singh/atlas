@@ -10,8 +10,8 @@ const adminOnly = authorize(['admin'])
 
 ProductMasterRouter.get('/products', authenticate, listProducts)
 ProductMasterRouter.get('/products/:productCode', authenticate, getProduct)
-ProductMasterRouter.post('/products', authenticate, createProduct)
-ProductMasterRouter.put('/products/:productCode', authenticate, updateProduct)
+ProductMasterRouter.post('/products', authenticate, adminOnly, createProduct)
+ProductMasterRouter.put('/products/:productCode', authenticate, adminOnly, updateProduct)
 ProductMasterRouter.delete('/products/:productCode', authenticate, adminOnly, deleteProduct)
 
 export default ProductMasterRouter

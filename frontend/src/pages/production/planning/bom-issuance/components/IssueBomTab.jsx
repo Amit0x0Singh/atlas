@@ -70,8 +70,7 @@ export default function IssueBomTab({
   const patch = (fields) => setForm(f => ({ ...f, ...fields }))
 
   const n = Math.max(1, parseInt(form.cycles, 10) || 1)
-  const lastBom   = form.firstBomNo ? incrCode(form.firstBomNo, n - 1) : ''
-  const lastBatch = form.batchNo    ? incrCode(form.batchNo, n - 1)    : ''
+  const lastBatch = form.batchNo ? incrCode(form.batchNo, n - 1) : ''
 
   const handleSchedulePaste = (e) => {
     e.preventDefault()
@@ -196,17 +195,13 @@ export default function IssueBomTab({
 
       {/* Issuance settings */}
       <div className="bg-white border border-gray-200 rounded-xl p-5">
-        <p className="font-semibold text-[13px] text-gray-700 mb-3">⚙️ Issuance Settings — Cycles &amp; BOM Numbers</p>
+        <p className="font-semibold text-[13px] text-gray-700 mb-3">⚙️ Issuance Settings — Cycles</p>
         <div className="grid grid-cols-3 gap-4 mb-3">
-          <Field label="First BOM No">
-            <input value={form.firstBomNo} onChange={e => patch({ firstBomNo: e.target.value })} placeholder="e.g. BOM/2627-0238" className={inputCls} />
-          </Field>
           <Field label="Number of Cycles / Batches">
             <input type="number" min={1} value={form.cycles} onChange={e => patch({ cycles: e.target.value })} className={inputCls} />
           </Field>
-          <div className="bg-gray-50 rounded-lg px-3.5 py-2.5 text-[12px] text-gray-600 flex flex-col justify-center gap-1">
-            <div>{form.firstBomNo ? <>BOMs: <b>{form.firstBomNo}</b> → <b>{lastBom}</b> ({n} total)</> : <span className="text-red-500">⚠ Enter First BOM No</span>}</div>
-            <div>{form.batchNo ? <>Batches: <b>{form.batchNo}</b> → <b>{lastBatch}</b>{form.batchSize ? <> · Total: <b>{(parseFloat(form.batchSize || 0) * n).toLocaleString()} {form.batchSizeUom}</b></> : ''}</> : <span className="text-red-500">⚠ Enter Batch No</span>}</div>
+          <div className="col-span-2 bg-gray-50 rounded-lg px-3.5 py-2.5 text-[12px] text-gray-600 flex items-center">
+            {form.batchNo ? <>Batches: <b>{form.batchNo}</b> → <b>{lastBatch}</b>{form.batchSize ? <> · Total: <b>{(parseFloat(form.batchSize || 0) * n).toLocaleString()} {form.batchSizeUom}</b></> : ''}</> : <span className="text-red-500">⚠ Enter Batch No</span>}
           </div>
         </div>
 

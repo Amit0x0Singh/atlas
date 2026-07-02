@@ -20,12 +20,13 @@ import {
   previewImport,
   executeImport,
 } from "../modules/inventory/import/create/import.controller.js";
-import { authenticate, managerOrAbove } from "../middleware/auth.js";
+import { authenticate, authorize } from "../middleware/auth.js";
 
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 50 * 1024 * 1024 },
 });
+const adminOnly = authorize(["admin"]);
 
 const router = express.Router();
 
@@ -81,7 +82,7 @@ router.use("/", MasterDataRouter);
 router.post(
   "/import/preview",
   authenticate,
-  managerOrAbove,
+  adminOnly,
   upload.single("file"),
   previewImport,
 );
@@ -89,7 +90,7 @@ router.post(
 router.post(
   "/import/execute",
   authenticate,
-  managerOrAbove,
+  adminOnly,
   upload.single("file"),
   executeImport,
 );

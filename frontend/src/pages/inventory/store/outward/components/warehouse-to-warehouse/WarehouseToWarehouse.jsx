@@ -65,7 +65,7 @@ export default function WarehouseToWarehouse() {
               className="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 text-sm font-mono outline-none focus:ring-2 focus:ring-blue-500"
             />
             <Button onClick={lookupPack} disabled={loading} loading={loading} variant="secondary" size="sm">
-              {loading ? '�?�' : 'Lookup'}
+              {loading ? '?' : 'Lookup'}
             </Button>
           </div>
           {packInfo && (
@@ -115,7 +115,7 @@ export default function WarehouseToWarehouse() {
         </div>
 
         <Button onClick={submit} disabled={submitting || !packId.trim() || !to} loading={submitting} variant="primary" fullWidth>
-          {submitting ? 'Recording�?�' : 'Record Warehouse Transfer'}
+          {submitting ? 'Recording?' : 'Record Warehouse Transfer'}
         </Button>
       </div>
     </div>

@@ -16,7 +16,7 @@ export default function WarehouseToContainer() {
   const [error,        setError]     = useState('')
   const [success,      setSuccess]   = useState('')
 
-  // �"?�"? QR scanner for the bag �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
+  // "?"? QR scanner for the bag "?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?
   const onBagScan = useCallback((raw) => {
     const id = raw.startsWith('PACK:') ? raw.slice(5) : raw
     bagScanner.stop()
@@ -24,7 +24,7 @@ export default function WarehouseToContainer() {
   }, [])
   const bagScanner = useQrScanner(onBagScan)
 
-  // �"?�"? Load bag → auto-detect container �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
+  // "?"? Load bag → auto-detect container "?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?
   const loadBag = async (packId) => {
     if (!packId) return
     setError(''); setSuccess(''); setPack(null); setContainer(null); setAvailPacks([]); setQty('')
@@ -69,7 +69,7 @@ export default function WarehouseToContainer() {
     }
   }
 
-  // �"?�"? Submit fill �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
+  // "?"? Submit fill "?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?
   const submit = async () => {
     const q = parseFloat(qty)
     if (!q || q <= 0) { setError('Enter a valid quantity'); return }
@@ -100,7 +100,7 @@ export default function WarehouseToContainer() {
       {success && <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-4 text-sm">{success}</div>}
       {bagScanner.camError && <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded-lg mb-4 text-sm">{bagScanner.camError}</div>}
 
-      {/* �"?�"? Step 1: Scan bag — shown when no bag selected yet �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"? */}
+      {/* "?"? Step 1: Scan bag — shown when no bag selected yet "?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"? */}
       {!selectedPack && (
         <div>
           <p className="text-sm text-gray-500 mb-5">
@@ -125,7 +125,7 @@ export default function WarehouseToContainer() {
             variant={bagScanner.active ? 'danger' : 'warning'}
             fullWidth
             className="mb-4">
-            {bagScanner.active ? '�-�  Stop Camera' : '�S�  Scan Bag QR'}
+            {bagScanner.active ? '-  Stop Camera' : 'Scan Bag QR'}
           </Button>
 
           {/* Manual entry */}
@@ -134,7 +134,7 @@ export default function WarehouseToContainer() {
               value={packInput}
               onChange={e => setPackInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && loadBag(packInput.trim())}
-              placeholder="Or enter pack ID manually�?�"
+              placeholder="Or enter pack ID manually?"
               className="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 text-sm font-mono outline-none focus:ring-2 focus:ring-orange-400"
             />
             <Button
@@ -143,13 +143,13 @@ export default function WarehouseToContainer() {
               loading={loading}
               variant="secondary"
               size="sm">
-              {loading ? '�?�' : 'Load'}
+              {loading ? '?' : 'Load'}
             </Button>
           </div>
         </div>
       )}
 
-      {/* �"?�"? Step 2: Bag + container auto-detected �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"? */}
+      {/* "?"? Step 2: Bag + container auto-detected "?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"? */}
       {selectedPack && container && (
         <div className="space-y-4">
 
@@ -235,7 +235,7 @@ export default function WarehouseToContainer() {
               className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-orange-400 mb-3"
             />
             <Button onClick={submit} disabled={submitting || !qty} loading={submitting} variant="warning" fullWidth>
-              {submitting ? 'Filling�?�' : 'Fill Container'}
+              {submitting ? 'Filling?' : 'Fill Container'}
             </Button>
           </div>
 

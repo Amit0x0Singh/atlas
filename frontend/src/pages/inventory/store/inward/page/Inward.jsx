@@ -5,7 +5,8 @@ import InwardHistory from '../components/inward-history/InwardHistory.jsx'
 import { BackButton } from '../../../../../components/ui'
 import './Inward.css'
 
-const TABS = ['📦 Pack Inward', '🗄️ Bulk Inward', '📋 Inward History']
+// const TABS = ['📦 Pack Inward', '🗄️ Bulk Inward', '📋 Inward History']
+const TABS = ['📦 Pack Inward',  '📋 Inward History']
 
 export default function Inward() {
   const [tab, setTab] = useState(0)
@@ -32,7 +33,8 @@ export default function Inward() {
         </div>
       </div>
       <div className="flex-1 overflow-y-auto">
-        {tab === 0 ? <PackInward /> : tab === 1 ? <BulkInward /> : <InwardHistory />}
+        {tab === 0 ? <PackInward /> : tab === 1 ?  <InwardHistory /> : <InwardHistory />}
+        {/* {tab === 0 ? <PackInward /> : tab === 1 ? <BulkInward /> : <InwardHistory />} */}
       </div>
     </div>
   )

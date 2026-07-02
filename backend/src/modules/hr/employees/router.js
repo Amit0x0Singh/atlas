@@ -18,9 +18,9 @@ EmployeesRouter.get("/employees/companies/list", authenticate, listCompanies);
 EmployeesRouter.post("/employees/companies", authenticate, adminOnly, upsertCompany);
 EmployeesRouter.delete("/employees/companies/:code", authenticate, adminOnly, deleteCompany);
 EmployeesRouter.get("/employees/:id", authenticate, getEmployee);
-EmployeesRouter.put("/employees/:id", authenticate, updateEmployee);
+EmployeesRouter.put("/employees/:id", authenticate, adminOnly, updateEmployee);
 EmployeesRouter.delete("/employees/:id", authenticate, adminOnly, deleteEmployee);
 EmployeesRouter.get("/employees", authenticate, listEmployees);
-EmployeesRouter.post("/employees", authenticate, createEmployee);
+EmployeesRouter.post("/employees", authenticate, adminOnly, createEmployee);
 
 export default EmployeesRouter;

@@ -46,8 +46,8 @@ export const APP_NAV = [
       { to: '/ledger',          label: 'Stock Transaction', Icon: BarChart2 },
       { to: '/grn',             label: 'GRN',              Icon: ClipboardList },
       { to: '/microbial-inward', label: 'Microbial Inward', Icon: Snowflake },
-      { to: '/location-master', label: 'Location Master',  Icon: MapPin },
-      { to: '/indent',          label: 'Indent Management', Icon: ListChecks },
+      // { to: '/location-master', label: 'Location Master',  Icon: MapPin },
+      // { to: '/indent',          label: 'Indent Management', Icon: ListChecks },
     ],
   },
   {
@@ -61,20 +61,20 @@ export const APP_NAV = [
     items: [
       { to: '/planning',      label: 'Production',        Icon: Factory },
       { to: '/erp/planning',  label: 'Planning',          Icon: CalendarDays },
-      { to: '/erp/bom',       label: 'BOM Issuance',      Icon: Beaker },
+      // { to: '/erp/bom',       label: 'BOM Issuance',      Icon: Beaker },
       { to: '/tracker',       label: 'Batch Tracker',     Icon: Activity },
       { to: '/production',    label: 'Production Master', Icon: Cog },
       { to: '/sfg-store',     label: 'SFG',               Icon: TestTube2 },
     ],
   },
-  {
-    group: 'QUALITY CONTROL',
-    items: [
-      { to: '/qc-samples',  label: 'QC Samples',  Icon: ScanLine,    soon: true },
-      { to: '/qc-results',  label: 'Test Results', Icon: BarChart3,   soon: true },
-      { to: '/qc-reports',  label: 'Reports',      Icon: FileBarChart, soon: true },
-    ],
-  },
+  // {
+  //   group: 'QUALITY CONTROL',
+  //   items: [
+  //     { to: '/qc-samples',  label: 'QC Samples',  Icon: ScanLine,    soon: true },
+  //     { to: '/qc-results',  label: 'Test Results', Icon: BarChart3,   soon: true },
+  //     { to: '/qc-reports',  label: 'Reports',      Icon: FileBarChart, soon: true },
+  //   ],
+  // },
   {
     group: 'REPORTS / DATA',
     items: [

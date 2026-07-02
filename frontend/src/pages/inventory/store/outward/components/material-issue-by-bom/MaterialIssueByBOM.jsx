@@ -6,7 +6,7 @@ import QRScanner from '../../../../../../components/QRScanner/QRScanner.jsx'
 import { Button, BackButton, IconButton } from '../../../../../../components/ui'
 import { Camera, X } from 'lucide-react'
 import { readSessions, saveSession, deleteSession } from './bomSessions.js'
-import { taskKey, readIssuedKeys, markIssued } from './issuedTasks.js'
+import { readIssuedKeys, markIssued } from './issuedTasks.js'
 import './MaterialIssueByBOM.css'
 
 export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
@@ -15,6 +15,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
   const [products, setProducts]     = useState([])
   const [prodSearch, setProdSearch] = useState('')
   const [selProduct, setSelProduct] = useState(null)
+  const [selTaskId, setSelTaskId]   = useState(null)
   const [batchQty, setBatchQty]     = useState('')
   const [batchRef, setBatchRef]     = useState('')
   const [diNo,     setDiNo]         = useState('')
@@ -66,7 +67,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
   const filteredTasks = tasks.filter(t =>
     t.sent &&
     t.status !== 'Completed' &&
-    !issuedKeys.has(taskKey(t.productCode, t.batchCode || t.taskId)) &&
+    !issuedKeys.has(t.id) &&
     (!taskFilter.plant || t.plant === taskFilter.plant) &&
     (!taskFilter.date  || t.date  === taskFilter.date)
   )
@@ -80,6 +81,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
     setBatchQty(String(task.qty || ''))
     setBatchRef(task.batchCode || task.taskId || '')
     setDiNo(task.diNo || '')
+    setSelTaskId(task.id)
     setError('')
   }
 
@@ -139,7 +141,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
       setActiveIdx(null)
       setLineMsg({})
       setStep('bom')
-      markIssued(taskKey(selProduct.productCode, batchRef))
+      markIssued(selTaskId)
       setIssuedKeys(readIssuedKeys())
     } catch (e) { setError(e.message) }
     finally { setLoadingBom(false) }
@@ -153,6 +155,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
     setDiNo(s.diNo || '')
     setBomLines(s.bomLines)
     setSessionId(s.id)
+    setSelTaskId(null)
     setActiveIdx(null)
     setLineMsg({})
     setError('')
@@ -362,7 +365,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
             <span className="text-sm font-semibold text-indigo-900">{selProduct.productName}</span>
             <span className="text-xs text-indigo-500">· {batchQty} KG</span>
             {batchRef && <span className="text-xs font-mono text-gray-400">· {batchRef}</span>}
-            <IconButton icon={X} onClick={() => { setSelProduct(null); setBatchQty(''); setBatchRef('') }} variant="ghost" size="xs" tooltip="Clear" className="ml-auto" />
+            <IconButton icon={X} onClick={() => { setSelProduct(null); setBatchQty(''); setBatchRef(''); setSelTaskId(null) }} variant="ghost" size="xs" tooltip="Clear" className="ml-auto" />
           </div>
         )}
 
