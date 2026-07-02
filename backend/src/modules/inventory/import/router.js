@@ -5,7 +5,7 @@ import { previewImport, executeImport } from './create/import.controller.js'
 
 const ImportRouter = express.Router()
 const upload = multer({ storage: multer.memoryStorage() })
-const managerOrAbove = authorize(['store_manager', 'admin'])
+const managerOrAbove = authorize(['store'])
 
 ImportRouter.post('/preview', authenticate, managerOrAbove, upload.single('file'), previewImport)
 ImportRouter.post('/execute', authenticate, managerOrAbove, upload.single('file'), executeImport)

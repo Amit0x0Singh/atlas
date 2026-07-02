@@ -4,8 +4,8 @@ import { listPendingJobs, getJob, listHistory } from "./get/bom-issuance.control
 import { issueItem, scrapBatch, reprocessBatch } from "./create/bom-issuance.controller.js";
 
 const BomIssuanceRouter = express.Router();
-const managerOrAbove = authorize(["store_manager", "admin"]);
-const storeOrAbove = authorize(["store_person", "store_manager", "admin"]);
+const managerOrAbove = authorize(["store"]);
+const storeOrAbove = authorize(["store"]);
 
 BomIssuanceRouter.get("/bom-issuance/pending-jobs", authenticate, storeOrAbove, listPendingJobs);
 BomIssuanceRouter.get("/bom-issuance/history", authenticate, storeOrAbove, listHistory);

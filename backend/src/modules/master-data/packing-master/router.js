@@ -7,7 +7,7 @@ import { deletePackingMaterial } from './delete/packing-master.controller.js'
 
 const PackingMasterRouter = express.Router()
 const adminOnly    = authorize(['admin'])
-const storeManager = authorize(['admin', 'store_manager'])
+const storeManager = authorize(['admin', 'store'])
 
 PackingMasterRouter.get('/packing-materials', authenticate, listPackingMaterials)
 PackingMasterRouter.post('/packing-materials', authenticate, storeManager, createPackingMaterial)

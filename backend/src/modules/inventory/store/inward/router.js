@@ -9,7 +9,7 @@ import { createSession, scanPack, submitSession } from './create/inward.controll
 import { removeScan } from './delete/inward.controller.js'
 
 const InwardRouter = express.Router()
-const storeOrAbove = authorize(['store_person', 'store_manager', 'admin'])
+const storeOrAbove = authorize(['store'])
 
 // ── Pack / Print Master ────────────────────────────────────────────────────────
 InwardRouter.get('/packs/pending-inward', authenticate, getPendingInwardGroups)

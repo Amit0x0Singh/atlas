@@ -6,7 +6,7 @@ import { updateRm } from './update/rm-master.controller.js'
 import { deleteRm } from './delete/rm-master.controller.js'
 
 const RmRouter = express.Router()
-const managerOrAbove = authorize(['store_manager', 'admin'])
+const managerOrAbove = authorize(['store'])
 
 RmRouter.get('/', authenticate, listRm)
 RmRouter.get('/warehouses', authenticate, listWarehouses)

@@ -5,8 +5,8 @@ import { createLocation, bulkInward, bulkOutward } from './create/bulk-location.
 import { deleteLocation } from './delete/bulk-location.controller.js'
 
 const BulkLocationRouter = express.Router()
-const storeOrAbove = authorize(['store_person', 'store_manager', 'admin'])
-const managerOrAbove = authorize(['store_manager', 'admin'])
+const storeOrAbove = authorize(['store'])
+const managerOrAbove = authorize(['store'])
 
 BulkLocationRouter.get('/summary', authenticate, getBulkStockSummary)
 BulkLocationRouter.get('/locations', authenticate, listLocations)

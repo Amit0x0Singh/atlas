@@ -4,7 +4,7 @@ import { listContainers, getContainer, getContainerLabel } from './get/container
 import { createContainer, fillContainer, issueFromContainer } from './create/containers.controller.js'
 
 const ContainersRouter = express.Router()
-const storeOrAbove = authorize(['store_person', 'store_manager', 'admin'])
+const storeOrAbove = authorize(['store'])
 
 ContainersRouter.get('/', authenticate, listContainers)
 ContainersRouter.post('/', authenticate, storeOrAbove, createContainer)

@@ -30,8 +30,8 @@ const upload = multer({
 const router = express.Router();
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
-// Handles: /api/auth/*
-// router.use("/auth", UserRouter);
+// Handles: /api/auth/* — POST /api/auth/login, GET /api/auth/me
+router.use("/auth", UserRouter);
 
 // ── Inventory ─────────────────────────────────────────────────────────────────
 

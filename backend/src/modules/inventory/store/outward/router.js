@@ -4,8 +4,8 @@ import { listOutward, getAvailablePacks } from './get/outward.controller.js'
 import { bomScan, bomManual, packReduction, stockAdjustment, bagLossAdjustment, warehouseTransfer, directIssue, bomDirectIssue } from './create/outward.controller.js'
 
 const OutwardRouter = express.Router()
-const storeOrAbove = authorize(['store_person', 'store_manager', 'admin'])
-const managerOrAbove = authorize(['store_manager', 'admin'])
+const storeOrAbove = authorize(['store'])
+const managerOrAbove = authorize(['store'])
 
 OutwardRouter.get('/', authenticate, listOutward)
 OutwardRouter.get('/available/:rmCode', authenticate, getAvailablePacks)

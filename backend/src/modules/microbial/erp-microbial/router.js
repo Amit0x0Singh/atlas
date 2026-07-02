@@ -5,8 +5,8 @@ import { createContainer, allocateCfu, createTransaction } from "./create/microb
 import { patchContainer, confirmReceipt } from "./update/microbial.controller.js";
 
 const ErpMicrobialRouter = express.Router();
-const storeOrAbove = authorize(["store_person", "store_manager", "admin"]);
-const authOrPlanner = authorize(["store_person", "store_manager", "admin", "planner", "planning_manager"]);
+const storeOrAbove = authorize(["production"]);
+const authOrPlanner = authorize(["production"]);
 
 ErpMicrobialRouter.get("/microbial/containers", authenticate, authOrPlanner, listContainers);
 ErpMicrobialRouter.get("/microbial/containers/:id", authenticate, authOrPlanner, getContainer);

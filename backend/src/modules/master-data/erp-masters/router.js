@@ -13,8 +13,8 @@ import { updateItem, updateSupplier, patchErpEquipment } from './update/erp-mast
 
 const ErpMastersRouter = express.Router()
 const adminOnly   = authorize(['admin'])
-const storeManager = authorize(['admin', 'store_manager'])
-const plannerPlus  = authorize(['admin', 'planner', 'planning_manager'])
+const storeManager = authorize(['admin', 'store'])
+const plannerPlus  = authorize(['admin', 'production'])
 
 // ── ERP Items ─────────────────────────────────────────────────────────────────
 ErpMastersRouter.get('/masters/items', authenticate, listItems)
@@ -43,7 +43,7 @@ ErpMastersRouter.post('/masters/erp-products', authenticate, adminOnly, createEr
 // ── BOM ───────────────────────────────────────────────────────────────────────
 ErpMastersRouter.get('/masters/bom', authenticate, plannerPlus, listBom)
 ErpMastersRouter.get('/masters/bom/:id', authenticate, getBom)
-ErpMastersRouter.post('/masters/bom', authenticate, authorize(['admin', 'planning_manager']), createBom)
+ErpMastersRouter.post('/masters/bom', authenticate, authorize(['admin', 'production']), createBom)
 
 // ── Microbial Strains ─────────────────────────────────────────────────────────
 ErpMastersRouter.get('/masters/strains', authenticate, listStrains)
@@ -51,7 +51,7 @@ ErpMastersRouter.post('/masters/strains', authenticate, adminOnly, createStrain)
 
 // ── Customers ─────────────────────────────────────────────────────────────────
 ErpMastersRouter.get('/masters/customers', authenticate, listCustomers)
-ErpMastersRouter.post('/masters/customers', authenticate, authorize(['admin', 'sales_team', 'store_manager']), createCustomer)
+ErpMastersRouter.post('/masters/customers', authenticate, authorize(['admin', 'store']), createCustomer)
 
 // ── Reason Codes ─────────────────────────────────────────────────────────────
 ErpMastersRouter.get('/masters/reason-codes', authenticate, listReasonCodes)

@@ -6,8 +6,8 @@ import { patchPlan } from "./update/plan-engine.controller.js";
 import { cancelPlan } from "./delete/plan-engine.controller.js";
 
 const PlanEngineRouter = express.Router();
-const plannerOrAbove = authorize(["planner", "planning_manager", "admin"]);
-const managerOrAbove = authorize(["planning_manager", "admin"]);
+const plannerOrAbove = authorize(["production"]);
+const managerOrAbove = authorize(["production"]);
 
 PlanEngineRouter.post("/plan-engine/run", authenticate, managerOrAbove, runEngine);
 PlanEngineRouter.get("/plan-engine/dashboard", authenticate, plannerOrAbove, getDashboard);

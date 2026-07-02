@@ -5,9 +5,9 @@ import { analyseOrder, createPlan, logTimeMotion, recordQc } from "./create/plan
 import { submitPlan, publishPlan, startJob, delayJob } from "./update/planning.controller.js";
 
 const ErpPlanningRouter = express.Router();
-const plannerOrAbove = authorize(["planner", "planning_manager", "admin"]);
-const managerOrAbove = authorize(["planning_manager", "admin"]);
-const supervisorOrAbove = authorize(["plant_supervisor", "planning_manager", "admin"]);
+const plannerOrAbove = authorize(["production"]);
+const managerOrAbove = authorize(["production"]);
+const supervisorOrAbove = authorize(["production"]);
 
 ErpPlanningRouter.post("/planning/analyse", authenticate, plannerOrAbove, analyseOrder);
 ErpPlanningRouter.get("/planning/time-motion", authenticate, plannerOrAbove, listTimeMotion);

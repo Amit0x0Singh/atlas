@@ -5,7 +5,7 @@ import { bulkSaveRecipe, fixRmMapping } from "./create/recipe.controller.js";
 import { deleteRecipeRow, deleteProductRecipe } from "./delete/recipe.controller.js";
 
 const RecipeRouter = express.Router();
-const managerOrAbove = authorize(["store_manager", "admin"]);
+const managerOrAbove = authorize(["production"]);
 
 RecipeRouter.get("/recipe/products", authenticate, listRecipeProducts);
 RecipeRouter.get("/recipe/check-rm-mapping", authenticate, checkRmMapping);

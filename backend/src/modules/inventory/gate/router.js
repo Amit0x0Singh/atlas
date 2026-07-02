@@ -8,8 +8,8 @@ import { deleteGateInward, deleteGateOutward } from './delete/gate.controller.js
 const GateRouter = express.Router()
 
 // authorize() already calls authenticate() internally — no need for both
-const gateOrAbove    = authorize(['gate_person', 'gate_manager', 'gate_staff', 'store_person', 'store_manager', 'admin'])
-const managerOrAbove = authorize(['gate_manager', 'store_manager', 'admin'])
+const gateOrAbove    = authorize(['gate'])
+const managerOrAbove = authorize(['gate'])
 
 // ── Gate Inward ───────────────────────────────────────────────────────────────
 GateRouter.post('/inward',                      gateOrAbove,    createGateInward)  // create inward record
