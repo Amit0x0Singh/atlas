@@ -124,7 +124,7 @@ function ItemLine({ idx, item, rmList, pmList, onChange, onRemove, canRemove }) 
 
       {/* Search input */}
       <div style={{ position: "relative", marginBottom: "10px" }}>
-        <label style={lbl}>Item (Raw Material / Packing) *</label>
+        <label style={lbl}>Item *</label>
         <input
           value={search}
           onChange={e => {
@@ -134,7 +134,7 @@ function ItemLine({ idx, item, rmList, pmList, onChange, onRemove, canRemove }) 
           }}
           onFocus={() => setShowDrop(true)}
           onBlur={() => setTimeout(() => setShowDrop(false), 160)}
-          placeholder="Search RM or packing material by name or code…"
+          placeholder="Search item by name or code…"
           style={inp}
         />
 

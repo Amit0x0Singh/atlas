@@ -58,15 +58,15 @@ function Panel({ mode, onBack, children }) {
   const m = MODE_MAP[mode]
   return (
     <div className="flex flex-col h-full">
-      <div className="px-6 pt-4 pb-0 border-b border-gray-200 bg-white flex-shrink-0">
-        <BackButton onClick={onBack} label="Back to Outward" size="sm" />
-        <div className="flex items-center gap-3 pb-4 mt-2">
+      <div className="px-6 py-4 border-b border-gray-200 bg-white flex-shrink-0 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
           <span className={`p-2 rounded-xl ${m?.accent?.icon || 'bg-gray-100 text-gray-600'}`}>{m?.icon}</span>
-          <div>
-            <h1 className="text-lg font-bold text-gray-900">{m?.label}</h1>
-            <p className="text-xs text-gray-500">{m?.desc}</p>
+          <div className="min-w-0">
+            <h1 className="text-lg font-bold text-gray-900 truncate">{m?.label}</h1>
+            <p className="text-xs text-gray-500 truncate">{m?.desc}</p>
           </div>
         </div>
+        <BackButton onClick={onBack} label="Back to Outward" size="sm" />
       </div>
       <div className="flex-1 overflow-y-auto">{children}</div>
     </div>

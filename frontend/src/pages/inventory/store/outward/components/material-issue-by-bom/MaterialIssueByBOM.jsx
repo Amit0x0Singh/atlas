@@ -4,7 +4,8 @@ import { recipeApi, productApi } from '../../../../../../api/masters.js'
 import { planTasksApi, indentApi } from '../../../../../../api/production.js'
 import QRScanner from '../../../../../../components/QRScanner/QRScanner.jsx'
 import { Button, BackButton, IconButton } from '../../../../../../components/ui'
-import { Camera, X } from 'lucide-react'
+import { Camera, X, History } from 'lucide-react'
+import BomIssuedHistory from './BomIssuedHistory.jsx'
 import './MaterialIssueByBOM.css'
 
 // �"?�"?�"? Session persistence �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
@@ -92,9 +93,9 @@ export default function MaterialIssueByBOM() {
     setError('')
   }
 
-  // Refresh sessions when returning to select screen
+  // Refresh sessions when returning to select / history screen
   useEffect(() => {
-    if (step === 'select') setSessions(readSessions())
+    if (step === 'select' || step === 'history') setSessions(readSessions())
   }, [step])
 
   // Auto-save on every bomLines change
@@ -296,107 +297,33 @@ export default function MaterialIssueByBOM() {
   // �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
 
 
+  if (step === 'history') {
+    return (
+      <BomIssuedHistory
+        sessions={sessions}
+        onResume={resumeSession}
+        onRemove={removeSession}
+        onBack={() => setStep('select')}
+      />
+    )
+  }
+
   if (step === 'select') {
-    const activeSessions = sessions.filter(s => s.bomLines?.some(l => l.issued < l.required - 0.001))
-
-    // Session-level status counts (matches the reference image cards)
-    const pendingCount  = sessions.filter(s => s.bomLines?.every(l => (l.issued || 0) <= 0.001)).length
-    const partialCount  = sessions.filter(s => s.bomLines?.some(l => (l.issued || 0) > 0.001) && s.bomLines?.some(l => (l.issued || 0) < (l.required || 0) - 0.001)).length
-    const completeCount = sessions.filter(s => (s.bomLines?.length || 0) > 0 && s.bomLines?.every(l => (l.issued || 0) >= (l.required || 0) - 0.001)).length
-
     return (
       <div className="p-6 max-w-3xl">
 
-        {/* ── Session status cards ── */}
-        {sessions.length > 0 && (
-          <div className="grid grid-cols-3 gap-3 mb-6">
-            <div className="bg-white rounded-xl border border-gray-200 p-5 text-center shadow-sm">
-              <div className="text-3xl font-bold text-yellow-500 mb-0.5">{pendingCount}</div>
-              <div className="text-xs font-semibold text-yellow-600">BOM Sessions Pending</div>
-            </div>
-            <div className="bg-white rounded-xl border border-gray-200 p-5 text-center shadow-sm">
-              <div className="text-3xl font-bold text-blue-600 mb-0.5">{partialCount}</div>
-              <div className="text-xs font-semibold text-blue-600">Partially Issued</div>
-            </div>
-            <div className="bg-white rounded-xl border border-gray-200 p-5 text-center shadow-sm">
-              <div className="text-3xl font-bold text-green-600 mb-0.5">{completeCount}</div>
-              <div className="text-xs font-semibold text-green-600">Fully Issued</div>
-            </div>
+        {/* Header actions */}
+        <div className="flex items-start justify-between gap-3 mb-5 flex-wrap">
+          <div>
+            <h2 className="text-lg font-bold text-gray-900">Material Issue by BOM</h2>
+            <p className="text-sm text-gray-500 mt-0.5">
+              Select a production task to issue raw materials by BOM. Progress is auto-saved — you can leave and resume any time.
+            </p>
           </div>
-        )}
-
-        {/* In-progress sessions */}
-        {activeSessions.length > 0 && (
-          <div className="mb-7">
-            <h3 className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
-              In-Progress Sessions
-              <span className="bg-amber-100 text-amber-700 text-xs px-1.5 py-0.5 rounded-full font-semibold">
-                {activeSessions.length}
-              </span>
-            </h3>
-            <div className="rounded-xl border border-amber-200 overflow-hidden bg-white">
-              <table className="w-full text-sm">
-                <thead className="bg-amber-50 text-amber-800 text-xs">
-                  <tr>
-                    <th className="text-left px-4 py-2.5 font-semibold">Product</th>
-                    <th className="text-left px-4 py-2.5 font-semibold">Batch</th>
-                    <th className="text-left px-4 py-2.5 font-semibold">Progress</th>
-                    <th className="text-left px-4 py-2.5 font-semibold hidden sm:table-cell">Last updated</th>
-                    <th className="px-4 py-2.5" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {activeSessions.map(s => {
-                    const done  = s.bomLines?.filter(l => l.issued >= l.required - 0.001).length || 0
-                    const total = s.bomLines?.length || 0
-                    const pct   = total > 0 ? Math.round((done / total) * 100) : 0
-                    return (
-                      <tr key={s.id} className="border-t border-amber-100 hover:bg-amber-50/50">
-                        <td className="px-4 py-2.5">
-                          <div className="font-semibold text-gray-900">{s.productName}</div>
-                          <div className="text-xs text-gray-400 font-mono">{s.productCode}</div>
-                        </td>
-                        <td className="px-4 py-2.5">
-                          <span className="font-medium">{s.batchQty} KG</span>
-                          {s.batchRef && <div className="text-xs text-gray-400 font-mono">{s.batchRef}</div>}
-                        </td>
-                        <td className="px-4 py-2.5">
-                          <div className="flex items-center gap-2">
-                            <div className="h-1.5 w-20 bg-gray-200 rounded-full overflow-hidden">
-                              <div className="h-full bg-amber-500 rounded-full" style={{ width: `${pct}%` }} />
-                            </div>
-                            <span className="text-xs text-gray-600 whitespace-nowrap">{done}/{total}</span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-2.5 text-xs text-gray-400 hidden sm:table-cell">
-                          {s.updatedAt ? fmtDate(s.updatedAt) : '—'}
-                        </td>
-                        <td className="px-4 py-2.5 text-right whitespace-nowrap">
-                          <Button onClick={() => resumeSession(s)} variant="purple" size="xs" className="mr-1.5">
-                            Resume →
-                          </Button>
-                          <Button onClick={() => removeSession(s.id)} variant="danger" size="xs">
-                            Delete
-                          </Button>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        <div className="flex items-center gap-3 mb-5">
-          <div className="h-px flex-1 bg-gray-200" />
-          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Start New Session</span>
-          <div className="h-px flex-1 bg-gray-200" />
+          <Button onClick={() => setStep('history')} variant="purple" size="sm" icon={History}>
+            BOM Issued
+          </Button>
         </div>
-
-        <p className="text-sm text-gray-500 mb-4">
-          Select a production task to issue raw materials by BOM. Progress is auto-saved — you can leave and resume any time.
-        </p>
 
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm">{error}</div>

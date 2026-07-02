@@ -5,6 +5,7 @@ import AddTaskDrawer from '../components/add-task-drawer/AddTaskDrawer.jsx'
 import StatusDrawer from '../components/status-drawer/StatusDrawer.jsx'
 import SFGStockModal from '../components/sfg-stock-modal/SFGStockModal.jsx'
 import Toast from '../components/ui/toast/Toast.jsx'
+import BomIssuancePage from './BomIssuancePage.jsx'
 import { Button, IconButton } from '../../../../components/ui'
 import { Plus, Send, Pencil, Trash2 } from 'lucide-react'
 import { planTasksApi } from '../../../../api/production.js'
@@ -209,8 +210,9 @@ function PlanningTab({ tasks, onRefresh, onAdd, onEdit, onDelete, toastShow }) {
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 const TABS = [
-  { id: 'dashboard', label: '📊 Dashboard' },
-  { id: 'planning',  label: '📅 Planning' },
+  { id: 'dashboard',    label: '📊 Dashboard' },
+  { id: 'planning',     label: '📅 Planning' },
+  { id: 'bom-issuance', label: '📝 BOM Issuance' },
 ]
 
 export default function PlanningPage() {
@@ -285,19 +287,26 @@ export default function PlanningPage() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-hidden flex flex-col">
         {activeTab === 'dashboard' && (
-          <DashboardTab tasks={tasks} onStatusUpdate={t => setStatusTarget(t)} />
+          <div className="flex-1 overflow-y-auto">
+            <DashboardTab tasks={tasks} onStatusUpdate={t => setStatusTarget(t)} />
+          </div>
         )}
         {activeTab === 'planning' && (
-          <PlanningTab
-            tasks={tasks}
-            onRefresh={loadTasks}
-            onAdd={(defaultDate) => setDrawer({ defaultDate })}
-            onEdit={t => setDrawer({ task: t })}
-            onDelete={deleteTask}
-            toastShow={toastShow}
-          />
+          <div className="flex-1 overflow-y-auto">
+            <PlanningTab
+              tasks={tasks}
+              onRefresh={loadTasks}
+              onAdd={(defaultDate) => setDrawer({ defaultDate })}
+              onEdit={t => setDrawer({ task: t })}
+              onDelete={deleteTask}
+              toastShow={toastShow}
+            />
+          </div>
+        )}
+        {activeTab === 'bom-issuance' && (
+          <BomIssuancePage />
         )}
       </div>
 
