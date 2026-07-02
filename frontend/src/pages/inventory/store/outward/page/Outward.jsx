@@ -59,7 +59,7 @@ function Panel({ mode, onBack, actions, children }) {
   const m = MODE_MAP[mode]
   return (
     <div className="flex flex-col h-full">
-      <div className="px-6 py-4 border-b border-gray-200 bg-white flex-shrink-0 flex items-center justify-between gap-3">
+      <div className="px-6 py-4 border-b border-gray-200 bg-white flex-shrink-0 flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-3 min-w-0">
           <span className={`p-2 rounded-xl ${m?.accent?.icon || 'bg-gray-100 text-gray-600'}`}>{m?.icon}</span>
           <div className="min-w-0">
@@ -67,7 +67,7 @@ function Panel({ mode, onBack, actions, children }) {
             <p className="text-xs text-gray-500 truncate">{m?.desc}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex items-center gap-2 flex-wrap">
           {actions}
           <BackButton onClick={onBack} label="Back to Outward" size="sm" />
         </div>
@@ -166,6 +166,7 @@ export default function Outward() {
           </div>
 
           <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+            <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-slate-700 text-white text-xs">
                 <tr>
@@ -203,6 +204,7 @@ export default function Outward() {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
 
           {totalPages > 1 && (

@@ -183,16 +183,16 @@ export default function WarehouseToContainer() {
           </div>
 
           {/* Selected bag */}
-          <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 flex justify-between items-center">
-            <div>
+          <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 flex justify-between items-center gap-2">
+            <div className="min-w-0">
               <div className="text-[10px] font-semibold text-blue-400 uppercase tracking-widest mb-0.5">Selected Bag</div>
-              <div className="font-mono text-sm font-semibold text-blue-900">{selectedPack.packId}</div>
+              <div className="font-mono text-sm font-semibold text-blue-900 truncate">{selectedPack.packId}</div>
               <div className="text-xs text-blue-600 mt-0.5">
                 Lot: {selectedPack.lotNo} · Bag #{selectedPack.bagNo} ·
                 Available: <strong>{selectedPack.remainingQty} {container.uom}</strong>
               </div>
             </div>
-            <IconButton icon={X} onClick={reset} variant="ghost" size="sm" tooltip="Clear" className="ml-4" />
+            <IconButton icon={X} onClick={reset} variant="ghost" size="sm" tooltip="Clear" className="flex-shrink-0" />
           </div>
 
           {/* Other available bags (optional swap) */}

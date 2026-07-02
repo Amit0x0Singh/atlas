@@ -17,8 +17,6 @@ const TABS = [
   { id: 'recipes', label: '📚 Recipe Library' },
 ]
 
-const SECTION_TO_PLANT = { Nano: 'Nano', Powder: 'Powder' }
-const DEFAULT_PLANT = 'Powder'
 const todayISO = () => new Date().toISOString().slice(0, 10)
 
 const emptyForm = () => ({
@@ -61,6 +59,20 @@ export default function BomIssuance() {
 
   // Keep the shared print-template settings singleton in sync with the React toggles.
   useEffect(() => { Object.assign(printState, settings) }, [settings])
+
+  // Nano batches always get the 4 Nano batch report pages instead of the
+  // generic Technical/Formulation/Packing/COA sheets — mirrors the legacy
+  // tool's onSectionChange() behavior.
+  useEffect(() => {
+    setSettings(s => {
+      if (form.section === 'Nano') {
+        if (s.inclNano && !s.inclTechnical && !s.inclFormulation && !s.inclPacking && !s.inclCOA) return s
+        return { ...s, inclNano: true, inclTechnical: false, inclFormulation: false, inclPacking: false, inclCOA: false }
+      }
+      if (!s.inclNano) return s
+      return { ...s, inclNano: false }
+    })
+  }, [form.section])
 
   const onProductSearch = useCallback((val) => {
     if (!val.trim()) { setSuggestions([]); return }
@@ -115,6 +127,7 @@ export default function BomIssuance() {
     const pn = form.product.trim()
     const comps = toComponents(rows)
     if (!pn) return setError('Product name is required')
+    if (!form.section) return setError('Select the plant this batch will be produced in')
     if (!comps.length) return setError('Add at least one component')
 
     setGenerating(true)
@@ -146,7 +159,7 @@ export default function BomIssuance() {
     setBanner({ type: 'loading', msg: `Creating ${previews.length} production task(s)…` })
     try {
       for (const bom of previews) {
-        const plant = SECTION_TO_PLANT[bom.section] || DEFAULT_PLANT
+        const plant = bom.section
         const date  = bom.datePlanned || new Date().toISOString().slice(0, 10)
         await planTasksApi.create({
           plant, date,

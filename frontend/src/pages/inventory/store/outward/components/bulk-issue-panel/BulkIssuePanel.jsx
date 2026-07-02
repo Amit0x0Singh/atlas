@@ -177,13 +177,13 @@ export default function BulkIssuePanel({ onDone }) {
       {phase === 'located' && location && (
         <>
           <div className="bg-green-50 border border-green-300 rounded-xl p-4">
-            <div className="flex items-center gap-3">
-              <div className="bg-green-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg font-mono">{location.locationId}</div>
-              <div>
-                <div className="font-semibold text-green-900">{location.locationName}</div>
-                <div className="text-xs text-green-700">{location.itemName} <span className="font-mono">[{location.itemCode}]</span></div>
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="bg-green-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg font-mono flex-shrink-0">{location.locationId}</div>
+              <div className="min-w-0 flex-1">
+                <div className="font-semibold text-green-900 truncate">{location.locationName}</div>
+                <div className="text-xs text-green-700 truncate">{location.itemName} <span className="font-mono">[{location.itemCode}]</span></div>
               </div>
-              <Button onClick={reset} variant="ghost" size="xs" className="ml-auto">Change Location</Button>
+              <Button onClick={reset} variant="ghost" size="xs" className="ml-auto flex-shrink-0">Change Location</Button>
             </div>
           </div>
 

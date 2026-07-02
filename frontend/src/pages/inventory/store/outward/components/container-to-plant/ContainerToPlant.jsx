@@ -94,11 +94,11 @@ export default function ContainerToPlant({ preselected, onDone }) {
       {!container && (
         <div className="mb-5">
           <label className="block text-sm font-semibold text-gray-700 mb-2">Container ID</label>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <input value={manualId} onChange={e => setManualId(e.target.value.toUpperCase())}
               onKeyDown={e => e.key === 'Enter' && loadContainer(manualId)}
               placeholder="e.g. CONT-AZOS"
-              className="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 text-sm font-mono outline-none focus:ring-2 focus:ring-green-500"
+              className="flex-1 min-w-[140px] border border-gray-300 rounded-lg px-4 py-2.5 text-sm font-mono outline-none focus:ring-2 focus:ring-green-500"
             />
             <Button onClick={() => loadContainer(manualId)} disabled={loadingCont || !manualId.trim()} loading={loadingCont} variant="success" size="sm">
               {loadingCont ? '…' : 'Load'}

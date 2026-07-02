@@ -148,16 +148,16 @@ export default function StockLossAdjustment() {
 
           {/* Pack info card */}
           <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-            <div className="flex justify-between items-start">
-              <div>
+            <div className="flex justify-between items-start gap-2">
+              <div className="min-w-0">
                 <div className="text-[10px] font-semibold text-red-400 uppercase tracking-widest mb-0.5">Selected Bag</div>
-                <div className="font-mono text-sm font-bold text-red-900">{pack.packId}</div>
-                <div className="text-sm text-red-700 mt-0.5 font-medium">{pack.itemName}</div>
+                <div className="font-mono text-sm font-bold text-red-900 truncate">{pack.packId}</div>
+                <div className="text-sm text-red-700 mt-0.5 font-medium truncate">{pack.itemName}</div>
                 <div className="text-xs text-red-500 mt-0.5">
                   Lot: {pack.lotNo} · Bag #{pack.bagNo} · Supplier: {pack.supplier || '—'}
                 </div>
               </div>
-              <IconButton icon={X} onClick={reset} variant="danger" size="sm" tooltip="Clear" />
+              <IconButton icon={X} onClick={reset} variant="danger" size="sm" tooltip="Clear" className="flex-shrink-0" />
             </div>
 
             {/* Available qty bar */}
@@ -198,7 +198,7 @@ export default function StockLossAdjustment() {
           {/* Reason */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1.5">Reason *</label>
-            <div className="grid grid-cols-2 gap-2 mb-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
               {REASONS.map(r => (
                 <button key={r} onClick={() => setReason(r)}
                   className={`text-xs px-3 py-2 rounded-lg border text-left transition ${

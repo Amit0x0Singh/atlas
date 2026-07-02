@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react'
 import ComponentsTable from './ComponentsTable.jsx'
 import { incrCode } from '../utils/bomPrintTemplates.js'
+import { PLANT_KEYS, PLANT_CONFIG } from '../../data/plantConfig.js'
 
 const SHIFTS = ['A', 'B', 'C', 'General', 'Day', 'Night']
 const BATCH_TYPES = ['Commercial', 'Pilot', 'R&D', 'Trial', 'Validation']
@@ -181,11 +182,10 @@ export default function IssueBomTab({
             <input value={form.remarks} onChange={e => patch({ remarks: e.target.value })}
               placeholder="General remarks (appears at bottom of BOM)" className={inputCls} />
           </Field>
-          <Field label="Section">
+          <Field label="Plant *">
             <select value={form.section} onChange={e => patch({ section: e.target.value })} className={inputCls}>
-              <option value="">— Select Section —</option>
-              <option value="Powder">Powder Section</option>
-              <option value="Nano">Nano Technology Plant</option>
+              <option value="">— Select Plant —</option>
+              {PLANT_KEYS.map(p => <option key={p} value={p}>{PLANT_CONFIG[p]?.label || p}</option>)}
             </select>
           </Field>
         </div>

@@ -14,8 +14,10 @@ export const login = async (req, res) => {
 
   const token = signJwt({ email: account.email });
 
+  // userId is a strict-UUID column — access.js accounts have no UUID, so it's
+  // left null here and the email goes in username instead (a plain string column).
   await writeAudit({
-    userId: account.email,
+    userId: null,
     username: account.email,
     action: "LOGIN",
     tableName: "access.js",

@@ -361,11 +361,11 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
 
         {/* Selected task summary */}
         {selProduct && (
-          <div className="mb-4 flex items-center gap-2 bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2">
-            <span className="text-sm font-semibold text-indigo-900">{selProduct.productName}</span>
-            <span className="text-xs text-indigo-500">· {batchQty} KG</span>
-            {batchRef && <span className="text-xs font-mono text-gray-400">· {batchRef}</span>}
-            <IconButton icon={X} onClick={() => { setSelProduct(null); setBatchQty(''); setBatchRef(''); setSelTaskId(null) }} variant="ghost" size="xs" tooltip="Clear" className="ml-auto" />
+          <div className="mb-4 flex items-center gap-2 flex-wrap bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2">
+            <span className="text-sm font-semibold text-indigo-900 truncate max-w-full">{selProduct.productName}</span>
+            <span className="text-xs text-indigo-500 flex-shrink-0">· {batchQty} KG</span>
+            {batchRef && <span className="text-xs font-mono text-gray-400 truncate">· {batchRef}</span>}
+            <IconButton icon={X} onClick={() => { setSelProduct(null); setBatchQty(''); setBatchRef(''); setSelTaskId(null) }} variant="ghost" size="xs" tooltip="Clear" className="ml-auto flex-shrink-0" />
           </div>
         )}
 
@@ -429,16 +429,16 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
           const partial   = bomLines.filter(l => l.issued > 0 && (l.required - l.issued) > 0.001).length
           const complete  = bomLines.filter(l => (l.required - l.issued) <= 0.001).length
           return (
-            <div className="grid grid-cols-3 gap-3 mb-4">
-              <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-center">
+            <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-4">
+              <div className="bg-gray-50 border border-gray-200 rounded-xl px-2 sm:px-4 py-3 text-center">
                 <p className="text-2xl font-bold text-gray-700">{pending}</p>
-                <p className="text-xs font-medium text-gray-500 mt-0.5">Pending</p>
+                <p className="text-[11px] sm:text-xs font-medium text-gray-500 mt-0.5">Pending</p>
               </div>
-              <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-center">
+              <div className="bg-amber-50 border border-amber-200 rounded-xl px-2 sm:px-4 py-3 text-center">
                 <p className="text-2xl font-bold text-amber-700">{partial}</p>
-                <p className="text-xs font-medium text-amber-600 mt-0.5">Partially Issued</p>
+                <p className="text-[11px] sm:text-xs font-medium text-amber-600 mt-0.5">Partially Issued</p>
               </div>
-              <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-center">
+              <div className="bg-green-50 border border-green-200 rounded-xl px-2 sm:px-4 py-3 text-center">
                 <p className="text-2xl font-bold text-green-700">{complete}</p>
                 <p className="text-xs font-medium text-green-600 mt-0.5">Fully Issued</p>
               </div>

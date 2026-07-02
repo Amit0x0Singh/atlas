@@ -241,12 +241,12 @@ export default function PackInward() {
   // "?"? Scanning "?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?
   if (step === STEPS.SCANNING) return (
     <div className="p-4">
-      <div className="flex items-center justify-between mb-3">
-        <div>
-          <h2 className="text-xl font-bold text-gray-900">{selected?.itemName}</h2>
+      <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
+        <div className="min-w-0">
+          <h2 className="text-xl font-bold text-gray-900 truncate">{selected?.itemName}</h2>
           <p className="text-sm text-gray-500">Lot: {selected?.lotNo}</p>
         </div>
-        <Button onClick={pauseAndExit} variant="warning" size="sm">
+        <Button onClick={pauseAndExit} variant="warning" size="sm" className="flex-shrink-0">
           ⏸ Pause &amp; Resume Later
         </Button>
       </div>

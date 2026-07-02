@@ -12,7 +12,11 @@ const INITIALLY_OPEN = new Set(['DASHBOARD'])
 
 const Sidebar = () => {
 
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  // Full 250px sidebar would eat well over half of a phone screen — start
+  // collapsed to the 60px icon rail on narrow viewports, open on desktop.
+  const [sidebarOpen, setSidebarOpen] = useState(() =>
+    typeof window === 'undefined' || window.matchMedia('(min-width: 768px)').matches
+  )
   const [openGroups, setOpenGroups]   = useState(() => new Set(INITIALLY_OPEN))
   const location = useLocation()
   const { user } = useApp()

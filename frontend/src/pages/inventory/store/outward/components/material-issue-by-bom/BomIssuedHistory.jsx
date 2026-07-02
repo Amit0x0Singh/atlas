@@ -111,6 +111,7 @@ export default function BomIssuedHistory({ onResume }) {
         </div>
       ) : (
         <div className="rounded-xl border border-gray-200 overflow-hidden bg-white">
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-slate-700 text-white text-xs">
               <tr>
@@ -163,6 +164,7 @@ export default function BomIssuedHistory({ onResume }) {
                     {isOpen && (
                       <tr className="bg-gray-50/60">
                         <td colSpan={7} className="px-4 py-3">
+                          <div className="overflow-x-auto">
                           <table className="w-full text-xs">
                             <thead className="text-gray-400">
                               <tr>
@@ -181,6 +183,7 @@ export default function BomIssuedHistory({ onResume }) {
                               ))}
                             </tbody>
                           </table>
+                          </div>
                         </td>
                       </tr>
                     )}
@@ -189,6 +192,7 @@ export default function BomIssuedHistory({ onResume }) {
               })}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </div>
