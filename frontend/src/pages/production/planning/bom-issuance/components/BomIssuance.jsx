@@ -112,6 +112,12 @@ export default function BomIssuance() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.product, form.productCode, recipeProducts])
 
+  // Clear a stale "recipe loaded" message once the typed name no longer
+  // matches the product it came from (e.g. user edits the field afterward).
+  useEffect(() => {
+    if (!form.productCode) setRecipeLoadedMsg('')
+  }, [form.productCode])
+
   // Re-scale the loaded recipe whenever batch size changes
   useEffect(() => {
     if (!activeRecipe) return
