@@ -154,7 +154,7 @@ export default function InwardHistory() {
         </div>
       </div>
 
-      {/* "?"? Table "?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"? */}
+      {/*  Table    */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         {/* Table toolbar */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
@@ -302,7 +302,7 @@ export default function InwardHistory() {
                                 </span>
                                 {b.warehouse ? (
                                   <span className="text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded w-36 text-center shrink-0 truncate">
-                                    Y {b.warehouse}
+                                  {b.warehouse}
                                   </span>
                                 ) : (
                                   <span className="text-xs text-gray-300 w-36 text-center shrink-0">—</span>
@@ -313,7 +313,7 @@ export default function InwardHistory() {
                                   rel="noreferrer"
                                   className="text-xs text-blue-600 hover:text-blue-800 font-medium ml-4 shrink-0 whitespace-nowrap"
                                 >
-                                  Y-️ Label
+                                 Label
                                 </a>
                               </div>
                             </td>

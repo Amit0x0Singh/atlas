@@ -56,7 +56,7 @@ export default function CreateContainer({ onCreated }) {
   if (created) return (
     <div className="p-6 max-w-md">
       <div className="bg-green-50 border border-green-200 rounded-xl p-6 text-center">
-        <div className="text-4xl mb-3">�o.</div>
+        <div className="text-4xl mb-3">o.</div>
         <h3 className="text-lg font-bold text-green-800 mb-1">Container Created!</h3>
         <p className="text-green-700 text-sm mb-0.5 font-mono font-bold">{created.containerId}</p>
         <p className="text-green-600 text-sm mb-4">{created.itemName} — Cap: {created.capacity} {created.uom}</p>
@@ -98,7 +98,7 @@ export default function CreateContainer({ onCreated }) {
             value={query}
             onChange={e => handleQueryChange(e.target.value)}
             onBlur={() => setTimeout(() => setSuggs([]), 150)}
-            placeholder="Type to search raw material name�?�"
+            placeholder="Type to search raw material name"
             autoComplete="off"
             className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-orange-400"
           />

@@ -45,7 +45,7 @@ export default function WarehouseToWarehouse() {
   }
 
   return (
-    <div className="p-6 max-w-lg">
+    <div className="p-4 md:p-6 max-w-lg">
       <p className="text-sm text-gray-500 mb-5">
         Move a pack from one warehouse/location to another. Stock quantity remains the same — only the location is updated.
       </p>

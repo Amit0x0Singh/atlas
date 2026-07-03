@@ -212,7 +212,7 @@ export default function PackInward() {
 
   // "?"? Done "?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?
   if (step === STEPS.DONE) return (
-    <div className="p-6 max-w-xl">
+    <div className="p-4 md:p-6 max-w-xl">
       {doneStats.leftOver > 0 ? (
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-8 text-center">
           <div className="text-5xl mb-4">Y"</div>
@@ -263,9 +263,9 @@ export default function PackInward() {
       )}
 
       {/* "?"? Warehouse switcher "?"? */}
-      <div className="bg-indigo-50 border border-indigo-200 rounded-xl px-4 py-3 mb-4 flex items-center gap-3 flex-wrap">
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <span className="text-lg">Y</span>
+      <div className="bg-indigo-50 border border-indigo-200 rounded-xl px-4 py-3 mb-4 flex flex-col md:flex-row md:items-center gap-3">
+        <div className="flex items-center gap-2 md:flex-1 min-w-0">
+          <span className="text-lg"></span>
           <div className="min-w-0">
             <p className="text-xs font-semibold text-indigo-600 leading-none mb-1">Scanning bags to warehouse</p>
             <p className="text-[11px] text-indigo-400">Change anytime — next scan goes to the selected warehouse</p>
@@ -274,7 +274,7 @@ export default function PackInward() {
         <select
           value={warehouse}
           onChange={e => handleWarehouseChange(e.target.value)}
-          className="border-2 border-indigo-400 bg-white text-indigo-800 font-bold rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+          className="w-full md:w-auto border-2 border-indigo-400 bg-white text-indigo-800 font-bold rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
         >
           {WAREHOUSES.map(w => <option key={w} value={w}>{w}</option>)}
         </select>
@@ -397,7 +397,7 @@ export default function PackInward() {
     : null
 
   return (
-    <div className="p-6 max-w-2xl">
+    <div className="p-4 md:p-6 max-w-2xl">
       <h2 className="text-xl font-bold text-gray-900 mb-1">Pack Inward</h2>
       <p className="text-gray-500 text-sm mb-5">
         Scan individual QR bags into the warehouse. Generate packs first in Print Master.

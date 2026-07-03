@@ -296,7 +296,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
 
   if (step === 'select') {
     return (
-      <div className="p-6 max-w-3xl">
+      <div className="p-4 md:p-6 max-w-3xl">
 
         <p className="text-sm text-gray-500 mb-5">
           Select a production task to issue raw materials by BOM. Progress is auto-saved — you can leave and resume any time.
@@ -393,7 +393,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
         />
       )}
 
-      <div className="p-6">
+      <div className="p-4 md:p-6">
         {/* Header */}
         <div className="flex items-start justify-between mb-4 flex-wrap gap-3">
           <div>
@@ -638,7 +638,7 @@ function IssuePanel({
           {/* ── No stock: shortage banner + indent ── */}
           {noStock && (
             <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3">
-              <div className="flex items-start justify-between gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-xs font-bold text-amber-800">No stock found for {line.rmName}</p>
                   <p className="text-xs text-amber-700 mt-0.5 leading-relaxed">
@@ -650,7 +650,7 @@ function IssuePanel({
                   <button
                     type="button"
                     onClick={() => setShowIndent(true)}
-                    className="shrink-0 text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap">
+                    className="self-start sm:shrink-0 text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap">
                     Raise Purchase Indent
                   </button>
                 )}
@@ -730,7 +730,7 @@ function IssuePanel({
           {/* ── Insufficient stock: shortage warning + indent ── */}
           {insufficientStock && (
             <div className="rounded-xl border border-orange-300 bg-orange-50 px-4 py-3">
-              <div className="flex items-start justify-between gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-xs font-bold text-orange-800">Stock insufficient for {line.rmName}</p>
                   <p className="text-xs text-orange-700 mt-0.5 leading-relaxed">
@@ -743,7 +743,7 @@ function IssuePanel({
                   <button
                     type="button"
                     onClick={() => setShowIndent(true)}
-                    className="shrink-0 text-xs font-bold bg-orange-500 hover:bg-orange-600 text-white px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap">
+                    className="self-start sm:shrink-0 text-xs font-bold bg-orange-500 hover:bg-orange-600 text-white px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap">
                     Raise Purchase Indent
                   </button>
                 )}
@@ -869,7 +869,7 @@ function IssuePanel({
                     {foundSource.type === 'pack' ? 'Warehouse Pack Found' : 'Container Found'}
                   </span>
                 </div>
-                <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-gray-600">
+                <div className="grid grid-cols-2 gap-x-3 sm:gap-x-6 gap-y-1 text-gray-600">
                   <div>
                     <span className="text-gray-400">ID: </span>
                     <span className="font-mono font-semibold text-gray-900 break-all">{foundSource.id}</span>

@@ -97,7 +97,7 @@ export default function BomIssuedHistory({ onResume }) {
   }, [sessions, historyBatches])
 
   return (
-    <div className="p-6 max-w-4xl">
+    <div className="p-4 md:p-6 max-w-4xl">
       <div className="mb-5">
         <h2 className="text-lg font-bold text-gray-900">BOM Issued</h2>
         <p className="text-sm text-gray-500 mt-0.5">In-progress issuance sessions and completed BOM issuance history</p>

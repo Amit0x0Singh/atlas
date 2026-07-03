@@ -1,6 +1,7 @@
 import './menu-bar.css'
 import { useState, useEffect, useMemo } from 'react'
 import { useLocation } from 'react-router-dom'
+import { PanelLeftOpen } from 'lucide-react'
 import { APP_NAV } from '../data/navData.js'
 import { operationForPath } from '../../../routes/operationMap.js'
 import { useApp } from '../../../context/context.jsx'
@@ -12,8 +13,8 @@ const INITIALLY_OPEN = new Set(['DASHBOARD'])
 
 const Sidebar = () => {
 
-  // Full 250px sidebar would eat well over half of a phone screen — start
-  // collapsed to the 60px icon rail on narrow viewports, open on desktop.
+  // Start collapsed on narrow viewports (mobile drawer hidden by default),
+  // open on desktop.
   const [sidebarOpen, setSidebarOpen] = useState(() =>
     typeof window === 'undefined' || window.matchMedia('(min-width: 768px)').matches
   )
@@ -51,32 +52,51 @@ const Sidebar = () => {
     })
 
   return (
-    <aside className={`sidebar ${sidebarOpen ? 'sidebar--open' : 'sidebar--collapsed'}`}>
-      <SidebarHeader
-        sidebarOpen={sidebarOpen}
-        onCollapse={() => setSidebarOpen(false)}
-        onExpand={() => setSidebarOpen(true)}
-      />
+    <>
+      {/* Mobile-only: tapping outside the open drawer closes it */}
+      {sidebarOpen && (
+        <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />
+      )}
 
-      <nav className="sidebar-nav">
-        {visibleNav.map(({ group, items }) => (
-          <NavGroup
-            key={group}
-            group={group}
-            items={items}
-            isOpen={openGroups.has(group)}
-            hasActive={items.some(i => i.to === location.pathname)}
-            sidebarOpen={sidebarOpen}
-            onToggle={() => {
-              if (!sidebarOpen) setSidebarOpen(true)
-              toggleGroup(group)
-            }}
-          />
-        ))}
-      </nav>
+      <aside className={`sidebar ${sidebarOpen ? 'sidebar--open' : 'sidebar--collapsed'}`}>
+        <SidebarHeader
+          sidebarOpen={sidebarOpen}
+          onCollapse={() => setSidebarOpen(false)}
+          onExpand={() => setSidebarOpen(true)}
+        />
 
-      <SidebarFooter sidebarOpen={sidebarOpen} />
-    </aside>
+        <nav className="sidebar-nav">
+          {visibleNav.map(({ group, items }) => (
+            <NavGroup
+              key={group}
+              group={group}
+              items={items}
+              isOpen={openGroups.has(group)}
+              hasActive={items.some(i => i.to === location.pathname)}
+              sidebarOpen={sidebarOpen}
+              onToggle={() => {
+                if (!sidebarOpen) setSidebarOpen(true)
+                toggleGroup(group)
+              }}
+            />
+          ))}
+        </nav>
+
+        <SidebarFooter sidebarOpen={sidebarOpen} />
+      </aside>
+
+      {/* Mobile-only: sidebar collapses to zero width there, so this
+          floating button is the only way left to reopen it */}
+      {!sidebarOpen && (
+        <button
+          className="sidebar-mobile-fab"
+          title="Expand sidebar"
+          onClick={() => setSidebarOpen(true)}
+        >
+          <PanelLeftOpen size={18} />
+        </button>
+      )}
+    </>
   )
 }
 

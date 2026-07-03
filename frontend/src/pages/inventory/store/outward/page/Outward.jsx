@@ -59,16 +59,22 @@ function Panel({ mode, onBack, actions, children }) {
   const m = MODE_MAP[mode]
   return (
     <div className="flex flex-col h-full">
-      <div className="px-6 py-4 border-b border-gray-200 bg-white flex-shrink-0 flex items-center justify-between gap-3 flex-wrap">
+      <div className="px-4 py-3 md:px-6 md:py-4 border-b border-gray-200 bg-white flex-shrink-0 flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-3 min-w-0">
           <span className={`p-2 rounded-xl ${m?.accent?.icon || 'bg-gray-100 text-gray-600'}`}>{m?.icon}</span>
           <div className="min-w-0">
-            <h1 className="text-lg font-bold text-gray-900 truncate">{m?.label}</h1>
-            <p className="text-xs text-gray-500 truncate">{m?.desc}</p>
+            <h1 className="text-base md:text-lg font-bold text-gray-900 truncate">{m?.label}</h1>
+            {/* Hidden on mobile — same reasoning as the Inward page: the
+                one-line explainer isn't worth the vertical space there */}
+            <p className="hidden md:block text-xs text-gray-500 truncate">{m?.desc}</p>
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {actions}
+          {/* This "Back" returns to the mode-selection view within the same
+              page (client-side state, not a route change), so — unlike the
+              page-level back button below — it can't be replaced by the
+              device's native back gesture and must stay visible on mobile. */}
           <BackButton onClick={onBack} label="Back to Outward" size="sm" />
         </div>
       </div>
@@ -133,34 +139,39 @@ export default function Outward() {
   return (
     <div className="min-h-full bg-gray-50">
       {/* Page header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className="bg-white border-b border-gray-200 px-4 py-3 md:px-6 md:py-4">
         <div className="flex items-center gap-3 mb-1">
-          <BackButton size="sm" />
-          <span className="text-gray-300">|</span>
-          <h1 className="text-xl font-bold text-gray-900">Store Outward</h1>
+          {/* Mobile has the device's native back gesture/button already */}
+          <div className="hidden md:flex items-center gap-3">
+            <BackButton size="sm" />
+            <span className="text-gray-300">|</span>
+          </div>
+          <h1 className="text-lg md:text-xl font-bold text-gray-900">Store Outward</h1>
         </div>
-        <p className="text-sm text-gray-500 mt-0.5">Issue materials, transfer stock, and record adjustments</p>
+        <p className="hidden md:block text-sm text-gray-500 mt-0.5">Issue materials, transfer stock, and record adjustments</p>
       </div>
 
-      <div className="p-6">
+      <div className="p-4 md:p-6">
         {/* Outward action cards */}
         <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3">Outward Actions</h2>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-7">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3 mb-7">
           {MODES.map(m => (
             <button key={m.key} onClick={() => setMode(m.key)}
-              className={`bg-white border-2 ${m.accent.border} ${m.accent.hover} rounded-xl p-4 text-left transition-all group`}>
+              className={`bg-white border-2 ${m.accent.border} ${m.accent.hover} rounded-xl p-3 md:p-4 text-left transition-all group`}>
               <span className={`inline-flex p-2 rounded-lg mb-3 ${m.accent.icon} transition-colors`}>
                 {m.icon}
               </span>
               <div className="font-bold text-gray-900 text-sm mb-1 leading-snug">{m.label}</div>
-              <div className="text-xs text-gray-400 leading-relaxed">{m.desc}</div>
+              {/* Card stays icon + title only on mobile — the blurb is nice-to-have
+                  desktop context, not worth the extra card height on small screens */}
+              <div className="hidden md:block text-xs text-gray-400 leading-relaxed">{m.desc}</div>
             </button>
           ))}
         </div>
 
         {/* Recent transactions */}
         <div>
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between gap-2 flex-wrap mb-3">
             <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide">Recent Transactions</h2>
             <Button onClick={loadHistory} variant="outline-gray" size="sm" icon={RefreshCw}>Refresh</Button>
           </div>
