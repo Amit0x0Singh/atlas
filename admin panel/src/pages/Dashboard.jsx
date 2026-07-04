@@ -1,15 +1,20 @@
 import { useEffect, useState } from 'react';
+import PageHeader from '../components/layout/PageHeader.jsx';
+import ResourceCard from '../components/dashboard/ResourceCard.jsx';
 import { resources } from '../data/resources.js';
 import { NAV_GROUPS } from '../data/navGroups.js';
-import StatsCard from '../components/dashboard/StatsCard.jsx';
 import { getStats } from '../api/http.js';
+import { useFavorites } from '../hooks/useFavorites.js';
 
 export default function Dashboard() {
   const [stats, setStats] = useState(null); // null = not loaded yet; cards just omit the count
+  const { isFavorite, toggleFavorite, favorites } = useFavorites();
 
   useEffect(() => {
     getStats().then(setStats).catch(() => setStats({}));
   }, []);
+
+  const favoriteResources = resources.filter((r) => favorites.includes(r.key));
 
   const groups = NAV_GROUPS.map((g) => ({
     ...g,
@@ -17,31 +22,45 @@ export default function Dashboard() {
   })).filter((g) => g.items.length > 0);
 
   return (
-    <div>
-      <div className="page-header">
-        <div>
-          <p className="eyebrow">Admin Panel</p>
-          <h2>Application Data <span className="record-count">{resources.length} tables</span></h2>
-          <p className="text-muted mb-0">Click any table to view, add, edit, or delete records.</p>
-        </div>
-      </div>
+    <div className="space-y-8">
+      <PageHeader
+        eyebrow="Admin Panel"
+        title="Application Data"
+        description={`${resources.length} tables across ${groups.length} modules. Click any table to view, add, edit, or delete records.`}
+      />
 
-      {groups.map((group) => (
-        <div key={group.key} style={{ marginBottom: 32 }}>
-          <div className="sidebar-section" style={{ color: group.color, fontSize: '0.75rem', padding: '0 0 8px', marginBottom: 8 }}>
-            {group.label}
-          </div>
-          <div className="resource-grid">
-            {group.items.map((resource) => (
-              <StatsCard
+      {favoriteResources.length > 0 && (
+        <section>
+          <h2 className="text-xs font-bold uppercase tracking-wider text-amber-500 mb-3">★ Favorites</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {favoriteResources.map((resource) => (
+              <ResourceCard
                 key={resource.key}
                 resource={resource}
-                color={group.color}
                 count={stats?.[resource.key]}
+                isFavorite
+                onToggleFavorite={toggleFavorite}
               />
             ))}
           </div>
-        </div>
+        </section>
+      )}
+
+      {groups.map((group) => (
+        <section key={group.key}>
+          <h2 className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: group.color }}>{group.label}</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {group.items.map((resource) => (
+              <ResourceCard
+                key={resource.key}
+                resource={resource}
+                count={stats?.[resource.key]}
+                isFavorite={isFavorite(resource.key)}
+                onToggleFavorite={toggleFavorite}
+              />
+            ))}
+          </div>
+        </section>
       ))}
     </div>
   );

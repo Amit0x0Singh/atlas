@@ -36,4 +36,4 @@ const deleteGateOutward = async (req, res) => {
 }
 
 
-export default { deleteGateInward, deleteGateOutward,  }
+export { deleteGateInward, deleteGateOutward }

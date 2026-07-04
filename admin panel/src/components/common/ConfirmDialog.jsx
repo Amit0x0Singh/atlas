@@ -1,41 +1,32 @@
+import { AlertTriangle } from 'lucide-react';
 import Modal from './Modal.jsx';
+import Button from './Button.jsx';
 
-/**
- * Shared confirm dialog — replaces window.confirm() for per-row delete and
- * the inline hand-rolled "Delete All" modal in ResourcePage.jsx, so both
- * destructive actions get the same styled confirmation UX.
- */
 export default function ConfirmDialog({
   open,
-  icon = '⚠️',
+  icon: Icon = AlertTriangle,
+  iconClassName = 'text-amber-500 bg-amber-50 dark:bg-amber-950',
   title,
   message,
   confirmLabel = 'Confirm',
   cancelLabel = 'Cancel',
-  variant = 'danger',
+  variant = 'primary',
   loading = false,
   onConfirm,
   onCancel,
 }) {
   return (
-    <Modal open={open} onClose={onCancel} maxWidth={440}>
-      <div style={{ textAlign: 'center', marginBottom: 16, fontSize: 36 }}>{icon}</div>
-      <h3 style={{ margin: '0 0 8px', textAlign: 'center', fontSize: '1.15rem' }}>{title}</h3>
-      <p style={{ color: '#64748b', textAlign: 'center', fontSize: '0.9rem', margin: '0 0 24px' }}>
-        {message}
-      </p>
-      <div className="modal-actions">
-        <button type="button" className="btn btn-outline-secondary" onClick={onCancel} disabled={loading}>
-          {cancelLabel}
-        </button>
-        <button
-          type="button"
-          className={`btn ${variant === 'danger' ? 'btn-danger' : 'btn-primary'}`}
-          onClick={onConfirm}
-          disabled={loading}
-        >
-          {loading ? 'Working…' : confirmLabel}
-        </button>
+    <Modal open={open} onClose={onCancel} size="sm">
+      <div className="p-6 text-center">
+        <div className={`inline-flex items-center justify-center w-12 h-12 rounded-full mb-4 ${iconClassName}`}>
+          <Icon size={22} />
+        </div>
+        <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">{title}</h3>
+        <div className="text-sm text-slate-500 dark:text-slate-400 mt-1.5">{message}</div>
+        <div className="flex gap-3 mt-6">
+          <Button variant="secondary" fullWidth onClick={onCancel} disabled={loading}>{cancelLabel}</Button>
+          <Button variant={variant} fullWidth onClick={onConfirm} loading={loading}>{confirmLabel}</Button>
+        </div>
       </div>
     </Modal>
   );

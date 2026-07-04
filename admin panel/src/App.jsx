@@ -1,5 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
-import AdminLayout from './components/layout/AdminLayout.jsx';
+import AppLayout from './components/layout/AppLayout.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import ResourcePage from './pages/ResourcePage.jsx';
 import { resources } from './data/resources.js';
@@ -9,7 +9,7 @@ export default function App() {
   return (
     <ToastProvider>
       <Routes>
-        <Route element={<AdminLayout />}>
+        <Route element={<AppLayout />}>
           <Route index element={<Dashboard />} />
           {resources.map((resource) => (
             <Route

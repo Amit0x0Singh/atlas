@@ -86,7 +86,7 @@ const updateGateOutwardStatus = async (req, res) => {
 
 
 
-export default {
+export {
   requestDeleteGateInward,
   requestDeleteGateOutward,
   updateGateInwardStatus,

@@ -113,7 +113,7 @@ const getGateOutward = async (req, res) => {
 }
 
 
-export default {
+export {
   listGateInward,
   getGateInward,
   listGateOutward,
