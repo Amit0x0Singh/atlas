@@ -1,20 +1,5 @@
 import { useEffect } from 'react';
-
-const STATUS_COLORS = {
-  ACTIVE:          { bg: '#ecfdf5', text: '#059669', border: '#a7f3d0' },
-  EXHAUSTED:       { bg: '#fef2f2', text: '#dc2626', border: '#fecaca' },
-  COMPLETED:       { bg: '#eff6ff', text: '#2563eb', border: '#bfdbfe' },
-  CANCELLED:       { bg: '#f9fafb', text: '#6b7280', border: '#e5e7eb' },
-  AWAITING_INWARD: { bg: '#fffbeb', text: '#d97706', border: '#fde68a' },
-  INWARDED:        { bg: '#ecfdf5', text: '#059669', border: '#a7f3d0' },
-  PENDING:         { bg: '#fffbeb', text: '#d97706', border: '#fde68a' },
-  RESERVED:        { bg: '#eff6ff', text: '#2563eb', border: '#bfdbfe' },
-  PACK:            { bg: '#f5f3ff', text: '#7c3aed', border: '#ddd6fe' },
-  BULK:            { bg: '#fef3c7', text: '#b45309', border: '#fde68a' },
-  IN:              { bg: '#ecfdf5', text: '#059669', border: '#a7f3d0' },
-  OUT:             { bg: '#fef2f2', text: '#dc2626', border: '#fecaca' },
-  ADJUSTMENT:      { bg: '#f5f3ff', text: '#7c3aed', border: '#ddd6fe' },
-};
+import Badge, { BoolBadge } from '../common/Badge.jsx';
 
 function renderValue(value, fieldName) {
   if (value === null || value === undefined || value === '') {
@@ -33,44 +18,14 @@ function renderValue(value, fieldName) {
     );
   }
 
-  if (typeof value === 'boolean') {
-    return (
-      <span style={{
-        background: value ? '#ecfdf5' : '#f9fafb',
-        color: value ? '#059669' : '#6b7280',
-        border: `1px solid ${value ? '#a7f3d0' : '#e5e7eb'}`,
-        borderRadius: 6,
-        fontSize: '0.78rem',
-        fontWeight: 600,
-        padding: '2px 10px',
-      }}>
-        {value ? 'Yes' : 'No'}
-      </span>
-    );
-  }
+  if (typeof value === 'boolean') return <BoolBadge value={value} />;
 
-  // Status/type badge
   if (
     fieldName?.toLowerCase().includes('status') ||
     fieldName?.toLowerCase().includes('type') ||
     fieldName?.toLowerCase().includes('tracking')
   ) {
-    const style = STATUS_COLORS[String(value)];
-    if (style) {
-      return (
-        <span style={{
-          background: style.bg,
-          color: style.text,
-          border: `1px solid ${style.border}`,
-          borderRadius: 6,
-          fontSize: '0.78rem',
-          fontWeight: 600,
-          padding: '2px 10px',
-        }}>
-          {String(value)}
-        </span>
-      );
-    }
+    return <Badge value={String(value)} />;
   }
 
   // Date/time

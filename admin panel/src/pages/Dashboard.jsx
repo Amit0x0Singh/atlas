@@ -1,32 +1,19 @@
-import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { resources } from '../data/resources.js';
-
-const GROUP_LABELS = {
-  gate:       'Gate & Supply Chain',
-  inventory:  'Inventory',
-  sales:      'Sales',
-  production: 'Production',
-  planning:   'Planning',
-  hr:         'HR',
-  microbial:  'Microbial',
-};
-
-const GROUP_COLORS = {
-  gate:       '#f59e0b',
-  inventory:  '#2563eb',
-  sales:      '#16a34a',
-  production: '#9333ea',
-  planning:   '#ea580c',
-  hr:         '#0891b2',
-  microbial:  '#be185d',
-};
+import { NAV_GROUPS } from '../data/navGroups.js';
+import StatsCard from '../components/dashboard/StatsCard.jsx';
+import { getStats } from '../api/http.js';
 
 export default function Dashboard() {
-  const groups = Object.keys(GROUP_LABELS).map((key) => ({
-    key,
-    label: GROUP_LABELS[key],
-    color: GROUP_COLORS[key],
-    items: resources.filter((r) => r.group === key),
+  const [stats, setStats] = useState(null); // null = not loaded yet; cards just omit the count
+
+  useEffect(() => {
+    getStats().then(setStats).catch(() => setStats({}));
+  }, []);
+
+  const groups = NAV_GROUPS.map((g) => ({
+    ...g,
+    items: resources.filter((r) => r.group === g.key),
   })).filter((g) => g.items.length > 0);
 
   return (
@@ -46,12 +33,12 @@ export default function Dashboard() {
           </div>
           <div className="resource-grid">
             {group.items.map((resource) => (
-              <Link to={`/${resource.path}`} className="resource-card" key={resource.key}
-                style={{ '--card-accent': group.color }}>
-                <span>{resource.model}</span>
-                <h3>{resource.title}</h3>
-                <p>{resource.description}</p>
-              </Link>
+              <StatsCard
+                key={resource.key}
+                resource={resource}
+                color={group.color}
+                count={stats?.[resource.key]}
+              />
             ))}
           </div>
         </div>

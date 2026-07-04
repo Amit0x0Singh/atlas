@@ -62,3 +62,9 @@ export async function deleteAllRecords(resource) {
   const { data } = await axios.delete(getResourceUrl(resource));
   return data;
 }
+
+// GET /admin/stats — row counts for every table, used by the Dashboard.
+export async function getStats() {
+  const { data } = await http.get('/stats');
+  return data?.data ?? {};
+}

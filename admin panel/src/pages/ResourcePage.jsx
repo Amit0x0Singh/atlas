@@ -1,20 +1,24 @@
-import { useEffect, useMemo, useState } from 'react';
-import DataFormModal from '../components/DataFormModal.jsx';
-import DataTable from '../components/DataTable.jsx';
-import RowDetailDrawer from '../components/RowDetailDrawer.jsx';
-import { createRecord, deleteAllRecords, deleteRecord, getResourceUrl, listRecords, updateRecord } from '../api/http.js';
+import { useMemo, useState } from 'react';
+import DataFormModal from '../components/form/DataFormModal.jsx';
+import DataTable from '../components/table/DataTable.jsx';
+import Pagination from '../components/table/Pagination.jsx';
+import RowDetailDrawer from '../components/table/RowDetailDrawer.jsx';
+import ConfirmDialog from '../components/common/ConfirmDialog.jsx';
+import { getResourceUrl } from '../api/http.js';
+import { useResourceRecords } from '../hooks/useResourceRecords.js';
 
 export default function ResourcePage({ resource }) {
-  const [records, setRecords]           = useState([]);
-  const [total, setTotal]               = useState(0);
-  const [loading, setLoading]           = useState(true);
-  const [saving, setSaving]             = useState(false);
-  const [error, setError]               = useState('');
-  const [query, setQuery]               = useState('');
-  const [modalState, setModalState]     = useState(null);   // { mode: 'create'|'edit', record? }
-  const [drawerRecord, setDrawerRecord] = useState(null);
+  const {
+    records, total, page, limit, loading, saving, error,
+    setPage, setLimit, reload, save, remove, removeAll,
+  } = useResourceRecords(resource);
+
+  const [query, setQuery]                       = useState('');
+  const [modalState, setModalState]             = useState(null); // { mode: 'create'|'edit', record? }
+  const [drawerRecord, setDrawerRecord]         = useState(null);
+  const [deleteTarget, setDeleteTarget]         = useState(null); // record pending delete confirmation
   const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
-  const [deletingAll, setDeletingAll]   = useState(false);
+  const [deletingAll, setDeletingAll]           = useState(false);
 
   const visibleRecords = useMemo(() => {
     if (!query.trim()) return records;
@@ -24,69 +28,25 @@ export default function ResourcePage({ resource }) {
     );
   }, [query, records, resource.fields]);
 
-  async function loadData() {
-    setLoading(true);
-    setError('');
-    try {
-      const result = await listRecords(resource);
-      setRecords(result.data ?? []);
-      setTotal(result.total ?? 0);
-    } catch (err) {
-      setError(err?.response?.data?.error || err.message || 'Unable to load records.');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    loadData();
-    setQuery('');
-    setDrawerRecord(null);
-  }, [resource.key]);
-
   async function handleSave(payload) {
-    setSaving(true);
-    setError('');
-    try {
-      if (modalState.mode === 'create') {
-        await createRecord(resource, payload);
-      } else {
-        await updateRecord(resource, modalState.record, payload);
-      }
-      setModalState(null);
-      await loadData();
-    } catch (err) {
-      setError(err?.response?.data?.error || err.message || 'Unable to save record.');
-    } finally {
-      setSaving(false);
-    }
+    const ok = await save(modalState.mode, modalState.record, payload);
+    if (ok) setModalState(null);
   }
 
-  async function handleDelete(record) {
-    const confirmed = window.confirm(`Delete this ${resource.model} record? This cannot be undone.`);
-    if (!confirmed) return;
-    setError('');
-    try {
-      await deleteRecord(resource, record);
+  async function handleDelete() {
+    if (!deleteTarget) return;
+    const ok = await remove(deleteTarget);
+    if (ok) {
       setDrawerRecord(null);
-      await loadData();
-    } catch (err) {
-      setError(err?.response?.data?.error || err.message || 'Unable to delete record.');
+      setDeleteTarget(null);
     }
   }
 
   async function handleDeleteAll() {
-    setConfirmDeleteAll(false);
     setDeletingAll(true);
-    setError('');
-    try {
-      await deleteAllRecords(resource);
-      await loadData();
-    } catch (err) {
-      setError(err?.response?.data?.error || err.message || 'Unable to delete all records.');
-    } finally {
-      setDeletingAll(false);
-    }
+    const ok = await removeAll();
+    setDeletingAll(false);
+    if (ok) setConfirmDeleteAll(false);
   }
 
   return (
@@ -137,11 +97,11 @@ export default function ResourcePage({ resource }) {
           <input
             className="form-control search-input"
             value={query}
-            placeholder={`Search ${resource.fields.length} fields…`}
+            placeholder={`Search ${resource.fields.length} fields on this page…`}
             onChange={(e) => setQuery(e.target.value)}
           />
         </div>
-        <button className="btn btn-outline-secondary" onClick={loadData}>
+        <button className="btn btn-outline-secondary" onClick={reload}>
           <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" style={{ marginRight: 6 }}>
             <path d="M23 4v6h-6M1 20v-6h6" /><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
           </svg>
@@ -155,7 +115,7 @@ export default function ResourcePage({ resource }) {
         <code>{getResourceUrl(resource)}</code>
         {query && (
           <span style={{ marginLeft: 'auto', color: '#667085', fontSize: '0.82rem' }}>
-            Showing {visibleRecords.length} of {records.length}
+            Showing {visibleRecords.length} of {records.length} on this page
           </span>
         )}
       </div>
@@ -175,8 +135,18 @@ export default function ResourcePage({ resource }) {
         loading={loading}
         onRowClick={setDrawerRecord}
         onEdit={(rec) => setModalState({ mode: 'edit', record: rec })}
-        onDelete={handleDelete}
+        onDelete={setDeleteTarget}
       />
+
+      {!loading && (
+        <Pagination
+          page={page}
+          limit={limit}
+          total={total}
+          onPageChange={setPage}
+          onLimitChange={setLimit}
+        />
+      )}
 
       {/* Row detail drawer */}
       {drawerRecord && (
@@ -185,7 +155,7 @@ export default function ResourcePage({ resource }) {
           record={drawerRecord}
           onClose={() => setDrawerRecord(null)}
           onEdit={(rec) => setModalState({ mode: 'edit', record: rec })}
-          onDelete={handleDelete}
+          onDelete={setDeleteTarget}
         />
       )}
 
@@ -201,43 +171,35 @@ export default function ResourcePage({ resource }) {
         />
       )}
 
-      {/* Delete All confirmation modal */}
-      {confirmDeleteAll && (
-        <div className="modal-backdrop-custom">
-          <div className="modal-card" style={{ maxWidth: 440 }}>
-            <div style={{ textAlign: 'center', marginBottom: 16, fontSize: 36 }}>⚠️</div>
-            <h3 style={{ margin: '0 0 8px', textAlign: 'center', fontSize: '1.15rem' }}>
-              Delete All Records?
-            </h3>
-            <p style={{ color: '#64748b', textAlign: 'center', fontSize: '0.9rem', margin: '0 0 24px' }}>
-              This will permanently remove all{' '}
-              <strong>{total.toLocaleString()}</strong> rows from{' '}
-              <code style={{ background: '#fef2f2', color: '#dc2626', padding: '1px 6px', borderRadius: 4 }}>
-                {resource.path}
-              </code>
-              . This action <strong>cannot be undone</strong>.
-            </p>
-            <div className="modal-actions">
-              <button
-                className="btn btn-outline-secondary"
-                onClick={() => setConfirmDeleteAll(false)}
-              >
-                Cancel
-              </button>
-              <button
-                className="btn"
-                onClick={handleDeleteAll}
-                style={{
-                  background: '#dc2626', color: '#fff',
-                  border: 'none', fontWeight: 600,
-                }}
-              >
-                Yes, Delete All
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Single-record delete confirmation (replaces window.confirm()) */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        icon="🗑"
+        title={`Delete this ${resource.model} record?`}
+        message="This cannot be undone."
+        confirmLabel="Delete"
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
+
+      {/* Delete All confirmation */}
+      <ConfirmDialog
+        open={confirmDeleteAll}
+        title="Delete All Records?"
+        message={
+          <>
+            This will permanently remove all <strong>{total.toLocaleString()}</strong> rows from{' '}
+            <code style={{ background: '#fef2f2', color: '#dc2626', padding: '1px 6px', borderRadius: 4 }}>
+              {resource.path}
+            </code>
+            . This action <strong>cannot be undone</strong>.
+          </>
+        }
+        confirmLabel="Yes, Delete All"
+        loading={deletingAll}
+        onConfirm={handleDeleteAll}
+        onCancel={() => setConfirmDeleteAll(false)}
+      />
     </div>
   );
 }
