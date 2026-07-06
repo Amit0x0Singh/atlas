@@ -132,9 +132,19 @@ export default function BomIssuance() {
 
   // Clear a stale "recipe loaded" message once the typed name no longer
   // matches the product it came from (e.g. user edits the field afterward).
+  // Also drops the loaded recipe/components once the Product Name field is
+  // fully cleared — otherwise the previous product's BOM keeps sitting in
+  // the table below with no product selected, looking like it belongs to
+  // nothing. Manually-typed/pasted components (no recipe ever loaded) are
+  // left alone — this only resets rows that came from a loaded recipe.
   useEffect(() => {
-    if (!form.productCode) setRecipeLoadedMsg('')
-  }, [form.productCode])
+    if (form.productCode) return
+    setRecipeLoadedMsg('')
+    if (!form.product.trim() && activeRecipe) {
+      setActiveRecipe(null)
+      setRows(prev => makeRows(prev.length))
+    }
+  }, [form.productCode, form.product, activeRecipe])
 
   // Re-scale the loaded recipe whenever batch size changes
   useEffect(() => {

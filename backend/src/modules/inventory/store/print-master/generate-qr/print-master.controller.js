@@ -8,6 +8,12 @@ export const generatePacks = async (req, res) => {
     if (!itemCode || !itemName || !numberOfBags || !packQty || !uom)
       return res.status(400).json({ success: false, error: "itemCode, itemName, numberOfBags, packQty, uom are required", code: 'VALIDATION_ERROR' });
 
+    // Supplier, invoice number and received date are mandatory for every
+    // pack generated here — enforced server-side, not just in the Generate
+    // Form UI, so no caller can produce a QR-labeled pack without them.
+    if (!supplier?.trim() || !invoiceNo?.trim() || !receivedDate)
+      return res.status(400).json({ success: false, error: "supplier, invoiceNo and receivedDate are required", code: 'VALIDATION_ERROR' });
+
     let canonical;
     try {
       canonical = toCanonical(parseFloat(packQty), uom);

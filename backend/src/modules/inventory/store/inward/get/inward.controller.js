@@ -121,7 +121,12 @@ const generatePacks = async (req, res) => {
   try {
     if (!itemCode || !itemName || !numberOfBags || !packQty || !uom)
       return res.status(400).json({ success: false, error: "itemCode, itemName, numberOfBags, packQty, uom are required", code: 'VALIDATION_ERROR' });
-    
+
+    // Supplier, invoice number and received date are mandatory for every
+    // pack generated here — same rule as print-master's generate-qr endpoint.
+    if (!supplier?.trim() || !invoiceNo?.trim() || !receivedDate)
+      return res.status(400).json({ success: false, error: "supplier, invoiceNo and receivedDate are required", code: 'VALIDATION_ERROR' });
+
     let canonical;
     try {
       canonical = toCanonical(parseFloat(packQty), uom);

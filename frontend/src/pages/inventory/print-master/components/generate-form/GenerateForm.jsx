@@ -324,6 +324,10 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!hdr.supplier.trim() || !hdr.invoiceNo.trim() || !hdr.receivedDate) {
+      setError("Supplier, Invoice No and Received Date are all required before generating pack labels");
+      return;
+    }
     for (let i = 0; i < items.length; i++) {
       const it = items[i];
       if (!it.selectedItem) {
@@ -412,16 +416,16 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed }) {
           </p>
           <div className="gf-hdr-grid">
             <div style={{ minWidth: 0 }}>
-              <label style={lbl}>Supplier</label>
-              <input value={hdr.supplier} onChange={e => setH("supplier", e.target.value)} placeholder="Supplier name" style={inp} />
+              <label style={lbl}>Supplier *</label>
+              <input value={hdr.supplier} onChange={e => setH("supplier", e.target.value)} placeholder="Supplier name" style={inp} required />
             </div>
             <div style={{ minWidth: 0 }}>
-              <label style={lbl}>Invoice No</label>
-              <input value={hdr.invoiceNo} onChange={e => setH("invoiceNo", e.target.value)} placeholder="INV-2026-001" style={inp} />
+              <label style={lbl}>Invoice No *</label>
+              <input value={hdr.invoiceNo} onChange={e => setH("invoiceNo", e.target.value)} placeholder="INV-2026-001" style={inp} required />
             </div>
             <div style={{ minWidth: 0 }}>
-              <label style={lbl}>Received Date</label>
-              <input type="date" value={hdr.receivedDate} onChange={e => setH("receivedDate", e.target.value)} style={inp} />
+              <label style={lbl}>Received Date *</label>
+              <input type="date" value={hdr.receivedDate} onChange={e => setH("receivedDate", e.target.value)} style={inp} required />
             </div>
           </div>
         </div>
