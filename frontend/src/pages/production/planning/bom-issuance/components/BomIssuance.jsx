@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { recipeApi } from '../../../../../api/masters.js'
+import { rmApi } from '../../../../../api/inventory.js'
 import { planTasksApi } from '../../../../../api/production.js'
 import { genId, incrCode, scaleToQty, state as printState } from '../utils/bomPrintTemplates.js'
 import { readArchivedBoms, readMeta, archiveBoms } from '../utils/bomIssuanceStorage.js'
@@ -62,12 +63,15 @@ export default function BomIssuance() {
   const [suggestions, setSuggestions]       = useState([])
   const [activeRecipe, setActiveRecipe]     = useState(null) // { productCode, perUnitComponents }
   const [recipeLoadedMsg, setRecipeLoadedMsg] = useState('')
+  const [rmList, setRmList]                 = useState([])
+  const [savingCorrections, setSavingCorrections] = useState(false)
 
   const [archivedBoms, setArchivedBoms] = useState(() => readArchivedBoms())
   const [meta, setMeta]                 = useState(() => readMeta())
 
   useEffect(() => {
     recipeApi.products().then(r => setRecipeProducts(r.data || [])).catch(() => {})
+    rmApi.list({}).then(r => setRmList(r.data || [])).catch(() => {})
   }, [])
 
   // Keep the shared print-template settings singleton in sync with the React toggles.
@@ -99,6 +103,7 @@ export default function BomIssuance() {
       const r = await recipeApi.list({ productCode })
       const perUnit = (r.data || []).map(l => ({
         sno: '', component: l.rmName, qty: String(l.qtyPerUnit), uom: l.uom || '', remarks: l.roleType || '', isHeader: false,
+        rmCode: l.rmCode,
       }))
       setActiveRecipe({ productCode, perUnit })
       const bsz = canonicalBatchSize(form.batchSize, form.batchSizeUom)
@@ -140,6 +145,30 @@ export default function BomIssuance() {
     setRecipeLoadedMsg(`✓ Recipe scaled to ${form.batchSize} ${form.batchSizeUom} (stored per 1 unit)`)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.batchSize, form.batchSizeUom])
+
+  // Renames a recipe_db rmCode to the RM Master item the user's corrected
+  // component text actually matched — same mechanism as Recipe Master's own
+  // "Fix RM Mapping" tool, just surfaced here where the mismatch is spotted.
+  // Reassigns every recipe row using the old code across all products, not
+  // just the one currently loaded (the banner in ComponentsTable says so).
+  const handleSaveCorrections = async (corrections) => {
+    if (!corrections.length) return
+    setSavingCorrections(true)
+    setBanner({ type: 'loading', msg: `Saving ${corrections.length} correction(s) to Recipe Master…` })
+    try {
+      const res = await recipeApi.fixRmMapping(corrections)
+      setBanner({ type: 'success', msg: `✓ ${res.totalFixed || 0} recipe row(s) updated across all products using the old code(s)` })
+      setRows(prev => prev.map(r => {
+        const hit = corrections.find(c => c.fromCode === r.rmCode)
+        return hit ? { ...r, rmCode: hit.toCode } : r
+      }))
+      rmApi.list({}).then(r => setRmList(r.data || [])).catch(() => {})
+    } catch (e) {
+      setBanner({ type: 'error', msg: `Failed to save corrections: ${e.message}` })
+    } finally {
+      setSavingCorrections(false)
+    }
+  }
 
   const onGenerate = () => {
     setError('')
@@ -252,6 +281,7 @@ export default function BomIssuance() {
             productSuggestions={suggestions} onProductSearch={onProductSearch} onSelectProduct={onSelectProduct}
             recipeLoadedMsg={recipeLoadedMsg}
             onGenerate={onGenerate} generating={generating} error={error}
+            rmList={rmList} onSaveCorrections={handleSaveCorrections} savingCorrections={savingCorrections}
           />
         )}
         {activeTab === 'preview' && (

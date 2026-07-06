@@ -238,7 +238,7 @@ export default function PackInward() {
     </div>
   )
 
-  // "?"? Scanning "?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?
+  // "?"? Scanning "?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?
   if (step === STEPS.SCANNING) return (
     <div className="p-4">
       <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
@@ -282,15 +282,15 @@ export default function PackInward() {
 
       {warehouseFlash && (
         <div className="bg-indigo-600 text-white px-4 py-2 rounded-lg mb-3 text-sm font-semibold text-center animate-pulse">
-          o" Warehouse changed → {warehouseFlash}
+          Warehouse changed → {warehouseFlash}
         </div>
       )}
 
       {/* Progress bar */}
       <div className="bg-white rounded-xl border border-gray-200 p-4 mb-4">
         <div className="flex justify-between text-sm font-medium mb-2">
-          <span className="text-green-700">o. Scanned: {scanned.length}</span>
-          <span className="text-orange-600">⏳ Pending: {pending.length}</span>
+          <span className="text-green-700">Scanned: {scanned.length}</span>
+          <span className="text-orange-600">Pending: {pending.length}</span>
           <span className="text-gray-700">Total: {session?.expectedBags}</span>
         </div>
         <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
@@ -301,12 +301,12 @@ export default function PackInward() {
 
       {scanError && (
         <div className="bg-red-50 border border-red-300 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm">
-          O {scanError}
+           {scanError}
         </div>
       )}
       {lastScan && !scanError && !warehouseFlash && (
         <div className="bg-green-50 border border-green-300 text-green-700 px-4 py-2 rounded-lg mb-4 text-sm">
-          o. Scanned: {lastScan}
+          Scanned: {lastScan}
         </div>
       )}
 
@@ -320,7 +320,7 @@ export default function PackInward() {
               <div className="w-48 h-48 border-2 border-blue-400 rounded-lg" />
             </div>
             <div className="absolute top-2 left-2 right-2 bg-indigo-700/80 rounded-lg px-3 py-1.5 text-center">
-              <span className="text-white text-xs font-semibold">Y {warehouse}</span>
+              <span className="text-white text-xs font-semibold">{warehouse}</span>
             </div>
             <div className="absolute bottom-3 left-0 right-0 text-center text-white text-sm bg-black/40 py-1">
               Point camera at pack QR
@@ -342,7 +342,7 @@ export default function PackInward() {
         {/* Scanned / Pending lists */}
         <div className="flex flex-col gap-3">
           <div className="bg-white border border-gray-200 rounded-xl p-3 flex-1 overflow-hidden">
-            <h3 className="font-semibold text-green-700 mb-2">o. Scanned ({scanned.length})</h3>
+            <h3 className="font-semibold text-green-700 mb-2">Scanned ({scanned.length})</h3>
             <div className="overflow-y-auto max-h-36 space-y-1">
               {scanned.length === 0
                 ? <p className="text-gray-400 text-sm">No bags scanned yet</p>
@@ -355,7 +355,7 @@ export default function PackInward() {
             </div>
           </div>
           <div className="bg-white border border-gray-200 rounded-xl p-3 flex-1 overflow-hidden">
-            <h3 className="font-semibold text-orange-600 mb-2">⏳ Pending ({pending.length})</h3>
+            <h3 className="font-semibold text-orange-600 mb-2">Pending ({pending.length})</h3>
             <div className="overflow-y-auto max-h-36 space-y-1">
               {pending.length === 0
                 ? <p className="text-gray-400 text-sm">All scanned!</p>
