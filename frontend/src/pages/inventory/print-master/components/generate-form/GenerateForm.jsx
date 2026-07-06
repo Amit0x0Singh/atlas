@@ -256,7 +256,7 @@ function ItemLine({ idx, item, rmList, pmList, onChange, onRemove, canRemove }) 
       {/* Customer batch code (optional) */}
       <div>
         <label style={{ ...lbl, color: "#6b7280" }}>
-          Customer Batch Code
+          Supplier Batch Code
           <span style={{ fontWeight: 400, fontSize: "11px", marginLeft: "4px", color: "#9ca3af" }}>(optional)</span>
         </label>
         <input
