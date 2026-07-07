@@ -54,12 +54,13 @@ export const sfgApi = {
 }
 
 export const containerApi = {
-  list:       (params)      => api.get('/containers', { params }),
-  get:        (id)          => api.get(`/containers/${encodeURIComponent(id)}`),
-  create:     (data)        => api.post('/containers', data),
-  fill:       (id, data)    => api.post(`/containers/${encodeURIComponent(id)}/fill`, data),
-  issue:      (id, data)    => api.post(`/containers/${encodeURIComponent(id)}/issue`, data),
-  labelUrl:   (id)          => `/api/containers/${encodeURIComponent(id)}/label`,
+  list:            (params)      => api.get('/containers', { params }),
+  get:             (id)          => api.get(`/containers/${encodeURIComponent(id)}`),
+  create:          (data)        => api.post('/containers', data),
+  fill:            (id, data)    => api.post(`/containers/${encodeURIComponent(id)}/fill`, data),
+  issue:           (id, data)    => api.post(`/containers/${encodeURIComponent(id)}/issue`, data),
+  updateCapacity:  (id, capacity) => api.patch(`/containers/${encodeURIComponent(id)}/capacity`, { capacity }),
+  labelUrl:        (id)          => `/api/containers/${encodeURIComponent(id)}/label`,
 }
 
 export const stockApi = {

@@ -2,7 +2,7 @@ import './NavGroup.css'
 import { ChevronDown } from 'lucide-react'
 import NavItem from '../nan-item/NavItem.jsx'
 
-const NavGroup = ({ group, items, isOpen, hasActive, sidebarOpen, onToggle }) => {
+const NavGroup = ({ group, items, isOpen, hasActive, sidebarOpen, onToggle, onNavigate }) => {
   const FirstIcon = items.find(i => !i.soon)?.Icon ?? items[0]?.Icon
   const activeCollapsed = hasActive && !sidebarOpen
 
@@ -38,7 +38,7 @@ const NavGroup = ({ group, items, isOpen, hasActive, sidebarOpen, onToggle }) =>
 
       <div className={`ng-accordion ${sidebarOpen && isOpen ? 'ng-accordion--visible' : 'ng-accordion--hidden'}`}>
         {items.map(({ to, label, Icon, soon }) => (
-          <NavItem key={to} to={to} label={label} Icon={Icon} soon={soon} />
+          <NavItem key={to} to={to} label={label} Icon={Icon} soon={soon} onNavigate={onNavigate} />
         ))}
       </div>
 

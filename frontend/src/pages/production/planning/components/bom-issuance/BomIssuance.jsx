@@ -7,16 +7,12 @@ import { readArchivedBoms, readMeta, archiveBoms } from '../../utils/bomIssuance
 import { toCanonical } from '../../../../../utils/uom.js'
 import { makeRows, toComponents, fromComponents } from '../components-table/ComponentsTable.jsx'
 import IssueBomTab from '../issue-bom-tab/IssueBomTab.jsx'
-import PreviewTab from '../preview-tab/PreviewTab.jsx'
 import ArchiveTab from '../archive-tab/ArchiveTab.jsx'
-import RecipeLibraryTab from '../recipe-library-tab/RecipeLibraryTab.jsx'
-import { CheckCircle, AlertCircle, Loader, X, FileText, Eye, Archive, BookOpen } from 'lucide-react'
+import { CheckCircle, AlertCircle, Loader, X, FileText, Archive } from 'lucide-react'
 
 const TABS = [
-  { id: 'issue',   label: 'Issue BOM',      icon: FileText },
-  { id: 'preview', label: 'Preview',        icon: Eye },
-  { id: 'archive', label: 'Archive',        icon: Archive },
-  { id: 'recipes', label: 'Recipe Library', icon: BookOpen },
+  { id: 'issue',   label: 'Issue BOM', icon: FileText },
+  { id: 'archive', label: 'Archive',   icon: Archive },
 ]
 
 const todayISO = () => new Date().toISOString().slice(0, 10)
@@ -53,10 +49,8 @@ export default function BomIssuance() {
   const [form, setForm]     = useState(emptyForm)
   const [rows, setRows]     = useState(() => makeRows(25))
   const [settings, setSettings] = useState(defaultSettings)
-  const [previews, setPreviews] = useState([])
   const [error, setError]       = useState('')
   const [generating, setGenerating] = useState(false)
-  const [confirming, setConfirming] = useState(false)
   const [banner, setBanner]     = useState(null) // {type:'success'|'error', msg}
 
   const [recipeProducts, setRecipeProducts] = useState([])
@@ -170,7 +164,7 @@ export default function BomIssuance() {
     }
   }
 
-  const onGenerate = () => {
+  const onGenerate = async () => {
     setError('')
     const pn = form.product.trim()
     const comps = toComponents(rows)
@@ -196,17 +190,10 @@ export default function BomIssuance() {
       cycleNo: i + 1, totalCycles: n,
       issuedAt: new Date().toISOString(),
     }))
-    setPreviews(built)
-    setGenerating(false)
-    setActiveTab('preview')
-  }
 
-  const onConfirm = async () => {
-    if (!previews.length) return
-    setConfirming(true)
-    setBanner({ type: 'loading', msg: `Creating ${previews.length} production task(s)…` })
+    setBanner({ type: 'loading', msg: `Creating ${built.length} production task(s)…` })
     try {
-      for (const bom of previews) {
+      for (const bom of built) {
         const plant = bom.section
         const date  = bom.datePlanned || new Date().toISOString().slice(0, 10)
         await planTasksApi.create({
@@ -224,22 +211,20 @@ export default function BomIssuance() {
           sent:        true,
         })
       }
-      const newMeta = archiveBoms(previews)
+      const newMeta = archiveBoms(built)
       setArchivedBoms(readArchivedBoms())
       setMeta(newMeta)
-      setBanner({ type: 'success', msg: `✓ ${previews.length} production task(s) created — visible in Store Outward → Material Issue by BOM` })
+      setBanner({ type: 'success', msg: `✓ ${built.length} production task(s) created — visible in Store Outward → Material Issue by BOM` })
 
       // Clear the form for the next entry
       setForm(emptyForm())
       setRows(makeRows(25))
       setActiveRecipe(null)
       setRecipeLoadedMsg('')
-      setPreviews([])
-      setActiveTab('issue')
     } catch (e) {
       setBanner({ type: 'error', msg: `Failed to create tasks: ${e.message}` })
     } finally {
-      setConfirming(false)
+      setGenerating(false)
     }
   }
 
@@ -273,9 +258,6 @@ export default function BomIssuance() {
                 ${active ? 'text-indigo-600 border-indigo-600' : 'text-slate-400 border-transparent hover:text-slate-700 hover:border-slate-200'}`}>
               <Icon size={14.5} />
               {t.label}
-              {t.id === 'preview' && previews.length > 0 && (
-                <span className="ml-0.5 text-[10.5px] font-bold bg-indigo-100 text-indigo-700 rounded-full px-1.5 py-0.5">{previews.length}</span>
-              )}
             </button>
           )
         })}
@@ -292,13 +274,9 @@ export default function BomIssuance() {
             rmList={rmList} onSaveCorrections={handleSaveCorrections} savingCorrections={savingCorrections}
           />
         )}
-        {activeTab === 'preview' && (
-          <PreviewTab previews={previews} onBack={() => setActiveTab('issue')} onConfirm={onConfirm} confirming={confirming} />
-        )}
         {activeTab === 'archive' && (
           <ArchiveTab boms={archivedBoms} recipeCount={recipeProducts.length} meta={meta} />
         )}
-        {activeTab === 'recipes' && <RecipeLibraryTab />}
       </div>
     </div>
   )

@@ -290,7 +290,7 @@ export default function IssueBomTab({
 
           <button type="button" onClick={onGenerate} disabled={generating}
             className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold py-3.5 rounded-xl transition-colors shadow-sm hover:shadow-md">
-            {generating ? 'Preparing…' : '✅ Preview & Issue BOMs'}
+            {generating ? 'Issuing…' : '✅ Issue BOM(s)'}
           </button>
         </div>
 
