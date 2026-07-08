@@ -6,8 +6,8 @@ import StatusDrawer from '../components/status-drawer/StatusDrawer.jsx'
 import SFGStockModal from '../components/sfg-stock-modal/SFGStockModal.jsx'
 import Toast from '../components/ui/toast/Toast.jsx'
 import BomIssuance from '../components/bom-issuance/BomIssuance.jsx'
-import { Button, IconButton } from '../../../../components/ui'
-import { Plus, Send, Pencil, Trash2 } from 'lucide-react'
+import { Button, IconButton, PageHeader } from '../../../../components/ui'
+import { Plus, Send, Pencil, Trash2, CalendarClock, LayoutDashboard, CalendarDays, FileText } from 'lucide-react'
 import { planTasksApi } from '../../../../api/production.js'
 import './PlanningPage.css'
 
@@ -210,9 +210,9 @@ function PlanningTab({ tasks, onRefresh, onAdd, onEdit, onDelete, toastShow }) {
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 const TABS = [
-  { id: 'dashboard',    label: '📊 Dashboard' },
-  { id: 'planning',     label: '📅 Planning' },
-  { id: 'bom-issuance', label: '📝 BOM Issuance' },
+  { id: 'dashboard',    label: 'Dashboard',    icon: LayoutDashboard },
+  { id: 'planning',     label: 'Planning',     icon: CalendarDays },
+  { id: 'bom-issuance', label: 'BOM Issuance', icon: FileText },
 ]
 
 export default function PlanningPage() {
@@ -254,35 +254,34 @@ export default function PlanningPage() {
 
   return (
     <div className="pp-root flex flex-col overflow-hidden bg-[#f0f4f8]">
-      {/* Top bar */}
-      <div className="pp-topbar bg-[#0f1923] text-white px-6 flex items-center justify-between flex-shrink-0">
-        <div className="flex items-center gap-2.5">
-          <span className="font-bold text-[15px]">🏭 SOM Phyto Pharma</span>
-          <span className="text-[12px] opacity-60 font-normal">Production Planning ERP</span>
-        </div>
-        <div className="flex items-center gap-4">
-          <button onClick={() => setSfgOpen(true)}
-            className="border border-white/30 bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg text-[11.5px] font-semibold transition text-white">
-            SFG Stock
-          </button>
+      <PageHeader
+        icon={CalendarClock}
+        title="Production Planning"
+        description="Schedule batches, send them to plants, and issue BOMs"
+        actions={<>
           {activeTodayCount > 0 && (
-            <span className="bg-white/15 text-[11px] px-2.5 py-1 rounded">{activeTodayCount} active today</span>
+            <span className="text-xs font-semibold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-full whitespace-nowrap">{activeTodayCount} active today</span>
           )}
-          <span className="text-[12px] opacity-70">
+          <span className="hidden md:inline text-xs text-gray-400 whitespace-nowrap">
             {new Date().toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}
           </span>
-        </div>
-      </div>
+          <Button variant="outline-gray" size="sm" onClick={() => setSfgOpen(true)}>SFG Stock</Button>
+        </>}
+      />
 
       {/* Tabs */}
       <div className="bg-white border-b-2 border-gray-200 flex px-6 overflow-x-auto flex-shrink-0">
-        {TABS.map(tab => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-1.5 px-5 py-3.5 text-[13px] font-semibold border-b-[3px] -mb-0.5 whitespace-nowrap transition
-              ${activeTab === tab.id ? 'text-blue-600 border-blue-600' : 'text-gray-400 border-transparent hover:text-gray-700'}`}>
-            {tab.label}
-          </button>
-        ))}
+        {TABS.map(tab => {
+          const Icon = tab.icon
+          return (
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-1.5 px-5 py-3.5 text-[13px] font-semibold border-b-[3px] -mb-0.5 whitespace-nowrap transition
+                ${activeTab === tab.id ? 'text-blue-600 border-blue-600' : 'text-gray-400 border-transparent hover:text-gray-700'}`}>
+              {Icon && <Icon size={14.5} />}
+              {tab.label}
+            </button>
+          )
+        })}
         {loading && <span className="ml-auto self-center text-[11px] text-gray-400 pr-4">Loading…</span>}
       </div>
 

@@ -1,8 +1,8 @@
 ﻿import './RmMaterial.css'
 import { useState, useEffect, useMemo } from 'react'
 import { stockApi } from '../../../api/inventory.js'
-import { BackButton, IconButton } from '../../../components/ui'
-import { RefreshCw } from 'lucide-react'
+import { BackButton, IconButton, PageHeader } from '../../../components/ui'
+import { RefreshCw, PackageSearch } from 'lucide-react'
 import RmStatsBar    from './components/rm-stats-bar/RmStatsBar.jsx'
 import RmFilterBar   from './components/rm-filter-bar/RmFilterBar.jsx'
 import RmTable       from './components/rm-table/RmTable.jsx'
@@ -48,18 +48,17 @@ export default function RmMaterial() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-6 py-7">
-        <div className="flex justify-between items-start mb-7">
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">Raw Materials</h1>
-            <p className="text-xs text-gray-400 mt-0.5">Stock overview · {items.length} items registered</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <IconButton icon={RefreshCw} tooltip="Refresh" onClick={load} />
-            <BackButton />
-          </div>
-        </div>
+      <PageHeader
+        icon={PackageSearch}
+        title="Raw Materials"
+        description={`Stock overview · ${items.length} items registered`}
+        actions={<>
+          <IconButton icon={RefreshCw} tooltip="Refresh" onClick={load} />
+          <BackButton />
+        </>}
+      />
 
+      <div className="max-w-7xl mx-auto px-6 py-7">
         {!loading && <RmStatsBar items={items} />}
 
         {error && (

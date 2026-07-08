@@ -7,7 +7,8 @@
 import { useState, useEffect } from 'react'
 import Pagination from '../../../../components/pagination/Pagination.jsx'
 import { microbialSfgApi } from '../../../../api/microbial.js'
-import { BackButton } from '../../../../components/ui'
+import { BackButton, PageHeader } from '../../../../components/ui'
+import { FlaskConical, Microscope, Atom, Leaf, Wheat } from 'lucide-react'
 import './MicrobialSFG.css'
 
 function fmtCfu(v) {
@@ -26,11 +27,11 @@ function fmtDate(d) {
 }
 
 const PLANTS = [
-  { key: 'MICROBIAL', label: '🦠 Microbial',  icon: '🦠' },
-  { key: 'POWDER',    label: '🧪 Powder',      icon: '🧪' },
-  { key: 'NANO',      label: '🔬 Nano',        icon: '🔬' },
-  { key: 'BOTANICAL', label: '🌿 Botanical',   icon: '🌿' },
-  { key: 'GRANULES',  label: '🌾 Granules',    icon: '🌾' },
+  { key: 'MICROBIAL', label: 'Microbial',  icon: Microscope },
+  { key: 'POWDER',    label: 'Powder',     icon: FlaskConical },
+  { key: 'NANO',      label: 'Nano',       icon: Atom },
+  { key: 'BOTANICAL', label: 'Botanical',  icon: Leaf },
+  { key: 'GRANULES',  label: 'Granules',   icon: Wheat },
 ]
 
 function fillBadgeCls(fill) {
@@ -189,13 +190,14 @@ function MicrobialTab() {
 }
 
 function OtherPlantTab({ plant }) {
+  const Icon = plant.icon
   return (
     <div className="msfg-coming-soon">
-      <div className="msfg-coming-soon-icon">{plant.icon}</div>
+      <Icon size={40} className="msfg-coming-soon-icon" />
       <div className="msfg-coming-soon-title">{plant.label} SFG</div>
       <div className="msfg-coming-soon-badge">COMING SOON</div>
       <p className="msfg-coming-soon-desc">
-        SFG tracking for {plant.label.replace(/[^\w\s]/g,'')} plant will be integrated here.
+        SFG tracking for {plant.label} plant will be integrated here.
       </p>
     </div>
   )
@@ -205,22 +207,29 @@ export default function MicrobialSFG() {
   const [activeTab, setActiveTab] = useState('MICROBIAL')
   return (
     <div className="msfg-page">
-      <div className="msfg-back">
-        <BackButton />
+      <PageHeader
+        icon={FlaskConical}
+        title="SFG — Semi-Finished Goods"
+        description="Plant-wise SFG stock overview. Select a plant to view availability."
+        actions={<BackButton />}
+      >
+        <div className="msfg-tab-bar">
+          {PLANTS.map(p => {
+            const Icon = p.icon
+            return (
+              <button key={p.key} onClick={() => setActiveTab(p.key)}
+                className={`msfg-tab-btn${activeTab === p.key ? ' msfg-tab-btn--active' : ''}`}>
+                <Icon size={14} />
+                {p.label}
+              </button>
+            )
+          })}
+        </div>
+      </PageHeader>
+
+      <div className="msfg-body">
+        {activeTab === 'MICROBIAL' ? <MicrobialTab /> : <OtherPlantTab plant={PLANTS.find(p => p.key === activeTab)} />}
       </div>
-      <div className="msfg-header">
-        <h1 className="msfg-h1">⚗️ SFG — Semi-Finished Goods</h1>
-        <p className="msfg-sub">Plant-wise SFG stock overview. Select a plant to view availability.</p>
-      </div>
-      <div className="msfg-tab-bar">
-        {PLANTS.map(p => (
-          <button key={p.key} onClick={() => setActiveTab(p.key)}
-            className={`msfg-tab-btn${activeTab === p.key ? ' msfg-tab-btn--active' : ''}`}>
-            {p.label}
-          </button>
-        ))}
-      </div>
-      {activeTab === 'MICROBIAL' ? <MicrobialTab /> : <OtherPlantTab plant={PLANTS.find(p => p.key === activeTab)} />}
     </div>
   )
 }

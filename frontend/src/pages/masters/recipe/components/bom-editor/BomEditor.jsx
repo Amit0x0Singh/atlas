@@ -1,5 +1,5 @@
 ﻿import { useState, useEffect } from 'react'
-import { Plus, Save, Trash2, Download } from 'lucide-react'
+import { Plus, Save, Trash2 } from 'lucide-react'
 import { Button, IconButton } from '../../../../../components/ui'
 import './BomEditor.css'
 
@@ -10,7 +10,7 @@ const ROLE_TYPE_STYLE = {
   MICROBE:    'bg-emerald-100 text-emerald-700',
 }
 
-export default function BomEditor({ selectedProduct, bomRows, loadId, rmList, saving, msg, onAddRow, onSaveAll, onUpdateRow, onSelectRm, onRemoveRow, onImportClick }) {
+export default function BomEditor({ selectedProduct, bomRows, loadId, rmList, saving, msg, onAddRow, onSaveAll, onUpdateRow, onSelectRm, onRemoveRow }) {
   const [rmDropIdx, setRmDropIdx] = useState(null)
   const [rmSearch, setRmSearch]   = useState({})
 
@@ -44,9 +44,6 @@ export default function BomEditor({ selectedProduct, bomRows, loadId, rmList, sa
           <div className="text-5xl mb-3">📋</div>
           <p className="text-lg font-medium">Select a product to view its BOM</p>
           <p className="text-sm mt-1">Use the left panel to choose a product</p>
-          <Button variant="success" icon={Download} onClick={onImportClick} className="mt-4">
-            Import Recipe from Excel
-          </Button>
         </div>
       </div>
     )

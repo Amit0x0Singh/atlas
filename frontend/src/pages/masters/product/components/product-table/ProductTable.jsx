@@ -1,41 +1,59 @@
-﻿import { Pencil, Trash2 } from 'lucide-react'
+import { Pencil, Trash2, Loader2, PackageX } from 'lucide-react'
 import { IconButton } from '../../../../../components/ui'
 import Pagination from '../../../../../components/pagination/Pagination.jsx'
 
-export default function ProductTable({ items, page, limit, onEdit, onDelete, onPageChange, onLimitChange }) {
+export default function ProductTable({ items, loading, page, limit, onEdit, onDelete, onPageChange, onLimitChange }) {
   const paginated = items.slice((page - 1) * limit, page * limit)
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-      <table className="w-full text-sm">
-        <thead className="bg-gray-50 border-b border-gray-200">
-          <tr>
-            <th className="text-left px-4 py-3 font-semibold text-gray-700">Product Code</th>
-            <th className="text-left px-4 py-3 font-semibold text-gray-700">Product Name</th>
-            <th className="text-left px-4 py-3 font-semibold text-gray-700">Plant</th>
-            <th className="text-left px-4 py-3 font-semibold text-gray-700">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.length === 0 ? (
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-slate-700 text-white">
             <tr>
-              <td colSpan={4} className="text-center py-10 text-gray-400">
-                No products yet. Click "Add New Product" to start.
-              </td>
+              <th className="text-left px-4 py-3 font-semibold whitespace-nowrap">Product Code</th>
+              <th className="text-left px-4 py-3 font-semibold whitespace-nowrap">Product Name</th>
+              <th className="text-left px-4 py-3 font-semibold whitespace-nowrap">Plant</th>
+              <th className="text-left px-4 py-3 font-semibold whitespace-nowrap">Actions</th>
             </tr>
-          ) : paginated.map(item => (
-            <tr key={item.productCode} className="border-b border-gray-100 hover:bg-gray-50">
-              <td className="px-4 py-3 font-mono text-green-700 font-medium">{item.productCode}</td>
-              <td className="px-4 py-3">{item.productName}</td>
-              <td className="px-4 py-3 text-gray-500">{item.plant || '—'}</td>
-              <td className="px-4 py-3 flex gap-1">
-                <IconButton icon={Pencil} tooltip="Edit" onClick={() => onEdit(item)} />
-                <IconButton icon={Trash2} variant="danger" tooltip="Delete" onClick={() => onDelete(item.productCode)} />
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {loading ? (
+              <tr>
+                <td colSpan={4} className="py-14 text-center text-gray-400">
+                  <Loader2 size={22} className="animate-spin mx-auto mb-2" />
+                  Loading products…
+                </td>
+              </tr>
+            ) : items.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="py-14 text-center text-gray-400">
+                  <PackageX size={26} className="mx-auto mb-2 text-gray-300" />
+                  No products yet. Click "Add New Product" to start.
+                </td>
+              </tr>
+            ) : paginated.map(item => (
+              <tr key={item.productCode} className="group hover:bg-green-50/60 transition-colors">
+                <td className="px-4 py-3 font-mono text-green-700 font-medium whitespace-nowrap">{item.productCode}</td>
+                <td className="px-4 py-3 text-gray-800">{item.productName}</td>
+                <td className="px-4 py-3 text-gray-500">{item.plant || '—'}</td>
+                <td className="px-4 py-3">
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                    <IconButton icon={Pencil} tooltip="Edit" onClick={() => onEdit(item)} />
+                    <IconButton icon={Trash2} variant="danger" tooltip="Delete" onClick={() => onDelete(item.productCode)} />
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {!loading && (
+        <div className="px-4 py-2.5 bg-gray-50 border-t border-gray-200 text-xs text-gray-400">
+          {items.length} product{items.length !== 1 ? 's' : ''}
+        </div>
+      )}
       <div className="px-4 pb-3">
         <Pagination page={page} total={items.length} limit={limit} onChange={onPageChange} onLimitChange={onLimitChange} />
       </div>

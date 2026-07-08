@@ -9,8 +9,8 @@ import SFGStockModal from '../../planning/components/sfg-stock-modal/SFGStockMod
 import Toast from '../../planning/components/ui/toast/Toast.jsx'
 import TaskCard from '../components/task-card/TaskCard.jsx'
 import BMROverlay from '../components/bmr-overlay/BMROverlay.jsx'
-import { Button } from '../../../../components/ui'
-import { Download } from 'lucide-react'
+import { Button, PageHeader } from '../../../../components/ui'
+import { Download, Factory, ClipboardList } from 'lucide-react'
 import { planTasksApi } from '../../../../api/production.js'
 import './ProductionPage.css'
 
@@ -208,7 +208,7 @@ const TABS = [
   { id: 'liquid',    label: 'Liquid Filling', dot: '#7c3aed' },
   { id: 'powder',    label: 'Powder',         dot: '#92400e' },
   { id: 'granules',  label: 'Granules',       dot: '#0f766e' },
-  { id: 'history',   label: '📋 History' },
+  { id: 'history',   label: 'History',        icon: ClipboardList },
 ]
 
 export default function ProductionPage() {
@@ -244,37 +244,36 @@ export default function ProductionPage() {
 
   return (
     <div className="prodp-root flex flex-col overflow-hidden bg-[#f0f4f8]">
-      {/* Top bar */}
-      <div className="prodp-topbar bg-[#0f1923] text-white px-6 flex items-center justify-between flex-shrink-0">
-        <div className="flex items-center gap-2.5">
-          <span className="font-bold text-[15px]">🏭 SOM Phyto Pharma</span>
-          <span className="text-[12px] opacity-60 font-normal">Production Operations</span>
-        </div>
-        <div className="flex items-center gap-4">
-          <button onClick={() => setSfgOpen(true)}
-            className="border border-white/30 bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg text-[11.5px] font-semibold transition text-white">
-            SFG Stock
-          </button>
+      <PageHeader
+        icon={Factory}
+        title="Production"
+        description="Live plant task boards — track, update, and complete scheduled batches"
+        actions={<>
           {activeTodayCount > 0 && (
-            <span className="bg-white/15 text-[11px] px-2.5 py-1 rounded">{activeTodayCount} active today</span>
+            <span className="text-xs font-semibold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-full whitespace-nowrap">{activeTodayCount} active today</span>
           )}
-          {loading && <span className="text-[11px] opacity-60">Loading…</span>}
-          <span className="text-[12px] opacity-70">
+          {loading && <span className="text-xs text-gray-400">Loading…</span>}
+          <span className="hidden md:inline text-xs text-gray-400 whitespace-nowrap">
             {new Date().toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}
           </span>
-        </div>
-      </div>
+          <Button variant="outline-gray" size="sm" onClick={() => setSfgOpen(true)}>SFG Stock</Button>
+        </>}
+      />
 
       {/* Tabs */}
       <div className="bg-white border-b-2 border-gray-200 flex px-6 overflow-x-auto flex-shrink-0">
-        {TABS.map(tab => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-1.5 px-5 py-3.5 text-[13px] font-semibold border-b-[3px] -mb-0.5 whitespace-nowrap transition
-              ${activeTab === tab.id ? 'text-blue-600 border-blue-600' : 'text-gray-400 border-transparent hover:text-gray-700'}`}>
-            {tab.dot && <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: tab.dot }} />}
-            {tab.label}
-          </button>
-        ))}
+        {TABS.map(tab => {
+          const Icon = tab.icon
+          return (
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-1.5 px-5 py-3.5 text-[13px] font-semibold border-b-[3px] -mb-0.5 whitespace-nowrap transition
+                ${activeTab === tab.id ? 'text-blue-600 border-blue-600' : 'text-gray-400 border-transparent hover:text-gray-700'}`}>
+              {tab.dot && <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: tab.dot }} />}
+              {Icon && <Icon size={14.5} />}
+              {tab.label}
+            </button>
+          )
+        })}
       </div>
 
       {/* Content */}

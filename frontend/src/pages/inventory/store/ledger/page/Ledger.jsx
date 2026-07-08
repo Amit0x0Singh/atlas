@@ -1,9 +1,9 @@
 ﻿import { useState, useEffect } from 'react'
 import { ledgerApi, rmApi } from '../../../../../api/inventory.js'
-import { BackButton, Button } from '../../../../../components/ui'
+import { BackButton, Button, PageHeader } from '../../../../../components/ui'
 import LedgerTable             from '../components/ledger-table/LedgerTable.jsx'
 import TransactionDetailModal  from '../components/transaction-detail-modal/TransactionDetailModal.jsx'
-import { RefreshCw, X } from 'lucide-react'
+import { RefreshCw, X, ScrollText } from 'lucide-react'
 import './Ledger.css'
 
 export default function Ledger() {
@@ -46,18 +46,18 @@ export default function Ledger() {
   const totalPages = Math.ceil(total / LIMIT)
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-5">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">📒 Stock Ledger</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Full transaction history — click any row for complete detail</p>
-        </div>
-        <div className="flex items-center gap-3">
+    <div className="flex flex-col h-full">
+      <PageHeader
+        icon={ScrollText}
+        title="Stock Ledger"
+        description="Full transaction history — click any row for complete detail"
+        actions={<>
           <Button onClick={loadLedger} variant="outline-gray" size="sm" icon={RefreshCw}>Refresh</Button>
           <BackButton />
-        </div>
-      </div>
+        </>}
+      />
 
+      <div className="p-6">
       {/* Filter */}
       <div className="flex items-center gap-3 mb-4">
         <label className="text-sm font-medium text-gray-700">Filter by Item:</label>
@@ -95,6 +95,7 @@ export default function Ledger() {
       )}
 
       <TransactionDetailModal detail={detail} onClose={() => setDetail(null)} />
+      </div>
     </div>
   )
 }

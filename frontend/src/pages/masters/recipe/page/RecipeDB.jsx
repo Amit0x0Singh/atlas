@@ -5,7 +5,6 @@ import { rmApi } from '../../../../api/inventory.js'
 import { DeleteModal, ErrorModal } from '../../../../components/ui'
 import ProductSidebar    from '../components/product-sidebar/ProductSidebar.jsx'
 import BomEditor         from '../components/bom-editor/BomEditor.jsx'
-import RecipeImportModal from '../components/recipe-import-modal/RecipeImportModal.jsx'
 import ReconcileModal    from '../components/reconcile-modal/ReconcileModal.jsx'
 
 const EMPTY_ROW = () => ({ id: null, rmCode: '', rmName: '', qtyPerUnit: '', uom: 'KG', roleType: 'INGREDIENT', _dirty: true })
@@ -22,7 +21,6 @@ export default function RecipeDB() {
   const [deleteRowIdx, setDeleteRowIdx]   = useState(null)
   const [errModal, setErrModal]           = useState({ open: false, message: '' })
 
-  const [importModal, setImportModal]     = useState(false)
   const [reconcileModal, setReconcileModal] = useState(false)
 
   // Bumped only once bomRows actually holds the freshly-fetched product's
@@ -108,15 +106,6 @@ export default function RecipeDB() {
     setSaving(false)
   }
 
-  const handleImportDone = async (res) => {
-    setMsg({
-      type: 'success',
-      text: `✅ Import done — Products: ${res.data?.productMaster || 0}, RM Items: ${res.data?.rmMaster || 0}, Recipe lines: ${res.data?.recipeBom || 0}`,
-    })
-    await loadAll()
-    if (selectedProduct) await selectProduct(selectedProduct)
-  }
-
   const handleFixedDone = async () => {
     await loadAll()
     if (selectedProduct) await selectProduct(selectedProduct)
@@ -131,7 +120,6 @@ export default function RecipeDB() {
         prodSearch={prodSearch}
         onSearchChange={setProdSearch}
         onSelectProduct={selectProduct}
-        onImport={() => setImportModal(true)}
         onReconcile={() => setReconcileModal(true)}
       />
 
@@ -148,16 +136,8 @@ export default function RecipeDB() {
           onUpdateRow={updateRow}
           onSelectRm={selectRm}
           onRemoveRow={removeRow}
-          onImportClick={() => setImportModal(true)}
         />
       </main>
-
-      {importModal && (
-        <RecipeImportModal
-          onClose={() => setImportModal(false)}
-          onDone={handleImportDone}
-        />
-      )}
 
       {reconcileModal && (
         <ReconcileModal

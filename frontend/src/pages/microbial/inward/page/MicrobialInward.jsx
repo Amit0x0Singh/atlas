@@ -11,8 +11,8 @@ import { useState, useEffect, useRef } from "react";
 import Pagination from "../../../../components/pagination/Pagination.jsx";
 import * as XLSX from "xlsx";
 import { microbialSfgApi } from "../../../../api/microbial.js";
-import { BackButton, Button } from "../../../../components/ui";
-import { RefreshCw } from "lucide-react";
+import { BackButton, Button, PageHeader } from "../../../../components/ui";
+import { RefreshCw, Snowflake, Upload, Plus, ClipboardList } from "lucide-react";
 import './MicrobialInward.css';
 
 const MICROBE_TYPES = [
@@ -257,32 +257,46 @@ export default function MicrobialInward() {
 
   return (
     <div className="mi-page">
-      <div className="mi-back">
-        <BackButton />
-      </div>
-      <div className="mi-head">
-        <div>
-          <h1 className="mi-h1">🧊 Microbial Inward</h1>
-          <p className="mi-sub">
-            Record microbial SFG stock — Biomass, Spray Dried Powders, and more
-          </p>
-        </div>
-        <div className="mi-head-actions">
-          <Button variant="outline" onClick={() => setTab("import")}>
-            ⇪ Import Excel
+      <PageHeader
+        icon={Snowflake}
+        title="Microbial Inward"
+        description="Record microbial SFG stock — Biomass, Spray Dried Powders, and more"
+        actions={<>
+          <Button variant="outline" icon={Upload} onClick={() => setTab("import")}>
+            Import Excel
           </Button>
           <Button
             variant="primary"
+            icon={Plus}
             onClick={() => {
               setForm(EMPTY_FORM);
               setTab("add");
             }}
           >
-            + New Inward Entry
+            New Inward Entry
           </Button>
+          <BackButton />
+        </>}
+      >
+        <div className="mi-tabs">
+          {[
+            ["list", "Inward Records", ClipboardList],
+            ["add", "New Entry", Plus],
+            ["import", "Import Excel", Upload],
+          ].map(([k, l, Icon]) => (
+            <button
+              key={k}
+              onClick={() => setTab(k)}
+              className={`mi-tab${tab === k ? ' mi-tab--active' : ''}`}
+            >
+              <Icon size={14} />
+              {l}
+            </button>
+          ))}
         </div>
-      </div>
+      </PageHeader>
 
+      <div className="mi-body">
       {summary.length > 0 && (
         <div className="mi-summary-grid">
           {summary.map((s) => (
@@ -303,22 +317,6 @@ export default function MicrobialInward() {
           ))}
         </div>
       )}
-
-      <div className="mi-tabs">
-        {[
-          ["list", "📋 Inward Records"],
-          ["add", "+ New Entry"],
-          ["import", "⇪ Import Excel"],
-        ].map(([k, l]) => (
-          <button
-            key={k}
-            onClick={() => setTab(k)}
-            className={`mi-tab${tab === k ? ' mi-tab--active' : ''}`}
-          >
-            {l}
-          </button>
-        ))}
-      </div>
 
       {tab === "list" && (
         <div className="mi-card">
@@ -768,6 +766,7 @@ export default function MicrobialInward() {
           )}
         </div>
       )}
+      </div>
     </div>
   );
 }

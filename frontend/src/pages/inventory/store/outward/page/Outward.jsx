@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react'
 import { outwardApi } from '../../../../../api/inventory.js'
-import { BackButton, Button } from '../../../../../components/ui'
+import { BackButton, Button, PageHeader } from '../../../../../components/ui'
 import WarehouseToWarehouse   from '../components/warehouse-to-warehouse/WarehouseToWarehouse.jsx'
 import WarehouseToContainer   from '../components/warehouse-to-container/WarehouseToContainer.jsx'
 import MaterialIssueByBOM     from '../components/material-issue-by-bom/MaterialIssueByBOM.jsx'
 import BomIssuedHistory       from '../components/material-issue-by-bom/BomIssuedHistory.jsx'
 import StockLossAdjustment    from '../components/stock-loss-adjustment/StockLossAdjustment.jsx'
-import { RefreshCw, Warehouse, ClipboardList, Container, TriangleAlert, History } from 'lucide-react'
+import { RefreshCw, Warehouse, ClipboardList, Container, TriangleAlert, History, ArrowUpFromLine } from 'lucide-react'
 import './Outward.css'
 
 const MODES = [
@@ -138,18 +138,12 @@ export default function Outward() {
 
   return (
     <div className="min-h-full bg-gray-50">
-      {/* Page header */}
-      <div className="bg-white border-b border-gray-200 px-4 py-3 md:px-6 md:py-4">
-        <div className="flex items-center gap-3 mb-1">
-          {/* Mobile has the device's native back gesture/button already */}
-          <div className="hidden md:flex items-center gap-3">
-            <BackButton size="sm" />
-            <span className="text-gray-300">|</span>
-          </div>
-          <h1 className="text-lg md:text-xl font-bold text-gray-900">Store Outward</h1>
-        </div>
-        <p className="hidden md:block text-sm text-gray-500 mt-0.5">Issue materials, transfer stock, and record adjustments</p>
-      </div>
+      <PageHeader
+        icon={ArrowUpFromLine}
+        title="Store Outward"
+        description="Issue materials, transfer stock, and record adjustments"
+        actions={<span className="hidden md:block"><BackButton size="sm" /></span>}
+      />
 
       <div className="p-4 md:p-6">
         {/* Outward action cards */}
