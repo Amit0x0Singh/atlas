@@ -13,7 +13,7 @@ import InwardTable from "../component/inward-table/InwardTable.jsx";
 import OutwardTable from "../component/outward-table/OutwardTable.jsx";
 import "./GateEntry.css";
 
-const EMPTY_FILTERS = { search: "", invoice_no: "", status: "", from_date: "", to_date: "" };
+const EMPTY_FILTERS = { search: "", invoice_no: "", status: "", company: "", from_date: "", to_date: "" };
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function GateEntry() {
@@ -103,7 +103,7 @@ export default function GateEntry() {
     try {
       const res = await gateApi.createInward(form);
       const entry = res.data;
-      showSuccess(`Inward entry created${entry?.supplier_name ? ` for ${entry.supplier_name}` : ''}${entry?.invoice_no ? ` · ${entry.invoice_no}` : ''}`);
+      showSuccess(`Inward entry created${entry?.companyName ? ` for ${entry.companyName}` : ''}${entry?.supplierName ? ` · ${entry.supplierName}` : ''}${entry?.invoiceNo ? ` · ${entry.invoiceNo}` : ''}`);
       setFormKey(k => k + 1);
     } catch (e) {
       setErrModal({ open: true, message: e.message });
@@ -114,7 +114,7 @@ export default function GateEntry() {
     try {
       const res = await gateApi.createOutward(form);
       const entry = res.data;
-      showSuccess(`Outward entry recorded${entry?.receiver_name ? ` for ${entry.receiver_name}` : ''}${entry?.invoice_no ? ` · ${entry.invoice_no}` : ''}`);
+      showSuccess(`Outward entry recorded${entry?.companyName ? ` for ${entry.companyName}` : ''}${entry?.receiverName ? ` · ${entry.receiverName}` : ''}${entry?.invoiceNo ? ` · ${entry.invoiceNo}` : ''}`);
       setFormKey(k => k + 1);
     } catch (e) {
       setErrModal({ open: true, message: e.message });

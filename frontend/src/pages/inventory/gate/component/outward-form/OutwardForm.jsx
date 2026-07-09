@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { ArrowUp } from "lucide-react";
 import { Button } from "../../../../../components/ui";
+import { COMPANIES } from "../../data/companies.js";
 import "./OutwardForm.css";
 
-const EMPTY = { receiver_name: "", invoice_no: "", vehicle_no: "" };
+const EMPTY = { receiver_name: "", invoice_no: "", vehicle_no: "", company: "" };
 
 const FIELDS = [
-  { key: "receiver_name", label: "Receiver Name", placeholder: "Person / company receiving goods" },
+  { key: "company", label: "Company *", type: "select", options: COMPANIES, placeholder: "Select company" },
+  { key: "receiver_name", label: "Receiver Name", placeholder: "Person receiving goods" },
   { key: "invoice_no",    label: "Invoice No.",   placeholder: "e.g. INV-2024-001" },
   { key: "vehicle_no",    label: "Vehicle No.",   placeholder: "e.g. MH-12-AB-1234" },
 ];
@@ -17,6 +19,7 @@ export default function OutwardForm({ onSubmit, onCancel }) {
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
 
   const handleSubmit = async () => {
+    if (!form.company) return alert("Company is required");
     await onSubmit(form);
     setForm(EMPTY);
   };
@@ -29,15 +32,24 @@ export default function OutwardForm({ onSubmit, onCancel }) {
       </div>
 
       <div className="of-grid">
-        {FIELDS.map(({ key, label, placeholder }) => (
+        {FIELDS.map(({ key, label, placeholder, type, options }) => (
           <div key={key}>
             <label className="of-label">{label}</label>
-            <input
-              value={form[key]}
-              onChange={set(key)}
-              placeholder={placeholder}
-              className="of-input"
-            />
+            {type === "select" ? (
+              <select value={form[key]} onChange={set(key)} className="of-input">
+                <option value="">{placeholder}</option>
+                {options.map((o) => (
+                  <option key={o} value={o}>{o}</option>
+                ))}
+              </select>
+            ) : (
+              <input
+                value={form[key]}
+                onChange={set(key)}
+                placeholder={placeholder}
+                className="of-input"
+              />
+            )}
           </div>
         ))}
       </div>

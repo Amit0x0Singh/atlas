@@ -1,5 +1,6 @@
 import { Button, IconButton } from "../../../../../components/ui";
 import { X, Search } from "lucide-react";
+import { COMPANIES } from "../../data/companies.js";
 import "./GateFilterBar.css";
 
 const STATUS_OPTIONS = [
@@ -9,8 +10,13 @@ const STATUS_OPTIONS = [
   { value: "rejected", label: "Rejected" },
 ];
 
+const COMPANY_OPTIONS = [
+  { value: "", label: "All Companies" },
+  ...COMPANIES.map((c) => ({ value: c, label: c })),
+];
+
 function hasActiveFilters(f) {
-  return f.search || f.from_date || f.to_date || f.status || f.invoice_no;
+  return f.search || f.from_date || f.to_date || f.status || f.invoice_no || f.company;
 }
 
 export default function GateFilterBar({ tab, filters, onChange, onClear, total }) {
@@ -55,6 +61,22 @@ export default function GateFilterBar({ tab, filters, onChange, onClear, total }
             className="gfb-input gfb-select"
           >
             {STATUS_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Company */}
+        <div>
+          <label className="gfb-label">Company</label>
+          <select
+            value={filters.company}
+            onChange={(e) => onChange("company", e.target.value)}
+            className="gfb-input gfb-select"
+          >
+            {COMPANY_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
                 {o.label}
               </option>
@@ -114,6 +136,9 @@ export default function GateFilterBar({ tab, filters, onChange, onClear, total }
           )}
           {filters.status && (
             <Chip label={`Status: ${filters.status}`} onRemove={() => onChange("status", "")} />
+          )}
+          {filters.company && (
+            <Chip label={`Company: ${filters.company}`} onRemove={() => onChange("company", "")} />
           )}
           {filters.from_date && (
             <Chip label={`From: ${filters.from_date}`} onRemove={() => onChange("from_date", "")} />

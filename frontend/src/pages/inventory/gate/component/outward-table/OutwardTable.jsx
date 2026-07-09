@@ -11,7 +11,7 @@ function StatusBadge({ status }) {
   );
 }
 
-const HEADERS = ["Receiver Name", "Invoice No.", "Vehicle No.", "Date & Time", "Status", "Actions"];
+const HEADERS = ["Company", "Receiver Name", "Invoice No.", "Vehicle No.", "Date & Time", "Status", "Actions"];
 
 function DeleteRequestBadge() {
   return <span className="ot-del-badge">Delete Requested</span>;
@@ -54,6 +54,9 @@ export default function OutwardTable({ list, total, onRequestDelete }) {
                 key={item.outward_id || item.outwardId}
                 className={`ot-row ${idx % 2 === 0 ? "ot-row--even" : "ot-row--odd"}`}
               >
+                <td className="ot-td ot-td-text">
+                  {item.company_name || item.companyName || "—"}
+                </td>
                 <td className="ot-td ot-td-receiver">
                   {item.receiver_name || item.receiverName || "—"}
                 </td>

@@ -4,7 +4,7 @@ import prisma from '../../../../db.js'
 
 const listGateInward = async (req, res) => {
   try {
-    const { search, status, from_date, to_date, invoice_no, limit = '50', offset = '0' } = req.query
+    const { search, status, company, from_date, to_date, invoice_no, limit = '50', offset = '0' } = req.query
     const lim = Math.min(Number(limit) || 50, 200)
     const off = Number(offset) || 0
 
@@ -12,6 +12,7 @@ const listGateInward = async (req, res) => {
     if (search?.trim())     where.supplierName = { contains: search.trim(), mode: 'insensitive' }
     if (invoice_no?.trim()) where.invoiceNo    = { contains: invoice_no.trim(), mode: 'insensitive' }
     if (status?.trim())     where.status       = status.trim()
+    if (company?.trim())    where.companyName  = company.trim()
     if (from_date?.trim() || to_date?.trim()) {
       where.createdAt = {}
       if (from_date?.trim()) where.createdAt.gte = new Date(from_date)
@@ -21,7 +22,7 @@ const listGateInward = async (req, res) => {
     const [rows, total] = await Promise.all([
       prisma.gateInward.findMany({
         where,
-        select: { inwardId: true, supplierName: true, invoiceNo: true, vehicleNo: true, status: true, requestDelete: true, createdAt: true, updatedAt: true },
+        select: { inwardId: true, supplierName: true, invoiceNo: true, vehicleNo: true, companyName: true, status: true, requestDelete: true, createdAt: true, updatedAt: true },
         orderBy: { createdAt: 'desc' },
         skip: off,
         take: lim,
@@ -60,7 +61,7 @@ const getGateInward = async (req, res) => {
 const listGateOutward = async (req, res) => {
   try {
 
-    const { search, status, from_date, to_date, invoice_no, limit = '50', offset = '0' } = req.query
+    const { search, status, company, from_date, to_date, invoice_no, limit = '50', offset = '0' } = req.query
     const lim = Math.min(Number(limit) || 50, 200)
     const off = Number(offset) || 0
 
@@ -68,6 +69,7 @@ const listGateOutward = async (req, res) => {
     if (search?.trim())     where.receiverName = { contains: search.trim(), mode: 'insensitive' }
     if (invoice_no?.trim()) where.invoiceNo    = { contains: invoice_no.trim(), mode: 'insensitive' }
     if (status?.trim())     where.status       = status.trim()
+    if (company?.trim())    where.companyName  = company.trim()
     if (from_date?.trim() || to_date?.trim()) {
       where.createdAt = {}
       if (from_date?.trim()) where.createdAt.gte = new Date(from_date)
@@ -77,7 +79,7 @@ const listGateOutward = async (req, res) => {
     const [rows, total] = await Promise.all([
       prisma.gateOutward.findMany({
         where,
-        select: { outwardId: true, receiverName: true, invoiceNo: true, vehicleNo: true, status: true, requestDelete: true, createdAt: true },
+        select: { outwardId: true, receiverName: true, invoiceNo: true, vehicleNo: true, companyName: true, status: true, requestDelete: true, createdAt: true },
         orderBy: { createdAt: 'desc' },
         skip: off,
         take: lim,

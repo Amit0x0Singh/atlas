@@ -15,6 +15,7 @@ export default function InwardDetailPanel({ detail, onClose }) {
   const supplierName = d.supplier_name || d.supplierName || "—";
   const invoiceNo    = d.invoice_no    || d.invoiceNo    || "—";
   const vehicleNo    = d.vehicle_no    || d.vehicleNo    || "—";
+  const companyName  = d.company_name  || d.companyName  || "—";
   const createdAt    = d.created_at    || d.createdAt;
   const status       = d.status        || "pending";
 
@@ -30,6 +31,7 @@ export default function InwardDetailPanel({ detail, onClose }) {
 
       <div className="idp-grid">
         {[
+          ["Company",    companyName],
           ["Supplier",   supplierName],
           ["Invoice No.", invoiceNo],
           ["Vehicle No.", vehicleNo],

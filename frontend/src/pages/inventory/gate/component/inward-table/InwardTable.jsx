@@ -12,6 +12,7 @@ function StatusBadge({ status }) {
 }
 
 const HEADERS = [
+  "Company",
   "Supplier Name",
   "Invoice No.",
   "Vehicle No.",
@@ -63,6 +64,9 @@ export default function InwardTable({ list, total, onOpenDetail, onRequestDelete
                 key={item.inward_id || item.inwardId}
                 className={`it-row ${idx % 2 === 0 ? "it-row--even" : "it-row--odd"}`}
               >
+                <td className="it-td it-td-text">
+                  {item.company_name || item.companyName || "—"}
+                </td>
                 <td className="it-td it-td-supplier">
                   {item.supplier_name || item.supplierName}
                 </td>
