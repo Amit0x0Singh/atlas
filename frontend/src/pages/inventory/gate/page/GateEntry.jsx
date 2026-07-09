@@ -2,7 +2,8 @@
 import { ArrowDown, ArrowUp, CheckCircle } from "lucide-react";
 import { gateApi } from "../../../../api/inventory.js";
 import { useAuth } from "../../../../components/auth/AuthContext.jsx";
-import { Button, BackButton, ErrorModal, ConfirmModal } from '../../../../components/ui'
+import { Button, BackButton, PageHeader, ErrorModal, ConfirmModal } from '../../../../components/ui'
+import { DoorOpen } from "lucide-react";
 import GateTabs from "../component/gate-tabs/GateTabs.jsx";
 import GateFilterBar from "../component/gate-filter-bar/GateFilterBar.jsx";
 import InwardForm from "../component/inward-form/InwardForm.jsx";
@@ -153,12 +154,11 @@ export default function GateEntry() {
           ════════════════════════════════════════════════════ */}
       {view === "home" && (
         <>
-          <div className="ge-header">
-            <div>
-              <h1 className="ge-title">Gate Entry</h1>
-              <p className="ge-subtitle">Record inward and outward material movements</p>
-            </div>
-            <div className="ge-btn-row">
+          <PageHeader
+            icon={DoorOpen}
+            title="Gate Entry"
+            description="Record inward and outward material movements"
+            actions={<>
               {canGate && (
                 <>
                   <Button variant="primary" icon={ArrowDown} onClick={() => openList("inward")}>Inward Entries</Button>
@@ -168,34 +168,36 @@ export default function GateEntry() {
               {/* Real router back — mobile's native back gesture already
                   covers this, so it's hidden there (see .ge-back-routable) */}
               <span className="ge-back-routable"><BackButton /></span>
-            </div>
+            </>}
+          />
+
+          <div className="ge-body">
+            {/* Success banner */}
+            {successMsg && (
+              <div className="ge-success">
+                <CheckCircle size={16} /> {successMsg}
+              </div>
+            )}
+
+            {/* Inward / Outward tab selector */}
+            <GateTabs tab={formTab} onChange={(t) => { setFormTab(t); setFormKey(k => k + 1) }} />
+
+            {/* Form — key forces remount (clears fields) when Cancel is clicked */}
+            {formTab === "inward" && (
+              <InwardForm
+                key={`inward-${formKey}`}
+                onSubmit={submitInward}
+                onCancel={() => setFormKey(k => k + 1)}
+              />
+            )}
+            {formTab === "outward" && (
+              <OutwardForm
+                key={`outward-${formKey}`}
+                onSubmit={submitOutward}
+                onCancel={() => setFormKey(k => k + 1)}
+              />
+            )}
           </div>
-
-          {/* Success banner */}
-          {successMsg && (
-            <div className="ge-success">
-              <CheckCircle size={16} /> {successMsg}
-            </div>
-          )}
-
-          {/* Inward / Outward tab selector */}
-          <GateTabs tab={formTab} onChange={(t) => { setFormTab(t); setFormKey(k => k + 1) }} />
-
-          {/* Form — key forces remount (clears fields) when Cancel is clicked */}
-          {formTab === "inward" && (
-            <InwardForm
-              key={`inward-${formKey}`}
-              onSubmit={submitInward}
-              onCancel={() => setFormKey(k => k + 1)}
-            />
-          )}
-          {formTab === "outward" && (
-            <OutwardForm
-              key={`outward-${formKey}`}
-              onSubmit={submitOutward}
-              onCancel={() => setFormKey(k => k + 1)}
-            />
-          )}
         </>
       )}
 
@@ -204,37 +206,31 @@ export default function GateEntry() {
           ════════════════════════════════════════════════════ */}
       {view === "inward-list" && (
         <>
-          <div className="ge-header">
-            <div>
-              <h1 className="ge-title"><ArrowDown size={22} /> Inward Entries</h1>
-              <p className="ge-subtitle">{total} record{total !== 1 ? "s" : ""} found</p>
-            </div>
-            <div className="ge-btn-row">
-              <BackButton onClick={goHome} />
-            </div>
+          <PageHeader icon={ArrowDown} title="Inward Entries" actions={<BackButton onClick={goHome} />} />
+
+          <div className="ge-body">
+            {detail && <InwardDetailPanel detail={detail} onClose={() => setDetail(null)} />}
+
+            <GateFilterBar
+              tab="inward"
+              filters={filters}
+              onChange={handleFilterChange}
+              onClear={handleClearFilters}
+              total={total}
+            />
+
+            {error && <div className="ge-error">{error}</div>}
+
+            {loading
+              ? <div className="ge-loading">Loading…</div>
+              : <InwardTable
+                  list={list}
+                  total={total}
+                  onOpenDetail={openDetail}
+                  onRequestDelete={(id) => handleRequestDelete(id, "inward")}
+                />
+            }
           </div>
-
-          {detail && <InwardDetailPanel detail={detail} onClose={() => setDetail(null)} />}
-
-          <GateFilterBar
-            tab="inward"
-            filters={filters}
-            onChange={handleFilterChange}
-            onClear={handleClearFilters}
-            total={total}
-          />
-
-          {error && <div className="ge-error">{error}</div>}
-
-          {loading
-            ? <div className="ge-loading">Loading…</div>
-            : <InwardTable
-                list={list}
-                total={total}
-                onOpenDetail={openDetail}
-                onRequestDelete={(id) => handleRequestDelete(id, "inward")}
-              />
-          }
         </>
       )}
 
@@ -243,34 +239,28 @@ export default function GateEntry() {
           ════════════════════════════════════════════════════ */}
       {view === "outward-list" && (
         <>
-          <div className="ge-header">
-            <div>
-              <h1 className="ge-title"><ArrowUp size={22} /> Outward Entries</h1>
-              <p className="ge-subtitle">{total} record{total !== 1 ? "s" : ""} found</p>
-            </div>
-            <div className="ge-btn-row">
-              <BackButton onClick={goHome} />
-            </div>
+          <PageHeader icon={ArrowUp} title="Outward Entries" actions={<BackButton onClick={goHome} />} />
+
+          <div className="ge-body">
+            <GateFilterBar
+              tab="outward"
+              filters={filters}
+              onChange={handleFilterChange}
+              onClear={handleClearFilters}
+              total={total}
+            />
+
+            {error && <div className="ge-error">{error}</div>}
+
+            {loading
+              ? <div className="ge-loading">Loading…</div>
+              : <OutwardTable
+                  list={list}
+                  total={total}
+                  onRequestDelete={(id) => handleRequestDelete(id, "outward")}
+                />
+            }
           </div>
-
-          <GateFilterBar
-            tab="outward"
-            filters={filters}
-            onChange={handleFilterChange}
-            onClear={handleClearFilters}
-            total={total}
-          />
-
-          {error && <div className="ge-error">{error}</div>}
-
-          {loading
-            ? <div className="ge-loading">Loading…</div>
-            : <OutwardTable
-                list={list}
-                total={total}
-                onRequestDelete={(id) => handleRequestDelete(id, "outward")}
-              />
-          }
         </>
       )}
 

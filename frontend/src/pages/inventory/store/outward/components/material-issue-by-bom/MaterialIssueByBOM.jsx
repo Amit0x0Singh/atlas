@@ -17,6 +17,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
   const [selProduct, setSelProduct] = useState(null)
   const [selTaskId, setSelTaskId]   = useState(null)
   const [batchQty, setBatchQty]     = useState('')
+  const [batchUom, setBatchUom]     = useState('KG')
   const [batchRef, setBatchRef]     = useState('')
   const [diNo,     setDiNo]         = useState('')
   const [loadingBom, setLoadingBom] = useState(false)
@@ -25,7 +26,10 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
   // Production task picker
   const [tasks,        setTasks]        = useState([])
   const [loadingTasks, setLoadingTasks] = useState(false)
-  const [taskFilter,   setTaskFilter]   = useState({ plant: '', date: new Date().toISOString().slice(0, 10) })
+  // Date defaults to blank ("All Dates") — a task planned yesterday and not
+  // yet issued must stay visible today. Defaulting this to today's date used
+  // to silently hide every still-pending task from a previous day.
+  const [taskFilter,   setTaskFilter]   = useState({ plant: '', date: '' })
   const [issuedKeys,   setIssuedKeys]   = useState(() => readIssuedKeys())
 
   // ─── Session ──────────────────────────────────────────────────────────────
@@ -84,6 +88,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
     )
     setSelProduct(match || { productCode: task.productCode || '', productName: task.productName })
     setBatchQty(String(task.qty || ''))
+    setBatchUom(task.qtyUom || 'KG')
     setBatchRef(task.batchCode || task.taskId || '')
     setDiNo(task.diNo || '')
     setSelTaskId(task.id)
@@ -97,7 +102,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
       id: sessionId,
       productCode: selProduct?.productCode || '',
       productName: selProduct?.productName || '',
-      batchQty, batchRef, diNo,
+      batchQty, batchUom, batchRef, diNo,
       startedAt: readSessions().find(s => s.id === sessionId)?.startedAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       bomLines,
@@ -156,6 +161,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
   const resumeSession = (s) => {
     setSelProduct({ productCode: s.productCode, productName: s.productName })
     setBatchQty(s.batchQty)
+    setBatchUom(s.batchUom || 'KG')
     setBatchRef(s.batchRef || '')
     setDiNo(s.diNo || '')
     setBomLines(s.bomLines)
@@ -401,7 +407,11 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
         ) : (
           <div className="space-y-2 mb-4">
             {filteredTasks.map(task => {
-              const isSelected = selProduct?.productName === task.productName && batchQty === String(task.qty)
+              // Compare by the task's own id, not productName+qty — multiple
+              // cycles of the same batch (same product, same qty, different
+              // batch code) would otherwise all match at once as soon as any
+              // one of them was selected.
+              const isSelected = selTaskId === task.id
               return (
                 <button key={task.id} type="button"
                   onClick={() => selectTask(task)}
@@ -412,6 +422,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
                     <div className="flex-1 min-w-0">
                       <div className="font-semibold text-gray-900 text-sm">{task.productName}</div>
                       <div className="flex items-center gap-3 mt-0.5 flex-wrap text-xs text-gray-400">
+                        {task.date && <span>{task.date}</span>}
                         <span className="font-medium text-gray-600">{task.qty} {task.qtyUom || 'KG'}</span>
                         {task.batchCode && <span className="font-mono">{task.batchCode}</span>}
                         {task.diNo      && <span>{task.diNo}</span>}
@@ -436,9 +447,9 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
         {selProduct && (
           <div className="mb-4 flex items-center gap-2 flex-wrap bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2">
             <span className="text-sm font-semibold text-indigo-900 truncate max-w-full">{selProduct.productName}</span>
-            <span className="text-xs text-indigo-500 flex-shrink-0">· {batchQty} KG</span>
+            <span className="text-xs text-indigo-500 flex-shrink-0">· {batchQty} {batchUom}</span>
             {batchRef && <span className="text-xs font-mono text-gray-400 truncate">· {batchRef}</span>}
-            <IconButton icon={X} onClick={() => { setSelProduct(null); setBatchQty(''); setBatchRef(''); setSelTaskId(null) }} variant="ghost" size="xs" tooltip="Clear" className="ml-auto flex-shrink-0" />
+            <IconButton icon={X} onClick={() => { setSelProduct(null); setBatchQty(''); setBatchUom('KG'); setBatchRef(''); setSelTaskId(null) }} variant="ghost" size="xs" tooltip="Clear" className="ml-auto flex-shrink-0" />
           </div>
         )}
 
@@ -473,7 +484,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
             <div className="flex items-center gap-3 flex-wrap">
               <h2 className="text-lg font-bold text-gray-900">{selProduct?.productName}</h2>
               <span className="bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-1 rounded-lg">
-                {batchQty} KG
+                {batchQty} {batchUom}
               </span>
               {batchRef && (
                 <span className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-lg font-mono">{batchRef}</span>
@@ -666,6 +677,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
                     activeIdx={idx}
                     selProduct={selProduct}
                     batchQty={batchQty}
+                    batchUom={batchUom}
                     batchRef={batchRef}
                     diNo={diNo}
                   />
@@ -680,7 +692,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
             <p className="text-2xl mb-2">🎉</p>
             <p className="font-bold text-green-800 text-lg">All Materials Issued!</p>
             <p className="text-sm text-green-600 mt-1">
-              {selProduct?.productName} — {batchQty} KG batch ready for production
+              {selProduct?.productName} — {batchQty} {batchUom} batch ready for production
               {batchRef && ` (Ref: ${batchRef})`}
             </p>
             <Button
@@ -706,7 +718,7 @@ function IssuePanel({
   issuing, issueError,
   onScanInput, onOpenScanner, onSubmit,
   // context for purchase indent
-  selProduct, batchQty, batchRef, diNo,
+  selProduct, batchQty, batchUom, batchRef, diNo,
 }) {
   const totalAvailable   = packs.reduce((s, p) => s + (p.remainingQty || 0), 0)
                          + containers.reduce((s, c) => s + (c.currentQty || 0), 0)
@@ -798,7 +810,7 @@ function IssuePanel({
                         className="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:ring-2 focus:ring-amber-400" />
                     </div>
                     <div>
-                      <label className="text-[10px] font-semibold text-gray-500 block mb-1">Batch Size (KG)</label>
+                      <label className="text-[10px] font-semibold text-gray-500 block mb-1">Batch Size ({batchUom})</label>
                       <input value={batchQty} readOnly
                         className="w-full border border-gray-100 bg-gray-50 rounded-lg px-2.5 py-1.5 text-xs text-gray-500 cursor-not-allowed" />
                     </div>
@@ -891,7 +903,7 @@ function IssuePanel({
                         className="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:ring-2 focus:ring-orange-400" />
                     </div>
                     <div>
-                      <label className="text-[10px] font-semibold text-gray-500 block mb-1">Batch Size (KG)</label>
+                      <label className="text-[10px] font-semibold text-gray-500 block mb-1">Batch Size ({batchUom})</label>
                       <input value={batchQty} readOnly
                         className="w-full border border-gray-100 bg-gray-50 rounded-lg px-2.5 py-1.5 text-xs text-gray-500 cursor-not-allowed" />
                     </div>

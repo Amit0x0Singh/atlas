@@ -51,6 +51,12 @@ const Sidebar = () => {
       return next
     })
 
+  // Mobile drawer: collapse the sidebar as soon as a page is picked so the
+  // page underneath is immediately visible. Desktop keeps the sidebar open.
+  const handleNavigate = () => {
+    if (!window.matchMedia('(min-width: 768px)').matches) setSidebarOpen(false)
+  }
+
   return (
     <>
       {/* Mobile-only: tapping outside the open drawer closes it */}
@@ -78,6 +84,7 @@ const Sidebar = () => {
                 if (!sidebarOpen) setSidebarOpen(true)
                 toggleGroup(group)
               }}
+              onNavigate={handleNavigate}
             />
           ))}
         </nav>

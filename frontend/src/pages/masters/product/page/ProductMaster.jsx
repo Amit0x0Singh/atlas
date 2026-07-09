@@ -1,7 +1,7 @@
-﻿import { useState, useEffect } from 'react'
-import { Plus } from 'lucide-react'
+﻿import { useState, useEffect, useRef } from 'react'
+import { Plus, Tags, Search } from 'lucide-react'
 import { productApi } from '../../../../api/masters.js'
-import { Button, BackButton } from '../../../../components/ui'
+import { Button, BackButton, PageHeader } from '../../../../components/ui'
 import ProductTable from '../components/product-table/ProductTable.jsx'
 import ProductForm from '../components/product-form/ProductForm.jsx'
 
@@ -17,12 +17,30 @@ export default function ProductMaster() {
   const [page, setPage]        = useState(1)
   const [limit, setLimit]      = useState(15)
 
+  // Guards against out-of-order responses — an older request resolving
+  // after a newer one would otherwise overwrite fresher results.
+  const requestSeq = useRef(0)
+
   const load = async () => {
-    try { setLoading(true); const r = await productApi.list({ search }); setItems(r.data || []) }
-    catch (e) { console.error(e) } finally { setLoading(false) }
+    const seq = ++requestSeq.current
+    try {
+      setLoading(true)
+      const r = await productApi.list({ search })
+      if (seq !== requestSeq.current) return
+      setItems(r.data || [])
+    } catch (e) { console.error(e) }
+    finally { if (seq === requestSeq.current) setLoading(false) }
   }
 
-  useEffect(() => { load() }, [search])
+  // First render loads immediately; subsequent search changes are debounced
+  // instead of re-fetching on every keystroke.
+  const didMount = useRef(false)
+  useEffect(() => {
+    if (!didMount.current) { didMount.current = true; load(); return }
+    const t = setTimeout(load, 300)
+    return () => clearTimeout(t)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search])
   useEffect(() => { setPage(1) }, [items])
 
   const openAdd  = () => { setEditing(null); setForm({ productCode: '', productName: '', plant: '' }); setShowForm(true); setMsg('') }
@@ -44,39 +62,41 @@ export default function ProductMaster() {
   }
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Product Master</h1>
-          <p className="text-sm text-gray-500 mt-1">Manage finished product codes, names and plant</p>
-        </div>
-        <div className="flex items-center gap-3">
+    <div className="flex flex-col h-full">
+      <PageHeader
+        icon={Tags}
+        title="Product Master"
+        description="Manage finished product codes, names and plant"
+        actions={<>
           <Button variant="success" icon={Plus} onClick={openAdd}>Add New Product</Button>
           <BackButton />
+        </>}
+      />
+
+      <div className="p-6">
+      <div className="mb-4">
+        <div className="relative w-80">
+          <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+          <input
+            type="text"
+            placeholder="Search products..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="w-full border border-gray-300 rounded-lg pl-9 pr-4 py-2 text-sm outline-none focus:ring-2 focus:ring-green-500"
+          />
         </div>
       </div>
 
-      <div className="mb-4">
-        <input
-          type="text"
-          placeholder="Search products..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="border border-gray-300 rounded-lg px-4 py-2 w-80 outline-none focus:ring-2 focus:ring-green-500"
-        />
-      </div>
-
-      {loading ? <p className="text-gray-500">Loading...</p> : (
-        <ProductTable
-          items={items}
-          page={page}
-          limit={limit}
-          onEdit={openEdit}
-          onDelete={del}
-          onPageChange={setPage}
-          onLimitChange={l => { setLimit(l); setPage(1) }}
-        />
-      )}
+      <ProductTable
+        items={items}
+        loading={loading}
+        page={page}
+        limit={limit}
+        onEdit={openEdit}
+        onDelete={del}
+        onPageChange={setPage}
+        onLimitChange={l => { setLimit(l); setPage(1) }}
+      />
 
       {showForm && (
         <ProductForm
@@ -89,6 +109,7 @@ export default function ProductMaster() {
           onClose={() => setShowForm(false)}
         />
       )}
+      </div>
     </div>
   )
 }

@@ -2,21 +2,17 @@ import { useState, useEffect, useCallback } from 'react'
 import { recipeApi } from '../../../../../api/masters.js'
 import { rmApi } from '../../../../../api/inventory.js'
 import { planTasksApi } from '../../../../../api/production.js'
-import { genId, incrCode, scaleToQty, state as printState } from '../utils/bomPrintTemplates.js'
-import { readArchivedBoms, readMeta, archiveBoms } from '../utils/bomIssuanceStorage.js'
+import { genId, incrCode, scaleToQty, state as printState } from '../../utils/bomPrintTemplates.js'
+import { readArchivedBoms, readMeta, archiveBoms } from '../../utils/bomIssuanceStorage.js'
 import { toCanonical } from '../../../../../utils/uom.js'
-import { makeRows, toComponents, fromComponents } from './ComponentsTable.jsx'
-import IssueBomTab from './IssueBomTab.jsx'
-import PreviewTab from './PreviewTab.jsx'
-import ArchiveTab from './ArchiveTab.jsx'
-import RecipeLibraryTab from './RecipeLibraryTab.jsx'
-import { CheckCircle, AlertCircle, Loader, X } from 'lucide-react'
+import { makeRows, toComponents, fromComponents } from '../components-table/ComponentsTable.jsx'
+import IssueBomTab from '../issue-bom-tab/IssueBomTab.jsx'
+import ArchiveTab from '../archive-tab/ArchiveTab.jsx'
+import { CheckCircle, AlertCircle, Loader, X, FileText, Archive } from 'lucide-react'
 
 const TABS = [
-  { id: 'issue',   label: '📄 Issue BOM' },
-  { id: 'preview', label: '👁 Preview' },
-  { id: 'archive', label: '🗄 Archive' },
-  { id: 'recipes', label: '📚 Recipe Library' },
+  { id: 'issue',   label: 'Issue BOM', icon: FileText },
+  { id: 'archive', label: 'Archive',   icon: Archive },
 ]
 
 const todayISO = () => new Date().toISOString().slice(0, 10)
@@ -53,10 +49,8 @@ export default function BomIssuance() {
   const [form, setForm]     = useState(emptyForm)
   const [rows, setRows]     = useState(() => makeRows(25))
   const [settings, setSettings] = useState(defaultSettings)
-  const [previews, setPreviews] = useState([])
   const [error, setError]       = useState('')
   const [generating, setGenerating] = useState(false)
-  const [confirming, setConfirming] = useState(false)
   const [banner, setBanner]     = useState(null) // {type:'success'|'error', msg}
 
   const [recipeProducts, setRecipeProducts] = useState([])
@@ -180,7 +174,7 @@ export default function BomIssuance() {
     }
   }
 
-  const onGenerate = () => {
+  const onGenerate = async () => {
     setError('')
     const pn = form.product.trim()
     const comps = toComponents(rows)
@@ -206,17 +200,10 @@ export default function BomIssuance() {
       cycleNo: i + 1, totalCycles: n,
       issuedAt: new Date().toISOString(),
     }))
-    setPreviews(built)
-    setGenerating(false)
-    setActiveTab('preview')
-  }
 
-  const onConfirm = async () => {
-    if (!previews.length) return
-    setConfirming(true)
-    setBanner({ type: 'loading', msg: `Creating ${previews.length} production task(s)…` })
+    setBanner({ type: 'loading', msg: `Creating ${built.length} production task(s)…` })
     try {
-      for (const bom of previews) {
+      for (const bom of built) {
         const plant = bom.section
         const date  = bom.datePlanned || new Date().toISOString().slice(0, 10)
         await planTasksApi.create({
@@ -234,22 +221,20 @@ export default function BomIssuance() {
           sent:        true,
         })
       }
-      const newMeta = archiveBoms(previews)
+      const newMeta = archiveBoms(built)
       setArchivedBoms(readArchivedBoms())
       setMeta(newMeta)
-      setBanner({ type: 'success', msg: `✓ ${previews.length} production task(s) created — visible in Store Outward → Material Issue by BOM` })
+      setBanner({ type: 'success', msg: `✓ ${built.length} production task(s) created — visible in Store Outward → Material Issue by BOM` })
 
       // Clear the form for the next entry
       setForm(emptyForm())
       setRows(makeRows(25))
       setActiveRecipe(null)
       setRecipeLoadedMsg('')
-      setPreviews([])
-      setActiveTab('issue')
     } catch (e) {
       setBanner({ type: 'error', msg: `Failed to create tasks: ${e.message}` })
     } finally {
-      setConfirming(false)
+      setGenerating(false)
     }
   }
 
@@ -260,9 +245,9 @@ export default function BomIssuance() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-[#f0f4f8]">
+    <div className="flex flex-col h-full bg-slate-50">
       {banner && (
-        <div className={`px-5 py-2 border-b flex items-center gap-2 text-[13px] font-medium flex-shrink-0 ${bannerCls[banner.type]}`}>
+        <div className={`px-5 py-2.5 border-b flex items-center gap-2 text-[13px] font-medium flex-shrink-0 ${bannerCls[banner.type]}`}>
           {banner.type === 'loading' && <Loader size={14} className="animate-spin flex-shrink-0" />}
           {banner.type === 'success' && <CheckCircle size={14} className="flex-shrink-0" />}
           {banner.type === 'error'   && <AlertCircle size={14} className="flex-shrink-0" />}
@@ -273,14 +258,19 @@ export default function BomIssuance() {
         </div>
       )}
 
-      <div className="bg-white border-b-2 border-gray-200 flex px-6 overflow-x-auto flex-shrink-0">
-        {TABS.map(t => (
-          <button key={t.id} onClick={() => setActiveTab(t.id)}
-            className={`px-5 py-3 text-[13px] font-semibold border-b-[3px] -mb-0.5 whitespace-nowrap transition
-              ${activeTab === t.id ? 'text-indigo-600 border-indigo-600' : 'text-gray-400 border-transparent hover:text-gray-700'}`}>
-            {t.label}{t.id === 'preview' && previews.length > 0 ? ` (${previews.length})` : ''}
-          </button>
-        ))}
+      <div className="bg-white border-b border-slate-200 flex px-6 overflow-x-auto flex-shrink-0 gap-1">
+        {TABS.map(t => {
+          const Icon = t.icon
+          const active = activeTab === t.id
+          return (
+            <button key={t.id} onClick={() => setActiveTab(t.id)}
+              className={`flex items-center gap-1.5 px-4 py-3.5 text-[13px] font-semibold border-b-2 -mb-px whitespace-nowrap transition-colors
+                ${active ? 'text-indigo-600 border-indigo-600' : 'text-slate-400 border-transparent hover:text-slate-700 hover:border-slate-200'}`}>
+              <Icon size={14.5} />
+              {t.label}
+            </button>
+          )
+        })}
       </div>
 
       <div className="flex-1 overflow-y-auto">
@@ -294,13 +284,9 @@ export default function BomIssuance() {
             rmList={rmList} onSaveCorrections={handleSaveCorrections} savingCorrections={savingCorrections}
           />
         )}
-        {activeTab === 'preview' && (
-          <PreviewTab previews={previews} onBack={() => setActiveTab('issue')} onConfirm={onConfirm} confirming={confirming} />
-        )}
         {activeTab === 'archive' && (
           <ArchiveTab boms={archivedBoms} recipeCount={recipeProducts.length} meta={meta} />
         )}
-        {activeTab === 'recipes' && <RecipeLibraryTab />}
       </div>
     </div>
   )

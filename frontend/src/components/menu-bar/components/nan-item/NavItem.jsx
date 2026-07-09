@@ -11,11 +11,11 @@ function SoonItem({ label, Icon }) {
   )
 }
 
-export default function NavItem({ to, label, Icon, soon }) {
+export default function NavItem({ to, label, Icon, soon, onNavigate }) {
   if (soon) return <SoonItem label={label} Icon={Icon} />
 
   return (
-    <NavLink to={to} className="ni-item ni-link">
+    <NavLink to={to} className="ni-item ni-link" onClick={onNavigate}>
       <Icon size={14} className="ni-icon" />
       <span className="ni-label">{label}</span>
     </NavLink>

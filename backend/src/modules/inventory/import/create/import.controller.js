@@ -308,17 +308,40 @@ export const executeImport = async (req, res) => {
         return n === 1 ? 'NaN' : `NaN-${n}`
       }
 
+      // Keyed by productCode||rmCode — recipe_db has a @@unique constraint on
+      // that pair, so two source rows for the same product+ingredient (a
+      // duplicate line in the spreadsheet, or the same unmatched name typed
+      // twice) both resolve to the *same* row and the second is an update,
+      // not a new insert. Counting every processed row (the old behavior)
+      // over-reports vs. what's actually in the table — e.g. "2176 Recipe/BOM
+      // Lines" imported when the DB only gained 2142 rows. Tracking the last
+      // write per key and deriving all summary counts from this map's size
+      // afterward keeps the reported numbers honest.
+      const touchedRecipeRows = new Map()
+
       for (const row of rows) {
         try {
           const productName = col(row, 'productname', 'product name', 'product', 'finished good', 'fg name')
           const rmName = col(row, 'rawmaterial', 'raw material', 'rm name', 'material name', 'ingredient', 'component name', 'component', 'rm')
+          // Product Name + Raw Material are the only hard requirements — a row
+          // missing either genuinely can't be placed in a recipe and is skipped.
+          // Qty Per Unit / UOM being blank or unparseable (e.g. "q.s") must NOT
+          // drop the row — that used to silently lose ingredients like
+          // "Williopsis saturnus" that have a name but no numeric dose yet.
+          // safeNum() already floors blank/non-numeric qty to 0, which reads as
+          // an obvious "needs a value" flag in the BOM editor; UOM gets the same
+          // "NaN" placeholder convention already used for unmatched RM codes.
           const qtyPerUnit = safeNum(col(row, 'qty', 'qtyperunit', 'qty per unit', 'quantity', 'qty/unit', 'qty per kg'))
-          const uom = col(row, 'uom', 'unit', 'unit of measure') || 'KG'
+          const uom = col(row, 'uom', 'unit', 'unit of measure') || 'NaN'
           const plantRaw = col(row, 'plant', 'location', 'section', 'unit')
           const section = normalizeRecipePlant(plantRaw)
           const concCfu = col(row, 'conc', 'cfu', 'concentration', 'conccfu', 'concfcu')
           const roleType = getRoleType(concCfu)
-          if (!productName || !rmName || qtyPerUnit <= 0) continue
+          if (!productName || !rmName) {
+            results.skippedMissingProductOrRm = (results.skippedMissingProductOrRm || 0) + 1
+            results.errors.push(`⛔ Skipped row — missing ${!productName ? 'Product Name' : ''}${!productName && !rmName ? ' and ' : ''}${!rmName ? 'Raw Material' : ''} (product: "${productName || ''}", rm: "${rmName || ''}")`)
+            continue
+          }
 
           // Product: auto-create if not in master (products come from BOM)
           let product = productsByName[productName.toLowerCase()]
@@ -345,6 +368,7 @@ export const executeImport = async (req, res) => {
           // Fix RM Mapping.
           const rm = rmsByName[rmName.toLowerCase()]
           let rmCode
+          const unmatched = !rm
           if (rm) {
             rmCode = rm.itemCode
           } else {
@@ -354,8 +378,6 @@ export const executeImport = async (req, res) => {
               where: { productCode: product.productCode, rmName, rmCode: { startsWith: 'NaN' } },
             })
             rmCode = existingNanRow ? existingNanRow.rmCode : await nextNanCode(product.productCode)
-            results.unmatchedRm = (results.unmatchedRm || 0) + 1
-            results.errors.push(`❌ RM not found: "${rmName}" (product: ${productName}) — imported with item code "${rmCode}"; add it to RM Master with this exact name, then use Fix RM Mapping to reconcile`)
           }
 
           const finalRoleType = roleType || 'INGREDIENT'
@@ -364,8 +386,49 @@ export const executeImport = async (req, res) => {
             create: { productCode: product.productCode, productName: product.productName, rmCode, rmName, qtyPerUnit, uom, roleType: finalRoleType },
             update: { qtyPerUnit, uom, productName: product.productName, rmName, roleType: finalRoleType }
           })
-          results.recipeBom++
+
+          // Last occurrence of a duplicate key wins here, matching the
+          // upsert's own "last write wins" semantics — the counts and error
+          // list below reflect actual distinct rows, not raw source lines.
+          // occurrences tracks how many source rows collapsed into this one
+          // DB row, so a genuine duplicate line in the sheet is visible
+          // afterward instead of silently vanishing into the total.
+          const dupKey = `${product.productCode}||${rmCode}`
+          const prevOccurrences = touchedRecipeRows.get(dupKey)?.occurrences || 0
+          touchedRecipeRows.set(dupKey, {
+            productName, rmName, rmCode, unmatched,
+            missingQtyOrUom: qtyPerUnit <= 0 || uom === 'NaN',
+            qtyPerUnit, uom,
+            occurrences: prevOccurrences + 1,
+          })
         } catch (e) { results.errors.push(`Recipe row: ${e.message}`) }
+      }
+
+      results.recipeBom = touchedRecipeRows.size
+      results.duplicateRecipeLines = []
+      for (const v of touchedRecipeRows.values()) {
+        if (v.unmatched) {
+          results.unmatchedRm = (results.unmatchedRm || 0) + 1
+          results.errors.push(`❌ RM not found: "${v.rmName}" (product: ${v.productName}) — imported with item code "${v.rmCode}"; add it to RM Master with this exact name, then use Fix RM Mapping to reconcile`)
+        }
+        if (v.missingQtyOrUom) {
+          results.missingQtyOrUom = (results.missingQtyOrUom || 0) + 1
+          results.errors.push(`⚠️ Missing qty/uom: "${v.rmName}" (product: ${v.productName}) — imported with qty=${v.qtyPerUnit}, uom="${v.uom}"; fill in the correct value in Recipe Master`)
+        }
+        // A source row count > 1 for the same product+ingredient means the
+        // sheet itself repeats that line — recipe_db can only hold one qty
+        // per (product, ingredient), so these collapsed and only the LAST
+        // occurrence's qty/uom was kept. Surfaced explicitly so "sheet had
+        // 2176 rows, DB has 2142" is traceable to specific rows instead of
+        // looking like silently lost data.
+        if (v.occurrences > 1) {
+          results.duplicateRecipeLines.push({ productName: v.productName, rmName: v.rmName, occurrences: v.occurrences })
+        }
+      }
+      if (results.duplicateRecipeLines.length > 0) {
+        const extraRows = results.duplicateRecipeLines.reduce((s, d) => s + (d.occurrences - 1), 0)
+        results.duplicateRecipeLineExtraRows = extraRows
+        results.errors.push(`🔁 ${results.duplicateRecipeLines.length} product+ingredient combo(s) appeared more than once in the sheet (${extraRows} extra row(s) total) — only the last occurrence's qty/uom was kept per combo, e.g.: ${results.duplicateRecipeLines.slice(0, 5).map(d => `"${d.rmName}" in "${d.productName}" (×${d.occurrences})`).join(', ')}${results.duplicateRecipeLines.length > 5 ? ', …' : ''}`)
       }
     }
 
@@ -508,7 +571,7 @@ export const executeImport = async (req, res) => {
     return res.json({
       success: true,
       data: results,
-      message: `Import complete — Products: ${results.productMaster}, Equipment: ${results.equipmentMaster}, RM: ${results.rmMaster}, Recipe/BOM: ${results.recipeBom}, Customer Profiles: ${results.customerProfiles || 0}, Packs: ${results.printMaster}, Inward: ${results.inward}, Outward: ${results.outward}`
+      message: `Import complete — Products: ${results.productMaster}, Equipment: ${results.equipmentMaster}, RM: ${results.rmMaster}, Recipe/BOM: ${results.recipeBom}${results.missingQtyOrUom ? ` (${results.missingQtyOrUom} with missing qty/uom)` : ''}, Customer Profiles: ${results.customerProfiles || 0}, Packs: ${results.printMaster}, Inward: ${results.inward}, Outward: ${results.outward}`
     })
   } catch (e) {
     console.error(e)

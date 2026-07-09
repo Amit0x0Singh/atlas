@@ -1,12 +1,12 @@
 ﻿import './RmMaterialDetail.css'
 import { useState, useEffect, useMemo } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { stockApi } from '../../../api/inventory.js'
-import { BackButton, IconButton } from '../../../components/ui'
+import { BackButton, IconButton, PageHeader } from '../../../components/ui'
 import RmDetailFilters   from './components/rm-detail-filters/RmDetailFilters.jsx'
 import RmDetailTable     from './components/rm-detail-table/RmDetailTable.jsx'
 import { groupPacks, groupStatus } from './components/rmDetailHelpers.js'
-import  { RefreshCw } from 'lucide-react'
+import { RefreshCw, History } from 'lucide-react'
 
 function fmtQty(n) {
   if (n == null) return '—'
@@ -17,7 +17,6 @@ function fmtQty(n) {
 
 export default function RmMaterialDetail() {
   const { itemCode } = useParams()
-  const navigate     = useNavigate()
 
   const [rm,      setRm]      = useState(null)
   const [packs,   setPacks]   = useState([])
@@ -93,26 +92,17 @@ export default function RmMaterialDetail() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-6 py-7">
-        {/* Header */}
-        <div className="flex justify-between items-start mb-7">
-          <div>
-            <BackButton onClick={() => navigate('/rm-material')} label="Raw Materials" size="sm" />
-            {loading ? (
-              <div className="h-6 w-48 bg-gray-200 rounded animate-pulse" />
-            ) : (
-              <>
-                <h1 className="text-xl font-bold text-gray-900">{rm?.itemName ?? itemCode}</h1>
-                <p className="text-xs text-gray-400 mt-0.5">{rm?.itemCode} · {rm?.uom} · Complete inward history</p>
-              </>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <IconButton icon={RefreshCw} onClick={load} tooltip="Refresh" variant="outline-gray" size="sm" />
-            <BackButton />
-          </div>
-        </div>
+      <PageHeader
+        icon={History}
+        title={loading ? <span className="inline-block h-5 w-48 bg-gray-200 rounded animate-pulse align-middle" /> : (rm?.itemName ?? itemCode)}
+        description={!loading && `${rm?.itemCode} · ${rm?.uom} · Complete inward history`}
+        actions={<>
+          <IconButton icon={RefreshCw} onClick={load} tooltip="Refresh" variant="outline-gray" size="sm" />
+          <BackButton />
+        </>}
+      />
 
+      <div className="max-w-7xl mx-auto px-6 py-7">
         {error && <div className="mb-5 px-4 py-3 bg-red-50 border border-red-100 text-red-600 rounded-xl text-sm">{error}</div>}
 
         {/* Summary stats */}

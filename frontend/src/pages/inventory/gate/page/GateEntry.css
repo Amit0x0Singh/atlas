@@ -1,47 +1,19 @@
 /* GateEntry */
 
 .ge-page {
-  padding: 24px 28px;
   background: #f1f5f9;
   min-height: 100vh;
   box-sizing: border-box;
 }
 
-.ge-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 24px;
-}
-
-.ge-title {
-  margin: 0;
-  font-size: 24px;
-  font-weight: 800;
-  color: #0f172a;
-  letter-spacing: -0.5px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.ge-subtitle {
-  margin: 4px 0 0;
-  font-size: 13px;
-  color: #64748b;
-}
-
-.ge-btn-row {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
+/* Padded content area below the (edge-to-edge) PageHeader — same role the
+   old .ge-page padding used to play before the header moved outside it. */
+.ge-body {
+  padding: 24px 28px;
 }
 
 /* display: contents so this wrapper doesn't add an extra flex item —
-   BackButton itself still behaves as a direct child of .ge-btn-row.
+   BackButton itself still behaves as a direct child of PageHeader's actions row.
    Overridden to display: none on mobile, see below. */
 .ge-back-routable {
   display: contents;
@@ -82,22 +54,8 @@
 }
 
 @media (max-width: 640px) {
-  .ge-page {
+  .ge-body {
     padding: 16px;
-  }
-
-  .ge-title {
-    font-size: 20px;
-  }
-
-  /* Inward/Outward Entries + Back would otherwise overflow off-screen
-     shoulder-to-shoulder on a phone — let them wrap and go full width. */
-  .ge-btn-row {
-    width: 100%;
-  }
-
-  .ge-btn-row > * {
-    flex: 1 1 auto;
   }
 
   /* Only the home screen's Back does a real router navigate(-1) — the

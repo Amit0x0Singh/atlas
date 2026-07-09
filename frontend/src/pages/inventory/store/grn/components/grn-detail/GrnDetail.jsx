@@ -121,13 +121,11 @@ export default function GrnDetail({ selected, detail, loading }) {
           </div> */}
 
           {/* Signature strip */}
-          <div className="gd-sig-strip">
-            {['Received By (Stores)', 'Approved By (Manager)'].map(s => (
-              <div key={s}>
+          <div className="gd-sig-strip"> 
+              <div>
                 <div className="gd-sig-line" />
-                <p className="gd-sig-label">{s}</p>
-              </div>
-            ))}
+                <p className="gd-sig-label">Received By (Stores)</p>
+              </div> 
           </div>
         </div>
       </div>

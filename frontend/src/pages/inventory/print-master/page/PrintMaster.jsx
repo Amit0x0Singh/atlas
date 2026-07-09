@@ -1,7 +1,7 @@
 ﻿import './PrintMaster.css';
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { BackButton, Button } from "../../../../components/ui";
+import { BackButton, Button, PageHeader } from "../../../../components/ui";
 import { CheckCircle, Printer, QrCode, ArrowLeftRight } from "lucide-react";
 import GenerateForm from "../components/generate-form/GenerateForm.jsx";
 import GateInwardPanel from "../components/gate-inward-panel/GateInwardPanel.jsx";
@@ -24,10 +24,12 @@ export default function PrintMaster() {
   };
 
   return (
-    <div className="p-4 md:p-6">
-      <div className="flex justify-between items-center gap-3 flex-wrap mb-6">
-        <h1 className="text-xl md:text-2xl font-bold text-gray-900">Print Master — Generate Pack Labels</h1>
-        <div className="flex items-center gap-2 flex-wrap">
+    <div className="flex flex-col h-full">
+      <PageHeader
+        icon={Printer}
+        title="Print Master — Generate Pack Labels"
+        description="Fill invoice details, add items, then generate QR labels"
+        actions={<>
           <Button
             variant="outline-gray"
             icon={ArrowLeftRight}
@@ -39,9 +41,10 @@ export default function PrintMaster() {
           </Button>
           {/* Real router back — mobile has the native back gesture for this */}
           <span className="hidden md:inline-flex"><BackButton /></span>
-        </div>
-      </div>
+        </>}
+      />
 
+      <div className="p-4 md:p-6">
       {/* Success banner */}
       {successInfo && (
         <div className="mb-5 p-4 bg-green-50 border border-green-200 rounded-xl">
@@ -84,6 +87,7 @@ export default function PrintMaster() {
           selectedId={selectedGate?.inwardId}
           reloadTrigger={gatePanelTrigger}
         />
+      </div>
       </div>
     </div>
   );

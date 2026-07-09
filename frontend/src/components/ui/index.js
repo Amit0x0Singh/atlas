@@ -1,7 +1,9 @@
 // ─── Core primitives ──────────────────────────────────────────────────────────
-export { default as Spinner } from './Spinner/components/Spinner.jsx'
-export { default as Modal   } from './Modal/components/Modal.jsx'
-export { default as Loading } from './Loading/components/Loading.jsx'
+export { default as Spinner     } from './Spinner/components/Spinner.jsx'
+export { default as Modal       } from './Modal/components/Modal.jsx'
+export { default as BottomSheet } from './BottomSheet/components/BottomSheet.jsx'
+export { default as Loading     } from './Loading/components/Loading.jsx'
+export { default as PageHeader  } from './PageHeader/components/PageHeader.jsx'
 
 // ─── Buttons ──────────────────────────────────────────────────────────────────
 export { default as Button     } from './Buttons/components/Button.jsx'

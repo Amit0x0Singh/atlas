@@ -1,37 +1,11 @@
 /* MicrobialInward */
 
 .mi-page {
-  padding: 24px;
   font-family: 'Inter', system-ui, sans-serif;
 }
 
-.mi-back {
-  margin-bottom: 14px;
-}
-
-.mi-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 24px;
-}
-
-.mi-head-actions {
-  display: flex;
-  gap: 10px;
-}
-
-.mi-h1 {
-  font-size: 22px;
-  font-weight: 800;
-  color: #0f172a;
-  margin: 0;
-}
-
-.mi-sub {
-  font-size: 13px;
-  color: #64748b;
-  margin-top: 4px;
+.mi-body {
+  padding: 24px;
 }
 
 /* Summary */
@@ -73,10 +47,12 @@
 .mi-tabs {
   display: flex;
   gap: 4px;
-  margin-bottom: 20px;
 }
 
 .mi-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   padding: 8px 18px;
   border-radius: 8px 8px 0 0;
   font-size: 13px;

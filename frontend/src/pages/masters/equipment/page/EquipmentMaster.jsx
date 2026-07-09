@@ -1,7 +1,7 @@
 ﻿import { useState, useEffect } from 'react'
-import { Plus } from 'lucide-react'
+import { Plus, Wrench } from 'lucide-react'
 import { equipmentApi } from '../../../../api/masters.js'
-import { Button, BackButton } from '../../../../components/ui'
+import { Button, BackButton, PageHeader } from '../../../../components/ui'
 import EquipmentTable from '../components/equipment-table/EquipmentTable.jsx'
 import EquipmentForm from '../components/equipment-form/EquipmentForm.jsx'
 
@@ -42,18 +42,18 @@ export default function EquipmentMaster() {
   }
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Equipment Master</h1>
-          <p className="text-sm text-gray-500 mt-1">Manage production equipment for indent selection</p>
-        </div>
-        <div className="flex items-center gap-3">
+    <div className="flex flex-col h-full">
+      <PageHeader
+        icon={Wrench}
+        title="Equipment Master"
+        description="Manage production equipment for indent selection"
+        actions={<>
           <Button variant="warning" icon={Plus} onClick={openAdd}>Add Equipment</Button>
           <BackButton />
-        </div>
-      </div>
+        </>}
+      />
 
+      <div className="p-6">
       {loading ? <p className="text-gray-500">Loading...</p> : (
         <EquipmentTable
           items={items}
@@ -77,6 +77,7 @@ export default function EquipmentMaster() {
           onClose={() => setShowForm(false)}
         />
       )}
+      </div>
     </div>
   )
 }

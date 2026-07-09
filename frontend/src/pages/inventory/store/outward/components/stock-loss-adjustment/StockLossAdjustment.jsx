@@ -2,7 +2,7 @@
 import { outwardApi, packsApi } from '../../../../../../api/inventory.js'
 import { useQrScanner } from '../../../../../../hooks/useQrScanner.js'
 import { Button, IconButton } from '../../../../../../components/ui'
-import { X } from 'lucide-react'
+import { X, Camera, CameraOff } from 'lucide-react'
 import './StockLossAdjustment.css'
 
 
@@ -26,7 +26,7 @@ export default function StockLossAdjustment() {
   const [error,      setError]      = useState('')
   const [success,    setSuccess]    = useState('')
 
-  // "?"? QR scanner "?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?
+  // ─── QR scanner ──────────────────────────────────────────────────────────
   const onScan = useCallback((raw) => {
     const id = raw.startsWith('PACK:') ? raw.slice(5) : raw
     scanner.stop()
@@ -34,7 +34,7 @@ export default function StockLossAdjustment() {
   }, [])
   const scanner = useQrScanner(onScan)
 
-  // "?"? Load pack by ID "?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?
+  // ─── Load pack by ID ─────────────────────────────────────────────────────
   const loadPack = async (packId) => {
     if (!packId) return
     setError(''); setSuccess(''); setPack(null); setLossQty(''); setReason(''); setCustomReason('')
@@ -59,7 +59,7 @@ export default function StockLossAdjustment() {
     }
   }
 
-  // "?"? Submit adjustment "?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?
+  // ─── Submit adjustment ───────────────────────────────────────────────────
   const submit = async () => {
     const loss = parseFloat(lossQty)
     const finalReason = reason === 'Other' ? customReason.trim() : reason
@@ -95,7 +95,7 @@ export default function StockLossAdjustment() {
       {success && <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-4 text-sm">{success}</div>}
       {scanner.camError && <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded-lg mb-4 text-sm">{scanner.camError}</div>}
 
-      {/* "?"? Step 1: Scan bag "?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"? */}
+      {/* ─── Step 1: Scan bag ─── */}
       {!pack && (
         <div>
           <p className="text-sm text-gray-500 mb-5">
@@ -117,9 +117,10 @@ export default function StockLossAdjustment() {
           <Button
             onClick={scanner.active ? scanner.stop : scanner.start}
             variant={scanner.active ? 'danger' : 'danger-solid'}
+            icon={scanner.active ? CameraOff : Camera}
             fullWidth
             className="mb-4">
-            {scanner.active ? '-  Stop Camera' : 'Scan Bag QR'}
+            {scanner.active ? 'Stop Camera' : 'Scan Bag QR'}
           </Button>
 
           <div className="flex gap-2">
@@ -127,7 +128,7 @@ export default function StockLossAdjustment() {
               value={packInput}
               onChange={e => setPackInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && loadPack(packInput.trim())}
-              placeholder="Or enter pack ID manually?"
+              placeholder="Or enter pack ID manually…"
               className="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 text-sm font-mono outline-none focus:ring-2 focus:ring-red-400"
             />
             <Button
@@ -136,13 +137,13 @@ export default function StockLossAdjustment() {
               loading={loading}
               variant="secondary"
               size="sm">
-              {loading ? '?' : 'Load'}
+              {loading ? 'Loading…' : 'Load'}
             </Button>
           </div>
         </div>
       )}
 
-      {/* "?"? Step 2: Pack loaded — enter loss "?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"? */}
+      {/* ─── Step 2: Pack loaded — enter loss ─── */}
       {pack && (
         <div className="space-y-4">
 
@@ -214,7 +215,7 @@ export default function StockLossAdjustment() {
               <input
                 value={customReason}
                 onChange={e => setCustomReason(e.target.value)}
-                placeholder="Describe the reason?"
+                placeholder="Describe the reason…"
                 className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-red-400"
               />
             )}
@@ -227,7 +228,7 @@ export default function StockLossAdjustment() {
             loading={submitting}
             variant="danger-solid"
             fullWidth>
-            {submitting ? 'Adjusting?' : 'Record Stock Loss'}
+            {submitting ? 'Adjusting…' : 'Record Stock Loss'}
           </Button>
 
         </div>

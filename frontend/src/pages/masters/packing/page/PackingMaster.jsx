@@ -1,7 +1,7 @@
 ﻿import { useState, useEffect, useMemo } from 'react'
-import { RefreshCw } from 'lucide-react'
+import { RefreshCw, AlertTriangle, PackageOpen } from 'lucide-react'
 import { packingMaterialApi } from '../../../../api/masters.js'
-import { Button, BackButton } from '../../../../components/ui'
+import { Button, BackButton, PageHeader } from '../../../../components/ui'
 import CategoryList  from '../components/category-list/CategoryList.jsx'
 import SubTypeGrid   from '../components/sub-type-grid/SubTypeGrid.jsx'
 import ItemList      from '../components/item-list/ItemList.jsx'
@@ -113,22 +113,23 @@ export default function PackingMaster() {
     <div className="min-h-screen bg-gray-50">
       {loadErr && (
         <div className="mx-6 mt-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm flex items-center gap-3">
-          <span>⚠️ {loadErr}</span>
+          <span className="flex items-center gap-1.5"><AlertTriangle size={15} />{loadErr}</span>
           <Button variant="ghost" icon={RefreshCw} size="xs" onClick={load} className="ml-auto shrink-0">Retry</Button>
         </div>
       )}
 
       {/* VIEW 1 — Categories */}
       {view === 'categories' && (
-        <div className="px-6 py-5">
-          <div className="flex items-start justify-between mb-8">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Packing Material Master</h1>
-              <p className="text-sm text-gray-500 mt-1">Select a category to browse and manage packing materials</p>
-            </div>
-            <BackButton />
+        <div>
+          <PageHeader
+            icon={PackageOpen}
+            title="Packing Material Master"
+            description="Select a category to browse and manage packing materials"
+            actions={<BackButton />}
+          />
+          <div className="px-6 py-8">
+            <CategoryList loading={loading} catCounts={catCounts} onSelect={goSubTypes} />
           </div>
-          <CategoryList loading={loading} catCounts={catCounts} onSelect={goSubTypes} />
         </div>
       )}
 

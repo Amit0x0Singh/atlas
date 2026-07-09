@@ -1,41 +1,24 @@
 /* MicrobialSFG */
 
 .msfg-page {
-  padding: 24px;
   font-family: 'Inter', system-ui, sans-serif;
 }
 
-.msfg-back {
-  margin-bottom: 14px;
-}
-
-.msfg-header {
-  margin-bottom: 24px;
-}
-
-.msfg-h1 {
-  font-size: 22px;
-  font-weight: 800;
-  color: #0f172a;
-  margin: 0;
-}
-
-.msfg-sub {
-  font-size: 13px;
-  color: #64748b;
-  margin-top: 4px;
+.msfg-body {
+  padding: 24px;
 }
 
 /* Plant tab bar */
 .msfg-tab-bar {
   display: flex;
   gap: 0;
-  margin-bottom: 24px;
-  border-bottom: 2px solid #e2e8f0;
   overflow-x: auto;
 }
 
 .msfg-tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   padding: 10px 22px;
   font-size: 13px;
   font-weight: 500;
@@ -328,7 +311,6 @@
 }
 
 .msfg-coming-soon-icon {
-  font-size: 42px;
   margin-bottom: 12px;
 }
 
