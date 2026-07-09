@@ -160,7 +160,34 @@ export default function Import() {
             <ResultCard label="Inward Records" value={result.inward} color="text-orange-700" />
             <ResultCard label="Outward Records" value={result.outward} color="text-red-700" />
             {result.unmatchedRm > 0 && <ResultCard label='Unmatched RM (item code "NaN")' value={result.unmatchedRm} color="text-red-700" />}
+            {result.missingQtyOrUom > 0 && <ResultCard label="Missing Qty/UOM" value={result.missingQtyOrUom} color="text-amber-700" />}
+            {result.duplicateRecipeLineExtraRows > 0 && <ResultCard label="Duplicate BOM Rows" value={result.duplicateRecipeLineExtraRows} color="text-fuchsia-700" />}
+            {result.skippedMissingProductOrRm > 0 && <ResultCard label="Skipped (no Product/RM)" value={result.skippedMissingProductOrRm} color="text-gray-600" />}
           </div>
+          {result.duplicateRecipeLines?.length > 0 && (
+            <div className="mt-3 bg-fuchsia-50 border border-fuchsia-200 rounded-lg p-3">
+              <p className="text-fuchsia-800 text-xs font-medium mb-1">
+                🔁 {result.duplicateRecipeLines.length} product+ingredient combo(s) appeared more than once in the sheet
+                ({result.duplicateRecipeLineExtraRows} extra row{result.duplicateRecipeLineExtraRows !== 1 ? 's' : ''} total) —
+                recipe_db can only store one qty per product+ingredient, so only the <strong>last</strong> occurrence's qty/uom was kept for each:
+              </p>
+              <div className="max-h-40 overflow-y-auto mt-1.5 space-y-0.5">
+                {result.duplicateRecipeLines.map((d, i) => (
+                  <p key={i} className="text-fuchsia-700 text-xs">"{d.rmName}" in "{d.productName}" — appeared {d.occurrences}× in the sheet</p>
+                ))}
+              </div>
+              <p className="text-fuchsia-700 text-xs mt-1.5">
+                If these should really be separate lines (e.g. two additions of the same ingredient), sum them into one row in the source file before re-importing — the database can't hold two quantities for the same product+ingredient pair.
+              </p>
+            </div>
+          )}
+          {result.skippedMissingProductOrRm > 0 && (
+            <div className="mt-3 bg-gray-50 border border-gray-200 rounded-lg p-3">
+              <p className="text-gray-700 text-xs font-medium">
+                ⛔ {result.skippedMissingProductOrRm} row(s) were skipped entirely — blank Product Name and/or Raw Material. See the row-level warnings below for which ones.
+              </p>
+            </div>
+          )}
           {result.unmatchedRm > 0 && (
             <div className="mt-3 bg-red-50 border border-red-200 rounded-lg p-3">
               <p className="text-red-800 text-xs font-medium mb-1">
@@ -168,6 +195,16 @@ export default function Import() {
               </p>
               <p className="text-red-700 text-xs">
                 Add the missing RM(s) to RM Master with this exact name, then use <strong>Recipe DB → Fix RM Mapping</strong> to reconcile these "NaN" codes to the real item.
+              </p>
+            </div>
+          )}
+          {result.missingQtyOrUom > 0 && (
+            <div className="mt-3 bg-amber-50 border border-amber-200 rounded-lg p-3">
+              <p className="text-amber-800 text-xs font-medium mb-1">
+                ⚠️ {result.missingQtyOrUom} recipe row(s) had a blank or non-numeric Qty Per Unit and/or blank UOM — imported anyway instead of being skipped, with qty set to 0 and/or uom set to "NaN":
+              </p>
+              <p className="text-amber-700 text-xs">
+                Open <strong>Recipe DB</strong> for the affected product(s) and fill in the correct qty/uom for any ingredient showing 0 or "NaN".
               </p>
             </div>
           )}
