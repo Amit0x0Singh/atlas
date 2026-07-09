@@ -5,8 +5,12 @@
  * optional row (tabs, filters) below via `children`. The description is
  * hidden on mobile — same reasoning each page used to apply individually:
  * the explainer isn't worth the vertical space on a small screen.
+ *
+ * `breadcrumb` is an optional small link rendered above the title — for
+ * drill-down pages (e.g. a detail page reached from a list) that need a
+ * "back to list" trail distinct from the page-level Back button in `actions`.
  */
-export default function PageHeader({ icon: Icon, title, description, actions, children, className = '' }) {
+export default function PageHeader({ icon: Icon, title, description, breadcrumb, actions, children, className = '' }) {
   return (
     <div className={`bg-white border-b border-gray-200 px-4 md:px-6 py-3.5 md:py-4 ${className}`}>
       <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -17,6 +21,7 @@ export default function PageHeader({ icon: Icon, title, description, actions, ch
             </span>
           )}
           <div className="min-w-0">
+            {breadcrumb && <div className="-mt-0.5 mb-0.5">{breadcrumb}</div>}
             <h1 className="text-lg md:text-xl font-bold text-gray-900 truncate">{title}</h1>
             {description && (
               <p className="hidden md:block text-xs text-gray-500 mt-0.5 truncate">{description}</p>

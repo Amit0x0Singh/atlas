@@ -46,7 +46,7 @@ export default function RmTable({ items, visibleItems, loading, error, page, lim
                 <th className="text-left px-4 py-3 font-semibold whitespace-nowrap">Item Code</th>
                 <th className="text-left px-4 py-3 font-semibold whitespace-nowrap">Item Name</th>
                 <th className="text-left px-4 py-3 font-semibold whitespace-nowrap">UOM</th>
-                <th className="text-left px-4 py-3 font-semibold whitespace-nowrap">Tracking Type</th>
+                <th className="text-left px-4 py-3 font-semibold whitespace-nowrap">Packing Type</th>
                 <th className="text-left px-4 py-3 font-semibold whitespace-nowrap">Added On</th>
                 <th className="text-left px-4 py-3 font-semibold whitespace-nowrap">Actions</th>
               </tr>
