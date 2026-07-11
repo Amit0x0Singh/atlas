@@ -11,6 +11,7 @@ import prisma from '../../../db.js';
 export const MODELS = {
   // ── Inventory ──────────────────────────────────────────────────────────────
   'rm-master':          { model: 'rmMaster',              idField: 'itemCode',                orderBy: { createdAt: 'desc' } },
+  'packing-material':   { model: 'packingMaterial',        idField: 'id',                      orderBy: { createdAt: 'desc' } },
   'bulk-location':      { model: 'bulkLocation',           idField: 'locationId',              orderBy: { createdAt: 'desc' } },
   'bulk-lot-entry':     { model: 'bulkLotEntry',           idField: 'id',                      orderBy: { createdAt: 'desc' } },
   'bulk-lot-sequence':  { model: 'bulkLotSequence',        idField: ['itemCode', 'year'],       orderBy: { year: 'desc' } },
@@ -22,6 +23,7 @@ export const MODELS = {
   'container-master':   { model: 'containerMaster',        idField: 'containerId'                                             },
   'stock-ledger':       { model: 'stockLedger',            idField: 'id',                      orderBy: { timestamp: 'desc' } },
   'outward':            { model: 'outward',                idField: 'id',                      orderBy: { timestamp: 'desc' } },
+  'bom-issue-session':  { model: 'bomIssueSession',         idField: 'id',                      orderBy: { updatedAt: 'desc' } },
 
   // ── Sales ──────────────────────────────────────────────────────────────────
   'sales-order':               { model: 'salesOrder',             idField: 'id',         orderBy: { createdAt: 'desc' } },
@@ -34,6 +36,7 @@ export const MODELS = {
   // ── Production ─────────────────────────────────────────────────────────────
   'product-master':     { model: 'productMaster',    idField: 'productCode',  orderBy: { createdAt: 'desc' } },
   'equipment-master':   { model: 'equipmentMaster',  idField: 'equipId',      orderBy: { createdAt: 'desc' } },
+  'production-task':    { model: 'productionTask',   idField: 'id',           orderBy: { createdAt: 'desc' } },
   'recipe-db':          { model: 'recipeDb',         idField: 'id',           orderBy: { productCode: 'asc' } },
   'indent-master':      { model: 'indentMaster',     idField: 'indentId',     orderBy: { createdAt: 'desc' } },
   'indent-details':     { model: 'indentDetails',    idField: 'id'                                           },

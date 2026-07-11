@@ -27,7 +27,7 @@ export default function ReconcileModal({ onClose, onFixed }) {
         setData(res.data)
         const auto = {}
         for (const u of res.data.unmatched || []) {
-          if (u.autoSuggest) auto[u.recipeRmCode] = u.autoSuggest.itemCode
+          if (u.autoSuggest) auto[u.recipeRmCode] = { code: u.autoSuggest.itemCode, kind: u.autoSuggest.kind }
         }
         setPendingMappings(auto)
       } catch (e) { alert(e.message) }
@@ -37,8 +37,8 @@ export default function ReconcileModal({ onClose, onFixed }) {
 
   const applyFixes = async () => {
     const mappings = Object.entries(pendingMappings)
-      .filter(([, toCode]) => toCode)
-      .map(([fromCode, toCode]) => ({ fromCode, toCode }))
+      .filter(([, v]) => v?.code)
+      .map(([fromCode, v]) => ({ fromCode, toCode: v.code, kind: v.kind }))
     if (!mappings.length) { alert('No mappings selected'); return }
     setFixing(true)
     try {
@@ -107,13 +107,16 @@ export default function ReconcileModal({ onClose, onFixed }) {
                         <div className="space-y-2">
                           {u.suggestions.map(s => (
                             <label key={s.itemCode} className={`flex items-center gap-3 p-2.5 rounded-lg border cursor-pointer transition
-                              ${pendingMappings[u.recipeRmCode] === s.itemCode ? 'bg-indigo-50 border-indigo-400 ring-2 ring-indigo-200' : 'bg-white border-gray-200 hover:border-indigo-300'}`}>
+                              ${pendingMappings[u.recipeRmCode]?.code === s.itemCode ? 'bg-indigo-50 border-indigo-400 ring-2 ring-indigo-200' : 'bg-white border-gray-200 hover:border-indigo-300'}`}>
                               <input type="radio" name={`map_${u.recipeRmCode}`} value={s.itemCode}
-                                checked={pendingMappings[u.recipeRmCode] === s.itemCode}
-                                onChange={() => setPendingMappings(m => ({ ...m, [u.recipeRmCode]: s.itemCode }))}
+                                checked={pendingMappings[u.recipeRmCode]?.code === s.itemCode}
+                                onChange={() => setPendingMappings(m => ({ ...m, [u.recipeRmCode]: { code: s.itemCode, kind: s.kind } }))}
                                 className="accent-indigo-600" />
                               <div className="flex-1 min-w-0">
                                 <span className="font-semibold text-sm text-gray-900">{s.itemName}</span>
+                                {s.kind === 'product' && (
+                                  <span className="text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-200 rounded px-1.5 py-0.5 ml-2 align-middle">SFG · Product Master</span>
+                                )}
                                 <span className="font-mono text-xs text-indigo-600 ml-2">{s.itemCode}</span>
                               </div>
                               <span className={`text-xs px-2 py-0.5 rounded border font-semibold ${CONFIDENCE_STYLES[s.color]}`}>

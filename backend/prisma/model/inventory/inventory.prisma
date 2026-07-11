@@ -84,18 +84,20 @@ model LotSequence {
 }
 
 model PrintMaster {
-  packId       String    @id @map("pack_id")
-  itemCode     String    @map("item_code")
-  itemName     String    @map("item_name")
-  lotNo        String    @map("lot_no")
-  bagNo        Int       @map("bag_no")
-  packQty      Float     @map("pack_qty")
-  uom          String
-  supplier     String?
-  invoiceNo    String?   @map("invoice_no")
-  receivedDate DateTime? @map("received_date")
-  status       String    @default("AWAITING_INWARD")
-  createdAt    DateTime  @default(now()) @map("created_at")
+  packId            String    @id @map("pack_id")
+  itemCode          String    @map("item_code")
+  itemName          String    @map("item_name")
+  lotNo             String    @map("lot_no")
+  bagNo             Int       @map("bag_no")
+  packQty           Float     @map("pack_qty")
+  uom               String
+  supplier          String?
+  invoiceNo         String?   @map("invoice_no")
+  receivedDate      DateTime? @map("received_date")
+  customerBatchCode String?   @map("customer_batch_code")
+  expiryDate        DateTime? @map("expiry_date")
+  status            String    @default("AWAITING_INWARD")
+  createdAt         DateTime  @default(now()) @map("created_at")
 
   @@unique([itemCode, lotNo, bagNo])
   @@map("print_master")
@@ -177,6 +179,27 @@ model Outward {
   timestamp  DateTime @default(now())
 
   @@map("outward")
+}
+
+// In-progress "Material Issue by BOM" checklist state — a store operator can
+// load a product's BOM and issue lines over multiple visits/scans before it's
+// complete. Persisted here (instead of browser localStorage) so the same
+// in-progress session is visible from any device/login, not just the one
+// that started it.
+model BomIssueSession {
+  id          String   @id
+  planTaskId  String?  @map("plan_task_id")
+  productCode String?  @map("product_code")
+  productName String   @map("product_name")
+  batchQty    Float    @map("batch_qty")
+  batchUom    String   @default("KG") @map("batch_uom")
+  batchRef    String?  @map("batch_ref")
+  diNo        String?  @map("di_no")
+  bomLines    Json     @map("bom_lines")
+  startedAt   DateTime @default(now()) @map("started_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("bom_issue_session")
 }
 
 // ─── ERP GATE & PACK TRACKING ─────────────────────────────────────────────────

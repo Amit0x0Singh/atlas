@@ -43,6 +43,11 @@ export const outwardApi = {
   directIssue:         (data)    => api.post('/outward/direct-issue', data),
   bomDirect:           (data)    => api.post('/outward/bom-direct', data),
   history:             (params)  => api.get('/outward', { params }),
+  bomSessions: {
+    list:   ()         => api.get('/outward/bom-sessions'),
+    upsert: (id, data) => api.put(`/outward/bom-sessions/${encodeURIComponent(id)}`, data),
+    delete: (id)        => api.delete(`/outward/bom-sessions/${encodeURIComponent(id)}`),
+  },
 }
 
 export const sfgApi = {

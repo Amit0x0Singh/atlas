@@ -102,7 +102,7 @@ export const getIndent = async (req, res) => {
 export const listIndents = async (req, res) => {
   try {
     const { status, page = 1, limit = 20 } = req.query
-    const where = status ? { status } : {}
+    const where = status !== undefined ? { status } : {}
     const [total, indents] = await Promise.all([
       prisma.indentMaster.count({ where }),
       prisma.indentMaster.findMany({ where, include: { details: true }, orderBy: [{ status: 'asc' }, { createdAt: 'desc' }], skip: (page - 1) * limit, take: parseInt(limit) })

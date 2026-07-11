@@ -117,7 +117,7 @@ const getBatchLabels = async (req, res) => {
 }
 
 const generatePacks = async (req, res) => {
-  const { itemCode, itemName, numberOfBags, packQty, uom, supplier, invoiceNo, receivedDate } = req.body;
+  const { itemCode, itemName, numberOfBags, packQty, uom, supplier, invoiceNo, receivedDate, customerBatchCode, expiryDate } = req.body;
   try {
     if (!itemCode || !itemName || !numberOfBags || !packQty || !uom)
       return res.status(400).json({ success: false, error: "itemCode, itemName, numberOfBags, packQty, uom are required", code: 'VALIDATION_ERROR' });
@@ -134,7 +134,7 @@ const generatePacks = async (req, res) => {
       return res.status(400).json({ success: false, error: e.message, code: 'VALIDATION_ERROR' });
     }
 
-    const result = await generatePackBatch({ itemCode, itemName, numberOfBags: parseInt(numberOfBags), packQty: canonical.qty, uom: canonical.uom, supplier, invoiceNo, receivedDate });
+    const result = await generatePackBatch({ itemCode, itemName, numberOfBags: parseInt(numberOfBags), packQty: canonical.qty, uom: canonical.uom, supplier, invoiceNo, receivedDate, customerBatchCode, expiryDate });
     return res.status(201).json({ success: true, data: result });
 
   } catch (err) {
@@ -147,7 +147,7 @@ const listInward = async (req, res) => {
 
   try {
 
-    const where = itemCode ? { itemCode } : {} 
+    const where = itemCode !== undefined ? { itemCode } : {}
     const [total, records] = await Promise.all([
       prisma.inward.count({ where }),
       prisma.inward.findMany({ where, orderBy: { inwardTime: 'desc' }, skip: (page - 1) * limit, take: parseInt(limit) })

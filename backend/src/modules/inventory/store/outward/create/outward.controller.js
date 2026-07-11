@@ -221,6 +221,43 @@ const bomDirectIssue = async (req, res) => {
   }
 }
 
+// ─── BOM issuance session (in-progress checklist state) ─────────────────────
+const upsertBomSession = async (req, res) => {
+  const { id } = req.params
+  const { planTaskId, productCode, productName, batchQty, batchUom, batchRef, diNo, bomLines } = req.body
+  if (!id || !productName || batchQty === undefined || !bomLines)
+    return res.status(400).json({ success: false, error: 'id, productName, batchQty, bomLines required', code: 'VALIDATION_ERROR' })
+  try {
+    const data = {
+      productCode: productCode || null,
+      productName,
+      batchQty:    parseFloat(batchQty),
+      batchUom:    batchUom || 'KG',
+      batchRef:    batchRef || null,
+      diNo:        diNo || null,
+      bomLines,
+    }
+    const session = await prisma.bomIssueSession.upsert({
+      where:  { id },
+      create: { id, planTaskId: planTaskId || null, ...data },
+      update: data,
+    })
+    return res.json({ success: true, data: session })
+  } catch (e) {
+    return res.status(400).json({ success: false, error: e.message, code: 'VALIDATION_ERROR' })
+  }
+}
+
+const deleteBomSession = async (req, res) => {
+  try {
+    await prisma.bomIssueSession.delete({ where: { id: req.params.id } })
+    return res.json({ success: true })
+  } catch (e) {
+    // Already deleted / never existed — treat as success, the caller's intent (gone) is satisfied
+    return res.json({ success: true })
+  }
+}
+
 const _issuePack = async ({ indentId, rmCode, packId, forcedQty }) => {
   const detail = await prisma.indentDetails.findFirst({ where: { indentId, rmCode } })
   if (!detail) throw new Error('RM not found in indent')
@@ -271,5 +308,7 @@ export {
   stockAdjustment,
   warehouseTransfer,
   directIssue,
-  bomDirectIssue
+  bomDirectIssue,
+  upsertBomSession,
+  deleteBomSession
 }

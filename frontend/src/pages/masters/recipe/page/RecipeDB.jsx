@@ -57,9 +57,15 @@ export default function RecipeDB() {
     setBomRows(prev => prev.map((r, i) => i === idx ? { ...r, [field]: value, _dirty: true } : r))
   }
 
-  const selectRm = (idx, rm) => {
+  // `picked` is either an RM Master row ({ itemCode, itemName, uom }) or a
+  // Product Master row ({ productCode, productName }) — a recipe component
+  // can legitimately be an SFG (semi-finished good) used as an ingredient,
+  // in which case its code lives in Product Master, not RM Master.
+  const selectRm = (idx, picked, kind = 'rm') => {
+    const code = kind === 'product' ? picked.productCode : picked.itemCode
+    const name = kind === 'product' ? picked.productName : picked.itemName
     setBomRows(prev => prev.map((r, i) =>
-      i === idx ? { ...r, rmCode: rm.itemCode, rmName: rm.itemName, uom: rm.uom, _dirty: true } : r
+      i === idx ? { ...r, rmCode: code, rmName: name, uom: kind === 'product' ? r.uom : picked.uom, _dirty: true } : r
     ))
   }
 
@@ -93,6 +99,7 @@ export default function RecipeDB() {
     setSaving(true); setMsg({ type: '', text: '' })
     try {
       const payload = toSave.map(r => ({
+        id: r.id || undefined,
         productCode: selectedProduct.productCode,
         productName: selectedProduct.productName,
         rmCode: r.rmCode, rmName: r.rmName,
@@ -129,6 +136,7 @@ export default function RecipeDB() {
           bomRows={bomRows}
           loadId={loadId}
           rmList={rmList}
+          productList={productList}
           saving={saving}
           msg={msg}
           onAddRow={addRow}

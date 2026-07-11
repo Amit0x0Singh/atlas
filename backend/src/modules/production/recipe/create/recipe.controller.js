@@ -17,11 +17,31 @@ export const bulkSaveRecipe = async (req, res) => {
       } catch (e) {
         return res.status(400).json({ success: false, error: `Row for ${r.rmName}: ${e.message}`, code: 'VALIDATION_ERROR' })
       }
-      await prisma.recipeDb.upsert({
-        where: { productCode_rmCode: { productCode: r.productCode, rmCode: r.rmCode } },
-        create: { productCode: r.productCode, productName: r.productName, rmCode: r.rmCode, rmName: r.rmName, qtyPerUnit: canonical.qty, uom: canonical.uom, roleType: r.roleType || 'INGREDIENT' },
-        update: { productName: r.productName, rmName: r.rmName, qtyPerUnit: canonical.qty, uom: canonical.uom, roleType: r.roleType || 'INGREDIENT' }
-      })
+      const data = { productCode: r.productCode, productName: r.productName, rmName: r.rmName, qtyPerUnit: canonical.qty, uom: canonical.uom, roleType: r.roleType || 'INGREDIENT' }
+
+      if (r.id) {
+        // Editing an existing row: if the corrected name now resolves to a
+        // *different* code than before, this must rename that same row in
+        // place (targeted by its own id) — upserting by (productCode, rmCode)
+        // would instead insert a brand-new row under the new code and leave
+        // the stale original row sitting there untouched.
+        const collision = await prisma.recipeDb.findUnique({ where: { productCode_rmCode: { productCode: r.productCode, rmCode: r.rmCode } } })
+        if (collision && collision.id !== r.id) {
+          // Another row already owns the target code — merge into it (that
+          // row wins) and drop this one, rather than violating the unique
+          // constraint on (productCode, rmCode).
+          await prisma.recipeDb.update({ where: { id: collision.id }, data })
+          await prisma.recipeDb.delete({ where: { id: r.id } })
+        } else {
+          await prisma.recipeDb.update({ where: { id: r.id }, data: { ...data, rmCode: r.rmCode } })
+        }
+      } else {
+        await prisma.recipeDb.upsert({
+          where: { productCode_rmCode: { productCode: r.productCode, rmCode: r.rmCode } },
+          create: { ...data, rmCode: r.rmCode },
+          update: data,
+        })
+      }
       saved++
     }
     return res.json({ success: true, saved, message: `${saved} rows saved` })
@@ -38,8 +58,18 @@ export const fixRmMapping = async (req, res) => {
     const log = []
     for (const m of mappings) {
       if (!m.fromCode || !m.toCode) continue
-      const targetRm = await prisma.rmMaster.findUnique({ where: { itemCode: m.toCode } })
-      if (!targetRm) { log.push({ from: m.fromCode, error: `Target RM ${m.toCode} not found in RM Master` }); continue }
+      // A mapping target can be an RM Master item, or (kind: 'product') an
+      // SFG being used as an ingredient — resolved from Product Master instead.
+      let targetName
+      if (m.kind === 'product') {
+        const targetProduct = await prisma.productMaster.findUnique({ where: { productCode: m.toCode } })
+        if (!targetProduct) { log.push({ from: m.fromCode, error: `Target product ${m.toCode} not found in Product Master` }); continue }
+        targetName = targetProduct.productName
+      } else {
+        const targetRm = await prisma.rmMaster.findUnique({ where: { itemCode: m.toCode } })
+        if (!targetRm) { log.push({ from: m.fromCode, error: `Target RM ${m.toCode} not found in RM Master` }); continue }
+        targetName = targetRm.itemName
+      }
       const affected = await prisma.recipeDb.findMany({ where: { rmCode: m.fromCode } })
       for (const row of affected) {
         try {
@@ -48,7 +78,7 @@ export const fixRmMapping = async (req, res) => {
             await prisma.recipeDb.update({ where: { productCode_rmCode: { productCode: row.productCode, rmCode: m.toCode } }, data: { qtyPerUnit: row.qtyPerUnit, uom: row.uom } })
             await prisma.recipeDb.delete({ where: { id: row.id } })
           } else {
-            await prisma.recipeDb.update({ where: { id: row.id }, data: { rmCode: m.toCode, rmName: targetRm.itemName } })
+            await prisma.recipeDb.update({ where: { id: row.id }, data: { rmCode: m.toCode, rmName: targetName } })
           }
           totalFixed++
         } catch (e) { log.push({ from: m.fromCode, rowId: row.id, error: e.message }) }

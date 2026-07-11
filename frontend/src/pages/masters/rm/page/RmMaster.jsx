@@ -1,16 +1,21 @@
-﻿import { useState, useEffect, useRef } from 'react'
-import { Plus, Package } from 'lucide-react'
+import { useState, useEffect, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Plus, Package, PackageOpen } from 'lucide-react'
 import { rmApi } from '../../../../api/inventory.js'
+import { packingMaterialApi } from '../../../../api/masters.js'
 import './RmMaster.css'
 import { Button, BackButton, PageHeader } from '../../../../components/ui'
+import { getChips } from '../../packing/components/packing-constants/packingConstants.jsx'
 import RmTable from '../components/rm-table/RmTable.jsx'
 import RmForm  from '../components/rm-form/RmForm.jsx'
 
 export default function RmMaster() {
+  const navigate = useNavigate()
+
   const [items, setItems]       = useState([])
   const [loading, setLoading]   = useState(true)
   const [error, setError]       = useState('')
-  const [search, setSearch]     = useState('')
+  const [filters, setFilters]   = useState({ itemCode: '', itemName: '', uom: '', packingSpec: '' })
   const [filterType, setFilterType] = useState('ALL')
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing]   = useState(null)
@@ -20,33 +25,36 @@ export default function RmMaster() {
   const [page, setPage]         = useState(1)
   const [limit, setLimit]       = useState(15)
 
-  // Guards against out-of-order responses — if the user keeps typing, an
-  // older request can resolve after a newer one and would otherwise
-  // overwrite fresher results with stale data.
-  const requestSeq = useRef(0)
+  // Packing materials live in their own table (packing_materials) — fetched
+  // here purely so they can be *displayed* alongside RM items in one unified
+  // overview table. Nothing about the two schemas merges; editing a packing
+  // item still only happens on the dedicated Packing Materials page.
+  const [packingItems, setPackingItems]     = useState([])
+  const [loadingPacking, setLoadingPacking] = useState(true)
 
+  // Both lists load in full, once — every filter (code, name, UOM, type,
+  // packing spec) is then applied client-side below, same as the existing
+  // packing-item filtering already did. No server round-trip per keystroke.
   const load = async () => {
-    const seq = ++requestSeq.current
     try {
       setLoading(true)
-      const res = await rmApi.list({ search })
-      if (seq !== requestSeq.current) return
+      const res = await rmApi.list({})
       setItems(res.data || [])
       setError('')
-    } catch (e) { if (seq === requestSeq.current) setError(e.message) }
-    finally { if (seq === requestSeq.current) setLoading(false) }
+    } catch (e) { setError(e.message) }
+    finally { setLoading(false) }
   }
 
-  // First render loads immediately; subsequent search changes are debounced
-  // (~300ms after the user stops typing) instead of re-fetching on every
-  // keystroke, so it isn't re-fetching (and re-rendering the table) mid-word.
-  const didMount = useRef(false)
-  useEffect(() => {
-    if (!didMount.current) { didMount.current = true; load(); return }
-    const t = setTimeout(load, 300)
-    return () => clearTimeout(t)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search])
+  const loadPacking = async () => {
+    try {
+      setLoadingPacking(true)
+      const res = await packingMaterialApi.list()
+      setPackingItems(res.data || [])
+    } catch { /* silent — packing materials are supplementary on this page */ }
+    finally { setLoadingPacking(false) }
+  }
+
+  useEffect(() => { load(); loadPacking() }, [])
 
   const openAdd = () => {
     setEditing(null)
@@ -74,7 +82,57 @@ export default function RmMaster() {
     try { await rmApi.delete(code); load() } catch (e) { alert(e.message) }
   }
 
-  const visibleItems = items.filter(i => filterType === 'ALL' || (i.trackingType || 'PACK') === filterType)
+  const goToPacking = () => navigate('/packing-master')
+
+  const matchesText = (val, q) => !q || (val || '').toLowerCase().includes(q)
+  const specTextFor = (p) => [p.subType, p.category, ...getChips(p).map(c => c.label)].filter(Boolean).join(' ').toLowerCase()
+
+  // Packing rows only surface in "ALL" or the dedicated "PACKING" view —
+  // PACK/BULK is an RM-only tracking-type distinction that doesn't apply to
+  // them, and a Packing Spec filter (a field only packing items have) never
+  // matches an RM row, so it naturally excludes them below.
+  const visiblePacking = useMemo(() => {
+    if (filterType !== 'ALL' && filterType !== 'PACKING') return []
+    const code = filters.itemCode.trim().toLowerCase()
+    const name = filters.itemName.trim().toLowerCase()
+    const spec = filters.packingSpec.trim().toLowerCase()
+    return packingItems
+      .filter(p =>
+        matchesText(p.itemCode, code) &&
+        matchesText(p.itemName, name) &&
+        (!filters.uom || p.uom === filters.uom) &&
+        (!spec || specTextFor(p).includes(spec))
+      )
+      .map(p => ({ ...p, kind: 'packing' }))
+  }, [packingItems, filterType, filters])
+
+  const visibleRm = useMemo(() => {
+    if (filterType === 'PACKING' || filters.packingSpec.trim()) return []
+    const code = filters.itemCode.trim().toLowerCase()
+    const name = filters.itemName.trim().toLowerCase()
+    return items
+      .filter(i =>
+        (filterType === 'ALL' || (i.trackingType || 'PACK') === filterType) &&
+        matchesText(i.itemCode, code) &&
+        matchesText(i.itemName, name) &&
+        (!filters.uom || i.uom === filters.uom)
+      )
+      .map(i => ({ ...i, kind: 'rm' }))
+  }, [items, filterType, filters])
+
+  const visibleItems = [...visibleRm, ...visiblePacking]
+  const packCount = items.filter(i => (i.trackingType || 'PACK') === 'PACK').length
+  const bulkCount = items.filter(i => i.trackingType === 'BULK').length
+
+  const uomOptions = useMemo(() => {
+    const set = new Set()
+    items.forEach(i => i.uom && set.add(i.uom))
+    packingItems.forEach(p => p.uom && set.add(p.uom))
+    return [...set].sort()
+  }, [items, packingItems])
+
+  const setFilter = (field, value) => { setFilters(f => ({ ...f, [field]: value })); setPage(1) }
+  const clearFilters = () => { setFilters({ itemCode: '', itemName: '', uom: '', packingSpec: '' }); setFilterType('ALL'); setPage(1) }
 
   return (
     <div className="flex flex-col h-full">
@@ -87,6 +145,7 @@ export default function RmMaster() {
           <span className="text-green-600 font-medium">BULK</span> = location QR (bags/labels/consumables in bulk)
         </>}
         actions={<>
+          <Button variant="outline-gray" icon={PackageOpen} onClick={goToPacking}>Packing Materials</Button>
           <Button variant="primary" icon={Plus} onClick={openAdd}>Add New Item</Button>
           <BackButton />
         </>}
@@ -94,18 +153,24 @@ export default function RmMaster() {
 
       <div className="p-6">
       <RmTable
-        items={items}
+        rmTotal={items.length}
+        packingTotal={packingItems.length}
+        packCount={packCount}
+        bulkCount={bulkCount}
         visibleItems={visibleItems}
-        loading={loading}
+        loading={loading || loadingPacking}
         error={error}
         page={page}
         limit={limit}
-        search={search}
+        filters={filters}
+        uomOptions={uomOptions}
         filterType={filterType}
-        onSearch={v => { setSearch(v); setPage(1) }}
+        onFilterChange={setFilter}
+        onClearFilters={clearFilters}
         onFilterType={t => { setFilterType(t); setPage(1) }}
         onEdit={openEdit}
         onDelete={del}
+        onViewPacking={goToPacking}
         onPageChange={setPage}
         onLimitChange={l => { setLimit(l); setPage(1) }}
       />

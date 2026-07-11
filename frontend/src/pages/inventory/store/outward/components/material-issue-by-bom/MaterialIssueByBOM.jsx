@@ -3,13 +3,15 @@ import { outwardApi, containerApi } from '../../../../../../api/inventory.js'
 import { recipeApi, productApi } from '../../../../../../api/masters.js'
 import { planTasksApi, indentApi } from '../../../../../../api/production.js'
 import QRScanner from '../../../../../../components/QRScanner/QRScanner.jsx'
-import { Button, BackButton, IconButton } from '../../../../../../components/ui'
-import { Camera, X } from 'lucide-react'
-import { readSessions, saveSession, deleteSession } from './bomSessions.js'
-import { readIssuedKeys, markIssued } from './issuedTasks.js'
+import { Button, BackButton, IconButton, BottomSheet } from '../../../../../../components/ui'
+import { Camera, X, Loader2, ClipboardList, FlaskConical } from 'lucide-react'
+import { PLANT_BADGE, statusBadgeCls } from '../../../../../production/planning/data/plantConfig.js'
+import { useIsMobile } from '../../../../../../hooks/useIsMobile.js'
 import './MaterialIssueByBOM.css'
 
 export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
+  const isMobile = useIsMobile()
+
   // ─── Step / product selection ──────────────────────────────────────────
   const [step, setStep]             = useState('select')
   const [products, setProducts]     = useState([])
@@ -30,7 +32,6 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
   // yet issued must stay visible today. Defaulting this to today's date used
   // to silently hide every still-pending task from a previous day.
   const [taskFilter,   setTaskFilter]   = useState({ plant: '', date: '' })
-  const [issuedKeys,   setIssuedKeys]   = useState(() => readIssuedKeys())
 
   // ─── Session ──────────────────────────────────────────────────────────────
   const [sessionId, setSessionId] = useState(null)
@@ -76,7 +77,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
   const filteredTasks = tasks.filter(t =>
     t.sent &&
     t.status !== 'Completed' &&
-    !issuedKeys.has(t.id) &&
+    !t.bomIssueStarted &&
     (!taskFilter.plant || t.plant === taskFilter.plant) &&
     (!taskFilter.date  || t.date  === taskFilter.date)
   )
@@ -95,18 +96,17 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
     setError('')
   }
 
-  // Auto-save on every bomLines change
+  // Auto-save on every bomLines change — persisted server-side (not just this
+  // browser) so the same in-progress session is visible from any device/login.
   useEffect(() => {
     if (!sessionId || step !== 'bom') return
-    saveSession({
-      id: sessionId,
+    outwardApi.bomSessions.upsert(sessionId, {
+      planTaskId:  selTaskId || null,
       productCode: selProduct?.productCode || '',
       productName: selProduct?.productName || '',
       batchQty, batchUom, batchRef, diNo,
-      startedAt: readSessions().find(s => s.id === sessionId)?.startedAt || new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
       bomLines,
-    })
+    }).catch(() => {})
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bomLines, sessionId])
 
@@ -151,8 +151,10 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
       setActiveIdx(null)
       setLineMsg({})
       setStep('bom')
-      markIssued(selTaskId)
-      setIssuedKeys(readIssuedKeys())
+      if (selTaskId) {
+        planTasksApi.update(selTaskId, { bomIssueStarted: true, bomIssueStartedAt: new Date().toISOString() }).catch(() => {})
+        setTasks(prev => prev.map(t => t.id === selTaskId ? { ...t, bomIssueStarted: true } : t))
+      }
     } catch (e) { setError(e.message) }
     finally { setLoadingBom(false) }
   }
@@ -176,9 +178,13 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
   // Resume a session requested from outside (e.g. the BOM Issued history page)
   useEffect(() => {
     if (!resumeSessionId) return
-    const s = readSessions().find(x => x.id === resumeSessionId)
-    if (s) resumeSession(s)
-    onAutoResumed?.()
+    outwardApi.bomSessions.list()
+      .then(r => {
+        const s = (r.data || []).find(x => x.id === resumeSessionId)
+        if (s) resumeSession(s)
+      })
+      .catch(() => {})
+      .finally(() => onAutoResumed?.())
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resumeSessionId])
 
@@ -245,7 +251,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
     // issued and the only drift was a since-removed, never-issued line) —
     // there's no manual Delete button on the history page anymore, so a
     // session left "fully issued" here would otherwise sit stuck forever.
-    if (merged.every(l => l.issued >= l.required - 0.001)) deleteSession(sessionId)
+    if (merged.every(l => l.issued >= l.required - 0.001)) outwardApi.bomSessions.delete(sessionId).catch(() => {})
   }
 
   // ─── Load packs + containers silently (for scan matching only) ───────────
@@ -351,7 +357,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
       const remaining = parseFloat((line.required - newIssued).toFixed(3))
       if (remaining <= 0.001) {
         setActiveIdx(null)
-        if (updatedLines.filter(l => !l.orphaned).every(l => l.issued >= l.required - 0.001)) deleteSession(sessionId)
+        if (updatedLines.filter(l => !l.orphaned).every(l => l.issued >= l.required - 0.001)) outwardApi.bomSessions.delete(sessionId).catch(() => {})
       } else {
         // More qty needed — reset scan, keep panel open
         setScanInput(''); setFoundSource(null); setScanErr(''); setIssueQty(String(remaining.toFixed(3)))
@@ -374,10 +380,43 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
 
 
   if (step === 'select') {
-    return (
-      <div className="p-4 md:p-6 max-w-3xl">
+    const clearSelection = () => { setSelProduct(null); setBatchQty(''); setBatchUom('KG'); setBatchRef(''); setDiNo(''); setSelTaskId(null) }
 
-        <p className="text-sm text-gray-500 mb-5">
+    const taskDetailBody = (
+      <>
+        <dl className="space-y-2 text-sm mb-4">
+          <div className="flex items-center justify-between gap-3">
+            <dt className="text-gray-400">Batch Qty</dt>
+            <dd className="font-semibold text-gray-800">{batchQty || '—'} {batchUom}</dd>
+          </div>
+          {batchRef && (
+            <div className="flex items-center justify-between gap-3">
+              <dt className="text-gray-400">Batch Ref</dt>
+              <dd className="font-mono text-xs text-gray-700 truncate max-w-[170px]">{batchRef}</dd>
+            </div>
+          )}
+          {diNo && (
+            <div className="flex items-center justify-between gap-3">
+              <dt className="text-gray-400">DI No.</dt>
+              <dd className="text-gray-700">{diNo}</dd>
+            </div>
+          )}
+        </dl>
+
+        <Button onClick={loadBom}
+          disabled={loadingBom || !selProduct || !batchQty || parseFloat(batchQty) <= 0}
+          loading={loadingBom}
+          variant="purple"
+          fullWidth>
+          {loadingBom ? 'Loading BOM…' : 'Load BOM & Start Issuing'}
+        </Button>
+      </>
+    )
+
+    return (
+      <div className="p-4 md:p-6 max-w-6xl">
+
+        <p className="text-sm text-gray-500 mb-4">
           Select a production task to issue raw materials by BOM. Progress is auto-saved — you can leave and resume any time.
         </p>
 
@@ -385,81 +424,116 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm">{error}</div>
         )}
 
-        {/* Task picker filters */}
-        <div className="flex gap-3 mb-4 flex-wrap">
-          <select value={taskFilter.plant} onChange={e => setTaskFilter(f => ({ ...f, plant: e.target.value }))}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white outline-none focus:ring-2 focus:ring-indigo-400">
-            <option value="">All Plants</option>
-            {['Nano', 'Botanical', 'Liquid', 'Powder', 'Granules'].map(p => <option key={p}>{p}</option>)}
-          </select>
-          <input type="date" value={taskFilter.date} onChange={e => setTaskFilter(f => ({ ...f, date: e.target.value }))}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-400" />
+        <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-6 items-start">
+
+          {/* ── Left: filters + task list ──────────────────────────────── */}
+          <div>
+            <div className="flex items-center gap-3 mb-3 flex-wrap">
+              <select value={taskFilter.plant} onChange={e => setTaskFilter(f => ({ ...f, plant: e.target.value }))}
+                className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white outline-none focus:ring-2 focus:ring-indigo-400">
+                <option value="">All Plants</option>
+                {['Nano', 'Botanical', 'Liquid', 'Powder', 'Granules'].map(p => <option key={p}>{p}</option>)}
+              </select>
+              <input type="date" value={taskFilter.date} onChange={e => setTaskFilter(f => ({ ...f, date: e.target.value }))}
+                className="border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-400" />
+              {!loadingTasks && (
+                <span className="text-xs text-gray-400 ml-auto">{filteredTasks.length} task{filteredTasks.length !== 1 ? 's' : ''}</span>
+              )}
+            </div>
+
+            {/* Task list — the right-hand panel now owns the sticky action,
+                so this list is free to scroll a taller viewport in place. */}
+            {loadingTasks ? (
+              <div className="py-14 text-center text-gray-400">
+                <Loader2 size={22} className="animate-spin mx-auto mb-2" />
+                Loading tasks…
+              </div>
+            ) : filteredTasks.length === 0 ? (
+              <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-10 text-center">
+                <ClipboardList size={26} className="mx-auto mb-2 text-gray-300" />
+                <p className="text-sm text-gray-500 font-medium">No active tasks for selected date / plant</p>
+                <p className="text-xs text-gray-400 mt-1">Tasks must be sent from the Planning page first</p>
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-[68vh] overflow-y-auto pr-1 -mr-1">
+                {filteredTasks.map(task => {
+                  // Compare by the task's own id, not productName+qty — multiple
+                  // cycles of the same batch (same product, same qty, different
+                  // batch code) would otherwise all match at once as soon as any
+                  // one of them was selected.
+                  const isSelected = selTaskId === task.id
+                  return (
+                    <button key={task.id} type="button"
+                      onClick={() => selectTask(task)}
+                      className={`w-full text-left border rounded-xl px-4 py-3 transition hover:border-indigo-400 hover:bg-indigo-50/60 hover:shadow-sm ${
+                        isSelected ? 'border-indigo-400 bg-indigo-50 shadow-sm ring-1 ring-indigo-200' : 'border-gray-200 bg-white'
+                      }`}>
+                      <div className="flex items-start gap-3">
+                        <span className={`shrink-0 w-9 h-9 rounded-lg flex items-center justify-center ${PLANT_BADGE[task.plant] || 'bg-gray-100 text-gray-600 border border-gray-200'}`}>
+                          <FlaskConical size={16} />
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="font-semibold text-gray-900 text-sm truncate">{task.productName}</div>
+                            <span className={`shrink-0 text-[10px] px-2 py-0.5 rounded-full font-bold ${statusBadgeCls(task.status)}`}>{task.status}</span>
+                          </div>
+                          <div className="flex items-center gap-3 mt-1 flex-wrap text-xs text-gray-400">
+                            {task.date && <span>{task.date}</span>}
+                            <span className="font-medium text-gray-600">{task.qty} {task.qtyUom || 'KG'}</span>
+                            {task.batchCode && <span className="font-mono">{task.batchCode}</span>}
+                            {task.diNo      && <span>{task.diNo}</span>}
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${PLANT_BADGE[task.plant] || 'bg-gray-100 text-gray-600'}`}>{task.plant}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* ── Right: sticky selected-task detail panel (desktop/tablet only —
+              on mobile the same content opens as a bottom-sheet popup below,
+              since there's no room for a fixed side panel on a phone). ──── */}
+          {!isMobile && (
+            <aside className="xl:sticky xl:top-6 bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+              {selProduct ? (
+                <div className="p-4">
+                  <div className="flex items-start gap-2.5 mb-4">
+                    <span className="shrink-0 w-9 h-9 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                      <FlaskConical size={16} />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-bold text-indigo-400 uppercase tracking-wide">Selected Task</p>
+                      <p className="text-sm font-bold text-gray-900 truncate">{selProduct.productName}</p>
+                    </div>
+                    <IconButton icon={X} onClick={clearSelection} variant="ghost" size="xs" tooltip="Clear selection" className="ml-auto flex-shrink-0" />
+                  </div>
+
+                  {taskDetailBody}
+                </div>
+              ) : (
+                <div className="px-5 py-10 text-center">
+                  <ClipboardList size={26} className="mx-auto mb-2 text-gray-300" />
+                  <p className="text-sm text-gray-500 font-medium">No task selected</p>
+                  <p className="text-xs text-gray-400 mt-1">Pick a task from the list to see its details here</p>
+                </div>
+              )}
+            </aside>
+          )}
+
         </div>
 
-        {/* Task list */}
-        {loadingTasks ? (
-          <p className="text-sm text-gray-400 py-6 text-center">Loading tasks...</p>
-        ) : filteredTasks.length === 0 ? (
-          <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-6 text-center mb-4">
-            <p className="text-sm text-gray-500 font-medium">No active tasks for selected date / plant</p>
-            <p className="text-xs text-gray-400 mt-1">Tasks must be sent from the Planning page first</p>
-          </div>
-        ) : (
-          <div className="space-y-2 mb-4">
-            {filteredTasks.map(task => {
-              // Compare by the task's own id, not productName+qty — multiple
-              // cycles of the same batch (same product, same qty, different
-              // batch code) would otherwise all match at once as soon as any
-              // one of them was selected.
-              const isSelected = selTaskId === task.id
-              return (
-                <button key={task.id} type="button"
-                  onClick={() => selectTask(task)}
-                  className={`w-full text-left border rounded-xl px-4 py-3 transition hover:border-indigo-400 hover:bg-indigo-50/60 ${
-                    isSelected ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200 bg-white'
-                  }`}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-gray-900 text-sm">{task.productName}</div>
-                      <div className="flex items-center gap-3 mt-0.5 flex-wrap text-xs text-gray-400">
-                        {task.date && <span>{task.date}</span>}
-                        <span className="font-medium text-gray-600">{task.qty} {task.qtyUom || 'KG'}</span>
-                        {task.batchCode && <span className="font-mono">{task.batchCode}</span>}
-                        {task.diNo      && <span>{task.diNo}</span>}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-bold">{task.plant}</span>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-                        task.status === 'Under Process' ? 'bg-blue-100 text-blue-700' :
-                        task.status === 'Not Started'   ? 'bg-gray-100 text-gray-500'  :
-                                                          'bg-amber-100 text-amber-700'
-                      }`}>{task.status}</span>
-                    </div>
-                  </div>
-                </button>
-              )
-            })}
-          </div>
+        {/* ── Mobile: selected-task detail opens as a popup instead of an
+            inline side panel — pops up automatically once a task is picked. */}
+        {isMobile && (
+          <BottomSheet open={!!selProduct} onClose={clearSelection} title={selProduct?.productName || 'Selected Task'}>
+            <div className="p-4">
+              {taskDetailBody}
+            </div>
+          </BottomSheet>
         )}
-
-        {/* Selected task summary */}
-        {selProduct && (
-          <div className="mb-4 flex items-center gap-2 flex-wrap bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2">
-            <span className="text-sm font-semibold text-indigo-900 truncate max-w-full">{selProduct.productName}</span>
-            <span className="text-xs text-indigo-500 flex-shrink-0">· {batchQty} {batchUom}</span>
-            {batchRef && <span className="text-xs font-mono text-gray-400 truncate">· {batchRef}</span>}
-            <IconButton icon={X} onClick={() => { setSelProduct(null); setBatchQty(''); setBatchUom('KG'); setBatchRef(''); setSelTaskId(null) }} variant="ghost" size="xs" tooltip="Clear" className="ml-auto flex-shrink-0" />
-          </div>
-        )}
-
-        <Button onClick={loadBom}
-          disabled={loadingBom || !selProduct || !batchQty || parseFloat(batchQty) <= 0}
-          loading={loadingBom}
-          variant="purple"
-          fullWidth>
-          {loadingBom ? 'Loading BOM...' : 'Load BOM & Start Issuing'}
-        </Button>
       </div>
     )
   }

@@ -1,15 +1,20 @@
 import prisma from '../../../../db.js'
 
+
+// List all GRNs (grouped by invoiceNo + supplier) with summary info
+
 const listGrn = async (req, res) => {
 
-  try {
+  try { 
     const packs = await prisma.printMaster.findMany({
       where: { invoiceNo: { not: null } },
       orderBy: { createdAt: 'desc' },
     })
 
     const groups = {}
+
     for (const p of packs) {
+      
       const key = `${p.invoiceNo || 'NO-INV'}__${p.supplier || 'Unknown'}`
 
       if (!groups[key]) {
@@ -43,6 +48,8 @@ const listGrn = async (req, res) => {
   }
 }
 
+
+/// Get GRN detail for a specific invoice number (and optional supplier)
 const getGrnDetail = async (req, res) => {
   const { invoiceNo, supplier } = req.query
 

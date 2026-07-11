@@ -58,6 +58,18 @@ export const getPackDetail = async (req, res) => {
   }
 }
 
+// In-progress BOM issuance sessions — read by both the active issuing screen
+// (to resume/auto-save) and the BOM Issued history page. Stored server-side
+// so the same session is visible from any device/login.
+export const listBomSessions = async (req, res) => {
+  try {
+    const sessions = await prisma.bomIssueSession.findMany({ orderBy: { updatedAt: 'desc' } })
+    return res.json({ success: true, data: sessions })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+  }
+}
+
 export const getAvailablePacks = async (req, res) => {
   try {
     const packs = await prisma.packBalance.findMany({

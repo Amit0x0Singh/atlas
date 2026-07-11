@@ -83,6 +83,12 @@ model ProductionTask {
   bmrSubmittedAt DateTime? @map("bmr_submitted_at") @db.Timestamptz()
   sentToQc      Boolean   @default(false) @map("sent_to_qc")
   sentToQcAt    DateTime? @map("sent_to_qc_at") @db.Timestamptz()
+  // Set once a store operator has opened this task for BOM material issuance
+  // (Material Issue by BOM page) — persisted server-side so the task drops
+  // out of the pending picker on every device, not just the browser that
+  // started it.
+  bomIssueStarted   Boolean   @default(false) @map("bom_issue_started")
+  bomIssueStartedAt DateTime? @map("bom_issue_started_at") @db.Timestamptz()
   createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
 

@@ -4,9 +4,16 @@ import { X, Pencil, Trash2, Pin, PinOff } from 'lucide-react';
 import StatusBadge, { BoolBadge } from '../common/StatusBadge.jsx';
 import Button from '../common/Button.jsx';
 
-function renderValue(value, fieldName) {
+function renderValue(value, fieldName, fieldType) {
   if (value === null || value === undefined || value === '') {
     return <span className="text-slate-300 dark:text-slate-600 italic">empty</span>;
+  }
+  if (fieldType === 'json') {
+    return (
+      <pre className="font-mono text-xs whitespace-pre-wrap break-all bg-slate-50 dark:bg-slate-800 rounded px-2 py-1.5 text-slate-600 dark:text-slate-300">
+        {JSON.stringify(value, null, 2)}
+      </pre>
+    );
   }
   if (Array.isArray(value)) {
     return (
@@ -81,7 +88,7 @@ export default function RowDetailDrawer({ resource, record, onClose, onEdit, onD
               {resource.fields.map((field) => (
                 <div key={field.name} className="grid grid-cols-[140px_1fr] gap-4 py-3 border-b border-slate-50 dark:border-slate-800/60 last:border-0">
                   <div className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wide pt-0.5">{field.label}</div>
-                  <div className="text-sm text-slate-700 dark:text-slate-300 break-words">{renderValue(record[field.name], field.name)}</div>
+                  <div className="text-sm text-slate-700 dark:text-slate-300 break-words">{renderValue(record[field.name], field.name, field.type)}</div>
                 </div>
               ))}
             </div>

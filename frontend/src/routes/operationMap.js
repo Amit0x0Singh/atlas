@@ -29,9 +29,15 @@ export const OPERATION_ROUTES = [
   // should see or edit.
   { prefix: '/sales-orders',    operation: 'admin' },
 
-  // Dashboard, Master Data, and Data Import are admin-only — view and edit.
-  { prefix: '/stock',           operation: 'admin' },
-  { prefix: '/rm-material',     operation: 'admin' },
+  // Dashboard and the RM Material stock overview are also visible to the
+  // store team (read access to overall stock/production numbers is useful
+  // for them) — admin still always passes regardless of what a route
+  // requires, so this doesn't narrow admin's access at all, only adds
+  // store on top of it.
+  { prefix: '/stock',           operation: 'store' },
+  { prefix: '/rm-material',     operation: 'store' },
+
+  // Master Data and Data Import stay admin-only — view and edit.
   { prefix: '/packing-master',  operation: 'admin' },
   { prefix: '/rm-master',       operation: 'admin' },
   { prefix: '/product-master',  operation: 'admin' },

@@ -15,7 +15,7 @@ const qrBuffer = async (text) => {
 export const listContainers = async (req, res) => {
   try {
     const { itemCode } = req.query
-    const where = itemCode ? { itemCode } : {}
+    const where = itemCode !== undefined ? { itemCode } : {}
     const containers = await prisma.containerMaster.findMany({ where, orderBy: { itemName: 'asc' } })
     return res.json({ success: true, data: containers })
   } catch (err) {

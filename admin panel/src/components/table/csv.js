@@ -7,7 +7,9 @@ export function exportToCsv(resource, records) {
   const headers = resource.fields.map((f) => f.name);
   const escape = (val) => {
     if (val === null || val === undefined) return '';
-    const str = Array.isArray(val) ? val.join('|') : String(val);
+    const str = Array.isArray(val)
+      ? (val.some((v) => v !== null && typeof v === 'object') ? JSON.stringify(val) : val.join('|'))
+      : typeof val === 'object' ? JSON.stringify(val) : String(val);
     return /[",\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
   };
   const lines = [

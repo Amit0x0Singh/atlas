@@ -15,7 +15,7 @@ const qrBuffer = async (text) => {
 export const listLocations = async (req, res) => {
   try {
     const { itemCode } = req.query
-    const where = itemCode ? { itemCode } : {}
+    const where = itemCode !== undefined ? { itemCode } : {}
     const locs = await prisma.bulkLocation.findMany({
       where, orderBy: { createdAt: 'desc' },
       include: { lotEntries: { where: { status: 'ACTIVE' }, orderBy: { createdAt: 'asc' } } }

@@ -19,6 +19,7 @@ function toInputValue(value, type) {
     return date.toISOString().slice(0, 10);
   }
   if (type === 'tags') return Array.isArray(value) ? value.join(', ') : value;
+  if (type === 'json') return JSON.stringify(value, null, 2);
   return value ?? '';
 }
 
@@ -26,6 +27,7 @@ function normalizeValue(value, type) {
   if (value === '') return null;
   if (type === 'number') return Number(value);
   if (type === 'tags') return String(value).split(',').map((s) => s.trim()).filter(Boolean);
+  if (type === 'json') return JSON.parse(value);
   if (type === 'datetime-local') return new Date(value).toISOString();
   if (type === 'date') return new Date(`${value}T00:00:00`).toISOString();
   return value;
@@ -103,6 +105,20 @@ export default function DataFormModal({ mode, resource, record, onClose, onSubmi
                       value={form[field.name] ?? ''}
                       onChange={(e) => updateField(field.name, e.target.value)}
                       className="w-full border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-slate-50 dark:disabled:bg-slate-800/50"
+                    />
+                  </div>
+                );
+              }
+              if (field.type === 'json') {
+                return (
+                  <div key={field.name} className="sm:col-span-2">
+                    <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">{field.label}</label>
+                    <textarea
+                      rows={10}
+                      disabled={field.readOnly}
+                      value={form[field.name] ?? ''}
+                      onChange={(e) => updateField(field.name, e.target.value)}
+                      className="w-full border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-xs font-mono bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-slate-50 dark:disabled:bg-slate-800/50"
                     />
                   </div>
                 );

@@ -11,9 +11,13 @@ import EmptyState from '../common/EmptyState.jsx';
 import { TableSkeleton } from '../common/PageSkeleton.jsx';
 import ActionMenu from './ActionMenu.jsx';
 
-function CellValue({ value, fieldName }) {
+function CellValue({ value, fieldName, fieldType }) {
   if (value === null || value === undefined || value === '') {
     return <span className="text-slate-300 dark:text-slate-600">—</span>;
+  }
+  if (fieldType === 'json') {
+    const count = Array.isArray(value) ? value.length : Object.keys(value).length;
+    return <span className="text-xs text-slate-500 dark:text-slate-400 italic">{count} item{count !== 1 ? 's' : ''}</span>;
   }
   if (Array.isArray(value)) {
     return <span className="font-mono text-xs text-slate-600 dark:text-slate-400">{value.join(', ')}</span>;
@@ -59,7 +63,7 @@ export default function DataTable({
     accessorKey: f.name,
     header: f.label,
     size: 180,
-    cell: (info) => <CellValue value={info.getValue()} fieldName={f.name} />,
+    cell: (info) => <CellValue value={info.getValue()} fieldName={f.name} fieldType={f.type} />,
   })), [resource]);
 
   const table = useReactTable({

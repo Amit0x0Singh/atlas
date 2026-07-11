@@ -150,8 +150,8 @@ export const updateTask = async (req, res) => {
     str('equipment'); str('location'); str('carrier'); str('specs'); str('remarks')
     str('primaryPack'); str('inners'); str('secondaryPack'); str('labels'); str('packAfter'); str('sfgSourceId')
     flt('unitPackQty'); flt('noUnits'); flt('unitsPerSecPack'); flt('totalSecPacks')
-    bool('sent'); bool('bmrSubmitted'); bool('sentToQc')
-    dt('timerStart'); dt('timerEnd'); dt('bmrSubmittedAt'); dt('sentToQcAt')
+    bool('sent'); bool('bmrSubmitted'); bool('sentToQc'); bool('bomIssueStarted')
+    dt('timerStart'); dt('timerEnd'); dt('bmrSubmittedAt'); dt('sentToQcAt'); dt('bomIssueStartedAt')
 
     const task = await prisma.productionTask.update({ where: { id }, data })
 

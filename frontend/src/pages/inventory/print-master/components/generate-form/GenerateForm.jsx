@@ -19,12 +19,45 @@ import "./GenerateForm.css";
 
 const todayStr = () => new Date().toISOString().split("T")[0];
 
+// Most raw materials carry a manufacturer-stated shelf life (e.g. "2 years
+// from manufacturing date") rather than a printed expiry date — so instead
+// of asking the operator to do that date math by hand, they enter however
+// much shelf life is *remaining* (years + months) and the system adds that
+// to the received date itself.
+//
+// Formats using local getters (not toISOString, which converts through UTC)
+// — the date math above is done in local time, so converting back via UTC
+// can silently shift the result a day in either direction depending on the
+// browser's timezone offset.
+function toISODateLocal(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function calcExpiryDate(receivedDate, years, months) {
+  const y = parseInt(years) || 0;
+  const m = parseInt(months) || 0;
+  if (!receivedDate || (!y && !m)) return "";
+  const d = new Date(receivedDate + "T00:00:00");
+  d.setFullYear(d.getFullYear() + y);
+  d.setMonth(d.getMonth() + m);
+  return toISODateLocal(d);
+}
+
+function fmtDateLabel(iso) {
+  if (!iso) return "";
+  return new Date(iso + "T00:00:00").toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+}
+
 const BLANK_ITEM = {
   selectedItem: null,   // { itemCode, itemName, uom, _type: 'rm'|'pm', _pmData?: {...} }
   numberOfBags: "",
   packQty: "",
   customerBatchCode: "",
-  expiryDate: "",
+  remainingYears: "",
+  remainingMonths: "",
 };
 const BLANK_HDR = { supplier: "", invoiceNo: "", receivedDate: todayStr() };
 
@@ -73,7 +106,7 @@ function PmChips({ pmData }) {
 }
 
 // ── Per-item line ─────────────────────────────────────────────────────────────
-function ItemLine({ idx, item, rmList, pmList, onChange, onRemove, canRemove }) {
+function ItemLine({ idx, item, rmList, pmList, receivedDate, onChange, onRemove, canRemove }) {
   const [search, setSearch]     = useState(item.selectedItem?.itemName || "");
   const [showDrop, setShowDrop] = useState(false);
   const [nextLot, setNextLot]   = useState("");
@@ -278,21 +311,43 @@ function ItemLine({ idx, item, rmList, pmList, onChange, onRemove, canRemove }) 
         />
       </div>
 
-      {/* Expiry date — only for Raw Materials */}
-      {!isPm && (
-        <div style={{ marginTop: "10px" }}>
-          <label style={{ ...lbl, color: "#6b7280" }}>
-            Expiry Date
-            <span style={{ fontWeight: 400, fontSize: "11px", marginLeft: "4px", color: "#9ca3af" }}>(optional)</span>
-          </label>
-          <input
-            type="date"
-            value={item.expiryDate || ""}
-            onChange={e => onChange({ ...item, expiryDate: e.target.value })}
-            style={{ ...inp, background: "#fafafa" }}
-          />
-        </div>
-      )}
+      {/* Shelf life remaining — only for Raw Materials. Most RMs are labelled
+          with a total shelf life from their manufacturing date rather than a
+          printed expiry date, so the operator enters however much of that
+          shelf life is left (years + months) and the expiry date is derived
+          from the received date automatically instead of being hand-calculated. */}
+      {!isPm && (() => {
+        const expiryDate = calcExpiryDate(receivedDate, item.remainingYears, item.remainingMonths);
+        return (
+          <div style={{ marginTop: "10px" }}>
+            <label style={{ ...lbl, color: "#6b7280" }}>
+              Shelf Life Remaining
+              <span style={{ fontWeight: 400, fontSize: "11px", marginLeft: "4px", color: "#9ca3af" }}>(optional)</span>
+            </label>
+            <div className="gf-qty-grid">
+              <div>
+                <input type="number" min="0" step="1"
+                  value={item.remainingYears}
+                  onChange={e => onChange({ ...item, remainingYears: e.target.value })}
+                  placeholder="Years" style={{ ...inp, background: "#fafafa" }}
+                />
+              </div>
+              <div>
+                <input type="number" min="0" max="11" step="1"
+                  value={item.remainingMonths}
+                  onChange={e => onChange({ ...item, remainingMonths: e.target.value })}
+                  placeholder="Months" style={{ ...inp, background: "#fafafa" }}
+                />
+              </div>
+            </div>
+            {expiryDate && (
+              <p style={{ margin: "6px 0 0", fontSize: "12px", color: "#15803d", fontWeight: 600 }}>
+                → Expiry Date: {fmtDateLabel(expiryDate)}
+              </p>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -368,7 +423,7 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed }) {
           numberOfBags:      parseInt(it.numberOfBags),
           packQty:           parseFloat(it.packQty),
           customerBatchCode: it.customerBatchCode || undefined,
-          expiryDate:        it.expiryDate        || undefined,
+          expiryDate:        calcExpiryDate(hdr.receivedDate, it.remainingYears, it.remainingMonths) || undefined,
         });
         allResults.push(res.data);
       }
@@ -454,6 +509,7 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed }) {
                 item={it}
                 rmList={rmList}
                 pmList={pmList}
+                receivedDate={hdr.receivedDate}
                 onChange={next => updateItem(i, next)}
                 onRemove={() => removeItem(i)}
                 canRemove={items.length > 1}

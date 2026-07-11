@@ -1,5 +1,5 @@
 import {
-  LayoutDashboard, Package, Boxes,
+  LayoutDashboard, Package,
   Layers, FlaskConical, Settings2, Users, GitBranch, Microscope,
   Truck, Thermometer,
   Printer, ArrowDownToLine, ArrowUpFromLine, Container, BarChart2,
@@ -15,7 +15,6 @@ export const APP_NAV = [
     items: [
       { to: '/stock',           label: 'Dashboard',       Icon: LayoutDashboard },
       { to: '/rm-material',     label: 'RM Material',     Icon: Package },
-      { to: '/packing-master',  label: 'Packing Material', Icon: Boxes },
     ],
   },
   {

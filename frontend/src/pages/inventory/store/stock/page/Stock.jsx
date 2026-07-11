@@ -1,14 +1,14 @@
 ﻿import './Stock.css'
 import { useState, useEffect, useCallback } from "react";
 import { stockApi } from "../../../../../api/inventory.js";
-import { BackButton, IconButton } from "../../../../../components/ui";
+import { BackButton, IconButton, PageHeader } from "../../../../../components/ui";
 import { PERIODS } from "../components/utils.js";
 import RawMaterialsSection from "../components/raw-materials-section/RawMaterialsSection.jsx";
 import GateSection from "../components/gate-section/GateSection.jsx";
 import StoreSection from "../components/store-section/StoreSection.jsx";
 import ProductionSection from "../components/production-section/ProductionSection.jsx";
 import SalesSection from "../components/sales-section/SalesSection.jsx";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, LayoutDashboard } from "lucide-react";
 
 export default function Stock() {
   const [period, setPeriod] = useState("today");
@@ -47,31 +47,20 @@ export default function Stock() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-6 py-7">
-        {/* Header */}
-        <div className="flex justify-between items-start mb-7">
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">ERP Dashboard</h1>
-            <p className="text-xs text-gray-400 mt-0.5">
-              SOM Phytopharma · operational overview
-              {ts && (
-                <>
-                  {" "}
-                  · refreshed{" "}
-                  {ts.toLocaleTimeString("en-IN", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </>
-              )}
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <IconButton icon={RefreshCw} onClick={load} tooltip="Refresh" variant="outline-gray" size="sm" />
-            <BackButton />
-          </div>
-        </div>
+      <PageHeader
+        icon={LayoutDashboard}
+        title="ERP Dashboard"
+        description={<>
+          SOM Phytopharma · operational overview
+          {ts && <> · refreshed {ts.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}</>}
+        </>}
+        actions={<>
+          <IconButton icon={RefreshCw} onClick={load} tooltip="Refresh" variant="outline-gray" size="sm" />
+          <BackButton />
+        </>}
+      />
 
+      <div className="max-w-7xl mx-auto px-6 py-7">
         {/* Period selector */}
         <div className="flex gap-1 mb-8 bg-white border border-gray-200 rounded-xl p-1 w-fit shadow-sm">
           {PERIODS.map((p) => (

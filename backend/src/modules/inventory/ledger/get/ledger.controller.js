@@ -3,7 +3,7 @@ import prisma from '../../../../db.js'
 export const listLedger = async (req, res) => {
   try {
     const { itemCode, limit = 50, page = 1 } = req.query
-    const where = itemCode ? { itemCode } : {}
+    const where = itemCode !== undefined ? { itemCode } : {}
     const [total, rows] = await Promise.all([
       prisma.stockLedger.count({ where }),
       prisma.stockLedger.findMany({

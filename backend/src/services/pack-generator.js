@@ -12,7 +12,7 @@ export function buildPackId(lbl, itemCode, year, lotNo, bagNo) {
   return `${lbl}-${itemCode}-${year}-${lotSeq}-${bagStr}`
 }
 
-export async function generatePackBatch({ itemCode, itemName, numberOfBags, packQty, uom, supplier, invoiceNo, receivedDate }) {
+export async function generatePackBatch({ itemCode, itemName, numberOfBags, packQty, uom, supplier, invoiceNo, receivedDate, customerBatchCode, expiryDate }) {
   const year = new Date().getFullYear()
   const lotNo = await generateLotNo(itemCode, year)
   const lbl = extractLbl(itemName)
@@ -30,6 +30,8 @@ export async function generatePackBatch({ itemCode, itemName, numberOfBags, pack
       supplier: supplier || null,
       invoiceNo: invoiceNo || null,
       receivedDate: receivedDate ? new Date(receivedDate) : null,
+      customerBatchCode: customerBatchCode || null,
+      expiryDate: expiryDate ? new Date(expiryDate) : null,
       status: 'AWAITING_INWARD',
     })
   }

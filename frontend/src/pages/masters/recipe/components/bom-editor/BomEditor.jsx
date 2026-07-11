@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react'
+﻿import { useState, useEffect, useMemo } from 'react'
 import { Plus, Save, Trash2 } from 'lucide-react'
 import { Button, IconButton } from '../../../../../components/ui'
 import './BomEditor.css'
@@ -10,7 +10,7 @@ const ROLE_TYPE_STYLE = {
   MICROBE:    'bg-emerald-100 text-emerald-700',
 }
 
-export default function BomEditor({ selectedProduct, bomRows, loadId, rmList, saving, msg, onAddRow, onSaveAll, onUpdateRow, onSelectRm, onRemoveRow }) {
+export default function BomEditor({ selectedProduct, bomRows, loadId, rmList, productList = [], saving, msg, onAddRow, onSaveAll, onUpdateRow, onSelectRm, onRemoveRow }) {
   const [rmDropIdx, setRmDropIdx] = useState(null)
   const [rmSearch, setRmSearch]   = useState({})
 
@@ -25,17 +25,32 @@ export default function BomEditor({ selectedProduct, bomRows, loadId, rmList, sa
     setRmSearch(map)
   }, [loadId]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const filteredRm = (search) =>
-    rmList.filter(r => !search ||
-      r.itemName.toLowerCase().includes(search.toLowerCase()) ||
-      r.itemCode.toLowerCase().includes(search.toLowerCase())
-    )
+  const productByCode = useMemo(() => new Map(productList.map(p => [p.productCode, p])), [productList])
 
-  const handleSelectRm = (idx, rm) => {
-    setRmSearch(s => ({ ...s, [idx]: rm.itemName }))
-    setRmDropIdx(null)
-    onSelectRm(idx, rm)
+  // A recipe component isn't always a raw material — it can be an SFG
+  // (semi-finished good) used as an ingredient, which lives in Product
+  // Master with a product code instead of an RM item code. Search both.
+  const filteredRm = (search) => {
+    const q = (search || '').toLowerCase()
+    const rmHits = rmList
+      .filter(r => !q || r.itemName.toLowerCase().includes(q) || r.itemCode.toLowerCase().includes(q))
+      .map(r => ({ kind: 'rm', code: r.itemCode, name: r.itemName, uom: r.uom, raw: r }))
+    const productHits = productList
+      .filter(p => !q || p.productName.toLowerCase().includes(q) || p.productCode.toLowerCase().includes(q))
+      .map(p => ({ kind: 'product', code: p.productCode, name: p.productName, raw: p }))
+    return [...rmHits, ...productHits]
   }
+
+  const handleSelectRm = (idx, hit) => {
+    setRmSearch(s => ({ ...s, [idx]: hit.name }))
+    setRmDropIdx(null)
+    onSelectRm(idx, hit.raw, hit.kind)
+  }
+
+  // Whether the (already-resolved) code sitting in a row is a Product Master
+  // code, so the readonly Item Code cell can flag it as an SFG rather than
+  // implying it's a raw material.
+  const isProductCode = (code) => !!code && productByCode.has(code)
 
   if (!selectedProduct) {
     return (
@@ -119,13 +134,16 @@ export default function BomEditor({ selectedProduct, bomRows, loadId, rmList, sa
                     />
                     {rmDropIdx === idx && filteredRm(rmSearch[idx]).length > 0 && (
                       <div className="absolute z-30 left-2 right-2 bg-white border border-gray-200 rounded-lg shadow-xl mt-0.5 max-h-44 overflow-y-auto">
-                        {filteredRm(rmSearch[idx]).map(rm => (
-                          <button key={rm.itemCode} type="button"
-                            onMouseDown={() => handleSelectRm(idx, rm)}
+                        {filteredRm(rmSearch[idx]).map(hit => (
+                          <button key={`${hit.kind}-${hit.code}`} type="button"
+                            onMouseDown={() => handleSelectRm(idx, hit)}
                             className="w-full text-left px-3 py-2 hover:bg-blue-50 text-sm border-b border-gray-50 last:border-0">
-                            <span className="font-medium">{rm.itemName}</span>
-                            <span className="text-gray-400 text-xs ml-2">{rm.itemCode}</span>
-                            <span className="text-gray-300 text-xs ml-1">· {rm.uom}</span>
+                            <span className="font-medium">{hit.name}</span>
+                            {hit.kind === 'product' && (
+                              <span className="text-[9px] font-bold text-blue-600 bg-blue-50 border border-blue-200 rounded px-1 py-0.5 ml-2 align-middle">SFG</span>
+                            )}
+                            <span className="text-gray-400 text-xs ml-2">{hit.code}</span>
+                            {hit.uom && <span className="text-gray-300 text-xs ml-1">· {hit.uom}</span>}
                           </button>
                         ))}
                       </div>
@@ -133,8 +151,13 @@ export default function BomEditor({ selectedProduct, bomRows, loadId, rmList, sa
                   </td>
 
                   <td className="px-2 py-1">
-                    <input value={row.rmCode} readOnly
-                      className="w-full border border-gray-100 rounded px-2 py-1.5 text-xs bg-gray-50 font-mono text-blue-700" />
+                    <div className="relative">
+                      <input value={row.rmCode} readOnly
+                        className={`w-full border border-gray-100 rounded px-2 py-1.5 text-xs bg-gray-50 font-mono ${isProductCode(row.rmCode) ? 'text-blue-700 pr-9' : 'text-blue-700'}`} />
+                      {isProductCode(row.rmCode) && (
+                        <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-blue-600 bg-blue-50 border border-blue-200 rounded px-1 py-0.5" title="This code comes from Product Master (SFG), not RM Master">SFG</span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-2 py-1">
                     <input type="number" step="0.001" min="0" value={row.qtyPerUnit}

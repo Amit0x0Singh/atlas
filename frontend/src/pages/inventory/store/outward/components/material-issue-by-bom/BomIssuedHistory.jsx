@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo, Fragment } from 'react'
 import { outwardApi } from '../../../../../../api/inventory.js'
 import { Button } from '../../../../../../components/ui'
 import { ChevronDown, ChevronRight } from 'lucide-react'
-import { readSessions } from './bomSessions.js'
 
 function fmtDate(iso) {
   return new Date(iso).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
@@ -26,15 +25,21 @@ const STATUS_STYLE = {
 }
 
 export default function BomIssuedHistory({ onResume }) {
-  const [sessions, setSessions] = useState(() => readSessions())
+  const [sessions, setSessions] = useState([])
   const [histRows, setHistRows] = useState([])
   const [loading, setLoading]   = useState(true)
   const [expanded, setExpanded] = useState(null)
 
   useEffect(() => {
     setLoading(true)
-    outwardApi.history({ limit: 300 })
-      .then(r => setHistRows((r.data || []).filter(row => row.sourceType === 'BOM_ISSUANCE')))
+    Promise.all([
+      outwardApi.history({ limit: 300 }),
+      outwardApi.bomSessions.list(),
+    ])
+      .then(([histRes, sessRes]) => {
+        setHistRows((histRes.data || []).filter(row => row.sourceType === 'BOM_ISSUANCE'))
+        setSessions(sessRes.data || [])
+      })
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [])

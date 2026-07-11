@@ -53,7 +53,7 @@ export function fromComponents(comps, minRows) {
   return rows
 }
 
-export default function ComponentsTable({ rows, onChange, rmList = [], onSaveCorrections, savingCorrections }) {
+export default function ComponentsTable({ rows, onChange, rmList = [], products = [], onSaveCorrections, savingCorrections }) {
   const rowCountRef = useRef(null)
   const [suggestIdx, setSuggestIdx] = useState(null)
 
@@ -63,35 +63,54 @@ export default function ComponentsTable({ rows, onChange, rmList = [], onSaveCor
     return map
   }, [rmList])
 
-  const rmByCode = useMemo(() => {
+  // A recipe component isn't always a raw material — it can be an SFG
+  // (semi-finished good), which lives in Product Master with a product
+  // code instead of an RM item code. Only fall back to "NAN" once a name
+  // matches neither list.
+  const productByNameLower = useMemo(() => {
     const map = new Map()
-    rmList.forEach(rm => map.set(rm.itemCode, rm))
+    products.forEach(p => map.set((p.productName || '').trim().toLowerCase(), p))
     return map
-  }, [rmList])
+  }, [products])
 
-  const matchFor = (name) => rmByNameLower.get((name || '').trim().toLowerCase())
+  // Returns { code, kind: 'rm' | 'product' } | undefined
+  const matchFor = (name) => {
+    const key = (name || '').trim().toLowerCase()
+    const rm = rmByNameLower.get(key)
+    if (rm) return { code: rm.itemCode, kind: 'rm', item: rm }
+    const product = productByNameLower.get(key)
+    if (product) return { code: product.productCode, kind: 'product', item: product }
+    return undefined
+  }
 
   const suggestionsFor = (text) => {
     const q = (text || '').trim().toLowerCase()
-    if (!q || !rmList.length) return []
-    return rmList.filter(rm => (rm.itemName || '').toLowerCase().includes(q)).slice(0, 8)
+    if (!q) return []
+    const rmHits = rmList.filter(rm => (rm.itemName || '').toLowerCase().includes(q))
+      .map(rm => ({ kind: 'rm', code: rm.itemCode, name: rm.itemName, uom: rm.uom }))
+    const productHits = products.filter(p => (p.productName || '').toLowerCase().includes(q))
+      .map(p => ({ kind: 'product', code: p.productCode, name: p.productName }))
+    return [...rmHits, ...productHits].slice(0, 8)
   }
 
-  // Rows whose typed name now resolves to a *different* RM than the one this
-  // row was originally loaded from (recipe_db) — real, save-able corrections.
-  // Manually typed rows (no rmCode, never came from a saved recipe) have
-  // nothing to reconcile against, so they're excluded here even if unmatched.
+  // Rows whose typed name now resolves to a *different* code than the one
+  // this row was originally loaded from (recipe_db) — real, save-able
+  // corrections. Manually typed rows (no rmCode, never came from a saved
+  // recipe) have nothing to reconcile against, so they're excluded here even
+  // if unmatched. The match can be an RM Master item or a Product Master
+  // item (an SFG used as an ingredient) — either kind is save-able, tagged
+  // so the backend knows which master table to resolve it against.
   const corrections = useMemo(() => {
     const seen = new Map()
     for (const r of rows) {
       if (!r.rmCode || (r.comp || '').trim().startsWith('##')) continue
       const matched = matchFor(r.comp)
-      if (matched && matched.itemCode !== r.rmCode) {
-        seen.set(r.rmCode, { fromCode: r.rmCode, toCode: matched.itemCode })
+      if (matched && matched.code !== r.rmCode) {
+        seen.set(r.rmCode, { fromCode: r.rmCode, toCode: matched.code, kind: matched.kind })
       }
     }
     return [...seen.values()]
-  }, [rows, rmByNameLower])
+  }, [rows, rmByNameLower, productByNameLower])
 
   const applyRowCount = () => {
     const n = Math.max(1, Math.min(200, parseInt(rowCountRef.current.value, 10) || 25))
@@ -107,8 +126,8 @@ export default function ComponentsTable({ rows, onChange, rmList = [], onSaveCor
     onChange(next)
   }
 
-  const pickSuggestion = (idx, rm) => {
-    updateCell(idx, 'comp', rm.itemName)
+  const pickSuggestion = (idx, suggestion) => {
+    updateCell(idx, 'comp', suggestion.name)
     setSuggestIdx(null)
   }
 
@@ -158,8 +177,11 @@ export default function ComponentsTable({ rows, onChange, rmList = [], onSaveCor
       {corrections.length > 0 && (
         <div className="px-4 py-2.5 bg-amber-50 border-b border-amber-200 flex items-center gap-3 flex-wrap text-[12px]">
           <span className="text-amber-800">
-            ⚠ <b>{corrections.length}</b> corrected name{corrections.length !== 1 ? 's' : ''} ready to save back to Recipe Master.
-            This updates the RM mapping for <b>every product</b> that uses the old code, not just this batch.
+            ⚠ <b>{corrections.length}</b> corrected name{corrections.length !== 1 ? 's' : ''} ready to save back to Recipe Master
+            {corrections.some(c => c.kind === 'product') && (
+              <span className="ml-1 text-[9px] font-bold text-blue-600 bg-blue-50 border border-blue-200 rounded px-1 py-0.5 align-middle">includes SFG</span>
+            )}.
+            This updates the mapping for <b>every product</b> that uses the old code, not just this batch.
           </span>
           <button type="button" onClick={() => onSaveCorrections?.(corrections)} disabled={savingCorrections}
             className="ml-auto inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white rounded-lg font-semibold whitespace-nowrap">
@@ -202,11 +224,16 @@ export default function ComponentsTable({ rows, onChange, rmList = [], onSaveCor
                       className={`w-full px-2 py-1.5 outline-none bg-transparent focus:bg-indigo-50 ${isHeader ? 'font-bold text-amber-800' : ''}`} />
                     {suggestions.length > 0 && (
                       <div className="absolute z-30 left-0 right-0 top-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-52 overflow-y-auto">
-                        {suggestions.map(rm => (
-                          <button key={rm.itemCode} type="button" onMouseDown={() => pickSuggestion(idx, rm)}
+                        {suggestions.map(s => (
+                          <button key={`${s.kind}-${s.code}`} type="button" onMouseDown={() => pickSuggestion(idx, s)}
                             className="w-full text-left px-3 py-1.5 text-[12px] hover:bg-indigo-50 border-b border-gray-50 last:border-0 flex items-center justify-between gap-2">
-                            <span className="font-medium text-gray-800 truncate">{rm.itemName}</span>
-                            <span className="font-mono text-[10px] text-gray-400 flex-shrink-0">{rm.itemCode}</span>
+                            <span className="font-medium text-gray-800 truncate">{s.name}</span>
+                            <span className="flex items-center gap-1.5 flex-shrink-0">
+                              {s.kind === 'product' && (
+                                <span className="text-[9px] font-bold text-blue-600 bg-blue-50 border border-blue-200 rounded px-1 py-0.5">SFG</span>
+                              )}
+                              <span className="font-mono text-[10px] text-gray-400">{s.code}</span>
+                            </span>
                           </button>
                         ))}
                       </div>
@@ -214,9 +241,16 @@ export default function ComponentsTable({ rows, onChange, rmList = [], onSaveCor
                   </td>
                   <td className="p-0 px-2">
                     {isHeader || !hasText ? null : matched ? (
-                      <span className="font-mono text-[12px] text-emerald-700">{matched.itemCode}</span>
+                      matched.kind === 'product' ? (
+                        <span className="inline-flex items-center gap-1 font-mono text-[12px] text-blue-700" title="Matched a Product Master item (SFG) — this is a product code, not a raw material code">
+                          <span className="text-[9px] font-bold text-blue-600 bg-blue-50 border border-blue-200 rounded px-1 py-0.5 font-sans">SFG</span>
+                          {matched.code}
+                        </span>
+                      ) : (
+                        <span className="font-mono text-[12px] text-emerald-700">{matched.code}</span>
+                      )
                     ) : (
-                      <span className="font-mono text-[12px] font-bold text-red-600" title="This name doesn't match any Raw Material Master item">NAN</span>
+                      <span className="font-mono text-[12px] font-bold text-red-600" title="This name doesn't match any Raw Material Master or Product Master item">NAN</span>
                     )}
                   </td>
                   <td className="p-0"><input value={r.qty} onChange={e => updateCell(idx, 'qty', e.target.value)}

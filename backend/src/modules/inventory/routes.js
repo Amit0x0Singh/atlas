@@ -38,10 +38,10 @@ InventoryRouter.use("/containers", ContainersRouter);
 InventoryRouter.use("/bulk", BulkLocationRouter);
 
 // ── Import ────────────────────────────────────────────────────────────────────
-InventoryRouter.use("/import", ImportRouter);
+InventoryRouter.use("/import", ImportRouter);  
 
 // ── Gate (Inward + Outward) ───────────────────────────────────────────────────
-InventoryRouter.use("/gate", GateRouter);
+InventoryRouter.use("/gate", GateRouter);    // review completed
 
 // ── Adjustments sub-router ────────────────────────────────────────────────────
 InventoryRouter.use("/inventory", adjustmentsRouter);

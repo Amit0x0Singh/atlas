@@ -78,7 +78,7 @@ export default function IssueBomTab({
   form, setForm, rows, setRows, settings, setSettings,
   productSuggestions, onProductSearch, onSelectProduct, recipeLoadedMsg,
   onGenerate, generating, error,
-  rmList, onSaveCorrections, savingCorrections,
+  rmList, products, onSaveCorrections, savingCorrections,
 }) {
   const [pasteLabel, setPasteLabel] = useState('')
   const [showSugg, setShowSugg]     = useState(false)
@@ -227,7 +227,7 @@ export default function IssueBomTab({
 
           <ComponentsTable
             rows={rows} onChange={setRows}
-            rmList={rmList} onSaveCorrections={onSaveCorrections} savingCorrections={savingCorrections}
+            rmList={rmList} products={products} onSaveCorrections={onSaveCorrections} savingCorrections={savingCorrections}
           />
 
           {/* Issuance settings */}
