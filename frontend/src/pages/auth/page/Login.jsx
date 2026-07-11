@@ -2,8 +2,8 @@
  * ERP Login Page — email + password
  */
 import { useState } from 'react'
-import { useAuth } from '../../components/auth/AuthContext.jsx'
-import { Button } from '../../components/ui'
+import { useAuth } from '../../../components/auth/AuthContext.jsx'
+import { Button } from '../../../components/ui/index.js'
 import './Login.css'
 
 export default function Login({ onLogin }) {
@@ -28,13 +28,14 @@ export default function Login({ onLogin }) {
       <div className="login-card">
         {/* Wordmark */}
         <div className="login-wordmark">
-          <div className="login-wordmark__name">SOM PHYTOPHARMA</div>
-          <div className="login-wordmark__sub">ERP — BIOFERTILIZER MANUFACTURING</div>
+          <div className="login-logo-wrap">
+            <img src="/login_logo.jpeg" alt="Atlas" className="login-logo" />
+          </div>
         </div>
 
         <form onSubmit={handleLogin}>
           <div className="login-field">
-            <label className="login-label">EMAIL</label>
+            <label className="login-label">Username</label>
             <input
               type="email"
               value={form.email}

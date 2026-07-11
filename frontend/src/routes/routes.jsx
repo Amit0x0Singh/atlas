@@ -1,7 +1,7 @@
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 
 import AppSidebar from "../components/menu-bar/page/menu-bar.jsx";
-import Login from "../pages/erp/Login.jsx";
+import Login from "../pages/auth/page/Login.jsx";
 import { useApp } from "../context/context.jsx";
 import { operationForPath, DEFAULT_PATH_FOR_OPERATION } from "./operationMap.js";
 

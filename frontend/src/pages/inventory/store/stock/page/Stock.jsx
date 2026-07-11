@@ -51,7 +51,7 @@ export default function Stock() {
         icon={LayoutDashboard}
         title="ERP Dashboard"
         description={<>
-          SOM Phytopharma · operational overview
+          Atlas · operational overview
           {ts && <> · refreshed {ts.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}</>}
         </>}
         actions={<>

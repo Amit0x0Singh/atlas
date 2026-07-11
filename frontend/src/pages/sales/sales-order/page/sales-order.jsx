@@ -312,7 +312,7 @@ const SalesOrder = () => {
       <PageHeader
         icon={ShoppingCart}
         title="Sales Orders"
-        description={`SOM Phytopharma — ${orders.length} orders total`}
+        description={`Atlas — ${orders.length} orders total`}
         actions={<BackButton />}
       />
 

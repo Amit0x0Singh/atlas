@@ -110,9 +110,9 @@ export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onClo
             </button>
           ) : (
             <>
-              <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">S</div>
+              <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">A</div>
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">SOM ERP</p>
+                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">Atlas</p>
                 <p className="text-[11px] text-slate-400 truncate">Admin Data Panel</p>
               </div>
               <button

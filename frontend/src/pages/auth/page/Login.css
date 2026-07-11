@@ -11,7 +11,7 @@
 }
 
 .login-card {
-  background: #fff;
+  background: #f9f9f9;
   border-radius: 16px;
   width: 100%;
   max-width: 380px;
@@ -29,22 +29,32 @@
 
 .login-wordmark {
   text-align: center;
-  margin-bottom: 28px;
+  margin-bottom: 15px;
 }
 
-.login-wordmark__name {
-  font-size: 22px;
-  font-weight: 800;
-  color: #0f172a;
-  letter-spacing: -0.02em;
+.login-logo-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* width: 220px; */
+  width: 100%;
+  height: 108px;
+  border-radius: 16px;
+  overflow: hidden;
+  border: none;
+  /* background: #f1f5f9; */
 }
 
-.login-wordmark__sub {
-  font-size: 11px;
-  color: #94a3b8;
-  letter-spacing: 0.12em;
-  font-weight: 600;
-  margin-top: 3px;
+.login-logo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  /* Source image is a large canvas with generous whitespace around the
+     mark itself — scaling it up before cropping brings the actual logo
+     to fill the badge instead of floating in a sea of margin. */
+  transform: scale(1.55);
 }
 
 /* Tab switcher */
@@ -93,6 +103,7 @@
   color: #64748b;
   margin-bottom: 5px;
   font-weight: 600;
+  text-transform: uppercase;
 }
 
 .login-input {

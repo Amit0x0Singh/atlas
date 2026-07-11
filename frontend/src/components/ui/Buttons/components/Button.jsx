@@ -25,7 +25,7 @@ const SIZES = {
 }
 
 /**
- * Central button component for the entire SOM ERP app.
+ * Central button component for the entire Atlas app.
  *
  * Props:
  *   variant      — 'primary' | 'secondary' | 'danger' | 'danger-solid' |

@@ -24,10 +24,10 @@ export default function SidebarHeader({ sidebarOpen, onCollapse, onExpand }) {
         <>
           <div className="sh-brand">
             <div className="sh-logo-box">
-              <img src="/logo.png" alt="SOM" />
+              <img src="/logo.jpg" alt="Atlas" />
             </div>
             <div className="sh-brand-text">
-              <div className="sh-brand-name">SOM ERP</div>
+              <div className="sh-brand-name">Atlas</div>
               <div className="sh-brand-sub">MANUFACTURING</div>
             </div>
           </div>
