@@ -21,30 +21,30 @@ function account(email, password, operation, role, plant = null) {
 
 export const accounts = [
   // ── Gate ──
-  account('gate@agrilife.com', 'gate123', 'gate', 'admin'),
-  account('gateemployee@agrilife.com', 'gateemployee123', 'gate', 'employee'),
+  account('gate@agrilife.com', 'gate@745', 'gate', 'admin'),
+  account('gateemployee@agrilife.com', 'gate@7405emp', 'gate', 'employee'),
 
   // ── Store ──
-  account('store@agrilife.com', 'store123', 'store', 'admin'),
-  account('storeemployee@agrilife.com', 'storeemployee123', 'store', 'employee'),
+  account('store@agrilife.com', 'store@789', 'store', 'admin'),
+  account('storeemployee@agrilife.com', 'store@7890emp', 'store', 'employee'),
 
   // ── Admin (super-admin — full access to every operation) ──
-  account('admin@agrilife.com', 'admin123', 'admin', 'admin'),
-  account('adminemployee@agrilife.com', 'adminemployee123', 'admin', 'employee'),
+  account('admin@agrilife.com', 'admin@2005', 'admin', 'admin'),
+  account('adminemployee@agrilife.com', 'admin@2005emp', 'admin', 'employee'),
 
   // ── Production — six plants, each its own operation-scoped account pair ──
-  account('microbial@agrilife.com', 'microbial123', 'production', 'admin', 'Microbial'),
-  account('microbialemployee@agrilife.com', 'microbialemployee123', 'production', 'employee', 'Microbial'),
-  account('nano@agrilife.com', 'nano123', 'production', 'admin', 'Nano'),
-  account('nanoemployee@agrilife.com', 'nanoemployee123', 'production', 'employee', 'Nano'),
-  account('botanical@agrilife.com', 'botanical123', 'production', 'admin', 'Botanical'),
-  account('botanicalemployee@agrilife.com', 'botanicalemployee123', 'production', 'employee', 'Botanical'),
-  account('liquid@agrilife.com', 'liquid123', 'production', 'admin', 'Liquid'),
-  account('liquidemployee@agrilife.com', 'liquidemployee123', 'production', 'employee', 'Liquid'),
-  account('powder@agrilife.com', 'powder123', 'production', 'admin', 'Powder'),
-  account('powderemployee@agrilife.com', 'powderemployee123', 'production', 'employee', 'Powder'),
-  account('granules@agrilife.com', 'granules123', 'production', 'admin', 'Granules'),
-  account('granulesemployee@agrilife.com', 'granulesemployee123', 'production', 'employee', 'Granules'),
+  account('microbial@agrilife.com', 'microbial@123', 'production', 'admin', 'Microbial'),
+  account('microbialemployee@agrilife.com', 'microbial@emp123', 'production', 'employee', 'Microbial'),
+  account('nano@agrilife.com', 'nano@123', 'production', 'admin', 'Nano'),
+  account('nanoemployee@agrilife.com', 'nano@emp123', 'production', 'employee', 'Nano'),
+  account('botanical@agrilife.com', 'botanical@123', 'production', 'admin', 'Botanical'),
+  account('botanicalemployee@agrilife.com', 'botanical@emp123', 'production', 'employee', 'Botanical'),
+  account('liquid@agrilife.com', 'liquid@123', 'production', 'admin', 'Liquid'),
+  account('liquidemployee@agrilife.com', 'liquid@emp123', 'production', 'employee', 'Liquid'),
+  account('powder@agrilife.com', 'powder@123', 'production', 'admin', 'Powder'),
+  account('powderemployee@agrilife.com', 'powder@emp123', 'production', 'employee', 'Powder'),
+  account('granules@agrilife.com', 'granules@123', 'production', 'admin', 'Granules'),
+  account('granulesemployee@agrilife.com', 'granules@emp123', 'production', 'employee', 'Granules'),
 ]
 
 export function findAccount(email) {

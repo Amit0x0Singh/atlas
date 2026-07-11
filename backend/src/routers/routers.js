@@ -96,6 +96,6 @@ router.post(
 );
 
 // ---- admin planel routes (not prefixed with /api) ───────────────────────────────────────────
-router.use("/admin", AdminPanelRouter);
+// router.use("/admin", AdminPanelRouter);
 
 export default router;
