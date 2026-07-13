@@ -20,6 +20,14 @@ const BATCH_THRESHOLD   = 20
 const FLUSH_RETRY_MS    = 3000
 const localScanKey = (sessionId) => `inward-scan:${sessionId}`
 
+// Haptic feedback so an operator scanning bag-after-bag doesn't need to
+// glance at the screen to know a scan landed — a short single buzz for a
+// good scan, a distinct double-buzz for anything rejected (unknown QR,
+// duplicate, wrong status). Vibration API is Android-Chrome-only (no iOS
+// Safari support) — feature-detected so it's silently a no-op elsewhere.
+const vibrateScanOk    = () => navigator.vibrate?.(60)
+const vibrateScanError = () => navigator.vibrate?.([80, 60, 80])
+
 const WAREHOUSES = [
   'BULK ROOM',
   'BOX GODOWN',
@@ -369,10 +377,11 @@ export default function PackInward() {
     setScanError(''); setLastScan(packId)
 
     const pack = packMapRef.current.get(packId)
-    if (!pack) { setScanError(`Unknown pack: ${packId}`); return }
-    if (scannedSetRef.current.has(packId)) { setScanError(`Already scanned: ${packId}`); return }
-    if (pack.status !== 'AWAITING_INWARD') { setScanError(`Pack ${packId} is already ${pack.status}`); return }
+    if (!pack) { vibrateScanError(); setScanError(`Unknown pack: ${packId}`); return }
+    if (scannedSetRef.current.has(packId)) { vibrateScanError(); setScanError(`Already scanned: ${packId}`); return }
+    if (pack.status !== 'AWAITING_INWARD') { vibrateScanError(); setScanError(`Pack ${packId} is already ${pack.status}`); return }
 
+    vibrateScanOk()
     const wh = warehouseRef.current
     scannedSetRef.current.add(packId)
     pendingQueueRef.current.push(packId)
