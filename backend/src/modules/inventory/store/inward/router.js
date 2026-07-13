@@ -5,7 +5,7 @@ import {
   getPackLabel, getBatchLabels, generatePacks,
   listInward, listActiveSessions, getSession
 } from './get/inward.controller.js'
-import { createSession, scanPack, submitSession } from './create/inward.controller.js'
+import { createSession, scanPack, batchScanPack, submitSession } from './create/inward.controller.js'
 import { removeScan } from './delete/inward.controller.js'
 
 const InwardRouter = express.Router()
@@ -26,6 +26,7 @@ InwardRouter.get('/inward/sessions', authenticate, listActiveSessions)
 InwardRouter.post('/inward/sessions', authenticate, storeOrAbove, createSession)
 InwardRouter.get('/inward/sessions/:sessionId', authenticate, getSession)
 InwardRouter.post('/inward/sessions/:sessionId/scan', authenticate, storeOrAbove, scanPack)
+InwardRouter.post('/inward/sessions/:sessionId/batch-scan', authenticate, storeOrAbove, batchScanPack)
 InwardRouter.delete('/inward/sessions/:sessionId/scan/:packId', authenticate, storeOrAbove, removeScan)
 InwardRouter.post('/inward/sessions/:sessionId/submit', authenticate, storeOrAbove, submitSession)
 

@@ -10,6 +10,16 @@ import './PackInward.css'
 
 const STEPS = { SETUP: 'setup', SCANNING: 'scanning', DONE: 'done' }
 
+// Scans are validated locally against the packs snapshot fetched once at
+// session start (no per-scan network call) and synced to the backend in
+// batches instead — debounced during active scanning, or immediately once
+// enough scans queue up, so a fast scanning run still stays responsive
+// without a request piling up behind every single bag.
+const FLUSH_DEBOUNCE_MS = 800
+const BATCH_THRESHOLD   = 20
+const FLUSH_RETRY_MS    = 3000
+const localScanKey = (sessionId) => `inward-scan:${sessionId}`
+
 const WAREHOUSES = [
   'BULK ROOM',
   'BOX GODOWN',
@@ -66,9 +76,31 @@ export default function PackInward() {
   const jsQRRef            = useRef(null)
   const lastFallbackDecode = useRef(0)
 
-  useEffect(() => { loadGroups(); return stopCamera }, [])
+  // Local-first scanning state — built once at session start, read/written
+  // synchronously on every scan with zero network calls.
+  const packMapRef      = useRef(new Map())  // packId -> { packId, bagNo, packQty, uom, status }
+  const scannedSetRef   = useRef(new Set())  // packIds scanned so far (synced or still queued)
+  const pendingQueueRef = useRef([])         // packIds scanned locally but not yet synced
+  const flushTimerRef   = useRef(null)
+  const isFlushingRef   = useRef(false)      // true while a batch-scan request is in flight
+  const flushAgainRef   = useRef(false)      // more scans queued while the in-flight one was running
+
+  useEffect(() => {
+    loadGroups()
+    return () => { stopCamera(); if (flushTimerRef.current) clearTimeout(flushTimerRef.current) }
+  }, [])
   useEffect(() => { sessionRef.current = session }, [session])
   useEffect(() => { warehouseRef.current = warehouse }, [warehouse])
+
+  // Flush whatever's queued right before the tab is backgrounded/locked —
+  // the moment right before connectivity is most likely to drop.
+  useEffect(() => {
+    const handler = () => {
+      if (document.visibilityState === 'hidden' && pendingQueueRef.current.length > 0) flushPendingScans()
+    }
+    document.addEventListener('visibilitychange', handler)
+    return () => document.removeEventListener('visibilitychange', handler)
+  }, [])
 
   // Mobile and desktop render separate <video> elements (different layouts around
   // the camera), so crossing the breakpoint mid-session remounts it — reattach the
@@ -103,16 +135,44 @@ export default function PackInward() {
     try {
       const sessionKey  = `${selected.itemCode}-${selected.lotNo}`
       const isResume    = !!activeSessionMap[sessionKey]
+      // One round trip: createSession now returns the full pack list for
+      // this item/lot too, so there's no separate getSession() follow-up
+      // just to fetch the same session a second time.
       const createRes   = await inwardApi.createSession({ itemCode: selected.itemCode, lotNo: selected.lotNo, warehouse })
-      const sessionId   = createRes.data?.sessionId
-      const fullRes     = await inwardApi.getSession(sessionId)
-      const sessionData = fullRes.data
+      const sessionData = createRes.data
       const alreadyScanned = (sessionData?.scannedPackIds?.length || 0) > 0
-      sessionRef.current = sessionData
-      setSession(sessionData)
+
+      packMapRef.current = new Map((sessionData.packs || []).map(p => [p.packId, p]))
+      scannedSetRef.current = new Set(sessionData.scannedPackIds || [])
+      pendingQueueRef.current = []
+
+      // Recover any scans that were queued locally but never made it to the
+      // server — e.g. the tab crashed or lost network mid-session.
+      let restored = sessionData
+      try {
+        const raw = localStorage.getItem(localScanKey(sessionData.sessionId))
+        if (raw) {
+          const saved = JSON.parse(raw)
+          const toReplay = (saved.queue || []).filter(
+            id => packMapRef.current.has(id) && !scannedSetRef.current.has(id)
+          )
+          if (toReplay.length > 0) {
+            for (const id of toReplay) { scannedSetRef.current.add(id); pendingQueueRef.current.push(id) }
+            restored = {
+              ...sessionData,
+              scannedPackIds: [...sessionData.scannedPackIds, ...toReplay],
+              pendingPackIds: sessionData.pendingPackIds.filter(id => !toReplay.includes(id)),
+            }
+          }
+        }
+      } catch { /* corrupt/stale localStorage entry — ignore */ }
+
+      sessionRef.current = restored
+      setSession(restored)
       setResumed(isResume || alreadyScanned)
       setStep(STEPS.SCANNING)
       await startCamera()
+      if (pendingQueueRef.current.length > 0) scheduleFlush()
     } catch (e) { setError(e.message) }
     finally { setCreating(false) }
   }
@@ -231,34 +291,137 @@ export default function PackInward() {
     })
   }
 
-  const doScan = async (packId) => {
-    const cur = sessionRef.current
-    const wh  = warehouseRef.current
-    if (!cur) return
-    setScanError(''); setLastScan(packId)
-    try {
-      // scan() already returns the full updated session (including
-      // pendingPackIds) — a separate getSession() round-trip here used to
-      // double the network latency of every single scan.
-      const res = await inwardApi.scan(cur.sessionId, packId, wh)
-      sessionRef.current = res.data
-      setSession(res.data)
-    } catch (e) { setScanError(e.message) }
+  // Persists the not-yet-synced queue so a crash/reload can recover it —
+  // removed entirely once the queue drains so nothing lingers in storage.
+  const persistLocalQueue = (sessionId) => {
+    if (!sessionId) return
+    if (pendingQueueRef.current.length === 0) localStorage.removeItem(localScanKey(sessionId))
+    else localStorage.setItem(localScanKey(sessionId), JSON.stringify({ queue: pendingQueueRef.current }))
   }
 
-  const submitManual = async (e) => {
+  const scheduleFlush = () => {
+    if (flushTimerRef.current) clearTimeout(flushTimerRef.current)
+    if (pendingQueueRef.current.length >= BATCH_THRESHOLD) { flushPendingScans(); return }
+    flushTimerRef.current = setTimeout(flushPendingScans, FLUSH_DEBOUNCE_MS)
+  }
+
+  const flushPendingScans = async () => {
+    if (flushTimerRef.current) { clearTimeout(flushTimerRef.current); flushTimerRef.current = null }
+
+    // A batch is already in flight — don't fire an overlapping request for
+    // whatever's queued now; the in-flight one's `finally` block will
+    // re-trigger a flush for anything still queued once it settles.
+    if (isFlushingRef.current) { flushAgainRef.current = true; return }
+
+    const cur = sessionRef.current
+    if (!cur || pendingQueueRef.current.length === 0) return
+
+    isFlushingRef.current = true
+    let failed = false
+    const toSync = [...pendingQueueRef.current]
+    try {
+      const res = await inwardApi.batchScan(cur.sessionId, toSync, warehouseRef.current)
+      // Drop only what we actually sent — anything queued after this
+      // request started (scanned while it was in flight) stays queued.
+      pendingQueueRef.current = pendingQueueRef.current.filter(id => !toSync.includes(id))
+
+      const server = res.data
+      const stillQueued = pendingQueueRef.current
+      const merged = {
+        ...server,
+        scannedPackIds: [...new Set([...server.scannedPackIds, ...stillQueued])],
+        pendingPackIds: server.pendingPackIds.filter(id => !stillQueued.includes(id)),
+      }
+      scannedSetRef.current = new Set(merged.scannedPackIds)
+      sessionRef.current = merged
+      setSession(merged)
+      persistLocalQueue(cur.sessionId)
+
+      // Only surface true failures — ALREADY_SCANNED just means another
+      // device synced that pack first, which is expected and harmless.
+      const hardRejections = (res.rejected || []).filter(r => r.reason !== 'ALREADY_SCANNED')
+      if (hardRejections.length > 0) {
+        setScanError(`${hardRejections.length} scan(s) couldn't be saved: ${hardRejections.map(r => r.packId).join(', ')}`)
+      }
+    } catch (e) {
+      // Leave the queue (and its localStorage backup) intact — nothing
+      // scanned locally is lost, it's just delayed until the retry below.
+      failed = true
+      setScanError('Sync pending — will retry (' + e.message + ')')
+    } finally {
+      isFlushingRef.current = false
+      const moreQueued = flushAgainRef.current || pendingQueueRef.current.length > 0
+      flushAgainRef.current = false
+      if (failed) {
+        // Real failure (network/server error) — back off before retrying.
+        flushTimerRef.current = setTimeout(flushPendingScans, FLUSH_RETRY_MS)
+      } else if (moreQueued) {
+        // Succeeded, but more was scanned while this request was in flight —
+        // pick it up through the normal debounce/threshold path, not a slow retry.
+        scheduleFlush()
+      }
+    }
+  }
+
+  const doScan = (packId) => {
+    const cur = sessionRef.current
+    if (!cur) return
+    setScanError(''); setLastScan(packId)
+
+    const pack = packMapRef.current.get(packId)
+    if (!pack) { setScanError(`Unknown pack: ${packId}`); return }
+    if (scannedSetRef.current.has(packId)) { setScanError(`Already scanned: ${packId}`); return }
+    if (pack.status !== 'AWAITING_INWARD') { setScanError(`Pack ${packId} is already ${pack.status}`); return }
+
+    const wh = warehouseRef.current
+    scannedSetRef.current.add(packId)
+    pendingQueueRef.current.push(packId)
+
+    const next = {
+      ...cur,
+      scannedPackIds: [...cur.scannedPackIds, packId],
+      pendingPackIds: cur.pendingPackIds.filter(id => id !== packId),
+      packWarehouses: { ...(cur.packWarehouses || {}), [packId]: wh },
+    }
+    sessionRef.current = next
+    setSession(next)
+
+    persistLocalQueue(cur.sessionId)
+    scheduleFlush()
+  }
+
+  const submitManual = (e) => {
     e.preventDefault()
     const id = manualId.trim()
     if (!id) return
     setManualId('')
-    await doScan(id)
+    doScan(id)
   }
 
   const removeScan = async (packId) => {
     const cur = sessionRef.current
     if (!cur) return
+
+    // Still only queued locally (not yet synced) — just drop it, no network call needed.
+    const queuedIdx = pendingQueueRef.current.indexOf(packId)
+    if (queuedIdx !== -1) {
+      pendingQueueRef.current.splice(queuedIdx, 1)
+      scannedSetRef.current.delete(packId)
+      const next = {
+        ...cur,
+        scannedPackIds: cur.scannedPackIds.filter(id => id !== packId),
+        pendingPackIds: [...cur.pendingPackIds, packId],
+      }
+      sessionRef.current = next
+      setSession(next)
+      persistLocalQueue(cur.sessionId)
+      return
+    }
+
+    // Already synced — remove it server-side (Undo is rare, an immediate call is fine).
     try {
       const res = await inwardApi.removeScan(cur.sessionId, packId)
+      scannedSetRef.current.delete(packId)
       sessionRef.current = res.data
       setSession(res.data)
     } catch (e) { alert(e.message) }
@@ -274,15 +437,20 @@ export default function PackInward() {
     if (!cur) return
     setSubmitting(true)
     try {
+      // Make sure everything scanned locally is durably persisted before
+      // committing the inward — submit only ever acts on what's in the DB.
+      await flushPendingScans()
       setDoneStats({ submitted: scanned.length, leftOver: pending.length })
       await inwardApi.submit(cur.sessionId, 'Operator')
+      localStorage.removeItem(localScanKey(cur.sessionId))
       stopCamera()
       setStep(STEPS.DONE)
     } catch (e) { setScanError(e.message) }
     finally { setSubmitting(false) }
   }
 
-  const pauseAndExit = () => {
+  const pauseAndExit = async () => {
+    await flushPendingScans()
     stopCamera()
     sessionRef.current = null
     setStep(STEPS.SETUP); setSession(null); setSelected(null)

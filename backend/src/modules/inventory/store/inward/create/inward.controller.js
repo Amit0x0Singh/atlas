@@ -1,4 +1,4 @@
-import { createInwardSession, scanPackForSession, submitInwardSession } from '../../../../../services/inward-service.js'
+import { createInwardSession, scanPackForSession, batchScanPacksForSession, submitInwardSession } from '../../../../../services/inward-service.js'
 import { checkAndUnblockPendingIndents } from '../../../../production/indent/create/indent.controller.js'
 
 
@@ -22,8 +22,23 @@ const scanPack = async (req, res) => {
   const { packId, warehouse } = req.body
 
   try {
-
     const result = await scanPackForSession(sessionId, packId, warehouse)
+    return res.json(result)
+
+  } catch (e) {
+    return res.status(400).json({ success: false, error: e.message, code: 'VALIDATION_ERROR' })
+  }
+}
+
+const batchScanPack = async (req, res) => {
+  const { sessionId } = req.params
+  const { packIds, warehouse } = req.body
+
+  try {
+    if (!Array.isArray(packIds) || packIds.length === 0)
+      return res.status(400).json({ success: false, error: 'packIds must be a non-empty array', code: 'VALIDATION_ERROR' })
+
+    const result = await batchScanPacksForSession(sessionId, packIds, warehouse)
     return res.json(result)
 
   } catch (e) {
@@ -63,5 +78,6 @@ const submitSession = async (req, res) => {
 export {
   createSession,
   scanPack,
+  batchScanPack,
   submitSession
 }

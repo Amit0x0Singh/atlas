@@ -17,11 +17,29 @@ async function withPendingPackIds(session) {
   return { ...session, pendingPackIds }
 }
 
+// Superset of withPendingPackIds — also returns the full pack rows for the
+// session's item/lot, which the frontend turns into a local packId -> pack
+// lookup Map at session start so individual scans never need a DB round trip.
+async function withPackDetails(session) {
+  const allPacks = await prisma.printMaster.findMany({
+    where: { itemCode: session.itemCode, lotNo: session.lotNo },
+    select: { packId: true, bagNo: true, packQty: true, uom: true, status: true },
+    orderBy: { bagNo: 'asc' },
+  })
+  const scannedSet = new Set(session.scannedPackIds)
+  const pendingPackIds = allPacks.filter(p => !scannedSet.has(p.packId)).map(p => p.packId)
+  return { ...session, packs: allPacks, pendingPackIds }
+}
+
 export async function createInwardSession({ itemCode, lotNo, warehouse }) {
   const existing = await prisma.inwardSession.findFirst({
     where: { itemCode, lotNo, status: 'ACTIVE' }
   })
-  if (existing) return { success: true, data: existing, resumed: true }
+  // Returning full pack details here (not just the bare session row) lets
+  // the scanning UI build its local lookup Map from this one response —
+  // it used to always follow up with a separate GET /sessions/:id call
+  // just to fetch this same data a second time.
+  if (existing) return { success: true, data: await withPackDetails(existing), resumed: true }
 
   // Only the row count is needed here — count() avoids transferring every
   // pack's full row data over the wire just to read .length off the array.
@@ -33,7 +51,7 @@ export async function createInwardSession({ itemCode, lotNo, warehouse }) {
   const session = await prisma.inwardSession.create({
     data: { itemCode, lotNo, warehouse, expectedBags: packCount, scannedPackIds: [] }
   })
-  return { success: true, data: session, resumed: false }
+  return { success: true, data: await withPackDetails(session), resumed: false }
 }
 
 export async function scanPackForSession(sessionId, packId, warehouse) {
@@ -62,6 +80,77 @@ export async function scanPackForSession(sessionId, packId, warehouse) {
     data: { scannedPackIds: { push: packId }, packWarehouses: merged },
   })
   return { success: true, data: await withPendingPackIds(updated) }
+}
+
+// Accepts a batch of packIds scanned locally (already validated client-side
+// against the session's start-of-scan snapshot) and merges the still-valid
+// ones into the session in a single write — this is the sync endpoint the
+// local-first scanning UI calls every ~800ms of activity / 20 scans, instead
+// of one DB round trip per individual scan.
+export async function batchScanPacksForSession(sessionId, packIds, warehouse) {
+  const uniqueIds = [...new Set(packIds)]
+  if (uniqueIds.length === 0) throw new Error('No packIds provided')
+
+  let session = await prisma.inwardSession.findUnique({ where: { sessionId } })
+  if (!session) throw new Error('Session not found')
+  if (session.status !== 'ACTIVE') throw new Error('Session is not active')
+
+  const packs = await prisma.printMaster.findMany({ where: { packId: { in: uniqueIds } } })
+  const packById = new Map(packs.map(p => [p.packId, p]))
+
+  const accepted = []
+  const rejected = []
+  const alreadyScanned = new Set(session.scannedPackIds)
+
+  for (const packId of uniqueIds) {
+    if (alreadyScanned.has(packId)) { rejected.push({ packId, reason: 'ALREADY_SCANNED' }); continue }
+    const pack = packById.get(packId)
+    if (!pack) { rejected.push({ packId, reason: 'NOT_FOUND' }); continue }
+    if (pack.itemCode !== session.itemCode) { rejected.push({ packId, reason: 'WRONG_ITEM' }); continue }
+    if (pack.status !== 'AWAITING_INWARD') { rejected.push({ packId, reason: 'ALREADY_' + pack.status }); continue }
+    accepted.push(packId)
+  }
+
+  if (accepted.length === 0) {
+    return { success: true, data: await withPackDetails(session), accepted, rejected }
+  }
+
+  const resolvedWarehouse = warehouse || session.warehouse
+
+  // Optimistic concurrency on `updatedAt`: if another device flushed a batch
+  // in between our read and write, the conditional update matches 0 rows —
+  // re-fetch, re-merge (still skipping anything that device already
+  // accepted), and retry. Contention on a single session is rare and brief,
+  // so a small retry loop is simpler and cheaper than a lock table or Redis.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const mergedIds = [...new Set([...session.scannedPackIds, ...accepted])]
+    const mergedWarehouses = { ...(session.packWarehouses || {}) }
+    for (const packId of accepted) mergedWarehouses[packId] = resolvedWarehouse
+
+    const result = await prisma.inwardSession.updateMany({
+      where: { sessionId, updatedAt: session.updatedAt },
+      data: { scannedPackIds: mergedIds, packWarehouses: mergedWarehouses },
+    })
+
+    if (result.count > 0) {
+      const updated = await prisma.inwardSession.findUnique({ where: { sessionId } })
+      return { success: true, data: await withPackDetails(updated), accepted, rejected }
+    }
+
+    // Lost the race — re-fetch and drop anything the other writer already scanned.
+    session = await prisma.inwardSession.findUnique({ where: { sessionId } })
+    if (!session) throw new Error('Session not found')
+    const stillAlreadyScanned = new Set(session.scannedPackIds)
+    for (const packId of [...accepted]) {
+      if (stillAlreadyScanned.has(packId)) {
+        accepted.splice(accepted.indexOf(packId), 1)
+        rejected.push({ packId, reason: 'ALREADY_SCANNED' })
+      }
+    }
+    if (accepted.length === 0) return { success: true, data: await withPackDetails(session), accepted, rejected }
+  }
+
+  throw new Error('Could not sync scans — session is being updated concurrently, please retry')
 }
 
 export async function removeScanFromSession(sessionId, packId) {
