@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import PackInward from '../components/pack-inward/PackInward.jsx'
-import BulkInward from '../components/bulk-inward/BulkInward.jsx'
 import InwardHistory from '../components/inward-history/InwardHistory.jsx'
 import { BackButton, PageHeader } from '../../../../../components/ui'
 import { ArrowDownToLine, Package, ClipboardList } from 'lucide-react'
@@ -19,7 +18,7 @@ export default function Inward() {
       <PageHeader
         icon={ArrowDownToLine}
         title="Inward — Receive Stock"
-        description="Pack Inward: scan individual QR-labelled bags · Bulk Inward: receive lots of bulk consumables by location · History: view all inwarded stock"
+        description="Pack Inward: scan individual QR-labelled bags · History: view all inwarded stock"
         actions={<span className="hidden md:block"><BackButton /></span>}
       >
         <div className="flex gap-0 border-b border-gray-200 overflow-x-auto -mx-4 md:-mx-6 px-4 md:px-6">
@@ -36,8 +35,7 @@ export default function Inward() {
         </div>
       </PageHeader>
       <div className="flex-1 overflow-y-auto">
-        {tab === 0 ? <PackInward /> : tab === 1 ?  <InwardHistory /> : <InwardHistory />}
-        {/* {tab === 0 ? <PackInward /> : tab === 1 ? <BulkInward /> : <InwardHistory />} */}
+        {tab === 0 ? <PackInward /> : <InwardHistory />}
       </div>
     </div>
   )

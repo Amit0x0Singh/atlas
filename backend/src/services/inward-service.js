@@ -1,5 +1,19 @@
 import prisma from '../db.js'
 
+// Shared by scan/remove-scan so both can return a session shaped exactly
+// like GET /inward/sessions/:id (i.e. including pendingPackIds) — the
+// scanning UI used to always re-fetch the session after every scan just to
+// pick up this one field, doubling the network round-trip on every single
+// pack scanned.
+async function withPendingPackIds(session) {
+  const allPacks = await prisma.printMaster.findMany({
+    where: { itemCode: session.itemCode, lotNo: session.lotNo },
+    orderBy: { bagNo: 'asc' },
+  })
+  const pendingPackIds = allPacks.filter(p => !session.scannedPackIds.includes(p.packId)).map(p => p.packId)
+  return { ...session, pendingPackIds }
+}
+
 export async function createInwardSession({ itemCode, lotNo, warehouse }) {
   const existing = await prisma.inwardSession.findFirst({
     where: { itemCode, lotNo, status: 'ACTIVE' }
@@ -37,7 +51,7 @@ export async function scanPackForSession(sessionId, packId, warehouse) {
     where: { sessionId },
     data: { scannedPackIds: { push: packId }, packWarehouses: merged },
   })
-  return { success: true, data: updated }
+  return { success: true, data: await withPendingPackIds(updated) }
 }
 
 export async function removeScanFromSession(sessionId, packId) {
@@ -47,7 +61,7 @@ export async function removeScanFromSession(sessionId, packId) {
     where: { sessionId },
     data: { scannedPackIds: session.scannedPackIds.filter(id => id !== packId) }
   })
-  return { success: true, data: updated }
+  return { success: true, data: await withPendingPackIds(updated) }
 }
 
 export async function submitInwardSession(sessionId, transactedBy) {

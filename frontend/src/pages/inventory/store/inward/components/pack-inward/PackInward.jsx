@@ -1,9 +1,8 @@
 ﻿import { useState, useEffect, useRef } from 'react'
 import { inwardApi, packsApi } from '../../../../../../api/inventory.js'
-import jsQR from 'jsqr'
 import { Button, IconButton, BottomSheet, Modal } from '../../../../../../components/ui'
 import { useIsMobile } from '../../../../../../hooks/useIsMobile.js'
-import { X, Pause, CheckCircle2, Clock, Search, Undo2, PartyPopper, PackageCheck, Info } from 'lucide-react'
+import { X, Pause, CheckCircle2, Clock, Search, Undo2, PartyPopper, PackageCheck, Info, Flashlight, FlashlightOff } from 'lucide-react'
 import ScanSummaryCard from './components/scan-summary-card/ScanSummaryCard.jsx'
 import StickySubmitBar from './components/sticky-submit-bar/StickySubmitBar.jsx'
 import ManualEntryDrawer from './components/manual-entry-drawer/ManualEntryDrawer.jsx'
@@ -40,6 +39,8 @@ export default function PackInward() {
   const [manualId, setManualId]     = useState('')
   const [warehouseFlash, setWarehouseFlash] = useState('')
   const [doneStats, setDoneStats]           = useState({ submitted: 0, leftOver: 0 })
+  const [torchSupported, setTorchSupported] = useState(false)
+  const [torchOn, setTorchOn]               = useState(false)
 
   // Mobile-only UI state (bottom sheets for the compact scan summary cards)
   const isMobile = useIsMobile()
@@ -48,14 +49,22 @@ export default function PackInward() {
   const [pendingSearch, setPendingSearch] = useState('')
   const [showResumedInfo, setShowResumedInfo] = useState(false)
 
-  const videoRef     = useRef(null)
-  const canvasRef    = useRef(null)
-  const streamRef    = useRef(null)
-  const animRef      = useRef(null)
-  const sessionRef   = useRef(null)
-  const scanningRef  = useRef(false)
-  const lastScanTime = useRef(0)
-  const warehouseRef = useRef(warehouse)
+  const videoRef      = useRef(null)
+  const canvasRef     = useRef(null)
+  const streamRef     = useRef(null)
+  const videoTrackRef = useRef(null)
+  const animRef       = useRef(null)
+  const sessionRef    = useRef(null)
+  const scanningRef   = useRef(false)
+  const lastScanTime  = useRef(0)
+  const warehouseRef  = useRef(warehouse)
+  // Native decoder when the browser has one (reads the <video> element
+  // directly — no per-frame canvas draw / getImageData needed); jsQR is only
+  // loaded on demand as a fallback for browsers without BarcodeDetector
+  // (e.g. Firefox), so its decode cost never ships to the common case.
+  const detectorRef        = useRef(null)
+  const jsQRRef            = useRef(null)
+  const lastFallbackDecode = useRef(0)
 
   useEffect(() => { loadGroups(); return stopCamera }, [])
   useEffect(() => { sessionRef.current = session }, [session])
@@ -111,9 +120,34 @@ export default function PackInward() {
   const startCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+        video: {
+          facingMode: 'environment',
+          // Lower resolution = far fewer pixels to decode per frame — the
+          // single biggest lever for scan speed on weaker mobile CPUs, and
+          // still plenty of detail for a QR code held at normal scanning
+          // distance. Requesting 1280x720 was the main reason phones felt
+          // much slower than laptops here.
+          width:  { ideal: 640 },
+          height: { ideal: 480 },
+        },
       })
       streamRef.current = stream
+
+      if (!detectorRef.current && 'BarcodeDetector' in window) {
+        detectorRef.current = new window.BarcodeDetector({ formats: ['qr_code'] })
+      }
+
+      const track = stream.getVideoTracks()[0]
+      videoTrackRef.current = track
+      // Focus/torch constraints are only reliably honoured once the track
+      // is actually live — requesting them inside getUserMedia itself is
+      // silently ignored on a lot of Android/Chrome camera hardware.
+      const caps = track.getCapabilities?.() || {}
+      if (caps.focusMode?.includes('continuous')) {
+        track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }).catch(() => {})
+      }
+      setTorchSupported(!!caps.torch)
+
       if (videoRef.current) {
         videoRef.current.srcObject = stream
         videoRef.current.onloadedmetadata = () => {
@@ -131,6 +165,32 @@ export default function PackInward() {
     scanningRef.current = false
     if (animRef.current) cancelAnimationFrame(animRef.current)
     if (streamRef.current) { streamRef.current.getTracks().forEach(t => t.stop()); streamRef.current = null }
+    videoTrackRef.current = null
+    setTorchSupported(false)
+    setTorchOn(false)
+  }
+
+  const toggleTorch = async () => {
+    const track = videoTrackRef.current
+    if (!track) return
+    const next = !torchOn
+    try {
+      await track.applyConstraints({ advanced: [{ torch: next }] })
+      setTorchOn(next)
+    } catch { /* capability flag lied — device doesn't actually support it */ }
+  }
+
+  // jsQR is only pulled into the bundle for browsers without a native
+  // BarcodeDetector (e.g. Firefox) — dynamic import keeps its parse/decode
+  // cost off the common path entirely.
+  const decodeWithJsQR = async (video, canvas) => {
+    if (!jsQRRef.current) jsQRRef.current = (await import('jsqr')).default
+    const ctx = canvas.getContext('2d')
+    canvas.width  = video.videoWidth  || 640
+    canvas.height = video.videoHeight || 480
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+    return jsQRRef.current(imageData.data, imageData.width, imageData.height)?.data || null
   }
 
   const runScanLoop = () => {
@@ -142,16 +202,30 @@ export default function PackInward() {
         if (scanningRef.current) runScanLoop()
         return
       }
-      const ctx = canvas.getContext('2d')
-      canvas.width  = video.videoWidth  || 640
-      canvas.height = video.videoHeight || 480
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-      const code = jsQR(imageData.data, imageData.width, imageData.height)
+
+      let data = null
+      try {
+        if (detectorRef.current) {
+          // Native decoder reads the <video> frame directly — no manual
+          // canvas draw / getImageData round-trip, which is where most of
+          // the per-frame cost of the JS fallback path goes.
+          const codes = await detectorRef.current.detect(video)
+          data = codes[0]?.rawValue || null
+        } else {
+          const now = performance.now()
+          // The JS fallback decode is comparatively expensive — throttle it
+          // instead of attempting on every animation frame (~60/s).
+          if (now - lastFallbackDecode.current > 150) {
+            lastFallbackDecode.current = now
+            data = await decodeWithJsQR(video, canvas)
+          }
+        }
+      } catch { /* transient decode error on this frame — just retry next one */ }
+
       const now = Date.now()
-      if (code?.data && now - lastScanTime.current > 1500) {
+      if (data && now - lastScanTime.current > 1500) {
         lastScanTime.current = now
-        await doScan(code.data)
+        await doScan(data)
       }
       if (scanningRef.current) runScanLoop()
     })
@@ -163,11 +237,12 @@ export default function PackInward() {
     if (!cur) return
     setScanError(''); setLastScan(packId)
     try {
-      await inwardApi.scan(cur.sessionId, packId, wh)
-      const freshRes = await inwardApi.getSession(cur.sessionId)
-      const updated  = freshRes.data
-      sessionRef.current = updated
-      setSession(updated)
+      // scan() already returns the full updated session (including
+      // pendingPackIds) — a separate getSession() round-trip here used to
+      // double the network latency of every single scan.
+      const res = await inwardApi.scan(cur.sessionId, packId, wh)
+      sessionRef.current = res.data
+      setSession(res.data)
     } catch (e) { setScanError(e.message) }
   }
 
@@ -183,11 +258,9 @@ export default function PackInward() {
     const cur = sessionRef.current
     if (!cur) return
     try {
-      await inwardApi.removeScan(cur.sessionId, packId)
-      const freshRes = await inwardApi.getSession(cur.sessionId)
-      const updated  = freshRes.data
-      sessionRef.current = updated
-      setSession(updated)
+      const res = await inwardApi.removeScan(cur.sessionId, packId)
+      sessionRef.current = res.data
+      setSession(res.data)
     } catch (e) { alert(e.message) }
   }
 
@@ -321,6 +394,15 @@ export default function PackInward() {
               <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
                 <div className="w-40 h-40 border-2 border-blue-400 rounded-lg" />
               </div>
+              {torchSupported && (
+                <button
+                  onClick={toggleTorch}
+                  className={`absolute top-2 right-2 w-9 h-9 rounded-full flex items-center justify-center transition-colors ${torchOn ? 'bg-amber-400 text-black' : 'bg-black/50 text-white'}`}
+                  title={torchOn ? 'Turn off flashlight' : 'Turn on flashlight'}
+                >
+                  {torchOn ? <Flashlight size={16} /> : <FlashlightOff size={16} />}
+                </button>
+              )}
               <div className="absolute bottom-2 left-0 right-0 text-center text-white text-xs bg-black/40 py-1">
                 Point camera at pack QR
               </div>
@@ -477,9 +559,18 @@ export default function PackInward() {
                 <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
                   <div className="w-48 h-48 border-2 border-blue-400 rounded-lg" />
                 </div>
-                <div className="absolute top-2 left-2 right-2 bg-indigo-700/80 rounded-lg px-3 py-1.5 text-center">
+                <div className="absolute top-2 left-2 right-12 bg-indigo-700/80 rounded-lg px-3 py-1.5 text-center">
                   <span className="text-white text-xs font-semibold">{warehouse}</span>
                 </div>
+                {torchSupported && (
+                  <button
+                    onClick={toggleTorch}
+                    className={`absolute top-2 right-2 w-9 h-9 rounded-full flex items-center justify-center transition-colors ${torchOn ? 'bg-amber-400 text-black' : 'bg-black/50 text-white'}`}
+                    title={torchOn ? 'Turn off flashlight' : 'Turn on flashlight'}
+                  >
+                    {torchOn ? <Flashlight size={16} /> : <FlashlightOff size={16} />}
+                  </button>
+                )}
                 <div className="absolute bottom-3 left-0 right-0 text-center text-white text-sm bg-black/40 py-1">
                   Point camera at pack QR
                 </div>
