@@ -1,5 +1,10 @@
-import { useState, useEffect, useCallback } from 'react'
-import { employeeApi } from '../../../../api/hr.js'
+import { useState, useEffect } from 'react'
+import {
+  useEmployees, useEmployeePages, useEmployeeRoleDefaults,
+  useCreateEmployee, useUpdateEmployee, useDeleteEmployee,
+  useEmployeePermissions, useSavePermissions,
+  useCompanies, useAddCompany,
+} from '../../../../hooks/hr/useEmployees.js'
 import { BackButton, Button, ConfirmModal } from '../../../../components/ui'
 import Pagination from '../../../../components/pagination/Pagination.jsx'
 
@@ -88,15 +93,19 @@ function EmployeeForm({ initial, onSave, onCancel }) {
 function PermissionsTab({ pages, defaults }) {
   const [selectedRole, setSelectedRole] = useState('SALES')
   const [perms, setPerms] = useState({})
-  const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState('')
 
+  // staleTime/gcTime come from CACHE.MASTER inside the hook — switching
+  // roles re-fetches only the first time each role's permissions are
+  // opened in this session, not on every click back and forth.
+  const { data: fetchedPaths } = useEmployeePermissions(selectedRole)
+  const savePermissions = useSavePermissions()
+
   useEffect(() => {
-    if (perms[selectedRole] !== undefined) return
-    employeeApi.getPermissions(selectedRole).then(res => {
-      setPerms(p => ({ ...p, [selectedRole]: new Set(res.data.map(r => r.pagePath)) }))
-    })
-  }, [selectedRole])
+    if (fetchedPaths && perms[selectedRole] === undefined) {
+      setPerms(p => ({ ...p, [selectedRole]: new Set(fetchedPaths.map(r => r.pagePath)) }))
+    }
+  }, [fetchedPaths, selectedRole]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function toggle(path) {
     setPerms(p => {
@@ -107,12 +116,11 @@ function PermissionsTab({ pages, defaults }) {
   }
 
   async function save() {
-    setSaving(true); setMsg('')
+    setMsg('')
     try {
-      await employeeApi.savePermissions(selectedRole, [...(perms[selectedRole] || [])])
+      await savePermissions.mutateAsync({ role: selectedRole, pagePaths: [...(perms[selectedRole] || [])] })
       setMsg('Saved!'); setTimeout(() => setMsg(''), 2000)
     } catch (ex) { setMsg(ex.message) }
-    finally { setSaving(false) }
   }
 
   const current = perms[selectedRole] || new Set()
@@ -160,19 +168,16 @@ function PermissionsTab({ pages, defaults }) {
 }
 
 function CompanyTab() {
-  const [companies, setCompanies] = useState([])
+  const { data: companies = [] } = useCompanies()
+  const addCompany = useAddCompany()
   const [code, setCode] = useState('')
   const [name, setName] = useState('')
-  const [saving, setSaving] = useState(false)
-  const load = useCallback(async () => { const res = await employeeApi.listCompanies(); setCompanies(res.data) }, [])
-  useEffect(() => { load() }, [load])
 
   async function add(e) {
     e.preventDefault()
     if (!code || !name) return
-    setSaving(true)
-    try { await employeeApi.addCompany({ code, name }); setCode(''); setName(''); load() }
-    finally { setSaving(false) }
+    try { await addCompany.mutateAsync({ code, name }); setCode(''); setName('') }
+    catch { /* mutation error is available via addCompany.error if a banner is added later */ }
   }
 
   return (
@@ -197,8 +202,8 @@ function CompanyTab() {
           <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Agrilife PTE Ltd"
             className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-56 focus:ring-2 focus:ring-blue-500 focus:outline-none" />
         </div>
-        <Button type="submit" variant="success" disabled={!code || !name} loading={saving}>
-          {saving ? '…' : '+ Add'}
+        <Button type="submit" variant="success" disabled={!code || !name} loading={addCompany.isPending}>
+          {addCompany.isPending ? '…' : '+ Add'}
         </Button>
       </form>
     </div>
@@ -206,40 +211,38 @@ function CompanyTab() {
 }
 
 export default function EmployeeMaster() {
-  const [employees, setEmployees] = useState([])
-  const [pages, setPages]         = useState([])
-  const [defaults, setDefaults]   = useState({})
-  const [loading, setLoading]     = useState(true)
+  // Three independent queries instead of one hand-rolled Promise.all — each
+  // caches on its own (30 min staleTime), so e.g. re-opening this page after
+  // visiting another master-data page doesn't re-fetch pages/role-defaults
+  // just because the employee list also needs a refresh.
+  const { data: employees = [], isLoading: loadingEmployees, error: employeesError } = useEmployees()
+  const { data: pages = [] } = useEmployeePages()
+  const { data: defaults = {} } = useEmployeeRoleDefaults()
+  const createEmployee = useCreateEmployee()
+  const updateEmployee = useUpdateEmployee()
+  const deleteEmployee = useDeleteEmployee()
+
   const [tab, setTab]             = useState('employees')
   const [showForm, setShowForm]   = useState(false)
   const [editing, setEditing]     = useState(null)
   const [filterRole, setFilterRole] = useState('ALL')
-  const [err, setErr]             = useState('')
   const [page, setPage]           = useState(1)
   const [deactivateTarget, setDeactivateTarget] = useState(null)
 
-  const load = useCallback(async () => {
-    setLoading(true)
-    try {
-      const [empRes, pageRes, defRes] = await Promise.all([employeeApi.list(), employeeApi.listPages(), employeeApi.roleDefaults()])
-      setEmployees(empRes.data); setPages(pageRes.data); setDefaults(defRes.data)
-    } catch (ex) { setErr(ex.message) }
-    finally { setLoading(false) }
-  }, [])
-
-  useEffect(() => { load() }, [load])
+  const loading = loadingEmployees
+  const err = employeesError?.message || ''
 
   async function handleSave(form) {
-    if (editing) await employeeApi.update(editing.id, form)
-    else await employeeApi.create(form)
-    setShowForm(false); setEditing(null); load()
+    if (editing) await updateEmployee.mutateAsync({ id: editing.id, data: form })
+    else await createEmployee.mutateAsync(form)
+    setShowForm(false); setEditing(null)
   }
 
   const handleDelete = (emp) => setDeactivateTarget(emp)
 
   async function confirmDeactivate() {
-    await employeeApi.remove(deactivateTarget.id)
-    setDeactivateTarget(null); load()
+    await deleteEmployee.mutateAsync(deactivateTarget.id)
+    setDeactivateTarget(null)
   }
 
   const filtered = filterRole === 'ALL' ? employees : employees.filter(e => e.role === filterRole)

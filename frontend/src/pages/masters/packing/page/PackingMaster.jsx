@@ -1,18 +1,14 @@
-﻿import { useState, useEffect, useMemo } from 'react'
+﻿import { useState, useMemo } from 'react'
 import { RefreshCw, AlertTriangle, PackageOpen } from 'lucide-react'
-import { packingMaterialApi } from '../../../../api/masters.js'
 import { Button, BackButton, PageHeader } from '../../../../components/ui'
 import CategoryList  from '../components/category-list/CategoryList.jsx'
 import SubTypeGrid   from '../components/sub-type-grid/SubTypeGrid.jsx'
 import ItemList      from '../components/item-list/ItemList.jsx'
 import PackingForm   from '../components/packing-form/PackingForm.jsx'
 import { CAT, EMPTY_FORM } from '../components/packing-constants/packingConstants.jsx'
+import { usePackingMaterials, useCreatePackingMaterial, useUpdatePackingMaterial, useDeletePackingMaterial } from '../../../../hooks/masters/usePackingMaterials.js'
 
 export default function PackingMaster() {
-  const [items, setItems]     = useState([])
-  const [loading, setLoading] = useState(true)
-  const [loadErr, setLoadErr] = useState('')
-
   // 3-level navigation
   const [view, setView]       = useState('categories')
   const [selCat, setSelCat]   = useState(null)
@@ -22,16 +18,13 @@ export default function PackingMaster() {
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing]   = useState(null)
   const [form, setForm]         = useState(EMPTY_FORM)
-  const [saving, setSaving]     = useState(false)
   const [msg, setMsg]           = useState('')
 
-  useEffect(() => { load() }, [])
-
-  async function load() {
-    try { setLoading(true); setLoadErr(''); const r = await packingMaterialApi.list(); setItems(r.data || []) }
-    catch (e) { setLoadErr(e.message || 'Failed to load') }
-    finally { setLoading(false) }
-  }
+  const { data: items = [], isLoading: loading, error: loadError, refetch } = usePackingMaterials()
+  const loadErr = loadError?.message || ''
+  const createPackingMaterial = useCreatePackingMaterial()
+  const updatePackingMaterial = useUpdatePackingMaterial()
+  const deletePackingMaterial = useDeletePackingMaterial()
 
   // Navigation
   function goCategories() { setView('categories'); setSelCat(null); setSelSub(null) }
@@ -92,19 +85,18 @@ export default function PackingMaster() {
   async function save() {
     if (!form.itemName || !form.category) { setMsg('Item Name and Category are required'); return }
     if (form.category === 'CORRUGATED_BOXES' && !form.ply) { setMsg('Ply is required for Corrugated Boxes'); return }
-    setSaving(true); setMsg('')
+    setMsg('')
     // Strip UI-only helper fields before sending to backend
     const { _customPly, ...payload } = form
     try {
-      if (editing) await packingMaterialApi.update(editing.id, payload)
-      else         await packingMaterialApi.create(payload)
-      setShowForm(false); load()
+      if (editing) await updatePackingMaterial.mutateAsync({ id: editing.id, data: payload })
+      else         await createPackingMaterial.mutateAsync(payload)
+      setShowForm(false)
     } catch (e) { setMsg(e.message) }
-    finally { setSaving(false) }
   }
   async function del(id, name) {
     if (!confirm(`Delete "${name}"?`)) return
-    try { await packingMaterialApi.delete(id); load() } catch (e) { alert(e.message) }
+    try { await deletePackingMaterial.mutateAsync(id) } catch (e) { alert(e.message) }
   }
 
   const catMeta = selCat ? CAT[selCat] : null
@@ -114,7 +106,7 @@ export default function PackingMaster() {
       {loadErr && (
         <div className="mx-6 mt-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm flex items-center gap-3">
           <span className="flex items-center gap-1.5"><AlertTriangle size={15} />{loadErr}</span>
-          <Button variant="ghost" icon={RefreshCw} size="xs" onClick={load} className="ml-auto shrink-0">Retry</Button>
+          <Button variant="ghost" icon={RefreshCw} size="xs" onClick={refetch} className="ml-auto shrink-0">Retry</Button>
         </div>
       )}
 
@@ -166,7 +158,7 @@ export default function PackingMaster() {
           editing={editing}
           form={form}
           onChange={handleFormChange}
-          saving={saving}
+          saving={createPackingMaterial.isPending || updatePackingMaterial.isPending}
           msg={msg}
           onSave={save}
           onClose={() => setShowForm(false)}

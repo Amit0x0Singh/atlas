@@ -1,9 +1,10 @@
-﻿import { useState, useEffect } from 'react'
+﻿import { useState } from 'react'
 import './GRN.css'
 import { grnApi } from '../../../../../api/inventory.js'
 import { ErrorModal } from '../../../../../components/ui'
 import GrnList   from '../components/grn-list/GrnList.jsx'
 import GrnDetail from '../components/grn-detail/GrnDetail.jsx'
+import { useGrnList } from '../../../../../hooks/inventory/useGrn.js'
 
 function fmtDate(d) {
   if (!d) return '—'
@@ -11,13 +12,13 @@ function fmtDate(d) {
 }
 
 export default function GRN() {
-  const [list,          setList]          = useState([])
   const [search,        setSearch]        = useState('')
-  const [loading,       setLoading]       = useState(true)
   const [selected,      setSelected]      = useState(null)
   const [detail,        setDetail]        = useState(null)
   const [loadingDetail, setLoadingDetail] = useState(false)
   const [errModal, setErrModal] = useState({ open: false, message: '' })
+
+  const { data: list = [], isLoading: loading } = useGrnList()
 
   const filteredGrns = list.filter(grn => {
     if (!search.trim()) return true
@@ -26,17 +27,6 @@ export default function GRN() {
       (grn.supplier || '').toLowerCase().includes(q) ||
       (grn.items || []).some(i => i.toLowerCase().includes(q))
   })
-
-  useEffect(() => { loadList() }, [])
-
-  const loadList = async () => {
-    setLoading(true)
-    try {
-      const res = await grnApi.list()
-      setList(res.data || [])
-    } catch (e) { console.error(e) }
-    setLoading(false)
-  }
 
   const loadDetail = async (grn) => {
     setSelected(grn); setDetail(null); setLoadingDetail(true)

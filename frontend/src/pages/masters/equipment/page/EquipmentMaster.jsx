@@ -1,44 +1,39 @@
-﻿import { useState, useEffect } from 'react'
+﻿import { useState } from 'react'
 import { Plus, Wrench } from 'lucide-react'
-import { equipmentApi } from '../../../../api/masters.js'
 import { Button, BackButton, PageHeader } from '../../../../components/ui'
 import EquipmentTable from '../components/equipment-table/EquipmentTable.jsx'
 import EquipmentForm from '../components/equipment-form/EquipmentForm.jsx'
+import { useEquipment, useCreateEquipment, useUpdateEquipment, useDeleteEquipment } from '../../../../hooks/masters/useEquipment.js'
 
 export default function EquipmentMaster() {
-  const [items, setItems]   = useState([])
-  const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing]  = useState(null)
   const [form, setForm]        = useState({ equipName: '', plant: '' })
-  const [saving, setSaving]    = useState(false)
   const [msg, setMsg]          = useState('')
   const [page, setPage]        = useState(1)
   const [limit, setLimit]      = useState(15)
 
-  const load = async () => {
-    try { setLoading(true); const r = await equipmentApi.list(); setItems(r.data || []) }
-    catch (e) { console.error(e) } finally { setLoading(false) }
-  }
-
-  useEffect(() => { load() }, [])
+  const { data: items = [], isLoading: loading } = useEquipment()
+  const createEquipment = useCreateEquipment()
+  const updateEquipment = useUpdateEquipment()
+  const deleteEquipment = useDeleteEquipment()
 
   const openAdd  = () => { setEditing(null); setForm({ equipName: '', plant: '' }); setShowForm(true); setMsg('') }
   const openEdit = (item) => { setEditing(item); setForm({ equipName: item.equipName, plant: item.plant }); setShowForm(true); setMsg('') }
 
   const save = async () => {
     if (!form.equipName) { setMsg('Equipment name is required'); return }
-    setSaving(true); setMsg('')
+    setMsg('')
     try {
-      if (editing) await equipmentApi.update(editing.equipId, form)
-      else await equipmentApi.create(form)
-      setShowForm(false); load()
-    } catch (e) { setMsg(e.message) } finally { setSaving(false) }
+      if (editing) await updateEquipment.mutateAsync({ id: editing.equipId, data: form })
+      else await createEquipment.mutateAsync(form)
+      setShowForm(false)
+    } catch (e) { setMsg(e.message) }
   }
 
   const del = async (id, name) => {
     if (!confirm(`Delete equipment "${name}"?`)) return
-    try { await equipmentApi.delete(id); load() } catch (e) { alert(e.message) }
+    try { await deleteEquipment.mutateAsync(id) } catch (e) { alert(e.message) }
   }
 
   return (
@@ -71,7 +66,7 @@ export default function EquipmentMaster() {
           editing={editing}
           form={form}
           onChange={(field, val) => setForm(f => ({ ...f, [field]: val }))}
-          saving={saving}
+          saving={createEquipment.isPending || updateEquipment.isPending}
           msg={msg}
           onSave={save}
           onClose={() => setShowForm(false)}

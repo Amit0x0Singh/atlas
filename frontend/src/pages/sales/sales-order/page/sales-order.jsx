@@ -1,11 +1,14 @@
-﻿import { useState, useEffect, useCallback, Fragment } from "react";
-import {
-  salesOrderApi,
-  customerProfileApi,
-  cpProfileApi,
-} from "../../../../api/sales.js";
-import { productApi, packingMaterialApi } from "../../../../api/masters.js";
+﻿import { useState, useMemo, Fragment } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { customerProfileApi, cpProfileApi } from "../../../../api/sales.js";
 import { STATIC_CUSTOMER_PROFILES } from "../../../../data/customerProfiles";
+import {
+  useSalesOrders, useCreateSalesOrder, useUpdateSalesOrder, useDeleteSalesOrder,
+} from "../../../../hooks/sales/useSalesOrders.js";
+import { useProducts } from "../../../../hooks/masters/useProducts.js";
+import { usePackingMaterials } from "../../../../hooks/masters/usePackingMaterials.js";
+import { useCustomerProfiles } from "../../../../hooks/sales/useCustomerProfiles.js";
+import { queryKeys } from "../../../../lib/queryKeys.js";
 import {
   STATUSES,
   STATUS_STYLE,
@@ -115,13 +118,34 @@ function NewOrderModal({ editing, products, profiles, packingMaterials, onSave, 
 // SalesOrder — main page
 // ─────────────────────────────────────────────────────────────────────────────
 const SalesOrder = () => {
+  const qc = useQueryClient();
+
   // ── Core data ─────────────────────────────────────────────────────────────
-  const [orders, setOrders] = useState([]);
-  const [products, setProducts] = useState([]);
-  const [profiles, setProfiles] = useState(STATIC_CUSTOMER_PROFILES);
-  const [packingMaterials, setPackingMaterials] = useState({ primary: [], secondary: [] });
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState("");
+  const ordersQuery = useSalesOrders({});
+  const orders = ordersQuery.data ?? [];
+  const loading = ordersQuery.isLoading;
+  const err = ordersQuery.error?.message ?? "";
+
+  const { data: products = [] } = useProducts();
+  const { data: allPackingMaterials = [] } = usePackingMaterials();
+  const packingMaterials = useMemo(() => ({
+    primary:   allPackingMaterials.filter(m => ['BOTTLES_TINS', 'POUCHES_BAGS'].includes(m.category)),
+    secondary: allPackingMaterials.filter(m => m.category === 'CORRUGATED_BOXES'),
+  }), [allPackingMaterials]);
+
+  const { data: fetchedProfiles = [] } = useCustomerProfiles();
+  const profiles = useMemo(() => {
+    if (!fetchedProfiles.length) return STATIC_CUSTOMER_PROFILES;
+    const merged = [...STATIC_CUSTOMER_PROFILES];
+    for (const p of fetchedProfiles) {
+      if (!merged.find((x) => x.customerName === p.customerName)) merged.push(p);
+    }
+    return merged.sort((a, b) => (b.orderCount || 0) - (a.orderCount || 0));
+  }, [fetchedProfiles]);
+
+  const createOrder = useCreateSalesOrder();
+  const updateOrder = useUpdateSalesOrder();
+  const deleteOrder = useDeleteSalesOrder();
 
   // ── UI state ──────────────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState("orders");
@@ -143,66 +167,13 @@ const SalesOrder = () => {
       return next;
     });
 
-  // ── Data loading ──────────────────────────────────────────────────────────
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const ordRes = await salesOrderApi.list({});
-      setOrders(ordRes.data);
-    } catch (ex) {
-      setErr(ex.message);
-    } finally {
-      setLoading(false);
-    }
-
-    try {
-      const prodRes = await productApi.list({});
-      setProducts(prodRes.data || []);
-    } catch {
-      /* non-critical */
-    }
-
-    try {
-      const pmRes = await packingMaterialApi.list()
-      const all = pmRes.data || []
-      // BOTTLES_TINS + POUCHES_BAGS → primary (individual unit containers)
-      // CORRUGATED_BOXES → secondary (outer bulk packaging)
-      setPackingMaterials({
-        primary:   all.filter(m => ['BOTTLES_TINS', 'POUCHES_BAGS'].includes(m.category)),
-        secondary: all.filter(m => m.category === 'CORRUGATED_BOXES'),
-      })
-    } catch { /* non-critical */ }
-
-    try {
-      const profRes = await customerProfileApi.list();
-      if (profRes.data?.length > 0) {
-        setProfiles((prev) => {
-          const merged = [...prev];
-          for (const p of profRes.data) {
-            if (!merged.find((x) => x.customerName === p.customerName))
-              merged.push(p);
-          }
-          return merged.sort(
-            (a, b) => (b.orderCount || 0) - (a.orderCount || 0),
-          );
-        });
-      }
-    } catch {
-      /* non-critical */
-    }
-  }, []);
-
-  useEffect(() => {
-    load();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
   // ── Save handler ──────────────────────────────────────────────────────────
   async function handleSave(form) {
     let sfgResult = null;
     if (editing) {
-      await salesOrderApi.update(editing.id, form);
+      await updateOrder.mutateAsync({ id: editing.id, data: form });
     } else {
-      const res = await salesOrderApi.create(form);
+      const res = await createOrder.mutateAsync(form);
       if (res?.sfgAvailability?.length) sfgResult = res.sfgAvailability;
     }
     if (form.customerName?.trim()) {
@@ -212,6 +183,7 @@ const SalesOrder = () => {
           company: form.company || "",
           orderType: form.orderType || "DOMESTIC",
         });
+        qc.invalidateQueries({ queryKey: queryKeys.customerProfiles.all() });
       } catch {
         /* non-critical */
       }
@@ -242,19 +214,19 @@ const SalesOrder = () => {
     setShowForm(false);
     setEditing(null);
     if (sfgResult) setSfgAlert(sfgResult);
-    load();
   }
 
   async function handleDelete(order) {
     if (!confirm(`Delete order ${order.diNo}?`)) return;
-    await salesOrderApi.remove(order.id);
+    await deleteOrder.mutateAsync(order.id);
     setDispatchOrder(null);
-    load();
   }
 
   async function handleDispatchSave() {
+    // DispatchOrder calls salesOrderApi directly (not yet migrated to a
+    // mutation hook), so the list needs an explicit invalidation here.
+    qc.invalidateQueries({ queryKey: queryKeys.salesOrders.all() });
     setDispatchOrder(null);
-    load();
   }
 
   // ── Filter handlers ───────────────────────────────────────────────────────

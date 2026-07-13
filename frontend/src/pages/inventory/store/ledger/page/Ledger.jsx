@@ -1,37 +1,24 @@
-﻿import { useState, useEffect } from 'react'
-import { ledgerApi, rmApi } from '../../../../../api/inventory.js'
+﻿import { useState } from 'react'
+import { ledgerApi } from '../../../../../api/inventory.js'
 import { BackButton, Button, PageHeader } from '../../../../../components/ui'
 import LedgerTable             from '../components/ledger-table/LedgerTable.jsx'
 import TransactionDetailModal  from '../components/transaction-detail-modal/TransactionDetailModal.jsx'
 import { RefreshCw, X, ScrollText } from 'lucide-react'
+import { useLedger } from '../../../../../hooks/inventory/useLedger.js'
+import { useRmMaster } from '../../../../../hooks/inventory/useRmMaster.js'
 import './Ledger.css'
 
 export default function Ledger() {
-  const [rows,       setRows]       = useState([])
-  const [rmList,     setRmList]     = useState([])
   const [filterItem, setFilterItem] = useState('')
-  const [loading,    setLoading]    = useState(true)
   const [page,       setPage]       = useState(1)
-  const [total,      setTotal]      = useState(0)
   const [detail,     setDetail]     = useState(null)
   const LIMIT = 50
 
-  useEffect(() => { loadLedger() }, [page, filterItem])
-  useEffect(() => {
-    rmApi.list({}).then(r => setRmList(r.data || [])).catch(() => {})
-  }, [])
-
-  const loadLedger = async () => {
-    setLoading(true)
-    try {
-      const params = { page, limit: LIMIT }
-      if (filterItem) params.itemCode = filterItem
-      const res = await ledgerApi.all(params)
-      setRows(res.data || [])
-      setTotal(res.total || 0)
-    } catch (e) { console.error(e) }
-    setLoading(false)
-  }
+  const { data: rmList = [] } = useRmMaster()
+  const ledgerQuery = useLedger({ page, limit: LIMIT, ...(filterItem ? { itemCode: filterItem } : {}) })
+  const rows    = ledgerQuery.data?.rows ?? []
+  const total   = ledgerQuery.data?.total ?? 0
+  const loading = ledgerQuery.isLoading
 
   const openDetail = async (entry) => {
     setDetail({ entry, detail: null, loading: true })
@@ -52,7 +39,7 @@ export default function Ledger() {
         title="Stock Ledger"
         description="Full transaction history — click any row for complete detail"
         actions={<>
-          <Button onClick={loadLedger} variant="outline-gray" size="sm" icon={RefreshCw}>Refresh</Button>
+          <Button onClick={() => ledgerQuery.refetch()} variant="outline-gray" size="sm" icon={RefreshCw}>Refresh</Button>
           <BackButton />
         </>}
       />

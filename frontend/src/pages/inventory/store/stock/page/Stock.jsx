@@ -1,6 +1,6 @@
 ﻿import './Stock.css'
-import { useState, useEffect, useCallback } from "react";
-import { stockApi } from "../../../../../api/inventory.js";
+import { useState, useEffect } from "react";
+import { useDashboardSummary, usePrefetchDashboardLinks } from "../../../../../hooks/inventory/useDashboardSummary.js";
 import { BackButton, IconButton, PageHeader } from "../../../../../components/ui";
 import { PERIODS } from "../components/utils.js";
 import RawMaterialsSection from "../components/raw-materials-section/RawMaterialsSection.jsx";
@@ -12,28 +12,22 @@ import { RefreshCw, LayoutDashboard } from "lucide-react";
 
 export default function Stock() {
   const [period, setPeriod] = useState("today");
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [ts, setTs] = useState(null);
+  // 15s staleTime (CACHE.DASHBOARD) — switching periods and back within that
+  // window reuses the cached value instantly instead of re-hitting the
+  // backend; past it, refetch happens quietly in the background (isFetching)
+  // rather than blanking the page back to a loading skeleton.
+  const { data, isLoading: loading, error: queryError, dataUpdatedAt, refetch } = useDashboardSummary(period);
+  const { prefetchInventory, prefetchSalesOrders } = usePrefetchDashboardLinks();
+  const error = queryError?.message || "";
+  const ts = dataUpdatedAt ? new Date(dataUpdatedAt) : null;
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const r = await stockApi.dashboard(period);
-      setData(r.data);
-      setTs(new Date());
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [period]);
-
+  // From the dashboard, RM Material / Sales Orders are the pages an operator
+  // opens next most often — warm both caches as soon as this page mounts so
+  // that navigating to either feels instant instead of showing a fresh spinner.
   useEffect(() => {
-    load();
-  }, [load]);
+    prefetchInventory();
+    prefetchSalesOrders();
+  }, [prefetchInventory, prefetchSalesOrders]);
 
   const d = data || {};
   const rm = d.rawMaterials || {};
@@ -55,7 +49,7 @@ export default function Stock() {
           {ts && <> · refreshed {ts.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}</>}
         </>}
         actions={<>
-          <IconButton icon={RefreshCw} onClick={load} tooltip="Refresh" variant="outline-gray" size="sm" />
+          <IconButton icon={RefreshCw} onClick={refetch} tooltip="Refresh" variant="outline-gray" size="sm" />
           <BackButton />
         </>}
       />

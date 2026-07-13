@@ -1,8 +1,8 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Plus, Package, PackageOpen } from 'lucide-react'
-import { rmApi } from '../../../../api/inventory.js'
-import { packingMaterialApi } from '../../../../api/masters.js'
+import { useRmMaster, useCreateRm, useUpdateRm, useDeleteRm } from '../../../../hooks/inventory/useRmMaster.js'
+import { usePackingMaterials } from '../../../../hooks/masters/usePackingMaterials.js'
 import './RmMaster.css'
 import { Button, BackButton, PageHeader } from '../../../../components/ui'
 import { getChips } from '../../packing/components/packing-constants/packingConstants.jsx'
@@ -12,49 +12,29 @@ import RmForm  from '../components/rm-form/RmForm.jsx'
 export default function RmMaster() {
   const navigate = useNavigate()
 
-  const [items, setItems]       = useState([])
-  const [loading, setLoading]   = useState(true)
-  const [error, setError]       = useState('')
   const [filters, setFilters]   = useState({ itemCode: '', itemName: '', uom: '', packingSpec: '' })
   const [filterType, setFilterType] = useState('ALL')
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing]   = useState(null)
   const [form, setForm]         = useState({ itemCode: '', itemName: '', uom: 'KG', trackingType: 'PACK' })
-  const [saving, setSaving]     = useState(false)
   const [msg, setMsg]           = useState('')
   const [page, setPage]         = useState(1)
   const [limit, setLimit]       = useState(15)
 
+  // Both lists load in full, cached for 30 min (CACHE.MASTER) — every filter
+  // (code, name, UOM, type, packing spec) is then applied client-side below.
   // Packing materials live in their own table (packing_materials) — fetched
   // here purely so they can be *displayed* alongside RM items in one unified
   // overview table. Nothing about the two schemas merges; editing a packing
   // item still only happens on the dedicated Packing Materials page.
-  const [packingItems, setPackingItems]     = useState([])
-  const [loadingPacking, setLoadingPacking] = useState(true)
+  const { data: items = [], isLoading: loading, error: rmError } = useRmMaster()
+  const { data: packingItems = [], isLoading: loadingPacking } = usePackingMaterials()
+  const error = rmError?.message || ''
 
-  // Both lists load in full, once — every filter (code, name, UOM, type,
-  // packing spec) is then applied client-side below, same as the existing
-  // packing-item filtering already did. No server round-trip per keystroke.
-  const load = async () => {
-    try {
-      setLoading(true)
-      const res = await rmApi.list({})
-      setItems(res.data || [])
-      setError('')
-    } catch (e) { setError(e.message) }
-    finally { setLoading(false) }
-  }
-
-  const loadPacking = async () => {
-    try {
-      setLoadingPacking(true)
-      const res = await packingMaterialApi.list()
-      setPackingItems(res.data || [])
-    } catch { /* silent — packing materials are supplementary on this page */ }
-    finally { setLoadingPacking(false) }
-  }
-
-  useEffect(() => { load(); loadPacking() }, [])
+  const createRm = useCreateRm()
+  const updateRm = useUpdateRm()
+  const deleteRm = useDeleteRm()
+  const saving = createRm.isPending || updateRm.isPending
 
   const openAdd = () => {
     setEditing(null)
@@ -69,17 +49,17 @@ export default function RmMaster() {
 
   const save = async () => {
     if (!form.itemCode || !form.itemName || !form.uom) { setMsg('All fields required'); return }
-    setSaving(true); setMsg('')
+    setMsg('')
     try {
-      if (editing) await rmApi.update(form.itemCode, { itemName: form.itemName, uom: form.uom, trackingType: form.trackingType })
-      else await rmApi.create(form)
-      setShowForm(false); load()
-    } catch (e) { setMsg(e.message) } finally { setSaving(false) }
+      if (editing) await updateRm.mutateAsync({ code: form.itemCode, data: { itemName: form.itemName, uom: form.uom, trackingType: form.trackingType } })
+      else await createRm.mutateAsync(form)
+      setShowForm(false)
+    } catch (e) { setMsg(e.message) }
   }
 
   const del = async (code) => {
     if (!confirm(`Delete ${code}? This cannot be undone.`)) return
-    try { await rmApi.delete(code); load() } catch (e) { alert(e.message) }
+    try { await deleteRm.mutateAsync(code) } catch (e) { alert(e.message) }
   }
 
   const goToPacking = () => navigate('/packing-master')

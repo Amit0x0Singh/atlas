@@ -1,6 +1,11 @@
-﻿import { useState, useEffect, useRef, useCallback } from "react";
+﻿import { useState, useEffect, useRef } from "react";
 import { ArrowDown, ArrowUp, CheckCircle } from "lucide-react";
 import { gateApi } from "../../../../api/inventory.js";
+import {
+  useGateInward, useGateOutward,
+  useCreateGateInward, useCreateGateOutward,
+  useRequestDeleteGateInward, useRequestDeleteGateOutward,
+} from "../../../../hooks/inventory/useGate.js";
 import { useAuth } from "../../../../components/auth/AuthContext.jsx";
 import { Button, BackButton, PageHeader, ErrorModal, ConfirmModal } from '../../../../components/ui'
 import { DoorOpen } from "lucide-react";
@@ -25,12 +30,11 @@ export default function GateEntry() {
   const [formTab, setFormTab] = useState("inward"); // which form is active on home
   const [formKey, setFormKey] = useState(0);        // increment to reset form
 
-  // List state
-  const [list, setList]       = useState([]);
-  const [total, setTotal]     = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState(null);
-  const [filters, setFilters] = useState(EMPTY_FILTERS);
+  // List state — `filters` drives the controlled inputs immediately;
+  // `queryFilters` drives the actual query and is debounced for the
+  // free-text fields (search/invoice_no) so we don't refetch per keystroke.
+  const [filters, setFilters]           = useState(EMPTY_FILTERS);
+  const [queryFilters, setQueryFilters] = useState(EMPTY_FILTERS);
   const [detail, setDetail]   = useState(null);
   const [errModal, setErrModal]           = useState({ open: false, message: '' });
   const [deleteConfirm, setDeleteConfirm] = useState(null);
@@ -40,40 +44,34 @@ export default function GateEntry() {
 
   const listType = view === "inward-list" ? "inward" : "outward";
 
-  const fetchList = useCallback(async (type, activeFilters) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const params = { limit: 100, ...activeFilters };
-      Object.keys(params).forEach(k => { if (!params[k]) delete params[k] });
-      const res = type === "inward"
-        ? await gateApi.inwardList(params)
-        : await gateApi.outwardList(params);
-      setList(res.data || []);
-      setTotal(res.total ?? (res.data?.length ?? 0));
-    } catch (e) {
-      setError(e.message);
-    }
-    setLoading(false);
-  }, []);
+  const inwardQuery  = useGateInward(queryFilters, view === "inward-list");
+  const outwardQuery = useGateOutward(queryFilters, view === "outward-list");
+  const activeQuery  = listType === "inward" ? inwardQuery : outwardQuery;
+  const list    = activeQuery.data?.rows ?? [];
+  const total   = activeQuery.data?.total ?? 0;
+  const loading = activeQuery.isLoading;
+  const error   = activeQuery.error?.message ?? null;
 
-  // Fetch fresh data each time we enter a list view
+  const createInwardMutation  = useCreateGateInward();
+  const createOutwardMutation = useCreateGateOutward();
+  const requestDeleteInward   = useRequestDeleteGateInward();
+  const requestDeleteOutward  = useRequestDeleteGateOutward();
+
+  // Reset filters each time we enter a list view
   useEffect(() => {
     if (view === "inward-list" || view === "outward-list") {
       setFilters(EMPTY_FILTERS);
-      fetchList(listType, EMPTY_FILTERS);
+      setQueryFilters(EMPTY_FILTERS);
     }
-  }, [view]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [view]);
 
   function openList(type) {
     setDetail(null);
-    setList([]);
     setView(type === "inward" ? "inward-list" : "outward-list");
   }
 
   function goHome() {
     setView("home");
-    setList([]);
     setDetail(null);
     setFilters(EMPTY_FILTERS);
   }
@@ -83,15 +81,15 @@ export default function GateEntry() {
     setFilters(next);
     if (key === "search" || key === "invoice_no") {
       clearTimeout(debounceRef.current);
-      debounceRef.current = setTimeout(() => fetchList(listType, next), 400);
+      debounceRef.current = setTimeout(() => setQueryFilters(next), 400);
     } else {
-      fetchList(listType, next);
+      setQueryFilters(next);
     }
   };
 
   const handleClearFilters = () => {
     setFilters(EMPTY_FILTERS);
-    fetchList(listType, EMPTY_FILTERS);
+    setQueryFilters(EMPTY_FILTERS);
   };
 
   const showSuccess = (msg) => {
@@ -101,7 +99,7 @@ export default function GateEntry() {
 
   const submitInward = async (form) => {
     try {
-      const res = await gateApi.createInward(form);
+      const res = await createInwardMutation.mutateAsync(form);
       const entry = res.data;
       showSuccess(`Inward entry created${entry?.companyName ? ` for ${entry.companyName}` : ''}${entry?.supplierName ? ` · ${entry.supplierName}` : ''}${entry?.invoiceNo ? ` · ${entry.invoiceNo}` : ''}`);
       setFormKey(k => k + 1);
@@ -112,7 +110,7 @@ export default function GateEntry() {
 
   const submitOutward = async (form) => {
     try {
-      const res = await gateApi.createOutward(form);
+      const res = await createOutwardMutation.mutateAsync(form);
       const entry = res.data;
       showSuccess(`Outward entry recorded${entry?.companyName ? ` for ${entry.companyName}` : ''}${entry?.receiverName ? ` · ${entry.receiverName}` : ''}${entry?.invoiceNo ? ` · ${entry.invoiceNo}` : ''}`);
       setFormKey(k => k + 1);
@@ -136,9 +134,8 @@ export default function GateEntry() {
     const { id, type } = deleteConfirm;
     setDeleteConfirm(null);
     try {
-      if (type === "inward") await gateApi.requestDeleteInward(id);
-      else                   await gateApi.requestDeleteOutward(id);
-      fetchList(listType, filters);
+      if (type === "inward") await requestDeleteInward.mutateAsync(id);
+      else                   await requestDeleteOutward.mutateAsync(id);
     } catch (e) {
       setErrModal({ open: true, message: e.message });
     }

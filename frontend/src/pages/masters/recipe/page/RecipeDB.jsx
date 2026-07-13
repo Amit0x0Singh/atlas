@@ -1,22 +1,21 @@
-﻿import { useState, useEffect } from 'react'
-import { recipeApi, productApi } from '../../../../api/masters.js'
+﻿import { useState, useEffect, useRef } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import './RecipeDB.css'
-import { rmApi } from '../../../../api/inventory.js'
 import { DeleteModal, ErrorModal } from '../../../../components/ui'
 import ProductSidebar    from '../components/product-sidebar/ProductSidebar.jsx'
 import BomEditor         from '../components/bom-editor/BomEditor.jsx'
 import ReconcileModal    from '../components/reconcile-modal/ReconcileModal.jsx'
+import { useProducts } from '../../../../hooks/masters/useProducts.js'
+import { useRmMaster } from '../../../../hooks/inventory/useRmMaster.js'
+import { useRecipe, useBulkSaveRecipe, useDeleteRecipeRow } from '../../../../hooks/masters/useRecipes.js'
+import { queryKeys } from '../../../../lib/queryKeys.js'
 
 const EMPTY_ROW = () => ({ id: null, rmCode: '', rmName: '', qtyPerUnit: '', uom: 'KG', roleType: 'INGREDIENT', _dirty: true })
 
 export default function RecipeDB() {
-  const [productList, setProductList]     = useState([])
-  const [rmList, setRmList]               = useState([])
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [bomRows, setBomRows]             = useState([])
   const [prodSearch, setProdSearch]       = useState('')
-  const [loading, setLoading]             = useState(false)
-  const [saving, setSaving]               = useState(false)
   const [msg, setMsg]                     = useState({ type: '', text: '' })
   const [deleteRowIdx, setDeleteRowIdx]   = useState(null)
   const [errModal, setErrModal]           = useState({ open: false, message: '' })
@@ -26,31 +25,35 @@ export default function RecipeDB() {
   // Bumped only once bomRows actually holds the freshly-fetched product's
   // rows — BomEditor's item-name seeding effect keys off this instead of
   // selectedProduct.productCode, which changes synchronously on click, well
-  // before the async recipeApi.list() call below resolves.
+  // before the recipe query below resolves.
   const [loadId, setLoadId] = useState(0)
 
-  useEffect(() => { loadAll() }, [])
+  const qc = useQueryClient()
+  const { data: productList = [], isLoading: productsLoading } = useProducts()
+  const { data: rmList = [] } = useRmMaster()
+  const loading = productsLoading
+  const recipeQuery = useRecipe(selectedProduct?.productCode)
+  const bulkSaveRecipe = useBulkSaveRecipe()
+  const deleteRecipeRow = useDeleteRecipeRow()
 
-  const loadAll = async () => {
-    setLoading(true)
-    try {
-      const [rmRes, prodRes] = await Promise.all([rmApi.list({}), productApi.list({})])
-      setRmList(rmRes.data || [])
-      setProductList(prodRes.data || [])
-    } catch (e) { setMsg({ type: 'error', text: e.message }) }
-    setLoading(false)
-  }
+  // Seed the editable bomRows draft whenever a fresh fetch lands for the
+  // currently selected product (initial select, or refetch after save).
+  const seededForRef = useRef(null)
+  useEffect(() => {
+    if (!selectedProduct || !recipeQuery.data) return
+    const key = `${selectedProduct.productCode}:${recipeQuery.dataUpdatedAt}`
+    if (seededForRef.current === key) return
+    seededForRef.current = key
+    const data = recipeQuery.data
+    setBomRows(data.length > 0 ? data.map(r => ({ ...r, _dirty: false })) : [EMPTY_ROW()])
+    setLoadId(id => id + 1)
+  }, [selectedProduct, recipeQuery.data, recipeQuery.dataUpdatedAt])
 
-  const selectProduct = async (prod) => {
+  const selectProduct = (prod) => {
     setSelectedProduct(prod)
+    setBomRows([])
     setProdSearch('')
     setMsg({ type: '', text: '' })
-    try {
-      const res  = await recipeApi.list({ productCode: prod.productCode })
-      const data = res.data || []
-      setBomRows(data.length > 0 ? data.map(r => ({ ...r, _dirty: false })) : [EMPTY_ROW()])
-      setLoadId(id => id + 1)
-    } catch (e) { setMsg({ type: 'error', text: e.message }) }
   }
 
   const updateRow = (idx, field, value) => {
@@ -84,7 +87,7 @@ export default function RecipeDB() {
     const idx = deleteRowIdx
     const row = bomRows[idx]
     setDeleteRowIdx(null)
-    try { await recipeApi.deleteRow(row.id) }
+    try { await deleteRecipeRow.mutateAsync(row.id) }
     catch (e) { setErrModal({ open: true, message: e.message }); return }
     setBomRows(prev => {
       const updated = prev.filter((_, i) => i !== idx)
@@ -96,7 +99,7 @@ export default function RecipeDB() {
     if (!selectedProduct) { setMsg({ type: 'error', text: 'Select a product first' }); return }
     const toSave = bomRows.filter(r => r._dirty && r.rmCode && r.qtyPerUnit)
     if (toSave.length === 0) { setMsg({ type: 'error', text: 'No rows to save. Fill RM and Qty.' }); return }
-    setSaving(true); setMsg({ type: '', text: '' })
+    setMsg({ type: '', text: '' })
     try {
       const payload = toSave.map(r => ({
         id: r.id || undefined,
@@ -106,16 +109,18 @@ export default function RecipeDB() {
         qtyPerUnit: r.qtyPerUnit, uom: r.uom,
         roleType: r.roleType || 'INGREDIENT',
       }))
-      const res = await recipeApi.bulkSave(payload)
+      const res = await bulkSaveRecipe.mutateAsync(payload)
       setMsg({ type: 'success', text: `✅ ${res.saved} rows saved` })
-      await selectProduct(selectedProduct)
+      // The mutation's invalidation triggers a recipe refetch, which the
+      // effect above picks up (via dataUpdatedAt) to reseed bomRows —
+      // no manual reselect needed here.
     } catch (e) { setMsg({ type: 'error', text: e.message }) }
-    setSaving(false)
   }
 
-  const handleFixedDone = async () => {
-    await loadAll()
-    if (selectedProduct) await selectProduct(selectedProduct)
+  const handleFixedDone = () => {
+    qc.invalidateQueries({ queryKey: queryKeys.products.all() })
+    qc.invalidateQueries({ queryKey: queryKeys.rmMaster.all() })
+    if (selectedProduct) qc.invalidateQueries({ queryKey: queryKeys.recipes.all(selectedProduct.productCode) })
   }
 
   return (
@@ -137,7 +142,7 @@ export default function RecipeDB() {
           loadId={loadId}
           rmList={rmList}
           productList={productList}
-          saving={saving}
+          saving={bulkSaveRecipe.isPending}
           msg={msg}
           onAddRow={addRow}
           onSaveAll={saveAll}

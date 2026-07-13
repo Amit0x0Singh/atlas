@@ -1,10 +1,12 @@
-﻿import { useState, useEffect } from 'react'
+﻿import { useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { Upload, Plus } from 'lucide-react'
-import { microbialSfgApi } from '../../../../api/microbial.js'
 import { Button, BackButton } from '../../../../components/ui'
 import MicrobeList   from '../components/microbe-list/MicrobeList.jsx'
 import MicrobeForm   from '../components/microbe-form/MicrobeForm.jsx'
 import MicrobeImport from '../components/microbe-import/MicrobeImport.jsx'
+import { useMicrobes, useCreateMicrobe, useUpdateMicrobe, useDeleteMicrobe } from '../../../../hooks/masters/useMicrobes.js'
+import { queryKeys } from '../../../../lib/queryKeys.js'
 
 const S = {
   page:       { padding: '24px', fontFamily: "'Inter',system-ui,sans-serif", maxWidth: '960px' },
@@ -14,38 +16,28 @@ const S = {
 }
 
 export default function MicrobesMaster() {
-  const [microbes, setMicrobes] = useState([])
-  const [loading, setLoading]   = useState(true)
   const [tab, setTab]           = useState('list')
   const [form, setForm]         = useState({ microbe_name: '', microbe_code: '' })
   const [editId, setEditId]     = useState(null)
-  const [saving, setSaving]     = useState(false)
   const [search, setSearch]     = useState('')
   const [page, setPage]         = useState(1)
   const [limit, setLimit]       = useState(15)
 
-  const load = async () => {
-    setLoading(true)
-    try {
-      const res = await microbialSfgApi.listMicrobes()
-      setMicrobes(res?.data || [])
-    } catch { /* silent */ }
-    setLoading(false)
-  }
-  useEffect(() => { load() }, [])
+  const qc = useQueryClient()
+  const { data: microbes = [], isLoading: loading } = useMicrobes()
+  const createMicrobe = useCreateMicrobe()
+  const updateMicrobe = useUpdateMicrobe()
+  const deleteMicrobe = useDeleteMicrobe()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setSaving(true)
     try {
-      if (editId) await microbialSfgApi.updateMicrobe(editId, form)
-      else        await microbialSfgApi.createMicrobe(form)
+      if (editId) await updateMicrobe.mutateAsync({ id: editId, data: form })
+      else        await createMicrobe.mutateAsync(form)
       setForm({ microbe_name: '', microbe_code: '' })
       setEditId(null)
       setTab('list')
-      await load()
     } catch (err) { alert(err.message) }
-    setSaving(false)
   }
 
   const handleEdit = (m) => {
@@ -56,8 +48,7 @@ export default function MicrobesMaster() {
 
   const handleDelete = async (id, name) => {
     if (!confirm(`Delete "${name}"?`)) return
-    await microbialSfgApi.deleteMicrobe(id)
-    await load()
+    await deleteMicrobe.mutateAsync(id)
   }
 
   const filtered  = microbes.filter(m =>
@@ -119,14 +110,14 @@ export default function MicrobesMaster() {
           editId={editId}
           form={form}
           onChange={(field, val) => setForm(f => ({ ...f, [field]: val }))}
-          saving={saving}
+          saving={createMicrobe.isPending || updateMicrobe.isPending}
           onSubmit={handleSubmit}
           onCancel={() => { setTab('list'); setEditId(null); setForm({ microbe_name: '', microbe_code: '' }) }}
         />
       )}
 
       {tab === 'import' && (
-        <MicrobeImport onImportDone={load} />
+        <MicrobeImport onImportDone={() => qc.invalidateQueries({ queryKey: queryKeys.microbes.all() })} />
       )}
     </div>
   )

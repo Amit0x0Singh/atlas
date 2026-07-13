@@ -1,17 +1,16 @@
 ﻿import { useState, useEffect, useRef, useCallback } from 'react'
 import { Plus, Camera, Square } from 'lucide-react'
-import { bulkApi, rmApi } from '../../../../api/inventory.js'
+import { bulkApi } from '../../../../api/inventory.js'
 import { Button, BackButton } from '../../../../components/ui'
 import Pagination from '../../../../components/pagination/Pagination.jsx'
 import jsQR from 'jsqr'
 import QRScanner    from '../components/qr-scanner/QRScanner.jsx'
 import LocationCard from '../components/location-card/LocationCard.jsx'
 import LocationForm from '../components/location-form/LocationForm.jsx'
+import { useLocations, useCreateLocation, useDeleteLocation } from '../../../../hooks/inventory/useLocations.js'
+import { useRmMaster } from '../../../../hooks/inventory/useRmMaster.js'
 
 export default function LocationMaster() {
-  const [locations, setLocations] = useState([])
-  const [loading, setLoading]     = useState(true)
-  const [rmList, setRmList]       = useState([])
   const [showForm, setShowForm]   = useState(false)
   const [expanded, setExpanded]   = useState(null)
   const [msg, setMsg]             = useState({ type: '', text: '' })
@@ -21,7 +20,6 @@ export default function LocationMaster() {
   const [form, setForm]           = useState({ locationId: '', locationName: '', itemCode: '', itemName: '', uom: 'KG' })
   const [rmSearch, setRmSearch]   = useState('')
   const [showRmDrop, setShowRmDrop] = useState(false)
-  const [saving, setSaving]       = useState(false)
 
   const [scanning, setScanning]   = useState(false)
   const videoRef    = useRef(null)
@@ -30,20 +28,12 @@ export default function LocationMaster() {
   const scanningRef = useRef(false)
   const lastScanTime = useRef(0)
 
-  useEffect(() => {
-    load()
-    return () => stopCamera()
-  }, [])
+  useEffect(() => stopCamera, [])
 
-  const load = async () => {
-    setLoading(true)
-    try {
-      const [locRes, rmRes] = await Promise.all([bulkApi.listLocations(), rmApi.list({})])
-      setLocations(locRes.data || [])
-      setRmList(rmRes.data || [])
-    } catch (e) { setMsg({ type: 'error', text: e.message }) }
-    setLoading(false)
-  }
+  const { data: locations = [], isLoading: loading } = useLocations()
+  const { data: rmList = [] } = useRmMaster()
+  const createLocation = useCreateLocation()
+  const deleteLocationMutation = useDeleteLocation()
 
   const filteredRm = rmList.filter(r =>
     r.trackingType === 'BULK' &&
@@ -68,18 +58,17 @@ export default function LocationMaster() {
   const save = async () => {
     if (!form.locationId || !form.locationName || !form.itemCode)
       return setMsg({ type: 'error', text: 'Location ID, name and item are required' })
-    setSaving(true); setMsg({ type: '', text: '' })
+    setMsg({ type: '', text: '' })
     try {
-      await bulkApi.createLocation(form)
-      setShowForm(false); load()
+      await createLocation.mutateAsync(form)
+      setShowForm(false)
       setMsg({ type: 'success', text: `Location ${form.locationId} created successfully` })
     } catch (e) { setMsg({ type: 'error', text: e.message }) }
-    setSaving(false)
   }
 
   const deleteLocation = async (locationId) => {
     if (!confirm(`Delete location ${locationId}? Only allowed if no active stock.`)) return
-    try { await bulkApi.deleteLocation(locationId); load() }
+    try { await deleteLocationMutation.mutateAsync(locationId) }
     catch (e) { alert(e.message) }
   }
 
@@ -205,7 +194,7 @@ export default function LocationMaster() {
           showRmDrop={showRmDrop}
           setShowRmDrop={setShowRmDrop}
           rmOptions={rmOptions}
-          saving={saving}
+          saving={createLocation.isPending}
           onSelectRm={selectRm}
           onSave={save}
           onClose={() => setShowForm(false)}

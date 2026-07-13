@@ -1,64 +1,49 @@
-﻿import { useState, useEffect, useRef } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { Plus, Tags, Search } from 'lucide-react'
-import { productApi } from '../../../../api/masters.js'
 import { Button, BackButton, PageHeader } from '../../../../components/ui'
 import ProductTable from '../components/product-table/ProductTable.jsx'
 import ProductForm from '../components/product-form/ProductForm.jsx'
+import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct } from '../../../../hooks/masters/useProducts.js'
 
 export default function ProductMaster() {
-  const [items, setItems]      = useState([])
-  const [loading, setLoading]  = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing]  = useState(null)
   const [form, setForm]        = useState({ productCode: '', productName: '', plant: '' })
-  const [saving, setSaving]    = useState(false)
   const [msg, setMsg]          = useState('')
   const [search, setSearch]    = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [page, setPage]        = useState(1)
   const [limit, setLimit]      = useState(15)
 
-  // Guards against out-of-order responses — an older request resolving
-  // after a newer one would otherwise overwrite fresher results.
-  const requestSeq = useRef(0)
-
-  const load = async () => {
-    const seq = ++requestSeq.current
-    try {
-      setLoading(true)
-      const r = await productApi.list({ search })
-      if (seq !== requestSeq.current) return
-      setItems(r.data || [])
-    } catch (e) { console.error(e) }
-    finally { if (seq === requestSeq.current) setLoading(false) }
-  }
-
-  // First render loads immediately; subsequent search changes are debounced
-  // instead of re-fetching on every keystroke.
-  const didMount = useRef(false)
+  // Debounce search input before it hits the query key, so we don't
+  // refetch on every keystroke.
   useEffect(() => {
-    if (!didMount.current) { didMount.current = true; load(); return }
-    const t = setTimeout(load, 300)
+    const t = setTimeout(() => setDebouncedSearch(search), 300)
     return () => clearTimeout(t)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search])
-  useEffect(() => { setPage(1) }, [items])
+  useEffect(() => { setPage(1) }, [debouncedSearch])
+
+  const { data: items = [], isLoading: loading } = useProducts({ search: debouncedSearch })
+  const createProduct = useCreateProduct()
+  const updateProduct = useUpdateProduct()
+  const deleteProduct = useDeleteProduct()
 
   const openAdd  = () => { setEditing(null); setForm({ productCode: '', productName: '', plant: '' }); setShowForm(true); setMsg('') }
   const openEdit = (item) => { setEditing(item); setForm({ productCode: item.productCode, productName: item.productName, plant: item.plant }); setShowForm(true); setMsg('') }
 
   const save = async () => {
     if (!form.productCode || !form.productName) { setMsg('Product Code and Name are required'); return }
-    setSaving(true); setMsg('')
+    setMsg('')
     try {
-      if (editing) await productApi.update(form.productCode, { productName: form.productName, plant: form.plant })
-      else await productApi.create(form)
-      setShowForm(false); load()
-    } catch (e) { setMsg(e.message) } finally { setSaving(false) }
+      if (editing) await updateProduct.mutateAsync({ code: form.productCode, data: { productName: form.productName, plant: form.plant } })
+      else await createProduct.mutateAsync(form)
+      setShowForm(false)
+    } catch (e) { setMsg(e.message) }
   }
 
   const del = async (code) => {
     if (!confirm(`Delete product ${code}?`)) return
-    try { await productApi.delete(code); load() } catch (e) { alert(e.message) }
+    try { await deleteProduct.mutateAsync(code) } catch (e) { alert(e.message) }
   }
 
   return (
@@ -103,7 +88,7 @@ export default function ProductMaster() {
           editing={editing}
           form={form}
           onChange={(field, val) => setForm(f => ({ ...f, [field]: val }))}
-          saving={saving}
+          saving={createProduct.isPending || updateProduct.isPending}
           msg={msg}
           onSave={save}
           onClose={() => setShowForm(false)}
