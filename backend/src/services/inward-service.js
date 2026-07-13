@@ -6,8 +6,11 @@ import prisma from '../db.js'
 // pick up this one field, doubling the network round-trip on every single
 // pack scanned.
 async function withPendingPackIds(session) {
+  // Only the fields actually used below — on a remote DB every extra column
+  // is extra bytes over an already latency-bound round trip.
   const allPacks = await prisma.printMaster.findMany({
     where: { itemCode: session.itemCode, lotNo: session.lotNo },
+    select: { packId: true },
     orderBy: { bagNo: 'asc' },
   })
   const pendingPackIds = allPacks.filter(p => !session.scannedPackIds.includes(p.packId)).map(p => p.packId)
@@ -20,32 +23,39 @@ export async function createInwardSession({ itemCode, lotNo, warehouse }) {
   })
   if (existing) return { success: true, data: existing, resumed: true }
 
-  const packs = await prisma.printMaster.findMany({
+  // Only the row count is needed here — count() avoids transferring every
+  // pack's full row data over the wire just to read .length off the array.
+  const packCount = await prisma.printMaster.count({
     where: { itemCode, lotNo, status: 'AWAITING_INWARD' }
   })
-  if (!packs.length) throw new Error('No packs awaiting inward for this item/lot')
+  if (!packCount) throw new Error('No packs awaiting inward for this item/lot')
 
   const session = await prisma.inwardSession.create({
-    data: { itemCode, lotNo, warehouse, expectedBags: packs.length, scannedPackIds: [] }
+    data: { itemCode, lotNo, warehouse, expectedBags: packCount, scannedPackIds: [] }
   })
   return { success: true, data: session, resumed: false }
 }
 
 export async function scanPackForSession(sessionId, packId, warehouse) {
-  const session = await prisma.inwardSession.findUnique({ where: { sessionId } })
+  // Session and pack are independent lookups — firing them together instead
+  // of one-after-another halves their combined round-trip cost, which is
+  // most of what a single scan waits on against a remote DB.
+  const [session, pack] = await Promise.all([
+    prisma.inwardSession.findUnique({ where: { sessionId } }),
+    prisma.printMaster.findUnique({ where: { packId } }),
+  ])
   if (!session) throw new Error('Session not found')
   if (session.status !== 'ACTIVE') throw new Error('Session is not active')
-
-  const pack = await prisma.printMaster.findUnique({ where: { packId } })
   if (!pack) throw new Error(`Pack ${packId} does not exist in system`)
   if (pack.itemCode !== session.itemCode) throw new Error(`Pack belongs to ${pack.itemCode}, expected ${session.itemCode}`)
   if (pack.status !== 'AWAITING_INWARD') throw new Error(`Pack ${packId} is already ${pack.status}`)
   if (session.scannedPackIds.includes(packId)) throw new Error('Pack already scanned in this session')
 
   const resolvedWarehouse = warehouse || session.warehouse
-
-  const current = await prisma.inwardSession.findUnique({ where: { sessionId }, select: { packWarehouses: true } })
-  const merged = { ...(current?.packWarehouses || {}), [packId]: resolvedWarehouse }
+  // session.packWarehouses is already in hand from the fetch above — the
+  // previous version re-fetched the same session a second time just for
+  // this field, a fully redundant round trip on every scan.
+  const merged = { ...(session.packWarehouses || {}), [packId]: resolvedWarehouse }
 
   const updated = await prisma.inwardSession.update({
     where: { sessionId },
