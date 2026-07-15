@@ -2,7 +2,7 @@
 import { inwardApi, packsApi } from '../../../../../../api/inventory.js'
 import { Button, IconButton, BottomSheet, Modal } from '../../../../../../components/ui'
 import { useIsMobile } from '../../../../../../hooks/useIsMobile.js'
-import { X, Pause, CheckCircle2, Clock, Search, Undo2, PartyPopper, PackageCheck, Info, Flashlight, FlashlightOff } from 'lucide-react'
+import { X, Pause, CheckCircle2, Clock, Search, Undo2, PartyPopper, PackageCheck, Info, Flashlight, FlashlightOff, Smartphone, ScanBarcode } from 'lucide-react'
 import ScanSummaryCard from './components/scan-summary-card/ScanSummaryCard.jsx'
 import StickySubmitBar from './components/sticky-submit-bar/StickySubmitBar.jsx'
 import ManualEntryDrawer from './components/manual-entry-drawer/ManualEntryDrawer.jsx'
@@ -59,6 +59,13 @@ export default function PackInward() {
   const [doneStats, setDoneStats]           = useState({ submitted: 0, leftOver: 0 })
   const [torchSupported, setTorchSupported] = useState(false)
   const [torchOn, setTorchOn]               = useState(false)
+  // 'camera' = phone/laptop camera via BarcodeDetector; 'hardware' = a Zebra
+  // TC21-style handheld with a built-in scan engine, which (via its
+  // DataWedge keyboard-wedge profile — the factory default) needs no camera
+  // or SDK integration at all: it just types the decoded value into
+  // whichever input has focus, followed by Enter. So "hardware mode" is
+  // really just an always-focused text input wired to the same doScan path.
+  const [scanMode, setScanMode] = useState('camera')
 
   // Mobile-only UI state (bottom sheets for the compact scan summary cards)
   const isMobile = useIsMobile()
@@ -83,6 +90,7 @@ export default function PackInward() {
   const detectorRef        = useRef(null)
   const jsQRRef            = useRef(null)
   const lastFallbackDecode = useRef(0)
+  const hardwareInputRef   = useRef(null)
 
   // Local-first scanning state — built once at session start, read/written
   // synchronously on every scan with zero network calls.
@@ -120,6 +128,19 @@ export default function PackInward() {
     }
   }, [isMobile])
 
+  // Hardware-scanner mode has no camera — the scan buffer input just needs
+  // to stay focused so the device's keyboard-wedge output lands in it.
+  useEffect(() => {
+    if (step === STEPS.SCANNING && scanMode === 'hardware') {
+      hardwareInputRef.current?.focus()
+    }
+  }, [step, scanMode, isMobile])
+
+  const refocusHardwareInput = () => {
+    if (scanMode !== 'hardware' || showResumedInfo) return
+    setTimeout(() => hardwareInputRef.current?.focus(), 100)
+  }
+
   const loadGroups = async () => {
     try {
       setLoading(true)
@@ -137,8 +158,9 @@ export default function PackInward() {
     finally { setLoading(false) }
   }
 
-  const startSession = async () => {
+  const startSession = async (mode) => {
     if (!selected || !warehouse) { setError('Select item and warehouse'); return }
+    setScanMode(mode)
     setCreating(true); setError('')
     try {
       const sessionKey  = `${selected.itemCode}-${selected.lotNo}`
@@ -179,7 +201,10 @@ export default function PackInward() {
       setSession(restored)
       setResumed(isResume || alreadyScanned)
       setStep(STEPS.SCANNING)
-      await startCamera()
+      // Hardware scanners (Zebra TC21 etc.) have their own scan engine and
+      // need no camera — starting one would just prompt for a permission
+      // the device doesn't need and never gets used.
+      if (mode === 'camera') await startCamera()
       if (pendingQueueRef.current.length > 0) scheduleFlush()
     } catch (e) { setError(e.message) }
     finally { setCreating(false) }
@@ -565,25 +590,47 @@ export default function PackInward() {
             )}
 
             {/* Camera — the primary focus, right after the header */}
-            <div className="bg-black rounded-2xl overflow-hidden relative pi-camera-container mb-2.5">
-              <video ref={videoRef} className="w-full" playsInline muted />
-              <canvas ref={canvasRef} className="hidden" />
-              <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                <div className="w-40 h-40 border-2 border-blue-400 rounded-lg" />
+            {scanMode === 'camera' ? (
+              <div className="bg-black rounded-2xl overflow-hidden relative pi-camera-container mb-2.5">
+                <video ref={videoRef} className="w-full" playsInline muted />
+                <canvas ref={canvasRef} className="hidden" />
+                <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                  <div className="w-40 h-40 border-2 border-blue-400 rounded-lg" />
+                </div>
+                {torchSupported && (
+                  <button
+                    onClick={toggleTorch}
+                    className={`absolute top-2 right-2 w-9 h-9 rounded-full flex items-center justify-center transition-colors ${torchOn ? 'bg-amber-400 text-black' : 'bg-black/50 text-white'}`}
+                    title={torchOn ? 'Turn off flashlight' : 'Turn on flashlight'}
+                  >
+                    {torchOn ? <Flashlight size={16} /> : <FlashlightOff size={16} />}
+                  </button>
+                )}
+                <div className="absolute bottom-2 left-0 right-0 text-center text-white text-xs bg-black/40 py-1">
+                  Point camera at pack QR
+                </div>
               </div>
-              {torchSupported && (
-                <button
-                  onClick={toggleTorch}
-                  className={`absolute top-2 right-2 w-9 h-9 rounded-full flex items-center justify-center transition-colors ${torchOn ? 'bg-amber-400 text-black' : 'bg-black/50 text-white'}`}
-                  title={torchOn ? 'Turn off flashlight' : 'Turn on flashlight'}
-                >
-                  {torchOn ? <Flashlight size={16} /> : <FlashlightOff size={16} />}
-                </button>
-              )}
-              <div className="absolute bottom-2 left-0 right-0 text-center text-white text-xs bg-black/40 py-1">
-                Point camera at pack QR
+            ) : (
+              <div
+                onClick={refocusHardwareInput}
+                className="bg-slate-900 rounded-2xl overflow-hidden relative mb-2.5 px-5 py-8 flex flex-col items-center gap-3 text-center"
+              >
+                <ScanBarcode size={36} className="text-blue-400" />
+                <p className="text-white font-semibold text-sm">Ready to Scan</p>
+                <p className="text-slate-400 text-xs">Press the trigger on your scanner</p>
+                <form onSubmit={submitManual} className="w-full mt-1">
+                  <input
+                    ref={hardwareInputRef}
+                    value={manualId}
+                    onChange={e => setManualId(e.target.value)}
+                    onBlur={refocusHardwareInput}
+                    autoFocus
+                    className="w-full text-center bg-slate-800 text-white border border-slate-600 rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Waiting for scan…"
+                  />
+                </form>
               </div>
-            </div>
+            )}
 
             {scanError && (
               <div className="bg-red-50 border border-red-300 text-red-700 px-3 py-2 rounded-lg mb-2.5 text-xs">{scanError}</div>
@@ -611,8 +658,11 @@ export default function PackInward() {
               <ScanSummaryCard icon={Clock} label="Pending" count={pending.length} tone="warning" onClick={() => setSheet('pending')} />
             </div>
 
-            {/* Manual entry — collapsed, rarely used */}
-            <ManualEntryDrawer value={manualId} onChange={setManualId} onSubmit={submitManual} />
+            {/* Manual entry — collapsed, rarely used (hardware mode already
+                has its own always-visible input above, so skip the duplicate) */}
+            {scanMode === 'camera' && (
+              <ManualEntryDrawer value={manualId} onChange={setManualId} onSubmit={submitManual} />
+            )}
           </div>
 
           <StickySubmitBar
@@ -728,35 +778,49 @@ export default function PackInward() {
           )}
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Camera */}
+            {/* Camera / hardware scanner */}
             <div className="flex flex-col gap-3">
-              <div className="bg-black rounded-xl overflow-hidden relative pi-camera-container">
-                <video ref={videoRef} className="w-full" playsInline muted />
-                <canvas ref={canvasRef} className="hidden" />
-                <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                  <div className="w-48 h-48 border-2 border-blue-400 rounded-lg" />
+              {scanMode === 'camera' ? (
+                <div className="bg-black rounded-xl overflow-hidden relative pi-camera-container">
+                  <video ref={videoRef} className="w-full" playsInline muted />
+                  <canvas ref={canvasRef} className="hidden" />
+                  <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                    <div className="w-48 h-48 border-2 border-blue-400 rounded-lg" />
+                  </div>
+                  <div className="absolute top-2 left-2 right-12 bg-indigo-700/80 rounded-lg px-3 py-1.5 text-center">
+                    <span className="text-white text-xs font-semibold">{warehouse}</span>
+                  </div>
+                  {torchSupported && (
+                    <button
+                      onClick={toggleTorch}
+                      className={`absolute top-2 right-2 w-9 h-9 rounded-full flex items-center justify-center transition-colors ${torchOn ? 'bg-amber-400 text-black' : 'bg-black/50 text-white'}`}
+                      title={torchOn ? 'Turn off flashlight' : 'Turn on flashlight'}
+                    >
+                      {torchOn ? <Flashlight size={16} /> : <FlashlightOff size={16} />}
+                    </button>
+                  )}
+                  <div className="absolute bottom-3 left-0 right-0 text-center text-white text-sm bg-black/40 py-1">
+                    Point camera at pack QR
+                  </div>
                 </div>
-                <div className="absolute top-2 left-2 right-12 bg-indigo-700/80 rounded-lg px-3 py-1.5 text-center">
-                  <span className="text-white text-xs font-semibold">{warehouse}</span>
+              ) : (
+                <div onClick={refocusHardwareInput} className="bg-slate-900 rounded-xl overflow-hidden relative pi-camera-container flex flex-col items-center justify-center gap-2 text-center px-4">
+                  <ScanBarcode size={40} className="text-blue-400" />
+                  <p className="text-white font-semibold text-sm">Ready to Scan</p>
+                  <p className="text-slate-400 text-xs">Press the trigger on your scanner</p>
+                  <div className="absolute top-2 left-2 bg-indigo-700/80 rounded-lg px-3 py-1.5">
+                    <span className="text-white text-xs font-semibold">{warehouse}</span>
+                  </div>
                 </div>
-                {torchSupported && (
-                  <button
-                    onClick={toggleTorch}
-                    className={`absolute top-2 right-2 w-9 h-9 rounded-full flex items-center justify-center transition-colors ${torchOn ? 'bg-amber-400 text-black' : 'bg-black/50 text-white'}`}
-                    title={torchOn ? 'Turn off flashlight' : 'Turn on flashlight'}
-                  >
-                    {torchOn ? <Flashlight size={16} /> : <FlashlightOff size={16} />}
-                  </button>
-                )}
-                <div className="absolute bottom-3 left-0 right-0 text-center text-white text-sm bg-black/40 py-1">
-                  Point camera at pack QR
-                </div>
-              </div>
+              )}
               <form onSubmit={submitManual} className="flex gap-2">
                 <input
+                  ref={scanMode === 'hardware' ? hardwareInputRef : undefined}
                   value={manualId}
                   onChange={e => setManualId(e.target.value)}
-                  placeholder="Or type / paste Pack ID"
+                  onBlur={scanMode === 'hardware' ? refocusHardwareInput : undefined}
+                  autoFocus={scanMode === 'hardware'}
+                  placeholder={scanMode === 'hardware' ? 'Waiting for scan…' : 'Or type / paste Pack ID'}
                   className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <Button type="submit" disabled={!manualId.trim()} variant="primary" size="sm">
@@ -914,26 +978,45 @@ export default function PackInward() {
             )}
           </div>
 
-          <Button
-            onClick={startSession}
-            disabled={!selected || !warehouse || creating}
-            loading={creating}
-            variant="primary"
-            fullWidth
-            size="lg"
-          >
-            {creating
-              ? 'Starting…'
-              : selectedActiveSession
-                ? `Resume Session (${selectedActiveSession.scannedPackIds?.length || 0}/${selectedActiveSession.expectedBags} done)`
-                : 'Start Scanning Session'}
-          </Button>
-
-          {selectedActiveSession && (
-            <p className="text-center text-xs text-gray-400 mt-2">
-              Your previous session was paused. Resume to scan the remaining bags.
-            </p>
-          )}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Button
+              onClick={() => startSession('camera')}
+              disabled={!selected || !warehouse || creating}
+              loading={creating && scanMode === 'camera'}
+              variant="primary"
+              icon={Smartphone}
+              fullWidth
+              size="lg"
+              className="flex-1"
+            >
+              {creating && scanMode === 'camera'
+                ? 'Starting…'
+                : selectedActiveSession
+                  ? `Resume (${selectedActiveSession.scannedPackIds?.length || 0}/${selectedActiveSession.expectedBags})`
+                  : 'Phone Scanner'}
+            </Button>
+            <Button
+              onClick={() => startSession('hardware')}
+              disabled={!selected || !warehouse || creating}
+              loading={creating && scanMode === 'hardware'}
+              variant="purple"
+              icon={ScanBarcode}
+              fullWidth
+              size="lg"
+              className="flex-1"
+            >
+              {creating && scanMode === 'hardware'
+                ? 'Starting…'
+                : selectedActiveSession
+                  ? `Resume (${selectedActiveSession.scannedPackIds?.length || 0}/${selectedActiveSession.expectedBags})`
+                  : 'Scanner'}
+            </Button>
+          </div>
+          <p className="text-center text-xs text-gray-400 mt-2">
+            {selectedActiveSession
+              ? 'Your previous session was paused. Resume with either scan method to continue.'
+              : 'Phone Scanner uses your camera · Scanner is for handheld devices like the Zebra TC21'}
+          </p>
         </>
       )}
     </div>
