@@ -992,7 +992,7 @@ export default function PackInward() {
               {creating && scanMode === 'camera'
                 ? 'Starting…'
                 : selectedActiveSession
-                  ? `Resume (${selectedActiveSession.scannedPackIds?.length || 0}/${selectedActiveSession.expectedBags})`
+                  ? `Phone Resume (${selectedActiveSession.scannedPackIds?.length || 0}/${selectedActiveSession.expectedBags})`
                   : 'Phone Scanner'}
             </Button>
             <Button
@@ -1008,7 +1008,7 @@ export default function PackInward() {
               {creating && scanMode === 'hardware'
                 ? 'Starting…'
                 : selectedActiveSession
-                  ? `Resume (${selectedActiveSession.scannedPackIds?.length || 0}/${selectedActiveSession.expectedBags})`
+                  ? `Scanner Device Resume (${selectedActiveSession.scannedPackIds?.length || 0}/${selectedActiveSession.expectedBags})`
                   : 'Scanner'}
             </Button>
           </div>

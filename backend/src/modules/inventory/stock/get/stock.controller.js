@@ -11,23 +11,36 @@ const listStock = async (req, res) => {
       ]} : {},
       orderBy: { itemName: 'asc' }
     })
-    const stockData = await Promise.all(rms.map(async (rm) => {
-      const packStock = await prisma.packBalance.aggregate({
-        where: { itemCode: rm.itemCode, remainingQty: { gt: 0 } },
+
+    // Bulk-fetch pack/container stock for every RM in 2 queries total instead
+    // of 2 queries PER item — the previous per-item Promise.all fired
+    // hundreds of concurrent queries (2 per RM) that exhausted the DB
+    // connection pool once the RM register grew past a couple hundred items.
+    const [packStocks, containers] = await Promise.all([
+      prisma.packBalance.groupBy({
+        by: ['itemCode'],
+        where: { remainingQty: { gt: 0 } },
         _sum: { remainingQty: true },
-        _count: { packId: true }
-      })
-      const container = await prisma.containerMaster.findUnique({ where: { itemCode: rm.itemCode } })
+        _count: { packId: true },
+      }),
+      prisma.containerMaster.findMany(),
+    ])
+    const packStockMap  = new Map(packStocks.map(p => [p.itemCode, p]))
+    const containerMap  = new Map(containers.map(c => [c.itemCode, c]))
+
+    const stockData = rms.map((rm) => {
+      const packStock = packStockMap.get(rm.itemCode)
+      const container = containerMap.get(rm.itemCode)
       return {
         itemCode: rm.itemCode,
         itemName: rm.itemName,
         uom: rm.uom,
-        stockInPacks: packStock._sum.remainingQty || 0,
-        activePacks: packStock._count.packId || 0,
+        stockInPacks: packStock?._sum.remainingQty || 0,
+        activePacks: packStock?._count.packId || 0,
         stockInContainer: container?.currentQty || 0,
-        totalStock: (packStock._sum.remainingQty || 0) + (container?.currentQty || 0),
+        totalStock: (packStock?._sum.remainingQty || 0) + (container?.currentQty || 0),
       }
-    }))
+    })
     return res.json({ success: true, data: stockData })
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
