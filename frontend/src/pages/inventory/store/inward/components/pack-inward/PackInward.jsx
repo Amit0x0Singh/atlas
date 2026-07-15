@@ -432,6 +432,33 @@ export default function PackInward() {
     doScan(id)
   }
 
+  // Hardware scanners (Zebra TC21 etc.) send their Enter terminator in ways
+  // that don't always trigger a native <form onSubmit> — some DataWedge
+  // profiles fire it as a real keydown (caught below), others inject it as
+  // a literal \n/\r character bundled into the pasted text itself (caught
+  // in the onChange below), which a form submit listener would never see.
+  // Both paths funnel through the same doScan, so either one landing works.
+  const handleScanBufferKeyDown = (e) => {
+    if (e.key !== 'Enter') return
+    e.preventDefault()
+    const id = manualId.trim()
+    if (!id) return
+    setManualId('')
+    doScan(id)
+  }
+
+  const handleScanBufferChange = (e) => {
+    const raw = e.target.value
+    const terminatorIdx = raw.search(/[\r\n]/)
+    if (scanMode === 'hardware' && terminatorIdx !== -1) {
+      const id = raw.slice(0, terminatorIdx).trim()
+      setManualId('')
+      if (id) doScan(id)
+      return
+    }
+    setManualId(raw)
+  }
+
   const removeScan = async (packId) => {
     const cur = sessionRef.current
     if (!cur) return
@@ -622,7 +649,8 @@ export default function PackInward() {
                   <input
                     ref={hardwareInputRef}
                     value={manualId}
-                    onChange={e => setManualId(e.target.value)}
+                    onChange={handleScanBufferChange}
+                    onKeyDown={handleScanBufferKeyDown}
                     onBlur={refocusHardwareInput}
                     autoFocus
                     className="w-full text-center bg-slate-800 text-white border border-slate-600 rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500"
@@ -817,7 +845,8 @@ export default function PackInward() {
                 <input
                   ref={scanMode === 'hardware' ? hardwareInputRef : undefined}
                   value={manualId}
-                  onChange={e => setManualId(e.target.value)}
+                  onChange={scanMode === 'hardware' ? handleScanBufferChange : (e => setManualId(e.target.value))}
+                  onKeyDown={scanMode === 'hardware' ? handleScanBufferKeyDown : undefined}
                   onBlur={scanMode === 'hardware' ? refocusHardwareInput : undefined}
                   autoFocus={scanMode === 'hardware'}
                   placeholder={scanMode === 'hardware' ? 'Waiting for scan…' : 'Or type / paste Pack ID'}
