@@ -432,14 +432,17 @@ export default function PackInward() {
     doScan(id)
   }
 
-  // Hardware scanners (Zebra TC21 etc.) send their Enter terminator in ways
-  // that don't always trigger a native <form onSubmit> — some DataWedge
-  // profiles fire it as a real keydown (caught below), others inject it as
-  // a literal \n/\r character bundled into the pasted text itself (caught
-  // in the onChange below), which a form submit listener would never see.
-  // Both paths funnel through the same doScan, so either one landing works.
+  // Hardware scanners (Zebra TC21 etc.) vary a lot in how — or whether —
+  // they signal "end of scan": some DataWedge profiles send a real Enter
+  // keydown (caught below), some send Tab, some send nothing at all and
+  // just rely on the app noticing the buffer is complete. Rather than bet
+  // on any one terminator, the primary detection is terminator-agnostic:
+  // pack IDs for this session are a fixed, known set (packMapRef, built at
+  // session start) — so the instant the typed/injected buffer exactly
+  // matches one, submit it immediately. That's the one signal every scan
+  // gun produces no matter how its suffix key is configured.
   const handleScanBufferKeyDown = (e) => {
-    if (e.key !== 'Enter') return
+    if (e.key !== 'Enter' && e.key !== 'Tab') return
     e.preventDefault()
     const id = manualId.trim()
     if (!id) return
@@ -449,13 +452,23 @@ export default function PackInward() {
 
   const handleScanBufferChange = (e) => {
     const raw = e.target.value
-    const terminatorIdx = raw.search(/[\r\n]/)
-    if (scanMode === 'hardware' && terminatorIdx !== -1) {
+    if (scanMode !== 'hardware') { setManualId(raw); return }
+
+    const terminatorIdx = raw.search(/[\r\n\t]/)
+    if (terminatorIdx !== -1) {
       const id = raw.slice(0, terminatorIdx).trim()
       setManualId('')
       if (id) doScan(id)
       return
     }
+
+    const trimmed = raw.trim()
+    if (trimmed && packMapRef.current.has(trimmed)) {
+      setManualId('')
+      doScan(trimmed)
+      return
+    }
+
     setManualId(raw)
   }
 
