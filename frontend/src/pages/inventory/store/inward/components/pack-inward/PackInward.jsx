@@ -5,7 +5,6 @@ import { useIsMobile } from '../../../../../../hooks/useIsMobile.js'
 import { X, Pause, CheckCircle2, Clock, Search, Undo2, PartyPopper, PackageCheck, Info, Flashlight, FlashlightOff, Smartphone, ScanBarcode } from 'lucide-react'
 import ScanSummaryCard from './components/scan-summary-card/ScanSummaryCard.jsx'
 import StickySubmitBar from './components/sticky-submit-bar/StickySubmitBar.jsx'
-import ManualEntryDrawer from './components/manual-entry-drawer/ManualEntryDrawer.jsx'
 import './PackInward.css'
 
 const STEPS = { SETUP: 'setup', SCANNING: 'scanning', DONE: 'done' }
@@ -424,14 +423,6 @@ export default function PackInward() {
     scheduleFlush()
   }
 
-  const submitManual = (e) => {
-    e.preventDefault()
-    const id = manualId.trim()
-    if (!id) return
-    setManualId('')
-    doScan(id)
-  }
-
   // Hardware scanners (Zebra TC21 etc.) vary a lot in how — or whether —
   // they signal "end of scan": some DataWedge profiles send a real Enter
   // keydown (caught below), some send Tab, some send nothing at all and
@@ -658,18 +649,23 @@ export default function PackInward() {
                 <ScanBarcode size={36} className="text-blue-400" />
                 <p className="text-white font-semibold text-sm">Ready to Scan</p>
                 <p className="text-slate-400 text-xs">Press the trigger on your scanner</p>
-                <form onSubmit={submitManual} className="w-full mt-1">
-                  <input
-                    ref={hardwareInputRef}
-                    value={manualId}
-                    onChange={handleScanBufferChange}
-                    onKeyDown={handleScanBufferKeyDown}
-                    onBlur={refocusHardwareInput}
-                    autoFocus
-                    className="w-full text-center bg-slate-800 text-white border border-slate-600 rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Waiting for scan…"
-                  />
-                </form>
+                {/* Captures the scanner's keyboard-wedge output — kept off-screen
+                    (not just visually hidden) so focusing it can never trigger
+                    Android's on-screen keyboard, and inputMode="none" is a second
+                    layer of the same protection for browsers that'd otherwise
+                    show it anyway on a focused text input. */}
+                <input
+                  ref={hardwareInputRef}
+                  value={manualId}
+                  onChange={handleScanBufferChange}
+                  onKeyDown={handleScanBufferKeyDown}
+                  onBlur={refocusHardwareInput}
+                  autoFocus
+                  inputMode="none"
+                  tabIndex={-1}
+                  aria-hidden="true"
+                  className="absolute w-px h-px opacity-0 pointer-events-none"
+                />
               </div>
             )}
 
@@ -699,11 +695,6 @@ export default function PackInward() {
               <ScanSummaryCard icon={Clock} label="Pending" count={pending.length} tone="warning" onClick={() => setSheet('pending')} />
             </div>
 
-            {/* Manual entry — collapsed, rarely used (hardware mode already
-                has its own always-visible input above, so skip the duplicate) */}
-            {scanMode === 'camera' && (
-              <ManualEntryDrawer value={manualId} onChange={setManualId} onSubmit={submitManual} />
-            )}
           </div>
 
           <StickySubmitBar
@@ -854,21 +845,24 @@ export default function PackInward() {
                   </div>
                 </div>
               )}
-              <form onSubmit={submitManual} className="flex gap-2">
+              {/* Captures the scanner's keyboard-wedge output — kept off-screen
+                  (not just visually hidden) so focusing it can never trigger
+                  Android's on-screen keyboard; inputMode="none" is a second
+                  layer of the same protection. */}
+              {scanMode === 'hardware' && (
                 <input
-                  ref={scanMode === 'hardware' ? hardwareInputRef : undefined}
+                  ref={hardwareInputRef}
                   value={manualId}
-                  onChange={scanMode === 'hardware' ? handleScanBufferChange : (e => setManualId(e.target.value))}
-                  onKeyDown={scanMode === 'hardware' ? handleScanBufferKeyDown : undefined}
-                  onBlur={scanMode === 'hardware' ? refocusHardwareInput : undefined}
-                  autoFocus={scanMode === 'hardware'}
-                  placeholder={scanMode === 'hardware' ? 'Waiting for scan…' : 'Or type / paste Pack ID'}
-                  className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono outline-none focus:ring-2 focus:ring-blue-500"
+                  onChange={handleScanBufferChange}
+                  onKeyDown={handleScanBufferKeyDown}
+                  onBlur={refocusHardwareInput}
+                  autoFocus
+                  inputMode="none"
+                  tabIndex={-1}
+                  aria-hidden="true"
+                  className="absolute w-px h-px opacity-0 pointer-events-none"
                 />
-                <Button type="submit" disabled={!manualId.trim()} variant="primary" size="sm">
-                  Add
-                </Button>
-              </form>
+              )}
             </div>
 
             {/* Scanned / Pending lists */}
@@ -1050,14 +1044,14 @@ export default function PackInward() {
               {creating && scanMode === 'hardware'
                 ? 'Starting…'
                 : selectedActiveSession
-                  ? `Scanner Device Resume (${selectedActiveSession.scannedPackIds?.length || 0}/${selectedActiveSession.expectedBags})`
-                  : 'Scanner'}
+                  ? `Gun Scanner Resume (${selectedActiveSession.scannedPackIds?.length || 0}/${selectedActiveSession.expectedBags})`
+                  : 'Gun Scanner'}
             </Button>
           </div>
           <p className="text-center text-xs text-gray-400 mt-2">
             {selectedActiveSession
               ? 'Your previous session was paused. Resume with either scan method to continue.'
-              : 'Phone Scanner uses your camera · Scanner is for handheld devices like the Zebra TC21'}
+              : 'Phone Scanner uses your camera · Gun Scanner is for handheld devices like the Zebra TC21'}
           </p>
         </>
       )}

@@ -6,10 +6,13 @@ import prisma from '../db.js'
 // pick up this one field, doubling the network round-trip on every single
 // pack scanned.
 async function withPendingPackIds(session) {
+  // Only packs still awaiting inward — a pack already submitted through an
+  // earlier session on this same item/lot (e.g. a partial submit that left
+  // some bags for later) must not reappear as "pending" in a new session.
   // Only the fields actually used below — on a remote DB every extra column
   // is extra bytes over an already latency-bound round trip.
   const allPacks = await prisma.printMaster.findMany({
-    where: { itemCode: session.itemCode, lotNo: session.lotNo },
+    where: { itemCode: session.itemCode, lotNo: session.lotNo, status: 'AWAITING_INWARD' },
     select: { packId: true },
     orderBy: { bagNo: 'asc' },
   })
@@ -20,6 +23,11 @@ async function withPendingPackIds(session) {
 // Superset of withPendingPackIds — also returns the full pack rows for the
 // session's item/lot, which the frontend turns into a local packId -> pack
 // lookup Map at session start so individual scans never need a DB round trip.
+// packs deliberately includes every status (not just AWAITING_INWARD) so a
+// stray re-scan of an already-inwarded QR from a prior session gets a
+// proper "already INWARDED" rejection instead of "unknown pack" — but
+// pendingPackIds must still exclude them, or they'd wrongly reappear as
+// pending in a fresh session started after a partial submit.
 async function withPackDetails(session) {
   const allPacks = await prisma.printMaster.findMany({
     where: { itemCode: session.itemCode, lotNo: session.lotNo },
@@ -27,7 +35,9 @@ async function withPackDetails(session) {
     orderBy: { bagNo: 'asc' },
   })
   const scannedSet = new Set(session.scannedPackIds)
-  const pendingPackIds = allPacks.filter(p => !scannedSet.has(p.packId)).map(p => p.packId)
+  const pendingPackIds = allPacks
+    .filter(p => p.status === 'AWAITING_INWARD' && !scannedSet.has(p.packId))
+    .map(p => p.packId)
   return { ...session, packs: allPacks, pendingPackIds }
 }
 
