@@ -6,6 +6,7 @@ import {
   listInward, listActiveSessions, getSession
 } from './get/inward.controller.js'
 import { createSession, scanPack, batchScanPack, submitSession } from './create/inward.controller.js'
+import { validateCreateSession, validateSessionIdParam, validateScanPack, validateBatchScanPack } from './create/inward.middleware.js'
 import { removeScan } from './delete/inward.controller.js'
 
 const InwardRouter = express.Router()
@@ -23,11 +24,11 @@ InwardRouter.post('/packs/generate', authenticate, storeOrAbove, generatePacks)
 // ── Inward records ─────────────────────────────────────────────────────────────
 InwardRouter.get('/inward', authenticate, listInward)
 InwardRouter.get('/inward/sessions', authenticate, listActiveSessions)
-InwardRouter.post('/inward/sessions', authenticate, storeOrAbove, createSession)
-InwardRouter.get('/inward/sessions/:sessionId', authenticate, getSession)
-InwardRouter.post('/inward/sessions/:sessionId/scan', authenticate, storeOrAbove, scanPack)
-InwardRouter.post('/inward/sessions/:sessionId/batch-scan', authenticate, storeOrAbove, batchScanPack)
+InwardRouter.post('/inward/sessions', authenticate, storeOrAbove, validateCreateSession, createSession)
+InwardRouter.get('/inward/sessions/:sessionId', authenticate, validateSessionIdParam, getSession)
+InwardRouter.post('/inward/sessions/:sessionId/scan', authenticate, storeOrAbove, validateSessionIdParam, validateScanPack, scanPack)
+InwardRouter.post('/inward/sessions/:sessionId/batch-scan', authenticate, storeOrAbove, validateSessionIdParam, validateBatchScanPack, batchScanPack)
 InwardRouter.delete('/inward/sessions/:sessionId/scan/:packId', authenticate, storeOrAbove, removeScan)
-InwardRouter.post('/inward/sessions/:sessionId/submit', authenticate, storeOrAbove, submitSession)
+InwardRouter.post('/inward/sessions/:sessionId/submit', authenticate, storeOrAbove, validateSessionIdParam, submitSession)
 
 export default InwardRouter
