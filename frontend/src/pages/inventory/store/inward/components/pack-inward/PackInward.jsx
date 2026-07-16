@@ -17,6 +17,16 @@ const STEPS = { SETUP: 'setup', SCANNING: 'scanning', DONE: 'done' }
 const FLUSH_DEBOUNCE_MS = 800
 const BATCH_THRESHOLD   = 20
 const FLUSH_RETRY_MS    = 3000
+
+// A real scan-gun burst (its full decoded payload, keystroke by keystroke)
+// completes in a handful of milliseconds — nothing like human typing speed.
+// If the hardware capture buffer goes quiet for longer than this, the burst
+// is over: either it terminated normally (buffer's already been cleared by
+// then) or it was a code that never matched anything for this session (wrong
+// item, damaged label, foreign QR) and the device sent no terminator to flag
+// it. SCAN_BURST_IDLE_MS is how long to wait before treating a lingering,
+// unmatched buffer as a genuine unrecognized scan instead of staying silent.
+const SCAN_BURST_IDLE_MS = 300
 const localScanKey = (sessionId) => `inward-scan:${sessionId}`
 
 // Haptic feedback so an operator scanning bag-after-bag doesn't need to
@@ -99,10 +109,15 @@ export default function PackInward() {
   const flushTimerRef   = useRef(null)
   const isFlushingRef   = useRef(false)      // true while a batch-scan request is in flight
   const flushAgainRef   = useRef(false)      // more scans queued while the in-flight one was running
+  const scanBurstTimerRef = useRef(null)     // idle-watchdog for unterminated hardware scans
 
   useEffect(() => {
     loadGroups()
-    return () => { stopCamera(); if (flushTimerRef.current) clearTimeout(flushTimerRef.current) }
+    return () => {
+      stopCamera()
+      if (flushTimerRef.current) clearTimeout(flushTimerRef.current)
+      if (scanBurstTimerRef.current) clearTimeout(scanBurstTimerRef.current)
+    }
   }, [])
   useEffect(() => { sessionRef.current = session }, [session])
   useEffect(() => { warehouseRef.current = warehouse }, [warehouse])
@@ -147,6 +162,7 @@ export default function PackInward() {
   // a valid pack ID again. Force the actual DOM value empty synchronously,
   // not just the React state, so nothing can survive between scans.
   const clearScanBuffer = () => {
+    if (scanBurstTimerRef.current) { clearTimeout(scanBurstTimerRef.current); scanBurstTimerRef.current = null }
     setManualId('')
     if (hardwareInputRef.current) hardwareInputRef.current.value = ''
   }
@@ -472,6 +488,22 @@ export default function PackInward() {
     }
 
     setManualId(raw)
+
+    // Buffer doesn't match anything (yet) — arm the idle-watchdog. If no
+    // further keystroke arrives before it fires, this scan burst is done and
+    // never resolved into a known pack ID or a terminator: it's a genuinely
+    // unrecognized scan (wrong item, damaged label, foreign QR), not a scan
+    // still mid-flight. Surface it instead of leaving it to silently corrupt
+    // whatever gets scanned next.
+    if (scanBurstTimerRef.current) clearTimeout(scanBurstTimerRef.current)
+    scanBurstTimerRef.current = setTimeout(() => {
+      scanBurstTimerRef.current = null
+      const stale = hardwareInputRef.current?.value?.trim()
+      if (!stale) return
+      vibrateScanError()
+      setScanError(`Unrecognized scan: ${stale.length > 60 ? stale.slice(0, 60) + '…' : stale}`)
+      clearScanBuffer()
+    }, SCAN_BURST_IDLE_MS)
   }
 
   const removeScan = async (packId) => {
@@ -530,7 +562,7 @@ export default function PackInward() {
     stopCamera()
     sessionRef.current = null
     setStep(STEPS.SETUP); setSession(null); setSelected(null)
-    setError(''); setScanError(''); setLastScan(''); setManualId('')
+    setError(''); setScanError(''); setLastScan(''); clearScanBuffer()
     setWarehouse(WAREHOUSES[0]); setResumed(false)
     loadGroups()
   }
