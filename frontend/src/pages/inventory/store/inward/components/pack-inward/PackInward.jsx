@@ -140,6 +140,17 @@ export default function PackInward() {
     setTimeout(() => hardwareInputRef.current?.focus(), 100)
   }
 
+  // React state clears the controlled value on the *next* render, but a
+  // hardware scanner can inject the following bag's keystrokes faster than
+  // that commit — they'd land on the input while it still holds the DOM's
+  // old raw value and get appended onto it, so the buffer never exact-matches
+  // a valid pack ID again. Force the actual DOM value empty synchronously,
+  // not just the React state, so nothing can survive between scans.
+  const clearScanBuffer = () => {
+    setManualId('')
+    if (hardwareInputRef.current) hardwareInputRef.current.value = ''
+  }
+
   const loadGroups = async () => {
     try {
       setLoading(true)
@@ -435,9 +446,9 @@ export default function PackInward() {
   const handleScanBufferKeyDown = (e) => {
     if (e.key !== 'Enter' && e.key !== 'Tab') return
     e.preventDefault()
-    const id = manualId.trim()
+    const id = e.target.value.trim()
+    clearScanBuffer()
     if (!id) return
-    setManualId('')
     doScan(id)
   }
 
@@ -448,14 +459,14 @@ export default function PackInward() {
     const terminatorIdx = raw.search(/[\r\n\t]/)
     if (terminatorIdx !== -1) {
       const id = raw.slice(0, terminatorIdx).trim()
-      setManualId('')
+      clearScanBuffer()
       if (id) doScan(id)
       return
     }
 
     const trimmed = raw.trim()
     if (trimmed && packMapRef.current.has(trimmed)) {
-      setManualId('')
+      clearScanBuffer()
       doScan(trimmed)
       return
     }
