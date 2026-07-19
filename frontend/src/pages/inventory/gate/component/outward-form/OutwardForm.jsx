@@ -27,7 +27,7 @@ export default function OutwardForm({ onSubmit, onCancel }) {
   return (
     <div className="of-wrap">
       <div className="of-header">
-        <ArrowUp size={18} style={{ color: "#8b5cf6", flexShrink: 0 }} />
+        <ArrowUp size={18} className="of-header-icon" />
         <h3 className="of-title">New Gate Outward</h3>
       </div>
 

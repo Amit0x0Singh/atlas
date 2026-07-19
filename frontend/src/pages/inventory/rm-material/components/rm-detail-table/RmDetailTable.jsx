@@ -1,4 +1,5 @@
-﻿import './RmDetailTable.css'
+﻿import { Fragment } from 'react'
+import './RmDetailTable.css'
 import Pagination from '../../../../../components/pagination/Pagination.jsx'
 import { fmtQty, fmtDate, statusMeta, groupStatus } from '../rmDetailHelpers.js'
 import { Button } from '../../../../../components/ui'
@@ -56,7 +57,7 @@ export default function RmDetailTable({ loading, filteredGroups, paginatedGroups
                 const sm       = statusMeta(gStatus)
 
                 return (
-                  <>
+                  <Fragment key={g.key}>
                     {/* Group row */}
                     <tr key={g.key} onClick={() => onToggle(g.key)}
                       className={`border-t border-gray-200 cursor-pointer select-none transition-colors ${isOpen ? 'bg-indigo-50 hover:bg-indigo-100/60' : 'hover:bg-gray-50'}`}>
@@ -134,7 +135,7 @@ export default function RmDetailTable({ loading, filteredGroups, paginatedGroups
                         </tr>
                       )
                     })}
-                  </>
+                  </Fragment>
                 )
               })}
             </tbody>

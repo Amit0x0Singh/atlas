@@ -1,29 +1,3 @@
-/**
- * Global Type Conversion Middleware
- * ─────────────────────────────────────────────────────────────────────────────
- * Runs AFTER sanitize.js (so "" has already become null and doesn't get
- * misread as a numeric/boolean candidate here). Recursively converts
- * frontend string values into proper JS types:
- *   - "true" / "false"           -> boolean
- *   - "null"                     -> null
- *   - numeric-looking strings    -> Number
- *
- * Identifiers must never be silently coerced to Number (a phone/PIN/GST/PAN/
- * invoice/batch number that loses a leading zero, or gets turned into a
- * float, is a data-corruption bug, not a convenience). Two layers guard
- * against that, both configurable rather than hardcoded per controller:
- *   1. DEFAULT_IDENTIFIER_PATTERNS — one shared list of field-name patterns
- *      (id, *_no, *_number, *_code, phone, gst, pan, pin, invoice, batch,
- *      lot, vehicle, uuid, ...) that are always left as strings.
- *   2. `excludeFields` — an explicit per-route list for anything the default
- *      patterns don't catch, e.g. a field just called `code`.
- * A leading-zero guard (`/^0\d/`) is also applied as a last-resort safety
- * net, since a genuine number is very rarely written with a leading zero.
- *
- * Usage in local middleware:
- *   import { convertTypes } from '../../../../middleware/preprocessing/typeConvert.js'
- *   convertTypes({ excludeFields: ['invoice_no', 'vehicle_no'] })
- */
 import { setRequestTarget } from './sanitize.js'
 
 export const DEFAULT_IDENTIFIER_PATTERNS = [

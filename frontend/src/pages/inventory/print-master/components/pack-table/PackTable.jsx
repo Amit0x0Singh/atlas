@@ -1,4 +1,4 @@
-﻿import { useState, useMemo, useEffect } from "react";
+﻿import { useState, useMemo, useEffect, Fragment } from "react";
 import { packsApi } from "../../../../../api/inventory.js";
 import { usePacks } from "../../hooks/usePacks.js";
 import Pagination from "../../../../../components/pagination/Pagination.jsx";
@@ -162,7 +162,7 @@ export default function PackTable({ reloadTrigger }) {
                   const status   = groupStatus(g.bags);
 
                   return (
-                    <>
+                    <Fragment key={g.key}>
                       {/* ── Main group row ───────────────────────────────── */}
                       <tr
                         key={g.key}
@@ -292,7 +292,7 @@ export default function PackTable({ reloadTrigger }) {
                             </td>
                           </tr>
                         ))}
-                    </>
+                    </Fragment>
                   );
                 })
               )}

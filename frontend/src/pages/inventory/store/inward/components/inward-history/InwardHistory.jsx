@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useMemo } from 'react'
+﻿import { useState, useEffect, useMemo, Fragment } from 'react'
 import { packsApi, inwardApi } from '../../../../../../api/inventory.js'
 import Pagination from '../../../../../../components/pagination/Pagination.jsx'
 import { Button } from '../../../../../../components/ui'
@@ -208,7 +208,7 @@ export default function InwardHistory() {
                     const groupWarehouses = [...new Set(g.bags.map(b => b.warehouse).filter(Boolean))]
 
                     return (
-                      <>
+                      <Fragment key={g.key}>
                         {/*  Main group row  */}
                         <tr key={g.key}
                           onClick={() => toggle(g.key)}
@@ -319,7 +319,7 @@ export default function InwardHistory() {
                             </td>
                           </tr>
                         ))}
-                      </>
+                      </Fragment>
                     )
                   })
                 )}

@@ -1,4 +1,5 @@
 import { Loader2, CheckCircle, XCircle, X } from "lucide-react";
+import "./ScanFeedback.css";
 
 export default function ScanFeedback({ feedback, onClose }) {
   if (!feedback) return null;
@@ -7,45 +8,13 @@ export default function ScanFeedback({ feedback, onClose }) {
   const isLoading = feedback.loading === true;
 
   const Icon = isLoading ? Loader2 : isSuccess ? CheckCircle : XCircle;
+  const variant = isSuccess ? "success" : isLoading ? "loading" : "error";
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        bottom: "28px",
-        right: "28px",
-        padding: "14px 20px",
-        background: isSuccess ? "#f0fdf4" : isLoading ? "#fff" : "#fef2f2",
-        borderRadius: "10px",
-        border: `1px solid ${isSuccess ? "#16a34a" : isLoading ? "#e2e8f0" : "#dc2626"}`,
-        color: isSuccess ? "#15803d" : isLoading ? "#64748b" : "#dc2626",
-        fontWeight: 600,
-        fontSize: "13px",
-        boxShadow: "0 4px 20px rgba(0,0,0,0.12)",
-        zIndex: 500,
-        display: "flex",
-        alignItems: "center",
-        gap: "10px",
-        minWidth: "260px",
-      }}
-    >
-      <Icon
-        size={16}
-        style={isLoading ? { animation: "spin 1s linear infinite" } : undefined}
-      />
-      <span style={{ flex: 1 }}>{feedback.msg}</span>
-      <button
-        onClick={onClose}
-        style={{
-          background: "none",
-          border: "none",
-          cursor: "pointer",
-          opacity: 0.5,
-          padding: "0",
-          lineHeight: 1,
-          display: "flex",
-        }}
-      >
+    <div className={`sf-wrap sf-wrap--${variant}`}>
+      <Icon size={16} className={isLoading ? "sf-icon animate-spin" : "sf-icon"} />
+      <span className="sf-msg">{feedback.msg}</span>
+      <button onClick={onClose} className="sf-close">
         <X size={14} />
       </button>
     </div>

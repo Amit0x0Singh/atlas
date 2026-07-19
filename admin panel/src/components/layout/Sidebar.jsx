@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { PanelLeftClose, PanelLeftOpen, Search, Star, LayoutDashboard } from 'lucide-react';
+import { PanelLeftClose, PanelLeftOpen, Search, Star, LayoutDashboard, LogOut } from 'lucide-react';
 import { resources } from '../../data/resources.js';
 import { NAV_GROUPS } from '../../data/navGroups.js';
 import { useFavorites } from '../../hooks/useFavorites.js';
 import { useRecentPages } from '../../hooks/useRecentPages.js';
+import { useAuth } from '../../context/AuthContext.jsx';
 
 export const EXPANDED_WIDTH = 280;
 export const COLLAPSED_WIDTH = 72;
@@ -62,6 +63,7 @@ export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onClo
   const [navFilter, setNavFilter] = useState('');
   const { favorites, isFavorite, toggleFavorite } = useFavorites();
   const { recent } = useRecentPages();
+  const { user, logout, isReadOnly } = useAuth();
 
   const resourceByKey = useMemo(() => Object.fromEntries(resources.map((r) => [r.key, r])), []);
 
@@ -184,12 +186,24 @@ export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onClo
         </nav>
 
         <div className="flex items-center gap-2.5 px-3 py-3 border-t border-slate-100 dark:border-slate-800 flex-shrink-0">
-          <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-xs font-semibold text-slate-600 dark:text-slate-300 flex-shrink-0">A</div>
+          <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-xs font-semibold text-slate-600 dark:text-slate-300 flex-shrink-0">
+            {(user?.full_name || user?.email || '?').charAt(0).toUpperCase()}
+          </div>
           {!collapsed && (
-            <div className="min-w-0">
-              <p className="text-xs font-medium text-slate-700 dark:text-slate-300 truncate">Admin User</p>
-              <p className="text-[11px] text-slate-400 truncate">Full access</p>
-            </div>
+            <>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium text-slate-700 dark:text-slate-300 truncate">{user?.full_name || user?.email}</p>
+                <p className="text-[11px] text-slate-400 truncate">{isReadOnly ? 'Read-only' : 'Full access'}</p>
+              </div>
+              <button
+                type="button"
+                onClick={logout}
+                title="Log out"
+                className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300 flex-shrink-0"
+              >
+                <LogOut size={15} />
+              </button>
+            </>
           )}
         </div>
       </motion.aside>

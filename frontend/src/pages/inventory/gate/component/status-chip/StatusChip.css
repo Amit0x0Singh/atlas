@@ -1,1 +1,39 @@
-/* StatusChip — dynamic color computed from status map, kept inline */
+/* StatusChip */
+
+.chip {
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.chip--pending_review {
+  background: #f59e0b22;
+  color: #f59e0b;
+}
+
+.chip--labels_generated {
+  background: #3b82f622;
+  color: #3b82f6;
+}
+
+.chip--qr_pending {
+  background: #f9731622;
+  color: #f97316;
+}
+
+.chip--confirmed {
+  background: #16a34a22;
+  color: #16a34a;
+}
+
+.chip--quarantine {
+  background: #dc262622;
+  color: #dc2626;
+}
+
+.chip--default {
+  background: #94a3b822;
+  color: #94a3b8;
+}

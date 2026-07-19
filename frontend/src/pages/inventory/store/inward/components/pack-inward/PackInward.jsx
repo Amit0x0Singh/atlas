@@ -227,6 +227,7 @@ export default function PackInward() {
       setSession(restored)
       setResumed(isResume || alreadyScanned)
       setStep(STEPS.SCANNING)
+      
       // Hardware scanners (Zebra TC21 etc.) have their own scan engine and
       // need no camera — starting one would just prompt for a permission
       // the device doesn't need and never gets used.

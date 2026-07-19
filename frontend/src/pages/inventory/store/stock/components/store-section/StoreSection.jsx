@@ -3,11 +3,11 @@ import { fmt } from '../utils.js'
 import { SLabel } from '../shared/shared.jsx'
 
 const STAGES = (st) => [
-  { key: 'packsGenerated',      label: 'Generated',       value: st.packsGenerated,         accent: '#6366f1', bg: '#eef2ff' },
-  { key: 'packsAwaiting',       label: 'Awaiting Inward', value: st.packsAwaiting,          accent: '#f59e0b', bg: '#fffbeb' },
-  { key: 'packsInwarded',       label: 'Inwarded',        value: st.packsInwarded,          accent: '#10b981', bg: '#ecfdf5' },
-  { key: 'outwardTransactions', label: 'Outward Txns',    value: st.outwardTransactions,    accent: '#f43f5e', bg: '#fff1f2' },
-  { key: 'totalQtyIssued',      label: 'Qty Issued (kg)', value: fmt(st.totalQtyIssued, 1), accent: '#8b5cf6', bg: '#f5f3ff' },
+  { key: 'packsGenerated',      label: 'Generated',       value: st.packsGenerated },
+  { key: 'packsAwaiting',       label: 'Awaiting Inward', value: st.packsAwaiting },
+  { key: 'packsInwarded',       label: 'Inwarded',        value: st.packsInwarded },
+  { key: 'outwardTransactions', label: 'Outward Txns',    value: st.outwardTransactions },
+  { key: 'totalQtyIssued',      label: 'Qty Issued (kg)', value: fmt(st.totalQtyIssued, 1) },
 ]
 
 export default function StoreSection({ st, loading, label }) {
@@ -20,11 +20,10 @@ export default function StoreSection({ st, loading, label }) {
         <div className="flex items-center gap-1.5">
           {stages.map((s, i) => (
             <div key={s.key} className="flex items-center flex-1 min-w-0">
-              <div className="flex-1 rounded-lg px-3 py-3 text-center min-w-0"
-                style={{ background: s.bg }}>
+              <div className={`flex-1 rounded-lg px-3 py-3 text-center min-w-0 ss-tile--${s.key}`}>
                 {loading
                   ? <div className="h-5 w-8 bg-white bg-opacity-60 rounded mx-auto animate-pulse mb-1" />
-                  : <div className="text-xl font-bold leading-none mb-1" style={{ color: s.accent }}>
+                  : <div className={`text-xl font-bold leading-none mb-1 ss-value--${s.key}`}>
                       {s.value ?? '—'}
                     </div>
                 }

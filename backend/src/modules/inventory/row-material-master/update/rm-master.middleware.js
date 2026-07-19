@@ -6,6 +6,7 @@
 import { preprocess } from '../../../../middleware/preprocessing/index.js'
 
 export const validateUpdateRm = preprocess({
+  lowercaseFields: ['itemName'],
   schema: {
     itemName:     { minLength: 2, maxLength: 150 },
     trackingType: { enum: ['PACK', 'BULK'] },

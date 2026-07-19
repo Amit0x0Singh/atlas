@@ -95,7 +95,14 @@ router.post(
   executeImport,
 );
 
+
 // ---- admin planel routes (not prefixed with /api) ───────────────────────────────────────────
-// router.use("/admin", AdminPanelRouter);
+// Full raw CRUD (incl. delete-all-rows per resource) across every model —
+// gated to super-admin accounts only, same boundary already used for the
+// Excel bulk-import endpoints above.
+router.use("/admin", adminOnly, AdminPanelRouter);
+
+
+
 
 export default router;

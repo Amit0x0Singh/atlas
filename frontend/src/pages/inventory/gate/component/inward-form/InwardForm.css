@@ -17,6 +17,11 @@
   margin-bottom: 18px;
 }
 
+.if-header-icon {
+  color: #3b82f6;
+  flex-shrink: 0;
+}
+
 .if-title {
   margin: 0;
   font-size: 15px;

@@ -28,7 +28,7 @@ export default function InwardForm({ onSubmit, onCancel }) {
   return (
     <div className="if-wrap">
       <div className="if-header">
-        <ArrowDown size={18} style={{ color: "#3b82f6", flexShrink: 0 }} />
+        <ArrowDown size={18} className="if-header-icon" />
         <h3 className="if-title">New Gate Inward</h3>
       </div>
 

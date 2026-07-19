@@ -2,10 +2,40 @@ import axios from 'axios';
 
 const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api/admin';
 
+// The backend mounts login at /api/auth/login, a sibling of this instance's
+// /api/admin baseURL — not something joinUrl (which always resolves under
+// baseURL) can reach, so it needs its own origin derived from the same base.
+export const authOrigin = baseURL.replace(/\/admin\/?$/, '');
+
 export const http = axios.create({
   baseURL,
   headers: { 'Content-Type': 'application/json' },
 });
+
+export const TOKEN_KEY = 'admin_panel_token';
+export const USER_KEY = 'admin_panel_user';
+
+http.interceptors.request.use((config) => {
+  const token = localStorage.getItem(TOKEN_KEY);
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+// A 401 here means the token is missing/expired/invalid — clear it and drop
+// back to the login screen. Reloading (rather than routing) is deliberate:
+// it guarantees every in-memory auth/resource state resets cleanly instead
+// of trying to unwind whatever request was in flight when this fired.
+http.interceptors.response.use(
+  (res) => res,
+  (err) => {
+    if (err.response?.status === 401) {
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(USER_KEY);
+      window.location.reload();
+    }
+    return Promise.reject(err);
+  }
+);
 
 function joinUrl(base, path) {
   if (!path) return base;
@@ -31,7 +61,7 @@ export function getRecordId(record, resource) {
 
 // Returns { data: [], total, page, limit } so callers can display accurate totals.
 export async function listRecords(resource, params = {}) {
-  const { data } = await axios.get(getResourceUrl(resource), { params });
+  const { data } = await http.get(getResourceUrl(resource), { params });
   if (Array.isArray(data)) return { data, total: data.length };
   return {
     data:  data?.data    ?? data?.records ?? [],
@@ -42,24 +72,24 @@ export async function listRecords(resource, params = {}) {
 }
 
 export async function createRecord(resource, payload) {
-  const { data } = await axios.post(getResourceUrl(resource), payload);
+  const { data } = await http.post(getResourceUrl(resource), payload);
   return data;
 }
 
 export async function updateRecord(resource, record, payload) {
   const url = `${getResourceUrl(resource)}/${getRecordId(record, resource)}`;
-  const { data } = await axios.put(url, payload);
+  const { data } = await http.put(url, payload);
   return data;
 }
 
 export async function deleteRecord(resource, record) {
   const url = `${getResourceUrl(resource)}/${getRecordId(record, resource)}`;
-  const { data } = await axios.delete(url);
+  const { data } = await http.delete(url);
   return data;
 }
 
 export async function deleteAllRecords(resource) {
-  const { data } = await axios.delete(getResourceUrl(resource));
+  const { data } = await http.delete(getResourceUrl(resource));
   return data;
 }
 

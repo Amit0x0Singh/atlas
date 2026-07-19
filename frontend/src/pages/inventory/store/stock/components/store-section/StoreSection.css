@@ -1,1 +1,13 @@
-﻿
+/* StoreSection — per-stage accent colors, fixed set of 5 known stages */
+
+.ss-tile--packsGenerated { background: #eef2ff; }
+.ss-tile--packsAwaiting { background: #fffbeb; }
+.ss-tile--packsInwarded { background: #ecfdf5; }
+.ss-tile--outwardTransactions { background: #fff1f2; }
+.ss-tile--totalQtyIssued { background: #f5f3ff; }
+
+.ss-value--packsGenerated { color: #6366f1; }
+.ss-value--packsAwaiting { color: #f59e0b; }
+.ss-value--packsInwarded { color: #10b981; }
+.ss-value--outwardTransactions { color: #f43f5e; }
+.ss-value--totalQtyIssued { color: #8b5cf6; }

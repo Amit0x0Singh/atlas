@@ -12,6 +12,7 @@ import { preprocess } from '../../../../middleware/preprocessing/index.js'
 
 export const validateCreateRm = preprocess({
   excludeFromConversion: ['itemCode'],
+  lowercaseFields: ['itemName'],
   schema: {
     itemCode:     { required: true, minLength: 1, maxLength: 50 },
     itemName:     { required: true, minLength: 2, maxLength: 150 },

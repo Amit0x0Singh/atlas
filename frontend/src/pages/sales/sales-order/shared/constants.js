@@ -4,7 +4,7 @@
 // Import only what each component needs.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const BRAND = "#1a4a22";
+export const BRAND = "#22a037";
 export const BRAND_LIGHT = "#f0fdf4";
 
 // ── Companies & order config ──────────────────────────────────────────────────

@@ -17,10 +17,7 @@ export default function StickySubmitBar({ scannedCount, pendingCount, allScanned
         : 'Scan at least 1 bag to submit'
 
   return createPortal(
-    <div
-      className="fixed bottom-0 left-0 right-0 z-[9998] bg-white border-t border-gray-200 px-3 pt-2.5 shadow-[0_-4px_16px_rgba(0,0,0,0.06)]"
-      style={{ paddingBottom: 'calc(0.625rem + env(safe-area-inset-bottom))' }}
-    >
+    <div className="fixed bottom-0 left-0 right-0 z-[9998] bg-white border-t border-gray-200 px-3 pt-2.5 pb-[calc(0.625rem_+_env(safe-area-inset-bottom))] shadow-[0_-4px_16px_rgba(0,0,0,0.06)]">
       <Button
         onClick={onSubmit}
         disabled={disabled}

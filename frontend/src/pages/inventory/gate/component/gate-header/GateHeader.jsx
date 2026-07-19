@@ -1,34 +1,16 @@
-﻿import { Button } from "../../../../../components/ui";
+import { Button } from "../../../../../components/ui";
 import { Plus, X } from "lucide-react";
+import "./GateHeader.css";
 
 export default function GateHeader({ tab, showForm, canGate, onNewClick, backButton }) {
   return (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "flex-start",
-        marginBottom: "24px",
-      }}
-    >
+    <div className="gh-wrap">
       <div>
-        <h1
-          style={{
-            margin: 0,
-            fontSize: "24px",
-            fontWeight: 800,
-            color: "#0f172a",
-            letterSpacing: "-0.5px",
-          }}
-        >
-          Gate Entry
-        </h1>
-        <p style={{ margin: "4px 0 0", fontSize: "13px", color: "#64748b" }}>
-          Manage inward and outward material movements
-        </p>
+        <h1 className="gh-title">Gate Entry</h1>
+        <p className="gh-subtitle">Manage inward and outward material movements</p>
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+      <div className="gh-actions">
         {canGate && (
           <Button
             variant={showForm ? "secondary" : "primary"}

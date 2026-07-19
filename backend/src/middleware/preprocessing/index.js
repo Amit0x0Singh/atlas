@@ -25,6 +25,7 @@
  *   // router.js
  *   GateRouter.post('/inward', gateOrAbove, validateGateInward, createGateInward)
  */
+
 import { sanitizeBody } from './sanitize.js'
 import { convertTypes } from './typeConvert.js'
 import { validate } from './validate.js'

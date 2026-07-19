@@ -17,6 +17,11 @@
   margin-bottom: 18px;
 }
 
+.of-header-icon {
+  color: #8b5cf6;
+  flex-shrink: 0;
+}
+
 .of-title {
   margin: 0;
   font-size: 15px;
