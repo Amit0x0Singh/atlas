@@ -6,21 +6,24 @@ export default function ProductForm({ editing, form, onChange, saving, msg, onSa
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md">
-        <h2 className="text-lg font-bold mb-4">{editing ? 'Edit Product' : 'Add New Product'}</h2>
+        <h2 className="text-lg font-bold mb-1">{editing ? 'Edit Product' : 'Add New Product'}</h2>
+        {!editing && (
+          <p className="text-xs text-gray-400 mb-3">Product code is generated automatically (PR00001, PR00002, ...)</p>
+        )}
         {msg && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded mb-3 text-sm">{msg}</div>
         )}
         <div className="space-y-3">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Product Code *</label>
-            <input
-              value={form.productCode}
-              onChange={e => onChange('productCode', e.target.value.toUpperCase())}
-              disabled={!!editing}
-              placeholder="e.g. PROD001"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-green-500 disabled:bg-gray-100"
-            />
-          </div>
+          {editing && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Product Code</label>
+              <input
+                value={form.productCode}
+                disabled
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none bg-gray-100 font-mono"
+              />
+            </div>
+          )}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Product Name *</label>
             <input

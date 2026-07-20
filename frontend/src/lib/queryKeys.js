@@ -47,6 +47,9 @@ export const queryKeys = {
   locations: {
     all: () => ['locations'],
   },
+  suppliers: {
+    all: () => ['suppliers'],
+  },
 
   // ── Inventory ───────────────────────────────────────────────────────────
   inventory: {

@@ -42,6 +42,7 @@ export const OPERATION_ROUTES = [
   { prefix: '/rm-master',       operation: 'admin' },
   { prefix: '/product-master',  operation: 'admin' },
   { prefix: '/equipment-master', operation: 'admin' },
+  { prefix: '/supplier-master',  operation: 'admin' },
   { prefix: '/employee-master', operation: 'admin' },
   { prefix: '/recipe',          operation: 'admin' },
   { prefix: '/microbes-master', operation: 'admin' },

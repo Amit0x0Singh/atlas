@@ -2,19 +2,24 @@ import { useState } from "react";
 import { ArrowDown } from "lucide-react";
 import { Button } from "../../../../../components/ui";
 import { COMPANIES } from "../../data/companies.js";
+import { useSuppliers } from "../../../../../hooks/masters/useSuppliers.js";
 import "./InwardForm.css";
 
 const EMPTY = { supplier_name: "", invoice_no: "", vehicle_no: "", company: "" };
 
-const FIELDS = [
-  { key: "company", label: "Company *", type: "select", options: COMPANIES, placeholder: "Select company" },
-  { key: "supplier_name", label: "Supplier Name *", placeholder: "Enter supplier name" },
-  { key: "invoice_no", label: "Invoice No.", placeholder: "e.g. INV-2024-001" },
-  { key: "vehicle_no", label: "Vehicle No.", placeholder: "e.g. MH-12-AB-1234" },
-];
-
 export default function InwardForm({ onSubmit, onCancel }) {
   const [form, setForm] = useState(EMPTY);
+  const { data: suppliers = [] } = useSuppliers();
+  const supplierNames = suppliers.map((s) => s.supplierName);
+
+  // Supplier Name is a strict select — only names from Supplier Master, no
+  // free typing — so add new suppliers there first if one is missing.
+  const FIELDS = [
+    { key: "company", label: "Company *", type: "select", options: COMPANIES, placeholder: "Select company" },
+    { key: "supplier_name", label: "Supplier Name *", type: "select", options: supplierNames, placeholder: "Select supplier" },
+    { key: "invoice_no", label: "Invoice No.", placeholder: "e.g. INV-2024-001" },
+    { key: "vehicle_no", label: "Vehicle No.", placeholder: "e.g. MH-12-AB-1234" },
+  ];
 
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
 

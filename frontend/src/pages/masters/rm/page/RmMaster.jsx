@@ -8,6 +8,7 @@ import { Button, BackButton, PageHeader } from '../../../../components/ui'
 import { getChips } from '../../packing/components/packing-constants/packingConstants.jsx'
 import RmTable from '../components/rm-table/RmTable.jsx'
 import RmForm  from '../components/rm-form/RmForm.jsx'
+import RmDetailModal from '../components/rm-detail-modal/RmDetailModal.jsx'
 
 export default function RmMaster() {
   const navigate = useNavigate()
@@ -16,6 +17,7 @@ export default function RmMaster() {
   const [filterType, setFilterType] = useState('ALL')
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing]   = useState(null)
+  const [viewing, setViewing]   = useState(null)
   const [form, setForm]         = useState({ itemCode: '', itemName: '', uom: 'KG', trackingType: 'PACK', category: '', subCategory: '', state: '', density: '' })
   const [msg, setMsg]           = useState('')
   const [page, setPage]         = useState(1)
@@ -159,6 +161,7 @@ export default function RmMaster() {
         onEdit={openEdit}
         onDelete={del}
         onViewPacking={goToPacking}
+        onRowClick={setViewing}
         onPageChange={setPage}
         onLimitChange={l => { setLimit(l); setPage(1) }}
       />
@@ -174,6 +177,8 @@ export default function RmMaster() {
           onClose={() => setShowForm(false)}
         />
       )}
+
+      <RmDetailModal item={viewing} onClose={() => setViewing(null)} />
       </div>
     </div>
   )

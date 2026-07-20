@@ -25,6 +25,9 @@ export default function RmForm({ editing, form, onChange, saving, msg, onSave, o
               placeholder="e.g. 151464"
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-100 font-mono"
             />
+            {!editing && (
+              <p className="text-xs text-gray-400 mt-1">Numeric codes shorter than 7 digits are zero-padded automatically (e.g. 151464 → 0151464)</p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Item Name *</label>

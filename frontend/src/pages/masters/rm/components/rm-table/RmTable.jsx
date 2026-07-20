@@ -26,7 +26,7 @@ function FilterChip({ label: text, onRemove }) {
 export default function RmTable({
   rmTotal, packingTotal, packCount, bulkCount,
   visibleItems, loading, error, page, limit, filters, uomOptions, filterType,
-  onFilterChange, onClearFilters, onFilterType, onEdit, onDelete, onViewPacking, onPageChange, onLimitChange,
+  onFilterChange, onClearFilters, onFilterType, onEdit, onDelete, onViewPacking, onRowClick, onPageChange, onLimitChange,
 }) {
   const paginated = visibleItems.slice((page - 1) * limit, page * limit)
   const hasActiveFilters = filterType !== 'ALL' || Object.values(filters).some(v => v.trim())
@@ -144,7 +144,11 @@ export default function RmTable({
               ) : paginated.map(item => {
                 const isPacking = item.kind === 'packing'
                 return (
-                  <tr key={isPacking ? `pm-${item.id}` : item.itemCode} className="group hover:bg-blue-50/60 transition-colors">
+                  <tr
+                    key={isPacking ? `pm-${item.id}` : item.itemCode}
+                    className={`group hover:bg-blue-50/60 transition-colors ${!isPacking ? 'cursor-pointer' : ''}`}
+                    onClick={!isPacking ? () => onRowClick(item) : undefined}
+                  >
                     <td className="px-4 py-3 font-mono text-blue-700 font-medium whitespace-nowrap">{item.itemCode}</td>
                     <td className="px-4 py-3 text-gray-800">{item.itemName}</td>
                     <td className="px-4 py-3">
@@ -185,7 +189,7 @@ export default function RmTable({
                     <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
                       {item.createdAt ? new Date(item.createdAt).toLocaleDateString('en-IN') : '—'}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                       <div className="flex gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                         {isPacking ? (
                           <IconButton icon={Eye} tooltip="View in Packing Materials" onClick={onViewPacking} />

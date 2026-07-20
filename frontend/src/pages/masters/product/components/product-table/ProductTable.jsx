@@ -2,7 +2,7 @@ import { Pencil, Trash2, Loader2, PackageX } from 'lucide-react'
 import { IconButton } from '../../../../../components/ui'
 import Pagination from '../../../../../components/pagination/Pagination.jsx'
 
-export default function ProductTable({ items, loading, page, limit, onEdit, onDelete, onPageChange, onLimitChange }) {
+export default function ProductTable({ items, loading, page, limit, onEdit, onDelete, onRowClick, onPageChange, onLimitChange }) {
   const paginated = items.slice((page - 1) * limit, page * limit)
 
   return (
@@ -13,8 +13,6 @@ export default function ProductTable({ items, loading, page, limit, onEdit, onDe
             <tr>
               <th className="text-left px-4 py-3 font-semibold whitespace-nowrap">Product Code</th>
               <th className="text-left px-4 py-3 font-semibold whitespace-nowrap">Product Name</th>
-              <th className="text-left px-4 py-3 font-semibold whitespace-nowrap">UOM</th>
-              <th className="text-left px-4 py-3 font-semibold whitespace-nowrap">State</th>
               <th className="text-left px-4 py-3 font-semibold whitespace-nowrap">Plant</th>
               <th className="text-left px-4 py-3 font-semibold whitespace-nowrap">Total Recipe</th>
               <th className="text-left px-4 py-3 font-semibold whitespace-nowrap">Actions</th>
@@ -23,27 +21,25 @@ export default function ProductTable({ items, loading, page, limit, onEdit, onDe
           <tbody className="divide-y divide-gray-100">
             {loading ? (
               <tr>
-                <td colSpan={7} className="py-14 text-center text-gray-400">
+                <td colSpan={5} className="py-14 text-center text-gray-400">
                   <Loader2 size={22} className="animate-spin mx-auto mb-2" />
                   Loading products…
                 </td>
               </tr>
             ) : items.length === 0 ? (
               <tr>
-                <td colSpan={7} className="py-14 text-center text-gray-400">
+                <td colSpan={5} className="py-14 text-center text-gray-400">
                   <PackageX size={26} className="mx-auto mb-2 text-gray-300" />
                   No products yet. Click "Add New Product" to start.
                 </td>
               </tr>
             ) : paginated.map(item => (
-              <tr key={item.productCode} className="group hover:bg-green-50/60 transition-colors">
+              <tr key={item.productCode} className="group hover:bg-green-50/60 transition-colors cursor-pointer" onClick={() => onRowClick(item)}>
                 <td className="px-4 py-3 font-mono text-green-700 font-medium whitespace-nowrap">{item.productCode}</td>
                 <td className="px-4 py-3 text-gray-800">{item.productName}</td>
-                <td className="px-4 py-3 text-gray-500">{item.uom || '—'}</td>
-                <td className="px-4 py-3 text-gray-500">{item.state || '—'}</td>
                 <td className="px-4 py-3 text-gray-500">{item.plant?.length ? item.plant.join(', ') : '—'}</td>
                 <td className="px-4 py-3 text-gray-500">{item.totalRecipe ?? 0}</td>
-                <td className="px-4 py-3">
+                <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                     <IconButton icon={Pencil} tooltip="Edit" onClick={() => onEdit(item)} />
                     <IconButton icon={Trash2} variant="danger" tooltip="Delete" onClick={() => onDelete(item.productCode)} />

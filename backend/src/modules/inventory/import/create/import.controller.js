@@ -15,9 +15,33 @@ function col(row, ...keys) {
   return ''
 }
 
+// col()'s substring match makes "category" also match a "Sub-Category"
+// header (since "subcategory" contains "category") — this does an exact
+// match after stripping instead, so the two never get confused for each other.
+function colExact(row, key) {
+  const target = key.toLowerCase().replace(/[^a-z0-9]/g, '')
+  for (const k of Object.keys(row)) {
+    if (k.toLowerCase().replace(/[^a-z0-9]/g, '') === target) {
+      const val = row[k]
+      if (val !== null && val !== undefined && String(val).trim() !== '') return String(val).trim()
+    }
+  }
+  return ''
+}
+
 function safeNum(val) {
   const n = parseFloat(String(val).replace(/[^0-9.-]/g, ''))
   return isNaN(n) ? 0 : n
+}
+
+// Equipment "Working Volume" is often one cell with the unit inlined
+// (e.g. "50 Kg", "2500 L") rather than a separate unit column — split the
+// leading number from the trailing unit word instead of just stripping it.
+function parseWorkingVolume(val) {
+  const str = String(val || '').trim()
+  const m = str.match(/^([\d.,]+)\s*([a-zA-Z]+)?/)
+  if (!m) return { qty: 0, unit: null }
+  return { qty: parseFloat(m[1].replace(/,/g, '')) || 0, unit: m[2] ? m[2].toUpperCase() : null }
 }
 
 function parseDate(val) {
@@ -62,14 +86,6 @@ function getRoleType(concCfu) {
   return 'MICROBE'
 }
 
-const nextProductCode = async (existingCodes) => {
-  const allCodes = await prisma.productMaster.findMany({ select: { productCode: true } })
-  const dbNums = allCodes.map(p => parseInt(p.productCode.replace(/\D/g, ''))).filter(n => !isNaN(n))
-  const localNums = existingCodes.map(c => parseInt(c.replace(/\D/g, ''))).filter(n => !isNaN(n))
-  const max = Math.max(0, ...dbNums, ...localNums)
-  return `PROD-${String(max + 1).padStart(3, '0')}`
-}
-
 const nextRmCode = async (existingCodes) => {
   const allCodes = await prisma.rmMaster.findMany({ select: { itemCode: true } })
   const dbNums = allCodes.map(p => parseInt(p.itemCode.replace(/\D/g, ''))).filter(n => !isNaN(n))
@@ -96,7 +112,8 @@ export const previewImport = async (req, res) => {
       const fileHasBom = /recipe|bom|bill.?of.?material|formula/i.test(fileName)
       const headers = columns.map(k => k.toLowerCase().replace(/[^a-z0-9]/g, ''))
 
-      if (/product/i.test(n) && !/print|pack|recipe|bom|formula|rm|material|equipment|equip/i.test(n)) detectedAs[name] = 'Product Master'
+      if (/supplier|vendor/i.test(n)) detectedAs[name] = 'Supplier Master'
+      else if (/product/i.test(n) && !/print|pack|recipe|bom|formula|rm|material|equipment|equip/i.test(n)) detectedAs[name] = 'Product Master'
       else if (/equipment|equip/i.test(n)) detectedAs[name] = 'Equipment Master'
       else if (/rm|material|raw.?mat/i.test(n) && !/print|pack|inward|outward|recipe|bom|product/i.test(n)) detectedAs[name] = 'RM Master'
       else if (/recipe|bom|bill.?of.?material|formula/i.test(n)) detectedAs[name] = 'Recipe / BOM'
@@ -110,6 +127,10 @@ export const previewImport = async (req, res) => {
         const hasQty = headers.some(h => h.includes('qty') || h.includes('quantity'))
         if (hasProd && hasRawMat && hasQty) {
           detectedAs[name] = fileHasBom ? 'Recipe / BOM (auto-detected — filename match)' : 'Recipe / BOM (auto-detected by columns)'
+        } else if (headers.some(h => h.includes('suppliername') || h.includes('vendorname'))) {
+          detectedAs[name] = 'Supplier Master (auto-detected by columns)'
+        } else if (headers.some(h => h.includes('equipname') || h.includes('equipmentname') || h.includes('workcenter'))) {
+          detectedAs[name] = 'Equipment Master (auto-detected by columns)'
         } else {
           // Column-based RM auto-detection
           const hasCode = headers.some(h => h.includes('code') || h.includes('itemcode') || h.includes('itemno') || h.includes('srno'))
@@ -133,10 +154,47 @@ export const executeImport = async (req, res) => {
     const wb = XLSX.read(req.file.buffer, { type: 'buffer', cellDates: true })
 
     const results = {
-      rmMaster: 0, productMaster: 0, equipmentMaster: 0,
+      rmMaster: 0, productMaster: 0, equipmentMaster: 0, supplierMaster: 0,
       recipeBom: 0, printMaster: 0, inward: 0, outward: 0,
       unmatchedRm: 0,
       errors: []
+    }
+
+    // ── SUPPLIER MASTER ────────────────────────────────────────────────────
+    // Sheet-name match first; falls back to column-signature detection (a
+    // "Supplier Name"/"Vendor Name" header) for files where the tab was
+    // never renamed from the spreadsheet tool's default ("Sheet1" etc).
+    let supplierSheet = wb.SheetNames.find(s => /supplier|vendor/i.test(s))
+    if (!supplierSheet) {
+      supplierSheet = wb.SheetNames.find(s => {
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets[s], { defval: '' })
+        if (!rows.length) return false
+        const headers = Object.keys(rows[0]).map(k => k.toLowerCase().replace(/[^a-z0-9]/g, ''))
+        return headers.some(h => h.includes('suppliername') || h.includes('vendorname'))
+      })
+    }
+    if (supplierSheet) {
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[supplierSheet], { defval: '' })
+      for (const row of rows) {
+        try {
+          const supplierName = col(row, 'suppliername', 'supplier name', 'supplier_name', 'vendorname', 'vendor name', 'name')
+          const gstin = col(row, 'gstin', 'gst no', 'gst number') || null
+          const phone = col(row, 'phone', 'contact', 'mobile', 'phone no') || null
+          const email = col(row, 'email', 'email id') || null
+          const address = col(row, 'address') || null
+          if (!supplierName) continue
+          const existing = await prisma.erpSupplier.findFirst({ where: { supplierName: { equals: supplierName, mode: 'insensitive' } } })
+          if (existing) {
+            await prisma.erpSupplier.update({
+              where: { supplierId: existing.supplierId },
+              data: { gstin: gstin ?? existing.gstin, phone: phone ?? existing.phone, email: email ?? existing.email, address: address ?? existing.address },
+            })
+          } else {
+            await prisma.erpSupplier.create({ data: { supplierName, gstin, phone, email, address } })
+          }
+          results.supplierMaster++
+        } catch (e) { results.errors.push(`Supplier row: ${e.message}`) }
+      }
     }
 
     // ── PRODUCT MASTER ────────────────────────────────────────────────────
@@ -147,7 +205,7 @@ export const executeImport = async (req, res) => {
       const rows = XLSX.utils.sheet_to_json(wb.Sheets[prodSheet], { defval: '' })
       for (const row of rows) {
         try {
-          let productCode = col(row, 'productcode', 'product code', 'prod code', 'code')
+          const productCode = col(row, 'productcode', 'product code', 'prod code', 'code')
           const productName = col(row, 'productname', 'product name', 'name', 'prod name')
           // "unit" is deliberately not a fallback key here — it substring-matches
           // headers like "Qty/Unit" or "Qty Per Unit" and previously leaked a
@@ -160,36 +218,58 @@ export const executeImport = async (req, res) => {
             results.productMaster++
             continue
           }
-          if (!productCode) productCode = await nextProductCode([])
-          await prisma.productMaster.upsert({
-            where: { productCode },
-            create: { productCode, productName, plant },
-            update: { productName, plant }
-          })
+          if (productCode) {
+            // Sheet supplied an explicit code — honor it.
+            await prisma.productMaster.upsert({
+              where: { productCode },
+              create: { productCode, productName, plant },
+              update: { productName, plant }
+            })
+          } else {
+            // No code in the sheet — let the DB assign one (PR00001-style
+            // sequence), same convention as the Add New Product UI.
+            await prisma.productMaster.create({ data: { productName, plant } })
+          }
           results.productMaster++
         } catch (e) { results.errors.push(`Product row: ${e.message}`) }
       }
     }
 
     // ── EQUIPMENT MASTER ──────────────────────────────────────────────────
-    const equipSheet = wb.SheetNames.find(s => /equipment|equip/i.test(s))
+    // Sheet-name match first; falls back to column-signature detection (an
+    // "Equipment Name"/"Work Center Name" header) for files where the tab
+    // was never renamed from the spreadsheet tool's default ("Sheet1" etc).
+    let equipSheet = wb.SheetNames.find(s => /equipment|equip/i.test(s))
+    if (!equipSheet) {
+      equipSheet = wb.SheetNames.find(s => {
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets[s], { defval: '' })
+        if (!rows.length) return false
+        const headers = Object.keys(rows[0]).map(k => k.toLowerCase().replace(/[^a-z0-9]/g, ''))
+        return headers.some(h => h.includes('equipname') || h.includes('equipmentname') || h.includes('workcenter'))
+      })
+    }
     if (equipSheet) {
       const rows = XLSX.utils.sheet_to_json(wb.Sheets[equipSheet], { defval: '' })
       for (const row of rows) {
         try {
           const equipName = col(row, 'equipname', 'equip name', 'equipment name', 'name', 'equipment', 'machine', 'reactor', 'work center', 'workcenter', 'asset')
-          // "unit" is deliberately not a fallback key — see the Product Master
-          // section above for why it collides with "Qty/Unit"-style headers.
-          const locationRaw = col(row, 'plant', 'location', 'designated', 'section', 'area', 'department')
+          // "unit" is deliberately not a fallback key, and "designated" was
+          // dropped now that "Designated Product" is its own real column
+          // (below) — both collide with headers meant for other fields.
+          const locationRaw = col(row, 'plant', 'location', 'section', 'area', 'department')
           const plant = normalizeEquipSection(locationRaw)
           const workingVolumeRaw = col(row, 'workingvolume', 'working volume', 'volume', 'capacity', 'vol', 'size')
-          const workingVolume = safeNum(workingVolumeRaw) || null
+          // Working Volume often carries its unit inline ("50 Kg", "2500 L")
+          // rather than in a separate column — split qty from unit instead of
+          // just stripping the unit text away.
+          const { qty: workingVolume, unit: workingUnit } = parseWorkingVolume(workingVolumeRaw)
           const operation = col(row, 'operation', 'operations', 'process', 'type', 'activity') || ''
+          const designatedProduct = col(row, 'designatedproduct', 'designated product', 'designated_product') || null
           if (!equipName) continue
           await prisma.equipmentMaster.upsert({
             where: { equipName },
-            create: { equipName, plant, workingVolume, operation },
-            update: { plant, workingVolume, operation }
+            create: { equipName, plant, workingVolume, workingUnit, operation, designatedProduct },
+            update: { plant, workingVolume, workingUnit, operation, designatedProduct }
           })
           results.equipmentMaster++
         } catch (e) { results.errors.push(`Equipment row: ${e.message}`) }
@@ -228,11 +308,13 @@ export const executeImport = async (req, res) => {
           const itemCode = col(row, 'itemcode', 'item code', 'item_code', 'code', 'rm code', 'material code', 'mat code', 'part no', 'partno', 'sr no', 'srno', 'no')
           const itemName = col(row, 'itemname', 'item name', 'item_name', 'name', 'rm name', 'material name', 'description', 'desc', 'particulars', 'material')
           const uom = col(row, 'uom', 'unit', 'unit of measure', 'unit of meas') || 'KG'
+          const category = colExact(row, 'category') || null
+          const subCategory = col(row, 'subcategory', 'sub category', 'sub_category', 'sub-category') || null
           if (!itemCode || !itemName) continue
           await prisma.rmMaster.upsert({
             where: { itemCode },
-            create: { itemCode, itemName, uom },
-            update: { itemName, uom }
+            create: { itemCode, itemName, uom, category, subCategory },
+            update: { itemName, uom, category, subCategory }
           })
           results.rmMaster++
         } catch (e) { results.errors.push(`RM row: ${e.message}`) }
@@ -287,7 +369,6 @@ export const executeImport = async (req, res) => {
       const rmsByName = {}
       const existingRms = await prisma.rmMaster.findMany()
       existingRms.forEach(r => { rmsByName[r.itemName.toLowerCase()] = r })
-      const newProductCodes = []
 
       // Every recipe row must land in the DB — even one recipe_db has a
       // @@unique([productCode, recipeNo, rmCode]) constraint, so a product with
@@ -359,9 +440,10 @@ export const executeImport = async (req, res) => {
           // product's rows is appended rather than overwriting the others.
           let product = productsByName[productName.toLowerCase()]
           if (!product) {
-            const newCode = await nextProductCode(newProductCodes)
-            newProductCodes.push(newCode)
-            product = await prisma.productMaster.create({ data: { productCode: newCode, productName, plant: normalizePlant(section) } })
+            // No code to honor here — recipe sheets never carry one, so the
+            // DB assigns a PR00001-style code the same way the direct Product
+            // Master import path does above.
+            product = await prisma.productMaster.create({ data: { productName, plant: normalizePlant(section) } })
             productsByName[productName.toLowerCase()] = product
             results.productMaster++
           } else if (section && !product.plant.includes(section)) {

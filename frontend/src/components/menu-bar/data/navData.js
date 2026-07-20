@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Package,
-  Layers, FlaskConical, Settings2, Users, GitBranch, Microscope,
+  Layers, FlaskConical, Settings2, Users, GitBranch, Microscope, Building,
   Truck, Thermometer,
   Printer, ArrowDownToLine, ArrowUpFromLine, Container, BarChart2,
   ClipboardList, Snowflake, MapPin, ListChecks,
@@ -23,6 +23,7 @@ export const APP_NAV = [
       { to: '/rm-master',        label: 'Item Master',     Icon: Layers },
       { to: '/product-master',   label: 'Product Master',  Icon: FlaskConical },
       { to: '/equipment-master', label: 'Plant Data',      Icon: Settings2 },
+      { to: '/supplier-master',  label: 'Supplier Master', Icon: Building },
       // { to: '/employee-master',  label: 'Employee Data',   Icon: Users },
       { to: '/recipe',           label: 'Recipe / BOM',    Icon: GitBranch },
       { to: '/microbes-master',  label: 'Microbes Master', Icon: Microscope },

@@ -413,7 +413,7 @@ export const resources = [
     idField: 'productCode',
     description: 'Finished-product catalogue.',
     fields: [
-      field('productCode', 'Product Code'),
+      field('productCode', 'Product Code', 'text', { readOnly: true }),
       field('productName', 'Product Name'),
       field('uom', 'UOM'),
       field('state', 'State', 'select', { options: ['SOLID', 'LIQUID', 'GAS'] }),

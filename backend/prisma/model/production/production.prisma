@@ -22,7 +22,11 @@
 // ─── PRODUCT & EQUIPMENT MASTERS ─────────────────────────────────────────────
 
 model ProductMaster {
-  productCode String   @id @map("product_code")
+  // Backend-generated (Postgres sequence default) — never accepted from the
+  // client, same convention as EquipmentMaster.equipCode below. Existing rows
+  // (PROD-XXX, RHZ-001, ...) keep their historical codes; only products
+  // created from now on get this PR00001-style code.
+  productCode String   @id @default(dbgenerated("('PR' || lpad((nextval('product_master_pr_code_seq'::regclass))::text, 5, '0'))")) @map("product_code")
   productName String   @unique @map("product_name")
   uom         String?
   state       String?  @map("physical_state") // SOLID | LIQUID | GAS
@@ -40,8 +44,11 @@ model ProductMaster {
 
 model EquipmentMaster {
   equipId           String   @id @default(cuid()) @map("equip_id")
-  // Backend-generated (Postgres sequence default) — never accepted from the client.
-  equipCode         String   @unique @default(dbgenerated("('EQ-' || lpad((nextval('equipment_master_equip_code_seq'::regclass))::text, 4, '0'))")) @map("equip_code")
+  // Backend-generated (Postgres sequence default) — never accepted from the
+  // client. Format changed 2026-07-20 from "EQ-0001" to the 7-char, no-hyphen
+  // "EP00001" standard — existing EQ-xxxx rows are untouched, only new
+  // equipment gets the new format.
+  equipCode         String   @unique @default(dbgenerated("('EP' || lpad((nextval('equipment_master_ep_code_seq'::regclass))::text, 5, '0'))")) @map("equip_code")
   equipName         String   @unique @map("equip_name")
   designatedProduct String?  @map("designated_product")
   workingVolume     Float    @default(0) @map("working_volume")

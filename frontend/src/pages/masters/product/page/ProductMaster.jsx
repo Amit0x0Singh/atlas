@@ -3,11 +3,13 @@ import { Plus, Tags, Search } from 'lucide-react'
 import { Button, BackButton, PageHeader } from '../../../../components/ui'
 import ProductTable from '../components/product-table/ProductTable.jsx'
 import ProductForm from '../components/product-form/ProductForm.jsx'
+import ProductDetailModal from '../components/product-detail-modal/ProductDetailModal.jsx'
 import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct } from '../../../../hooks/masters/useProducts.js'
 
 export default function ProductMaster() {
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing]  = useState(null)
+  const [viewing, setViewing]  = useState(null)
   const [form, setForm]        = useState({ productCode: '', productName: '', uom: '', state: '', plant: '' })
   const [msg, setMsg]          = useState('')
   const [search, setSearch]    = useState('')
@@ -39,12 +41,12 @@ export default function ProductMaster() {
   }
 
   const save = async () => {
-    if (!form.productCode || !form.productName) { setMsg('Product Code and Name are required'); return }
+    if (!form.productName) { setMsg('Product Name is required'); return }
     setMsg('')
     const data = { productName: form.productName, uom: form.uom, state: form.state, plant: form.plant }
     try {
       if (editing) await updateProduct.mutateAsync({ code: form.productCode, data })
-      else await createProduct.mutateAsync({ ...data, productCode: form.productCode })
+      else await createProduct.mutateAsync(data)
       setShowForm(false)
     } catch (e) { setMsg(e.message) }
   }
@@ -87,6 +89,7 @@ export default function ProductMaster() {
         limit={limit}
         onEdit={openEdit}
         onDelete={del}
+        onRowClick={setViewing}
         onPageChange={setPage}
         onLimitChange={l => { setLimit(l); setPage(1) }}
       />
@@ -102,6 +105,8 @@ export default function ProductMaster() {
           onClose={() => setShowForm(false)}
         />
       )}
+
+      <ProductDetailModal item={viewing} onClose={() => setViewing(null)} />
       </div>
     </div>
   )

@@ -3,11 +3,13 @@ import { Plus, Wrench } from 'lucide-react'
 import { Button, BackButton, PageHeader } from '../../../../components/ui'
 import EquipmentTable from '../components/equipment-table/EquipmentTable.jsx'
 import EquipmentForm from '../components/equipment-form/EquipmentForm.jsx'
+import EquipmentDetailModal from '../components/equipment-detail-modal/EquipmentDetailModal.jsx'
 import { useEquipment, useCreateEquipment, useUpdateEquipment, useDeleteEquipment } from '../../../../hooks/masters/useEquipment.js'
 
 export default function EquipmentMaster() {
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing]  = useState(null)
+  const [viewing, setViewing]  = useState(null)
   const [form, setForm]        = useState({ equipName: '', plant: '' })
   const [msg, setMsg]          = useState('')
   const [page, setPage]        = useState(1)
@@ -56,6 +58,7 @@ export default function EquipmentMaster() {
           limit={limit}
           onEdit={openEdit}
           onDelete={del}
+          onRowClick={setViewing}
           onPageChange={setPage}
           onLimitChange={l => { setLimit(l); setPage(1) }}
         />
@@ -72,6 +75,8 @@ export default function EquipmentMaster() {
           onClose={() => setShowForm(false)}
         />
       )}
+
+      <EquipmentDetailModal item={viewing} onClose={() => setViewing(null)} />
       </div>
     </div>
   )

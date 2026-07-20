@@ -10,11 +10,13 @@ import PackEntries from "../../pages/inventory/print-master/page/PackEntries.jsx
 import ReturnMaterial from "../../pages/inventory/print-master/page/ReturnMaterial.jsx";
 import EmployeeMaster from "../../pages/hr/employee/page/EmployeeMaster.jsx";
 import PackingMaster from "../../pages/masters/packing/page/PackingMaster.jsx";
+import SupplierMaster from "../../pages/masters/supplier/page/SupplierMaster.jsx";
 
 export const masterRoutes = [
   <Route key="rm-master"        path="/rm-master"        element={<RmMaster />} />,
   <Route key="product-master"   path="/product-master"   element={<ProductMaster />} />,
   <Route key="equipment-master" path="/equipment-master" element={<EquipmentMaster />} />,
+  <Route key="supplier-master"  path="/supplier-master"  element={<SupplierMaster />} />,
   <Route key="print-master"         path="/print-master"                element={<PrintMaster />} />,
   <Route key="print-master-entries" path="/print-master/entries"        element={<PackEntries />} />,
   <Route key="print-master-return"  path="/print-master/return-material" element={<ReturnMaterial />} />,
