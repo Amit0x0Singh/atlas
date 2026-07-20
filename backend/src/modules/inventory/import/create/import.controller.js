@@ -1,5 +1,7 @@
 import prisma from '../../../../db.js'
 import * as XLSX from 'xlsx'
+import { normalizePlant } from '../../../../utils/plant.js'
+import { syncTotalRecipe } from '../../../production/recipe/recipe-utils.js'
 
 function col(row, ...keys) {
   for (const key of keys) {
@@ -147,7 +149,10 @@ export const executeImport = async (req, res) => {
         try {
           let productCode = col(row, 'productcode', 'product code', 'prod code', 'code')
           const productName = col(row, 'productname', 'product name', 'name', 'prod name')
-          const plant = col(row, 'plant', 'location', 'unit') || ''
+          // "unit" is deliberately not a fallback key here — it substring-matches
+          // headers like "Qty/Unit" or "Qty Per Unit" and previously leaked a
+          // quantity value into this product's plant field (e.g. plant "0.14").
+          const plant = normalizePlant(col(row, 'plant', 'location'))
           if (!productName) continue
           const existing = await prisma.productMaster.findFirst({ where: { productName } })
           if (existing) {
@@ -173,7 +178,9 @@ export const executeImport = async (req, res) => {
       for (const row of rows) {
         try {
           const equipName = col(row, 'equipname', 'equip name', 'equipment name', 'name', 'equipment', 'machine', 'reactor', 'work center', 'workcenter', 'asset')
-          const locationRaw = col(row, 'plant', 'location', 'unit', 'designated', 'section', 'area', 'department')
+          // "unit" is deliberately not a fallback key — see the Product Master
+          // section above for why it collides with "Qty/Unit"-style headers.
+          const locationRaw = col(row, 'plant', 'location', 'designated', 'section', 'area', 'department')
           const plant = normalizeEquipSection(locationRaw)
           const workingVolumeRaw = col(row, 'workingvolume', 'working volume', 'volume', 'capacity', 'vol', 'size')
           const workingVolume = safeNum(workingVolumeRaw) || null
@@ -283,8 +290,8 @@ export const executeImport = async (req, res) => {
       const newProductCodes = []
 
       // Every recipe row must land in the DB — even one recipe_db has a
-      // @@unique([productCode, rmCode]) constraint, so a product with more
-      // than one unmatched ingredient can't literally store "NaN" twice.
+      // @@unique([productCode, recipeNo, rmCode]) constraint, so a product with
+      // more than one unmatched ingredient can't literally store "NaN" twice.
       // First unmatched ingredient in a product gets "NaN", the next "NaN-2",
       // etc. — still trivially recognizable as unmatched (rmCode starts with
       // "NaN"), and picked up automatically by the existing Fix RM Mapping /
@@ -333,7 +340,10 @@ export const executeImport = async (req, res) => {
           // "NaN" placeholder convention already used for unmatched RM codes.
           const qtyPerUnit = safeNum(col(row, 'qty', 'qtyperunit', 'qty per unit', 'quantity', 'qty/unit', 'qty per kg'))
           const uom = col(row, 'uom', 'unit', 'unit of measure') || 'NaN'
-          const plantRaw = col(row, 'plant', 'location', 'section', 'unit')
+          // "unit" is deliberately not a fallback key here — it substring-matches
+          // "Qty/Unit"/"Qty Per Unit" headers on this same sheet and previously
+          // leaked a quantity value (e.g. "0.14") into the product's plant field.
+          const plantRaw = col(row, 'plant', 'location', 'section')
           const section = normalizeRecipePlant(plantRaw)
           const concCfu = col(row, 'conc', 'cfu', 'concentration', 'conccfu', 'concfcu')
           const roleType = getRoleType(concCfu)
@@ -343,16 +353,20 @@ export const executeImport = async (req, res) => {
             continue
           }
 
-          // Product: auto-create if not in master (products come from BOM)
+          // Product: auto-create if not in master (products come from BOM).
+          // plant is an array — a product's ingredients can each come from a
+          // different plant, so every new, distinct plant seen across this
+          // product's rows is appended rather than overwriting the others.
           let product = productsByName[productName.toLowerCase()]
           if (!product) {
             const newCode = await nextProductCode(newProductCodes)
             newProductCodes.push(newCode)
-            product = await prisma.productMaster.create({ data: { productCode: newCode, productName, plant: section } })
+            product = await prisma.productMaster.create({ data: { productCode: newCode, productName, plant: normalizePlant(section) } })
             productsByName[productName.toLowerCase()] = product
             results.productMaster++
-          } else if (!product.plant && section) {
-            await prisma.productMaster.update({ where: { productCode: product.productCode }, data: { plant: section } })
+          } else if (section && !product.plant.includes(section)) {
+            product = await prisma.productMaster.update({ where: { productCode: product.productCode }, data: { plant: { push: section } } })
+            productsByName[productName.toLowerCase()] = product
           }
 
           // RM: exact name match only (case-insensitive, trimmed) — no fuzzy
@@ -382,7 +396,7 @@ export const executeImport = async (req, res) => {
 
           const finalRoleType = roleType || 'INGREDIENT'
           await prisma.recipeDb.upsert({
-            where: { productCode_rmCode: { productCode: product.productCode, rmCode } },
+            where: { productCode_recipeNo_rmCode: { productCode: product.productCode, recipeNo: 1, rmCode } },
             create: { productCode: product.productCode, productName: product.productName, rmCode, rmName, qtyPerUnit, uom, roleType: finalRoleType },
             update: { qtyPerUnit, uom, productName: product.productName, rmName, roleType: finalRoleType }
           })
@@ -430,6 +444,8 @@ export const executeImport = async (req, res) => {
         results.duplicateRecipeLineExtraRows = extraRows
         results.errors.push(`🔁 ${results.duplicateRecipeLines.length} product+ingredient combo(s) appeared more than once in the sheet (${extraRows} extra row(s) total) — only the last occurrence's qty/uom was kept per combo, e.g.: ${results.duplicateRecipeLines.slice(0, 5).map(d => `"${d.rmName}" in "${d.productName}" (×${d.occurrences})`).join(', ')}${results.duplicateRecipeLines.length > 5 ? ', …' : ''}`)
       }
+      const touchedProductCodes = new Set([...touchedRecipeRows.values()].map(v => productsByName[v.productName?.toLowerCase()]?.productCode).filter(Boolean))
+      for (const productCode of touchedProductCodes) await syncTotalRecipe(productCode)
     }
 
     // ── PRINT MASTER ───────────────────────────────────────────────────────

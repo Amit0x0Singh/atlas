@@ -24,7 +24,14 @@
 model ProductMaster {
   productCode String   @id @map("product_code")
   productName String   @unique @map("product_name")
-  plant       String   @default("")
+  uom         String?
+  state       String?  @map("physical_state") // SOLID | LIQUID | GAS
+  // Plants involved in making this product — an array because different
+  // recipe ingredients can be sourced/processed at different plants.
+  plant       String[] @default([])
+  // Count of distinct recipes (see RecipeDb.recipeNo) this product has.
+  // Maintained by the recipe save path, not user-editable.
+  totalRecipe Int      @default(0) @map("total_recipe")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
@@ -32,12 +39,17 @@ model ProductMaster {
 }
 
 model EquipmentMaster {
-  equipId       String   @id @default(cuid()) @map("equip_id")
-  equipName     String   @unique @map("equip_name")
-  workingVolume Float?   @map("working_volume")
-  operation     String   @default("") @map("operation")
-  plant         String   @default("")
-  createdAt     DateTime @default(now()) @map("created_at")
+  equipId           String   @id @default(cuid()) @map("equip_id")
+  // Backend-generated (Postgres sequence default) — never accepted from the client.
+  equipCode         String   @unique @default(dbgenerated("('EQ-' || lpad((nextval('equipment_master_equip_code_seq'::regclass))::text, 4, '0'))")) @map("equip_code")
+  equipName         String   @unique @map("equip_name")
+  designatedProduct String?  @map("designated_product")
+  workingVolume     Float    @default(0) @map("working_volume")
+  workingUnit       String?  @map("working_unit")
+  operation         String   @default("") @map("operation")
+  plant             String   @default("")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
 
   @@map("equipment_master")
 }
@@ -100,19 +112,26 @@ model ProductionTask {
 // ─── RECIPE / BOM ────────────────────────────────────────────────────────────
 
 model RecipeDb {
-  id          String  @id @default(cuid())
-  productCode String  @map("product_code")
-  productName String  @map("product_name")
-  rmCode      String  @map("rm_code")
-  rmName      String  @map("rm_name")
-  qtyPerUnit  Float   @map("qty_per_unit")
+  id          String   @id @default(cuid())
+  productCode String   @map("product_code")
+  productName String   @map("product_name")
+  // Which recipe (of possibly several, in future) this BOM line belongs to
+  // for the product — today every product has exactly one, so this always
+  // reads 1, but it's what lets a product carry more than one recipe later
+  // without a further schema change.
+  recipeNo    Int      @default(1) @map("recipe_no")
+  rmCode      String   @map("rm_code")
+  rmName      String   @map("rm_name")
+  qtyPerUnit  Float    @map("qty_per_unit")
   uom         String
-  roleType    String  @default("INGREDIENT") @map("role_type") // INGREDIENT | CARRIER | BASE
-  isMicrobe   Boolean @default(false) @map("is_microbe")
-  microbeCode String? @map("microbe_code")
-  requiredCfu Float?  @map("required_cfu")
+  roleType    String   @default("INGREDIENT") @map("role_type") // INGREDIENT | CARRIER | BASE
+  isMicrobe   Boolean  @default(false) @map("is_microbe")
+  microbeCode String?  @map("microbe_code")
+  requiredCfu Float?   @map("required_cfu")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
-  @@unique([productCode, rmCode])
+  @@unique([productCode, recipeNo, rmCode])
   @@map("recipe_db")
 }
 

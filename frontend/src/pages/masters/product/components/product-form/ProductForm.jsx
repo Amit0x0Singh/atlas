@@ -1,5 +1,6 @@
 ﻿import { Save, X } from 'lucide-react'
 import { Button } from '../../../../../components/ui'
+import { CANONICAL_UNITS } from '../../../../../utils/uom.js'
 
 export default function ProductForm({ editing, form, onChange, saving, msg, onSave, onClose }) {
   return (
@@ -29,14 +30,41 @@ export default function ProductForm({ editing, form, onChange, saving, msg, onSa
               className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-green-500"
             />
           </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">UOM</label>
+              <select
+                value={form.uom || ''}
+                onChange={e => onChange('uom', e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-green-500"
+              >
+                <option value="">—</option>
+                {CANONICAL_UNITS.map(u => <option key={u}>{u}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
+              <select
+                value={form.state || ''}
+                onChange={e => onChange('state', e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-green-500"
+              >
+                <option value="">—</option>
+                <option value="SOLID">Solid</option>
+                <option value="LIQUID">Liquid</option>
+                <option value="GAS">Gas</option>
+              </select>
+            </div>
+          </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Plant</label>
             <input
               value={form.plant}
               onChange={e => onChange('plant', e.target.value)}
-              placeholder="e.g. Plant A"
+              placeholder="e.g. Nano, Powder"
               className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-green-500"
             />
+            <p className="text-xs text-gray-400 mt-1">Comma separated if more than one plant is involved</p>
           </div>
         </div>
         <div className="flex gap-3 mt-5">

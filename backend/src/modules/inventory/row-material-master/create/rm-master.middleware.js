@@ -18,5 +18,9 @@ export const validateCreateRm = preprocess({
     itemName:     { required: true, minLength: 2, maxLength: 150 },
     uom:          { required: true },
     trackingType: { enum: ['PACK', 'BULK'] },
+    category:     { maxLength: 100 },
+    subCategory:  { maxLength: 100 },
+    state:        { enum: ['SOLID', 'LIQUID', 'GAS'] },
+    density:      { positive: true },
   },
 })

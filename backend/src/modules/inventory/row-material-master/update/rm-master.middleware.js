@@ -10,6 +10,10 @@ export const validateUpdateRm = preprocess({
   schema: {
     itemName:     { minLength: 2, maxLength: 150 },
     trackingType: { enum: ['PACK', 'BULK'] },
+    category:     { maxLength: 100 },
+    subCategory:  { maxLength: 100 },
+    state:        { enum: ['SOLID', 'LIQUID', 'GAS'] },
+    density:      { positive: true },
   },
 })
 

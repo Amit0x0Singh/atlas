@@ -3,7 +3,7 @@ import { normalizeUom, CANONICAL_UNITS } from '../../../../utils/uom.js'
 
 export const createRm = async (req, res) => {
   try {
-    const { itemCode, itemName, uom, trackingType } = req.body
+    const { itemCode, itemName, uom, trackingType, category, subCategory, state, density } = req.body
     if (!itemCode || !itemName || !uom)
       return res.status(400).json({ success: false, error: 'itemCode, itemName and uom are required', code: 'VALIDATION_ERROR' })
     // The master unit is the item's physical stock unit — must be a real
@@ -15,7 +15,13 @@ export const createRm = async (req, res) => {
     const existing = await prisma.rmMaster.findFirst({ where: { OR: [{ itemCode }, { itemName }] } })
     if (existing) return res.status(409).json({ success: false, error: 'Item code or name already exists', code: 'CONFLICT' })
     const item = await prisma.rmMaster.create({
-      data: { itemCode, itemName, uom: canonicalUom, trackingType: trackingType || 'PACK' }
+      data: {
+        itemCode, itemName, uom: canonicalUom, trackingType: trackingType || 'PACK',
+        category: category || null,
+        subCategory: subCategory || null,
+        state: state || null,
+        density: density ? parseFloat(density) : null,
+      }
     })
     return res.status(201).json({ success: true, data: item })
   } catch (err) {

@@ -12,12 +12,12 @@ const log = (msg) => console.log(`  ✓ ${msg}`)
 // ─── 1. Product Master ────────────────────────────────────────────────────────
 async function seedProductMaster() {
   const products = [
-    { productCode: 'RHZ-001',  productName: 'Rhizobium japonicum WP 500g',       plant: 'Nano' },
-    { productCode: 'AZO-001',  productName: 'Azotobacter chroococcum WP 1kg',     plant: 'Nano' },
-    { productCode: 'TRIC-001', productName: 'Trichoderma viride WP 1kg',          plant: 'Botanical' },
-    { productCode: 'BAC-001',  productName: 'Bacillus subtilis KD-118 WP 1kg',    plant: 'Powder' },
-    { productCode: 'PSB-001',  productName: 'Phosphate Solubilizer WP 500g',      plant: 'Powder' },
-    { productCode: 'BCO-001',  productName: 'Bioconsortia WP 5kg Bulk',           plant: 'Granules' },
+    { productCode: 'RHZ-001',  productName: 'Rhizobium japonicum WP 500g',       plant: ['Nano'] },
+    { productCode: 'AZO-001',  productName: 'Azotobacter chroococcum WP 1kg',     plant: ['Nano'] },
+    { productCode: 'TRIC-001', productName: 'Trichoderma viride WP 1kg',          plant: ['Botanical'] },
+    { productCode: 'BAC-001',  productName: 'Bacillus subtilis KD-118 WP 1kg',    plant: ['Powder'] },
+    { productCode: 'PSB-001',  productName: 'Phosphate Solubilizer WP 500g',      plant: ['Powder'] },
+    { productCode: 'BCO-001',  productName: 'Bioconsortia WP 5kg Bulk',           plant: ['Granules'] },
   ]
   for (const p of products) {
     await prisma.productMaster.upsert({
@@ -83,10 +83,14 @@ async function seedRecipeDb() {
   ]
   for (const r of recipes) {
     await prisma.recipeDb.upsert({
-      where: { productCode_rmCode: { productCode: r.productCode, rmCode: r.rmCode } },
+      where: { productCode_recipeNo_rmCode: { productCode: r.productCode, recipeNo: 1, rmCode: r.rmCode } },
       update: { qtyPerUnit: r.qtyPerUnit, uom: r.uom },
       create: r,
     })
+  }
+  const seededProductCodes = [...new Set(recipes.map(r => r.productCode))]
+  for (const productCode of seededProductCodes) {
+    await prisma.productMaster.update({ where: { productCode }, data: { totalRecipe: 1 } })
   }
   log(`Recipe DB — ${recipes.length} BOM lines across 5 products`)
 }

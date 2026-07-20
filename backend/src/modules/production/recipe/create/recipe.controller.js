@@ -1,5 +1,6 @@
 import prisma from '../../../../db.js'
 import { toCanonical } from '../../../../utils/uom.js'
+import { syncTotalRecipe } from '../recipe-utils.js'
 
 export const bulkSaveRecipe = async (req, res) => {
   try {
@@ -8,6 +9,7 @@ export const bulkSaveRecipe = async (req, res) => {
     const valid = rows.filter(r => r.productCode && r.productName && r.rmCode && r.rmName && r.qtyPerUnit && r.uom)
     if (!valid.length) return res.status(400).json({ success: false, error: 'No valid rows found', code: 'VALIDATION_ERROR' })
     let saved = 0
+    const touchedProductCodes = new Set()
     for (const r of valid) {
       // CFU/g-style potency rows pass through unchanged; everything else
       // (kg/g/mg/L/ml/...) converts to the canonical KG/L before saving.
@@ -17,19 +19,20 @@ export const bulkSaveRecipe = async (req, res) => {
       } catch (e) {
         return res.status(400).json({ success: false, error: `Row for ${r.rmName}: ${e.message}`, code: 'VALIDATION_ERROR' })
       }
-      const data = { productCode: r.productCode, productName: r.productName, rmName: r.rmName, qtyPerUnit: canonical.qty, uom: canonical.uom, roleType: r.roleType || 'INGREDIENT' }
+      const recipeNo = r.recipeNo || 1
+      const data = { productCode: r.productCode, productName: r.productName, recipeNo, rmName: r.rmName, qtyPerUnit: canonical.qty, uom: canonical.uom, roleType: r.roleType || 'INGREDIENT' }
 
       if (r.id) {
         // Editing an existing row: if the corrected name now resolves to a
         // *different* code than before, this must rename that same row in
-        // place (targeted by its own id) — upserting by (productCode, rmCode)
-        // would instead insert a brand-new row under the new code and leave
-        // the stale original row sitting there untouched.
-        const collision = await prisma.recipeDb.findUnique({ where: { productCode_rmCode: { productCode: r.productCode, rmCode: r.rmCode } } })
+        // place (targeted by its own id) — upserting by (productCode,
+        // recipeNo, rmCode) would instead insert a brand-new row under the
+        // new code and leave the stale original row sitting there untouched.
+        const collision = await prisma.recipeDb.findUnique({ where: { productCode_recipeNo_rmCode: { productCode: r.productCode, recipeNo, rmCode: r.rmCode } } })
         if (collision && collision.id !== r.id) {
           // Another row already owns the target code — merge into it (that
           // row wins) and drop this one, rather than violating the unique
-          // constraint on (productCode, rmCode).
+          // constraint on (productCode, recipeNo, rmCode).
           await prisma.recipeDb.update({ where: { id: collision.id }, data })
           await prisma.recipeDb.delete({ where: { id: r.id } })
         } else {
@@ -37,13 +40,15 @@ export const bulkSaveRecipe = async (req, res) => {
         }
       } else {
         await prisma.recipeDb.upsert({
-          where: { productCode_rmCode: { productCode: r.productCode, rmCode: r.rmCode } },
+          where: { productCode_recipeNo_rmCode: { productCode: r.productCode, recipeNo, rmCode: r.rmCode } },
           create: { ...data, rmCode: r.rmCode },
           update: data,
         })
       }
+      touchedProductCodes.add(r.productCode)
       saved++
     }
+    for (const productCode of touchedProductCodes) await syncTotalRecipe(productCode)
     return res.json({ success: true, saved, message: `${saved} rows saved` })
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })

@@ -3,7 +3,7 @@ import { normalizeUom, CANONICAL_UNITS } from '../../../../utils/uom.js'
 
 export const updateRm = async (req, res) => {
   try {
-    const { itemName, uom, trackingType } = req.body
+    const { itemName, uom, trackingType, category, subCategory, state, density } = req.body
     let canonicalUom = uom
     if (uom) {
       canonicalUom = normalizeUom(uom)
@@ -12,6 +12,10 @@ export const updateRm = async (req, res) => {
     }
     const data = { itemName, uom: canonicalUom }
     if (trackingType) data.trackingType = trackingType
+    if (category !== undefined) data.category = category || null
+    if (subCategory !== undefined) data.subCategory = subCategory || null
+    if (state !== undefined) data.state = state || null
+    if (density !== undefined) data.density = density ? parseFloat(density) : null
     const item = await prisma.rmMaster.update({ where: { itemCode: req.params.itemCode }, data })
     return res.json({ success: true, data: item })
   } catch (err) {

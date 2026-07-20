@@ -16,7 +16,7 @@ export default function RmMaster() {
   const [filterType, setFilterType] = useState('ALL')
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing]   = useState(null)
-  const [form, setForm]         = useState({ itemCode: '', itemName: '', uom: 'KG', trackingType: 'PACK' })
+  const [form, setForm]         = useState({ itemCode: '', itemName: '', uom: 'KG', trackingType: 'PACK', category: '', subCategory: '', state: '', density: '' })
   const [msg, setMsg]           = useState('')
   const [page, setPage]         = useState(1)
   const [limit, setLimit]       = useState(15)
@@ -38,21 +38,29 @@ export default function RmMaster() {
 
   const openAdd = () => {
     setEditing(null)
-    setForm({ itemCode: '', itemName: '', uom: 'KG', trackingType: 'PACK' })
+    setForm({ itemCode: '', itemName: '', uom: 'KG', trackingType: 'PACK', category: '', subCategory: '', state: '', density: '' })
     setShowForm(true); setMsg('')
   }
   const openEdit = (item) => {
     setEditing(item)
-    setForm({ itemCode: item.itemCode, itemName: item.itemName, uom: item.uom, trackingType: item.trackingType || 'PACK' })
+    setForm({
+      itemCode: item.itemCode, itemName: item.itemName, uom: item.uom, trackingType: item.trackingType || 'PACK',
+      category: item.category || '', subCategory: item.subCategory || '', state: item.state || '', density: item.density ?? '',
+    })
     setShowForm(true); setMsg('')
   }
 
   const save = async () => {
     if (!form.itemCode || !form.itemName || !form.uom) { setMsg('All fields required'); return }
     setMsg('')
+    const data = {
+      itemName: form.itemName, uom: form.uom, trackingType: form.trackingType,
+      category: form.category, subCategory: form.subCategory, state: form.state,
+      density: form.state === 'LIQUID' ? form.density : '',
+    }
     try {
-      if (editing) await updateRm.mutateAsync({ code: form.itemCode, data: { itemName: form.itemName, uom: form.uom, trackingType: form.trackingType } })
-      else await createRm.mutateAsync(form)
+      if (editing) await updateRm.mutateAsync({ code: form.itemCode, data })
+      else await createRm.mutateAsync({ ...data, itemCode: form.itemCode })
       setShowForm(false)
     } catch (e) { setMsg(e.message) }
   }

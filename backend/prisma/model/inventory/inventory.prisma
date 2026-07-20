@@ -23,6 +23,13 @@ model RmMaster {
   itemName     String   @unique @map("item_name")
   uom          String
   trackingType String   @default("PACK") @map("tracking_type") // PACK | BULK
+  category     String?  @map("category")
+  subCategory  String?  @map("sub_category")
+  state        String?  @map("physical_state") // SOLID | LIQUID | GAS
+  // kg per liter — lets a liquid item be purchased in KG and issued in L (or
+  // vice versa) by converting through mass = density × volume. Only
+  // meaningful for state = LIQUID; left null for solids/gases.
+  density      Float?   @map("density")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 

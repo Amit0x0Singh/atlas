@@ -73,7 +73,7 @@ export default function BomEditor({ selectedProduct, bomRows, loadId, rmList, pr
           <div className="flex items-center gap-3 mt-0.5 flex-wrap">
             <p className="text-sm text-gray-500 font-mono">
               Code: <span className="text-blue-700 font-semibold">{selectedProduct.productCode}</span>
-              {selectedProduct.plant && <span className="ml-3 text-gray-400">· {selectedProduct.plant}</span>}
+              {selectedProduct.plant?.length > 0 && <span className="ml-3 text-gray-400">· {selectedProduct.plant.join(', ')}</span>}
             </p>
             <span className="bg-amber-100 text-amber-800 border border-amber-200 text-xs font-bold px-2 py-0.5 rounded-full whitespace-nowrap">
               📐 Qty per 1 KG of product

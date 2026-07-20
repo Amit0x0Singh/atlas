@@ -8,7 +8,7 @@ import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct } fro
 export default function ProductMaster() {
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing]  = useState(null)
-  const [form, setForm]        = useState({ productCode: '', productName: '', plant: '' })
+  const [form, setForm]        = useState({ productCode: '', productName: '', uom: '', state: '', plant: '' })
   const [msg, setMsg]          = useState('')
   const [search, setSearch]    = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -28,15 +28,23 @@ export default function ProductMaster() {
   const updateProduct = useUpdateProduct()
   const deleteProduct = useDeleteProduct()
 
-  const openAdd  = () => { setEditing(null); setForm({ productCode: '', productName: '', plant: '' }); setShowForm(true); setMsg('') }
-  const openEdit = (item) => { setEditing(item); setForm({ productCode: item.productCode, productName: item.productName, plant: item.plant }); setShowForm(true); setMsg('') }
+  const openAdd  = () => { setEditing(null); setForm({ productCode: '', productName: '', uom: '', state: '', plant: '' }); setShowForm(true); setMsg('') }
+  const openEdit = (item) => {
+    setEditing(item)
+    setForm({
+      productCode: item.productCode, productName: item.productName,
+      uom: item.uom || '', state: item.state || '', plant: (item.plant || []).join(', '),
+    })
+    setShowForm(true); setMsg('')
+  }
 
   const save = async () => {
     if (!form.productCode || !form.productName) { setMsg('Product Code and Name are required'); return }
     setMsg('')
+    const data = { productName: form.productName, uom: form.uom, state: form.state, plant: form.plant }
     try {
-      if (editing) await updateProduct.mutateAsync({ code: form.productCode, data: { productName: form.productName, plant: form.plant } })
-      else await createProduct.mutateAsync(form)
+      if (editing) await updateProduct.mutateAsync({ code: form.productCode, data })
+      else await createProduct.mutateAsync({ ...data, productCode: form.productCode })
       setShowForm(false)
     } catch (e) { setMsg(e.message) }
   }

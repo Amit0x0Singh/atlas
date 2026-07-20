@@ -114,6 +114,9 @@ export default function RmTable({
                 <th className="text-left px-4 py-3 font-semibold whitespace-nowrap">Item Name</th>
                 <th className="text-left px-4 py-3 font-semibold whitespace-nowrap">UOM</th>
                 <th className="text-left px-4 py-3 font-semibold whitespace-nowrap">Type</th>
+                <th className="text-left px-4 py-3 font-semibold whitespace-nowrap">Category</th>
+                <th className="text-left px-4 py-3 font-semibold whitespace-nowrap">State</th>
+                <th className="text-left px-4 py-3 font-semibold whitespace-nowrap">Density (kg/L)</th>
                 <th className="text-left px-4 py-3 font-semibold whitespace-nowrap">Packing Spec</th>
                 <th className="text-left px-4 py-3 font-semibold whitespace-nowrap">Added On</th>
                 <th className="text-left px-4 py-3 font-semibold whitespace-nowrap">Actions</th>
@@ -122,18 +125,18 @@ export default function RmTable({
             <tbody className="divide-y divide-gray-100">
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="py-14 text-center text-gray-400">
+                  <td colSpan={10} className="py-14 text-center text-gray-400">
                     <Loader2 size={22} className="animate-spin mx-auto mb-2" />
                     Loading items…
                   </td>
                 </tr>
               ) : error ? (
                 <tr>
-                  <td colSpan={7} className="py-14 text-center text-red-500">{error}</td>
+                  <td colSpan={10} className="py-14 text-center text-red-500">{error}</td>
                 </tr>
               ) : visibleItems.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-14 text-center text-gray-400">
+                  <td colSpan={10} className="py-14 text-center text-gray-400">
                     <PackageX size={26} className="mx-auto mb-2 text-gray-300" />
                     No items found. Click "Add New Item" to start.
                   </td>
@@ -155,6 +158,15 @@ export default function RmTable({
                           {item.trackingType || 'PACK'}
                         </span>
                       )}
+                    </td>
+                    <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
+                      {isPacking ? <span className="text-gray-300">—</span> : (item.category ? [item.category, item.subCategory].filter(Boolean).join(' / ') : '—')}
+                    </td>
+                    <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
+                      {isPacking ? <span className="text-gray-300">—</span> : (item.state || '—')}
+                    </td>
+                    <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
+                      {isPacking ? <span className="text-gray-300">—</span> : (item.density ?? '—')}
                     </td>
                     <td className="px-4 py-3 max-w-xs">
                       {isPacking ? (

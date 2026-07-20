@@ -6,8 +6,10 @@ import { preprocess } from '../../../../middleware/preprocessing/index.js'
 
 export const validateUpdateEquipment = preprocess({
   schema: {
-    equipName:     { minLength: 2, maxLength: 150 },
-    workingVolume: { positive: true },
+    equipName:         { minLength: 2, maxLength: 150 },
+    workingVolume:     { positive: true },
+    designatedProduct: { maxLength: 200 },
+    workingUnit:       { maxLength: 20 },
   },
 })
 
