@@ -1,23 +1,19 @@
-﻿import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { Upload, Plus } from 'lucide-react'
-import { Button, BackButton } from '../../../../components/ui'
+import { Upload, Plus, Microscope } from 'lucide-react'
+import { Button, BackButton, PageHeader } from '../../../../components/ui'
 import MicrobeList   from '../components/microbe-list/MicrobeList.jsx'
 import MicrobeForm   from '../components/microbe-form/MicrobeForm.jsx'
 import MicrobeImport from '../components/microbe-import/MicrobeImport.jsx'
 import { useMicrobes, useCreateMicrobe, useUpdateMicrobe, useDeleteMicrobe } from '../../../../hooks/masters/useMicrobes.js'
+import { useMicrobialContainers } from '../../../../hooks/masters/useMicrobialContainers.js'
 import { queryKeys } from '../../../../lib/queryKeys.js'
 
-const S = {
-  page:       { padding: '24px', fontFamily: "'Inter',system-ui,sans-serif", maxWidth: '960px' },
-  head:       { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' },
-  h1:         { fontSize: '22px', fontWeight: 800, color: '#0f172a', margin: 0 },
-  sub:        { fontSize: '13px', color: '#64748b', marginTop: '4px' },
-}
+const EMPTY_FORM = { microbe_name: '', uom: 'KG' }
 
 export default function MicrobesMaster() {
   const [tab, setTab]           = useState('list')
-  const [form, setForm]         = useState({ microbe_name: '', microbe_code: '' })
+  const [form, setForm]         = useState(EMPTY_FORM)
   const [editId, setEditId]     = useState(null)
   const [search, setSearch]     = useState('')
   const [page, setPage]         = useState(1)
@@ -25,100 +21,114 @@ export default function MicrobesMaster() {
 
   const qc = useQueryClient()
   const { data: microbes = [], isLoading: loading } = useMicrobes()
+  const { data: containers = [] } = useMicrobialContainers()
   const createMicrobe = useCreateMicrobe()
   const updateMicrobe = useUpdateMicrobe()
   const deleteMicrobe = useDeleteMicrobe()
 
+  // A microbe "has stock" if any container currently holding it isn't empty
+  // — used to block deleting a master row that's actively backing real
+  // inventory, instead of silently orphaning those container records.
+  const hasStock = (microbeCode) =>
+    containers.some(c => c.microbeCode === microbeCode && (c.currentQtyKg || 0) > 0)
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
-      if (editId) await updateMicrobe.mutateAsync({ id: editId, data: form })
-      else        await createMicrobe.mutateAsync(form)
-      setForm({ microbe_name: '', microbe_code: '' })
+      const { microbe_name, uom } = form
+      if (editId) await updateMicrobe.mutateAsync({ id: editId, data: { microbe_name, uom } })
+      else        await createMicrobe.mutateAsync({ microbe_name, uom })
+      setForm(EMPTY_FORM)
       setEditId(null)
       setTab('list')
     } catch (err) { alert(err.message) }
   }
 
   const handleEdit = (m) => {
-    setForm({ microbe_name: m.microbe_name, microbe_code: m.microbe_code })
-    setEditId(m.microbe_id)
+    setForm({ microbe_name: m.microbeName, microbe_code: m.microbeCode, uom: m.uom || 'KG' })
+    setEditId(m.microbeId)
     setTab('add')
   }
 
   const handleDelete = async (id, name) => {
     if (!confirm(`Delete "${name}"?`)) return
-    await deleteMicrobe.mutateAsync(id)
+    try { await deleteMicrobe.mutateAsync(id) } catch (err) { alert(err.message) }
   }
 
-  const filtered  = microbes.filter(m =>
-    m.microbe_name.toLowerCase().includes(search.toLowerCase()) ||
-    m.microbe_code.toLowerCase().includes(search.toLowerCase())
-  )
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase()
+    return microbes.filter(m =>
+      m.microbeName.toLowerCase().includes(q) || m.microbeCode.toLowerCase().includes(q)
+    )
+  }, [microbes, search])
   const paginated = filtered.slice((page - 1) * limit, page * limit)
 
   return (
-    <div style={S.page}>
-      {/* Header */}
-      <div style={S.head}>
-        <div>
-          <h1 style={S.h1}>🦠 Microbes Master</h1>
-          <p style={S.sub}>Manage microbe names and codes used across the SFG module</p>
-        </div>
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+    <div className="flex flex-col h-full">
+      <PageHeader
+        icon={Microscope}
+        title="Microbes Master"
+        description="Manage microbe names and codes used across the SFG module"
+        actions={<>
           <Button variant="outline" icon={Upload} onClick={() => setTab('import')}>Import Excel</Button>
-          <Button variant="primary" icon={Plus} onClick={() => { setForm({ microbe_name: '', microbe_code: '' }); setEditId(null); setTab('add') }}>
+          <Button variant="primary" icon={Plus} onClick={() => { setForm(EMPTY_FORM); setEditId(null); setTab('add') }}>
             Add Microbe
           </Button>
           <BackButton />
+        </>}
+      />
+
+      <div className="p-6 max-w-4xl">
+        <div className="flex gap-1 mb-5 border-b border-gray-200">
+          {[
+            ['list', 'Microbe List'],
+            ['add', editId ? 'Edit Microbe' : 'Add Microbe'],
+            ['import', 'Import from Excel'],
+          ].map(([k, l]) => (
+            <button
+              key={k}
+              onClick={() => setTab(k)}
+              className={`px-4 py-2 text-sm font-semibold border-b-2 -mb-px transition-colors ${
+                tab === k ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {l}
+            </button>
+          ))}
         </div>
+
+        {tab === 'list' && (
+          <MicrobeList
+            paginated={paginated}
+            total={filtered.length}
+            loading={loading}
+            search={search}
+            page={page}
+            limit={limit}
+            hasStock={hasStock}
+            onSearch={v => { setSearch(v); setPage(1) }}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            onPageChange={setPage}
+            onLimitChange={l => { setLimit(l); setPage(1) }}
+          />
+        )}
+
+        {tab === 'add' && (
+          <MicrobeForm
+            editId={editId}
+            form={form}
+            onChange={(field, val) => setForm(f => ({ ...f, [field]: val }))}
+            saving={createMicrobe.isPending || updateMicrobe.isPending}
+            onSubmit={handleSubmit}
+            onCancel={() => { setTab('list'); setEditId(null); setForm(EMPTY_FORM) }}
+          />
+        )}
+
+        {tab === 'import' && (
+          <MicrobeImport onImportDone={() => qc.invalidateQueries({ queryKey: queryKeys.microbes.all() })} />
+        )}
       </div>
-
-      {/* Tabs */}
-      <div style={{ display: 'flex', gap: '4px', marginBottom: '20px' }}>
-        {[
-          ['list',   '📋 Microbe List'],
-          ['add',    editId ? '✏️ Edit Microbe' : '+ Add Microbe'],
-          ['import', '⇪ Import from Excel'],
-        ].map(([k, l]) => (
-          <button key={k} onClick={() => setTab(k)} style={{
-            padding: '8px 18px', borderRadius: '8px 8px 0 0', fontSize: '13px', fontWeight: 600,
-            border: '1px solid #e2e8f0', borderBottom: tab === k ? '2px solid #1e3a5f' : '1px solid #e2e8f0',
-            background: tab === k ? '#fff' : '#f8fafc', color: tab === k ? '#1e3a5f' : '#64748b', cursor: 'pointer',
-          }}>{l}</button>
-        ))}
-      </div>
-
-      {tab === 'list' && (
-        <MicrobeList
-          paginated={paginated}
-          total={filtered.length}
-          loading={loading}
-          search={search}
-          page={page}
-          limit={limit}
-          onSearch={v => { setSearch(v); setPage(1) }}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          onPageChange={setPage}
-          onLimitChange={l => { setLimit(l); setPage(1) }}
-        />
-      )}
-
-      {tab === 'add' && (
-        <MicrobeForm
-          editId={editId}
-          form={form}
-          onChange={(field, val) => setForm(f => ({ ...f, [field]: val }))}
-          saving={createMicrobe.isPending || updateMicrobe.isPending}
-          onSubmit={handleSubmit}
-          onCancel={() => { setTab('list'); setEditId(null); setForm({ microbe_name: '', microbe_code: '' }) }}
-        />
-      )}
-
-      {tab === 'import' && (
-        <MicrobeImport onImportDone={() => qc.invalidateQueries({ queryKey: queryKeys.microbes.all() })} />
-      )}
     </div>
   )
 }

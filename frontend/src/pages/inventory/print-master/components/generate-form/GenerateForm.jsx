@@ -353,7 +353,7 @@ function ItemLine({ idx, item, rmList, pmList, receivedDate, onChange, onRemove,
 }
 
 // ── Main form ─────────────────────────────────────────────────────────────────
-export default function GenerateForm({ onGenerated, prefill, onGateUsed }) {
+export default function GenerateForm({ onGenerated, prefill, onGateUsed, onUnlink }) {
   const [rmList, setRmList]           = useState([]);
   const [pmList, setPmList]           = useState([]);
   const [hdr, setHdr]                 = useState(BLANK_HDR);
@@ -381,8 +381,6 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed }) {
     setLinkedEntry(prefill);
     setError("");
   }, [prefill]);
-
-  const setH = (k, v) => setHdr(h => ({ ...h, [k]: v }));
 
   const addItem    = ()         => setItems(its => [...its, { ...BLANK_ITEM }]);
   const removeItem = (i)        => setItems(its => its.filter((_, idx) => idx !== i));
@@ -462,7 +460,7 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed }) {
             {linkedEntry.vehicleNo && ` — Vehicle: ${linkedEntry.vehicleNo}`}
           </div>
           <IconButton icon={X} variant="ghost" size="sm" tooltip="Unlink gate entry"
-            onClick={() => { setLinkedEntry(null); setHdr(BLANK_HDR); }}
+            onClick={() => { setLinkedEntry(null); setHdr(BLANK_HDR); onUnlink?.(); }}
           />
         </div>
       )}
@@ -475,7 +473,9 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed }) {
       )}
 
       <form onSubmit={handleSubmit}>
-        {/* ── Invoice header ──────────────────────────────────────── */}
+        {/* ── Invoice header — filled only by selecting an incoming gate
+            entry on the right, never typed directly, so it can never drift
+            from what the gate actually recorded. ─────────────────────── */}
         <div style={{ marginBottom: "18px" }}>
           <p style={{ margin: "0 0 8px", fontSize: "11px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em" }}>
             Invoice Details
@@ -483,20 +483,28 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed }) {
           <div className="gf-hdr-grid">
             <div style={{ minWidth: 0 }}>
               <label style={lbl}>Supplier *</label>
-              <input value={hdr.supplier} onChange={e => setH("supplier", e.target.value)} placeholder="Supplier name" style={inp} required />
+              <input value={hdr.supplier} readOnly placeholder="Select a gate entry →" style={{ ...inp, background: "#f8fafc", color: "#0f172a", cursor: "not-allowed" }} required />
             </div>
             <div style={{ minWidth: 0 }}>
               <label style={lbl}>Invoice No *</label>
-              <input value={hdr.invoiceNo} onChange={e => setH("invoiceNo", e.target.value)} placeholder="INV-2026-001" style={inp} required />
+              <input value={hdr.invoiceNo} readOnly placeholder="Select a gate entry →" style={{ ...inp, background: "#f8fafc", color: "#0f172a", cursor: "not-allowed" }} required />
             </div>
             <div style={{ minWidth: 0 }}>
               <label style={lbl}>Received Date *</label>
-              <input type="date" value={hdr.receivedDate} onChange={e => setH("receivedDate", e.target.value)} style={inp} required />
+              <input type="date" value={hdr.receivedDate} readOnly style={{ ...inp, background: "#f8fafc", color: "#0f172a", cursor: "not-allowed" }} required />
             </div>
           </div>
+          {!linkedEntry && (
+            <p style={{ margin: "8px 0 0", fontSize: "12px", color: "#94a3b8" }}>
+              👉 Select an incoming gate entry on the right to fill these in.
+            </p>
+          )}
         </div>
 
-        {/* ── Item lines ──────────────────────────────────────────── */}
+        {/* ── Item lines — always available; Supplier/Invoice No/Received
+            Date being required (and only fillable via a gate entry) already
+            blocks submission until one's selected, so there's no need to
+            hide this section too. ─────────────────────────────────────── */}
         <div style={{ marginBottom: "12px" }}>
           <p style={{ margin: "0 0 8px", fontSize: "11px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em" }}>
             Items ({items.length})

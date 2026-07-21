@@ -1,4 +1,15 @@
-import { Building, FlaskConical, Wrench, Layers, GitBranch, Printer, ArrowDownToLine, Info, Pin } from 'lucide-react'
+import { useState } from 'react'
+import { Building, FlaskConical, Wrench, Layers, GitBranch, Printer, ArrowDownToLine, Info, ChevronDown } from 'lucide-react'
+
+const BADGE = {
+  Required:  'bg-red-50 text-red-600 ring-red-100',
+  Optional:  'bg-gray-100 text-gray-500 ring-gray-200',
+  'Auto-generated': 'bg-blue-50 text-blue-600 ring-blue-100',
+}
+
+function ColBadge({ kind }) {
+  return <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ring-1 ring-inset ${BADGE[kind]}`}>{kind}</span>
+}
 
 const SHEETS = [
   {
@@ -7,13 +18,13 @@ const SHEETS = [
     color: 'bg-pink-50 text-pink-600',
     match: 'Sheet name contains "supplier" or "vendor"',
     cols: [
-      { name: 'Supplier Name', note: 'Required. Used as the unique key — existing suppliers (matched by name, case-insensitive) are updated instead of duplicated.' },
-      { name: 'GSTIN', note: 'Optional.' },
-      { name: 'Phone', note: 'Optional.' },
-      { name: 'Email', note: 'Optional.' },
-      { name: 'Address', note: 'Optional.' },
+      { name: 'Supplier Name', kind: 'Required' },
+      { name: 'GSTIN', kind: 'Optional' },
+      { name: 'Phone', kind: 'Optional' },
+      { name: 'Email', kind: 'Optional' },
+      { name: 'Address', kind: 'Optional' },
     ],
-    note: null
+    behavior: 'Existing suppliers are matched by name (case-insensitive) and updated instead of duplicated.',
   },
   {
     sheet: 'Product Master',
@@ -21,10 +32,12 @@ const SHEETS = [
     color: 'bg-green-50 text-green-600',
     match: 'Sheet name contains "product" (not recipe/equipment)',
     cols: [
-      { name: 'Product Name', note: 'Required. Duplicate names are skipped.' },
-      { name: 'Plant Name', note: 'Optional. Plant(s) this product is made in — can list more than one.' },
+      { name: 'Product Name', kind: 'Required' },
+      { name: 'Plant Name', kind: 'Optional' },
+      { name: 'Product Code', kind: 'Auto-generated' },
     ],
-    note: 'Product Code is auto-generated (PR00001, PR00002…) if not provided. UOM and State (Solid/Liquid/Gas) aren’t read from the sheet — set them afterward in Product Master.'
+    behavior: 'Product Code is generated automatically (PR00001, PR00002…) when not provided. Duplicate product names are skipped, not re-created.',
+    note: 'UOM and State (Solid/Liquid/Gas) aren’t read from the sheet — set them afterward in Product Master.',
   },
   {
     sheet: 'Equipment Master',
@@ -32,12 +45,14 @@ const SHEETS = [
     color: 'bg-blue-50 text-blue-600',
     match: 'Sheet name contains "equipment" or "equip"',
     cols: [
-      { name: 'Equipment Name', note: 'Required. Unique name for each equipment.' },
-      { name: 'Working Volume', note: 'Numeric. Capacity of the equipment (e.g. 500). Blank = 0.' },
-      { name: 'Operation', note: 'Type of operation (e.g. Granulation, Blending).' },
-      { name: 'Plant', note: 'Plant where this equipment is located.' },
+      { name: 'Equipment Name', kind: 'Required' },
+      { name: 'Working Volume', kind: 'Optional' },
+      { name: 'Operation', kind: 'Optional' },
+      { name: 'Plant', kind: 'Optional' },
+      { name: 'Equip Code', kind: 'Auto-generated' },
     ],
-    note: 'Equipment Code is always auto-generated (EP00001, EP00002…). Equipment Name is used as the unique key — existing records are updated. Designated Product and Working Unit (UOM) aren’t read from the sheet — set them afterward in Equipment Master.'
+    behavior: 'Equip Code is always generated automatically (EP00001, EP00002…). Equipment Name is the unique key — existing records are updated, not duplicated. A unit inlined in Working Volume (e.g. "50 Kg") is split out automatically.',
+    note: 'Designated Product and Working Unit aren’t read from the sheet — set them afterward in Equipment Master.',
   },
   {
     sheet: 'RM Master',
@@ -45,26 +60,27 @@ const SHEETS = [
     color: 'bg-indigo-50 text-indigo-600',
     match: 'Sheet name contains "RM" or "Material" (not product/recipe)',
     cols: [
-      { name: 'Item Code', note: 'Required. Unique RM code — used exactly as given, not auto-padded during import.' },
-      { name: 'Item Name', note: 'Required. RM description.' },
-      { name: 'UOM', note: 'Unit of measure (KG, L, etc.).' },
-      { name: 'Category', note: 'Optional (e.g. "Raw Materials", "Consumables Consumed").' },
-      { name: 'Sub Category', note: 'Optional (e.g. "Chemicals", "Herbal Extracts").' },
+      { name: 'Item Code', kind: 'Required' },
+      { name: 'Item Name', kind: 'Required' },
+      { name: 'UOM', kind: 'Optional' },
+      { name: 'Category', kind: 'Optional' },
+      { name: 'Sub Category', kind: 'Optional' },
     ],
-    note: 'State (Solid/Liquid/Gas) and Density (kg/L, for liquids) aren’t read from the sheet — set them afterward in Item Master.'
+    behavior: 'Item Code is used exactly as given — not auto-padded during import. UOM defaults to KG if left blank.',
+    note: 'State (Solid/Liquid/Gas) and Density (kg/L, for liquids) aren’t read from the sheet — set them afterward in Item Master.',
   },
   {
     sheet: 'Recipe / BOM',
     icon: GitBranch,
     color: 'bg-teal-50 text-teal-600',
-    match: 'Sheet TAB name contains "recipe", "bom", or "formula" — OR auto-detected by columns',
+    match: 'Sheet TAB name contains "recipe", "bom", or "formula" — or auto-detected by columns',
     cols: [
-      { name: 'Product Name', note: 'Required. Product (FG) this BOM belongs to.' },
-      { name: 'Raw Material', note: 'Required. RM ingredient name.' },
-      { name: 'Qty Per Unit', note: 'Required. Qty of RM per unit of product.' },
-      { name: 'UOM', note: 'Unit of measure for the RM qty.' },
+      { name: 'Product Name', kind: 'Required' },
+      { name: 'Raw Material', kind: 'Required' },
+      { name: 'Qty Per Unit', kind: 'Optional' },
+      { name: 'UOM', kind: 'Optional' },
     ],
-    note: 'Raw Materials MUST already exist in RM Master — the system matches by name (with fuzzy matching for minor spelling differences) but will NOT create new RM codes. Unmatched RMs are listed in the warnings. Products are auto-created if missing (getting a PR00001-style code), all under Recipe No. 1.'
+    behavior: 'Raw Materials must already exist in RM Master (matched by name, with fuzzy matching for minor spelling differences) — unmatched ones are imported anyway with a placeholder "NaN" code, listed in the warnings. Products are auto-created if missing. Blank Qty/UOM don’t drop the row — qty floors to 0 and UOM becomes "NaN" as a visible flag to fix later.',
   },
   {
     sheet: 'Print Master (Pack Stock)',
@@ -72,15 +88,15 @@ const SHEETS = [
     color: 'bg-violet-50 text-violet-600',
     match: 'Sheet name contains "print" or "pack master"',
     cols: [
-      { name: 'Pack ID', note: 'Required. Unique ID for each bag/pack.' },
-      { name: 'Item Code', note: 'Required. RM code this pack belongs to.' },
-      { name: 'Lot No', note: 'Lot or batch code.' },
-      { name: 'Pack Qty', note: 'Quantity in this pack.' },
-      { name: 'Supplier', note: 'Optional.' },
-      { name: 'Invoice No', note: 'Optional.' },
-      { name: 'Status', note: 'Set "INWARDED" for stock already received.' },
+      { name: 'Pack ID', kind: 'Required' },
+      { name: 'Item Code', kind: 'Required' },
+      { name: 'Lot No', kind: 'Optional' },
+      { name: 'Pack Qty', kind: 'Optional' },
+      { name: 'Supplier', kind: 'Optional' },
+      { name: 'Invoice No', kind: 'Optional' },
+      { name: 'Status', kind: 'Optional' },
     ],
-    note: null
+    behavior: 'Set Status to "INWARDED" for stock that’s already been received.',
   },
   {
     sheet: 'Inward',
@@ -88,51 +104,77 @@ const SHEETS = [
     color: 'bg-orange-50 text-orange-600',
     match: 'Sheet name contains "inward" or "GRN" or "goods received"',
     cols: [
-      { name: 'Pack ID', note: 'Required. Must already exist in Print Master.' },
-      { name: 'Warehouse', note: 'Location where inward is done.' },
-      { name: 'Date', note: 'Date of inward.' },
+      { name: 'Pack ID', kind: 'Required' },
+      { name: 'Warehouse', kind: 'Optional' },
+      { name: 'Date', kind: 'Optional' },
     ],
-    note: null
+    behavior: 'Pack ID must already exist in Print Master.',
   },
 ]
 
+function GuideSection({ s, isOpen, onToggle }) {
+  return (
+    <div className="border-b border-gray-100 last:border-0">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={isOpen}
+        className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-gray-50/60 transition-colors"
+      >
+        <div className={`shrink-0 w-9 h-9 rounded-lg flex items-center justify-center ${s.color}`}>
+          <s.icon size={16} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <span className="font-semibold text-gray-900 block">{s.sheet}</span>
+          <span className="text-xs text-gray-400">{s.match}</span>
+        </div>
+        <ChevronDown size={16} className={`shrink-0 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+      {isOpen && (
+        <div className="px-6 pb-5 pl-[4.5rem]">
+          <div className="space-y-1.5 mb-3">
+            {s.cols.map(c => (
+              <div key={c.name} className="flex items-center justify-between gap-3 text-xs">
+                <span className="font-medium text-gray-700">{c.name}</span>
+                <ColBadge kind={c.kind} />
+              </div>
+            ))}
+          </div>
+          {s.behavior && (
+            <div className="flex items-start gap-2 bg-blue-50 ring-1 ring-inset ring-blue-100 px-3 py-2 rounded-lg mb-2">
+              <Info size={13} className="text-blue-500 shrink-0 mt-0.5" />
+              <p className="text-xs text-blue-700 leading-relaxed">{s.behavior}</p>
+            </div>
+          )}
+          {s.note && (
+            <div className="flex items-start gap-2 bg-amber-50 ring-1 ring-inset ring-amber-100 px-3 py-2 rounded-lg">
+              <Info size={13} className="text-amber-500 shrink-0 mt-0.5" />
+              <p className="text-xs text-amber-700 leading-relaxed">{s.note}</p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function FormatGuide() {
+  const [openSheet, setOpenSheet] = useState(SHEETS[0].sheet)
+
   return (
     <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden max-h-[calc(100vh-6.5rem)] overflow-y-auto">
-      <div className="flex items-center gap-2 px-6 py-4 bg-gray-50 border-b border-gray-100">
-        <Pin size={15} className="text-gray-400" />
-        <div>
-          <h3 className="font-bold text-gray-900 text-sm">Excel File Format Guide</h3>
-          <p className="text-xs text-gray-500 mt-0.5">One Excel file can have multiple sheets — detected by sheet TAB name, filename, or column headers automatically</p>
-        </div>
+      <div className="px-6 py-4 bg-gray-50 border-b border-gray-100">
+        <h3 className="font-bold text-gray-900 text-sm">Excel File Format Guide</h3>
+        <p className="text-xs text-gray-500 mt-0.5">Sheet names and columns are detected automatically.</p>
       </div>
-      <div className="divide-y divide-gray-100">
+      <div>
         {SHEETS.map(s => (
-          <div key={s.sheet} className="px-6 py-5">
-            <div className="flex items-start gap-3 mb-3">
-              <div className={`shrink-0 w-9 h-9 rounded-lg flex items-center justify-center ${s.color}`}>
-                <s.icon size={16} />
-              </div>
-              <div className="min-w-0">
-                <span className="font-semibold text-gray-900 block">{s.sheet}</span>
-                <span className="text-xs text-gray-400">{s.match}</span>
-              </div>
-            </div>
-            <div className="space-y-2 mb-3 pl-12">
-              {s.cols.map(c => (
-                <div key={c.name} className="text-xs">
-                  <span className="font-semibold text-gray-600">{c.name}</span>
-                  <span className="text-gray-400"> — {c.note}</span>
-                </div>
-              ))}
-            </div>
-            {s.note && (
-              <div className="flex items-start gap-2 ml-12 bg-amber-50 ring-1 ring-inset ring-amber-100 px-3 py-2 rounded-lg">
-                <Info size={13} className="text-amber-500 shrink-0 mt-0.5" />
-                <p className="text-xs text-amber-700 leading-relaxed">{s.note}</p>
-              </div>
-            )}
-          </div>
+          <GuideSection
+            key={s.sheet}
+            s={s}
+            isOpen={openSheet === s.sheet}
+            onToggle={() => setOpenSheet(openSheet === s.sheet ? null : s.sheet)}
+          />
         ))}
       </div>
     </div>

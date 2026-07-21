@@ -44,6 +44,9 @@ export const queryKeys = {
   microbes: {
     all: () => ['microbes'],
   },
+  microbialContainers: {
+    all: () => ['microbial-containers'],
+  },
   locations: {
     all: () => ['locations'],
   },

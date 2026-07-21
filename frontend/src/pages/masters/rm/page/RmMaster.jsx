@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Package, PackageOpen } from 'lucide-react'
+import { Plus, Package } from 'lucide-react'
 import { useRmMaster, useCreateRm, useUpdateRm, useDeleteRm } from '../../../../hooks/inventory/useRmMaster.js'
 import { usePackingMaterials } from '../../../../hooks/masters/usePackingMaterials.js'
 import './RmMaster.css'
@@ -135,7 +135,6 @@ export default function RmMaster() {
           <span className="text-green-600 font-medium">BULK</span> = location QR (bags/labels/consumables in bulk)
         </>}
         actions={<>
-          <Button variant="outline-gray" icon={PackageOpen} onClick={goToPacking}>Packing Materials</Button>
           <Button variant="primary" icon={Plus} onClick={openAdd}>Add New Item</Button>
           <BackButton />
         </>}

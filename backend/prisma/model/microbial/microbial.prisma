@@ -74,7 +74,12 @@ model MicrobialTransaction {
 model MicrobeMaster {
   microbeId   String   @id @default(dbgenerated("gen_random_uuid()::text")) @map("microbe_id")
   microbeName String   @map("microbe_name")
-  microbeCode String   @unique @map("microbe_code")
+  // Backend-generated (Postgres sequence default) — never accepted from the
+  // client, same convention as ProductMaster.productCode / EquipmentMaster.equipCode.
+  // Existing rows keep whatever code they were created with; only microbes
+  // created from now on get this mc00001-style code.
+  microbeCode String   @unique @default(dbgenerated("('mc' || lpad((nextval('microbe_master_mc_code_seq'::regclass))::text, 5, '0'))")) @map("microbe_code")
+  uom         String?  @map("uom")
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
 

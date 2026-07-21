@@ -1,11 +1,19 @@
 import prisma from '../../../../../db.js'
+import { normalizeUom, CANONICAL_UNITS } from '../../../../../utils/uom.js'
 
 export const updateMicrobe = async (req, res) => {
   try {
-    const { microbe_name, microbe_code } = req.body || {}
+    const { microbe_name, uom } = req.body || {}
+    // microbe_code is never accepted here — it's backend-generated at
+    // creation time and never changes afterwards.
     const data = {}
-    if (microbe_name) data.microbeName = microbe_name
-    if (microbe_code) data.microbeCode = microbe_code.toUpperCase()
+    if (microbe_name) data.microbeName = microbe_name.trim()
+    if (uom) {
+      const canonicalUom = normalizeUom(uom)
+      if (!CANONICAL_UNITS.includes(canonicalUom))
+        return res.status(400).json({ success: false, error: `uom must convert to one of ${CANONICAL_UNITS.join(', ')} — got "${uom}"`, code: 'VALIDATION_ERROR' })
+      data.uom = canonicalUom
+    }
 
     const row = await prisma.microbeMaster.update({
       where: { microbeId: req.params.id },

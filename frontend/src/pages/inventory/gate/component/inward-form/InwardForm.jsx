@@ -3,23 +3,23 @@ import { ArrowDown } from "lucide-react";
 import { Button } from "../../../../../components/ui";
 import { COMPANIES } from "../../data/companies.js";
 import { useSuppliers } from "../../../../../hooks/masters/useSuppliers.js";
+import SupplierAutocomplete from "./SupplierAutocomplete.jsx";
 import "./InwardForm.css";
 
 const EMPTY = { supplier_name: "", invoice_no: "", vehicle_no: "", company: "" };
 
+// Supplier Name gets its own autocomplete widget (below), not the generic
+// select/input rendering — everything else stays config-driven.
+const FIELDS = [
+  { key: "company", label: "Company *", type: "select", options: COMPANIES, placeholder: "Select company" },
+  { key: "supplier_name", label: "Supplier Name *", type: "supplier", placeholder: "Type to search supplier..." },
+  { key: "invoice_no", label: "Invoice No.", placeholder: "e.g. INV-2024-001" },
+  { key: "vehicle_no", label: "Vehicle No.", placeholder: "e.g. MH-12-AB-1234" },
+];
+
 export default function InwardForm({ onSubmit, onCancel }) {
   const [form, setForm] = useState(EMPTY);
   const { data: suppliers = [] } = useSuppliers();
-  const supplierNames = suppliers.map((s) => s.supplierName);
-
-  // Supplier Name is a strict select — only names from Supplier Master, no
-  // free typing — so add new suppliers there first if one is missing.
-  const FIELDS = [
-    { key: "company", label: "Company *", type: "select", options: COMPANIES, placeholder: "Select company" },
-    { key: "supplier_name", label: "Supplier Name *", type: "select", options: supplierNames, placeholder: "Select supplier" },
-    { key: "invoice_no", label: "Invoice No.", placeholder: "e.g. INV-2024-001" },
-    { key: "vehicle_no", label: "Vehicle No.", placeholder: "e.g. MH-12-AB-1234" },
-  ];
 
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
 
@@ -48,6 +48,13 @@ export default function InwardForm({ onSubmit, onCancel }) {
                   <option key={o} value={o}>{o}</option>
                 ))}
               </select>
+            ) : type === "supplier" ? (
+              <SupplierAutocomplete
+                value={form[key]}
+                suppliers={suppliers}
+                onChange={(v) => setForm((f) => ({ ...f, [key]: v }))}
+                placeholder={placeholder}
+              />
             ) : (
               <input
                 value={form[key]}
