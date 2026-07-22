@@ -4,8 +4,8 @@ import { CANONICAL_UNITS } from '../../../../../utils/uom.js'
 
 export default function MicrobeForm({ editId, form, onChange, saving, onSubmit, onCancel }) {
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-5">
-      <h3 className="text-base font-bold text-gray-900 mb-5">
+    <div className="p-6">
+      <h3 className="text-lg font-bold text-gray-900 mb-5">
         {editId ? 'Edit Microbe' : 'Add New Microbe'}
       </h3>
       <form onSubmit={onSubmit}>

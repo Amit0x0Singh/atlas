@@ -1,4 +1,5 @@
 import prisma from '../../../../../db.js'
+import { toSnakeRow } from '../../../../../utils/caseTransform.js'
 
 export const listSfgContainers = async (req, res) => {
   try {
@@ -17,7 +18,7 @@ export const listSfgContainers = async (req, res) => {
     })
 
     const data = rows.map(r => ({ ...r, batch_count: r._count.inwards, _count: undefined }))
-    return res.json({ success: true, data })
+    return res.json({ success: true, data: toSnakeRow(data) })
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
   }
@@ -34,7 +35,7 @@ export const listAvailableSfgContainers = async (req, res) => {
       },
       orderBy: [{ fillStatus: 'desc' }, { seqNo: 'asc' }],
     })
-    return res.json({ success: true, data: rows })
+    return res.json({ success: true, data: toSnakeRow(rows) })
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
   }
@@ -63,7 +64,7 @@ export const getSfgContainerBatches = async (req, res) => {
       where: { containerId: req.params.id },
       orderBy: [{ dateOfHarvest: 'asc' }, { createdAt: 'asc' }],
     })
-    return res.json({ success: true, data: rows })
+    return res.json({ success: true, data: toSnakeRow(rows) })
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
   }
@@ -89,7 +90,7 @@ export const listSfgInward = async (req, res) => {
       container_fill_status: r.container?.fillStatus  ?? null,
       container: undefined,
     }))
-    return res.json({ success: true, data })
+    return res.json({ success: true, data: toSnakeRow(data) })
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
   }

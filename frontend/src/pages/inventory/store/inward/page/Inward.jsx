@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import PackInward from '../components/pack-inward/PackInward.jsx'
-import InwardHistory from '../components/inward-history/InwardHistory.jsx'
+import PackInward from '../components/pack-inward/page/PackInward.jsx'
+import InwardHistory from '../components/inward-history/page/InwardHistory.jsx'
 import { BackButton, PageHeader } from '../../../../../components/ui'
 import { ArrowDownToLine, Package, ClipboardList } from 'lucide-react'
 import './Inward.css'

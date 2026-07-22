@@ -1,10 +1,15 @@
-﻿import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { indentApi } from '../../../../api/production.js'
 import './Indent.css'
 import { productApi, equipmentApi } from '../../../../api/masters.js'
-import IndentCard from '../components/indent-card/IndentCard.jsx'
-import { Button, BackButton, IconButton } from '../../../../components/ui'
-import { Plus, X, RefreshCw } from 'lucide-react'
+import { Button, BackButton } from '../../../../components/ui'
+import { Plus } from 'lucide-react'
+import ProductionIndentTab from '../components/production-indent-tab/ProductionIndentTab.jsx'
+import PurchaseIndentTab from '../components/purchase-indent-tab/PurchaseIndentTab.jsx'
+import PendingIndentsTab from '../components/pending-indents-tab/PendingIndentsTab.jsx'
+import PurchaseOrderModal from '../components/purchase-order-modal/PurchaseOrderModal.jsx'
+import StockShortfallModal from '../components/stock-shortfall-modal/StockShortfallModal.jsx'
+import CreateIndentModal from '../components/create-indent-modal/CreateIndentModal.jsx'
 
 const TABS = ['Production Indent', 'Purchase Indent', 'Pending Indents']
 
@@ -221,414 +226,58 @@ export default function Indent() {
         ))}
       </div>
 
-      {/* Tab 0: Production Indent */}
       {tab === 0 && (
-        <>
-          {productList.length === 0 && (
-            <div className="bg-orange-50 border border-orange-200 text-orange-800 px-4 py-3 rounded-lg mb-4 text-sm">
-              s️ No products found. Add products in <strong>Product Master</strong> and recipes in <strong>Recipe DB</strong> first.
-            </div>
-          )}
-          {loading ? <p className="text-gray-400">Loading...</p> : (
-            <>
-              <div className="space-y-3">
-                {visibleIndents.length === 0 ? (
-                  <div className="bg-white border border-gray-200 rounded-xl p-10 text-center text-gray-400">
-                    No production indents yet. Create one to start production.
-                  </div>
-                ) : visibleIndents.map(indent => (
-                  <IndentCard key={indent.indentId} indent={indent} selected={selected} setSelected={setSelected} />
-                ))}
-              </div>
-              {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-2 mt-4">
-                  <button disabled={page <= 1} onClick={() => setPage(p => p - 1)}
-                    className="px-3 py-1.5 border rounded-lg text-sm disabled:opacity-40 hover:bg-gray-50">? Prev</button>
-                  <span className="text-sm text-gray-600">Page {page} of {totalPages}</span>
-                  <button disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}
-                    className="px-3 py-1.5 border rounded-lg text-sm disabled:opacity-40 hover:bg-gray-50">Next →</button>
-                </div>
-              )}
-            </>
-          )}
-        </>
+        <ProductionIndentTab
+          productList={productList} loading={loading} visibleIndents={visibleIndents}
+          selected={selected} setSelected={setSelected}
+          page={page} totalPages={totalPages} setPage={setPage}
+        />
       )}
 
-      {/* Tab 1: Purchase Indent */}
       {tab === 1 && (
-        <div>
-          <div className="flex justify-between items-center mb-4">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-800">Purchase Indent</h2>
-              <p className="text-sm text-gray-500">RM shortfall summary from all pending stock indents</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <label className="flex items-center gap-2 text-sm text-gray-500 cursor-pointer">
-                <input type="checkbox" checked={showSentPOs} onChange={e => setShowSentPOs(e.target.checked)} className="rounded" />
-                Show already sent
-              </label>
-              <Button variant="outline-gray" icon={RefreshCw} size="sm" onClick={loadPurchaseSummary}>Refresh</Button>
-              {purchaseSummary.length > 0 && (
-                <Button variant="success" size="sm" onClick={() => setShowPO(true)}>Generate PO</Button>
-              )}
-            </div>
-          </div>
-          {purchaseLoading ? <p className="text-gray-400">Loading...</p>
-            : purchaseSummary.length === 0 ? (
-              <div className="bg-white border border-gray-200 rounded-xl p-10 text-center text-gray-400">
-                <p className="text-lg">o. No purchase requirements</p>
-                <p className="text-sm mt-1">All pending indents have sufficient stock</p>
-              </div>
-            ) : (
-              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead className="bg-slate-800 text-white">
-                    <tr>
-                      <th className="text-left px-4 py-3">#</th>
-                      <th className="text-left px-4 py-3">Item</th>
-                      <th className="text-left px-4 py-3">Code</th>
-                      <th className="text-right px-4 py-3">Total Required</th>
-                      <th className="text-right px-4 py-3">Available</th>
-                      <th className="text-right px-4 py-3">Shortfall</th>
-                      <th className="text-right px-4 py-3">Order Qty</th>
-                      <th className="text-center px-4 py-3">PO Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {purchaseSummary.map((rm, i) => (
-                      <tr key={rm.rmCode} className="border-b border-gray-100 hover:bg-gray-50">
-                        <td className="px-4 py-3 text-gray-400 text-xs">{i + 1}</td>
-                        <td className="px-4 py-3">
-                          <div className="font-semibold">{rm.rmName}</div>
-                          <div className="text-xs text-gray-400 mt-0.5">Used in: {rm.indents.map(x => x.productName).join(', ')}</div>
-                        </td>
-                        <td className="px-4 py-3 font-mono text-xs text-blue-700">{rm.rmCode}</td>
-                        <td className="px-4 py-3 text-right">{rm.totalRequired.toFixed(3)}</td>
-                        <td className="px-4 py-3 text-right text-green-700">{rm.availableQty.toFixed(3)}</td>
-                        <td className="px-4 py-3 text-right text-red-600 font-bold">{rm.shortfall.toFixed(3)}</td>
-                        <td className="px-4 py-3 text-right">
-                          <input type="number" step="0.001" min="0"
-                            value={orderQtys[rm.rmCode] || ''}
-                            onChange={e => setOrderQtys(q => ({ ...q, [rm.rmCode]: e.target.value }))}
-                            className="w-28 border border-gray-300 rounded px-2 py-1 text-sm text-right outline-none focus:ring-2 focus:ring-blue-400" />
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          {rm.indents?.some(x => x.poSentAt) ? (
-                            <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded font-semibold">
-                              o" Sent {new Date(rm.indents.find(x=>x.poSentAt)?.poSentAt).toLocaleDateString('en-IN')}
-                            </span>
-                          ) : <span className="text-xs text-gray-400">Pending</span>}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                <div className="px-4 py-3 bg-gray-50 border-t text-xs text-gray-500">
-                  Covering {purchaseSummary.flatMap(r => r.indents).filter((v, i, a) => a.findIndex(x => x.indentId === v.indentId) === i).length} pending indent(s)
-                </div>
-              </div>
-            )
-          }
-        </div>
+        <PurchaseIndentTab
+          showSentPOs={showSentPOs} setShowSentPOs={setShowSentPOs}
+          onRefresh={loadPurchaseSummary} onGeneratePO={() => setShowPO(true)}
+          purchaseLoading={purchaseLoading} purchaseSummary={purchaseSummary}
+          orderQtys={orderQtys} setOrderQtys={setOrderQtys}
+        />
       )}
 
-      {/* Tab 2: Pending Indents */}
       {tab === 2 && (
-        <div>
-          <div className="mb-4">
-            <h2 className="text-lg font-semibold text-gray-800">Pending Indents</h2>
-            <p className="text-sm text-gray-500">Indents waiting for stock. Auto-activate when missing RMs are inwarded.</p>
-          </div>
-          {loading ? <p className="text-gray-400">Loading...</p>
-            : visibleIndents.length === 0 ? (
-              <div className="bg-white border border-gray-200 rounded-xl p-10 text-center text-gray-400">
-                o. No pending indents. All indents have sufficient stock.
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {visibleIndents.map(indent => (
-                  <IndentCard key={indent.indentId} indent={indent} selected={selected} setSelected={setSelected} />
-                ))}
-              </div>
-            )
-          }
-        </div>
+        <PendingIndentsTab loading={loading} visibleIndents={visibleIndents} selected={selected} setSelected={setSelected} />
       )}
 
-      {/* PO Modal */}
       {showPO && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="px-6 py-4 border-b flex items-center justify-between sticky top-0 bg-white z-10">
-              <h2 className="text-lg font-bold">Y"" Purchase Requisition</h2>
-              <IconButton icon={X} tooltip="Close" onClick={() => setShowPO(false)} />
-            </div>
-            <div className="px-6 py-4 space-y-4">
-              <pre className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-xs font-mono whitespace-pre-wrap overflow-x-auto leading-relaxed">
-                {generatePO()}
-              </pre>
-              <div className="border border-indigo-200 rounded-xl overflow-hidden">
-                <div className="bg-indigo-50 px-4 py-2 border-b border-indigo-200">
-                  <p className="text-sm font-semibold text-indigo-800">o?️ Send via Email</p>
-                </div>
-                <div className="px-4 py-4 space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">To *</label>
-                      <input type="email" placeholder="purchase@company.com" value={emailTo}
-                        onChange={e => setEmailTo(e.target.value)}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-400" />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">CC</label>
-                      <input type="email" placeholder="manager@company.com" value={emailCc}
-                        onChange={e => setEmailCc(e.target.value)}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-400" />
-                    </div>
-                  </div>
-                  <div className="flex gap-2 items-center">
-                    <Button variant="outline-gray" size="xs" onClick={saveEmailDefaults}>
-                      {emailSaved ? 'Saved!' : 'Save as Default'}
-                    </Button>
-                  </div>
-                  <Button variant="primary" fullWidth disabled={!emailTo.trim()} onClick={sendEmail}>
-                    Open in Email App &amp; Send
-                  </Button>
-                </div>
-              </div>
-            </div>
-            <div className="px-6 pb-5 flex gap-3">
-              <Button variant="secondary" fullWidth onClick={() => navigator.clipboard?.writeText(generatePO())}>
-                Copy to Clipboard
-              </Button>
-              <Button variant="outline-gray" fullWidth onClick={() => window.print()}>
-                Print
-              </Button>
-              <Button variant="secondary" onClick={() => setShowPO(false)}>Close</Button>
-            </div>
-          </div>
-        </div>
+        <PurchaseOrderModal
+          onClose={() => setShowPO(false)}
+          generatePO={generatePO}
+          emailTo={emailTo} setEmailTo={setEmailTo}
+          emailCc={emailCc} setEmailCc={setEmailCc}
+          emailSaved={emailSaved} saveEmailDefaults={saveEmailDefaults} sendEmail={sendEmail}
+        />
       )}
 
-      {/* Stock Shortfall Modal */}
       {showStockModal && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="bg-red-100 text-red-600 rounded-full p-2">s️</div>
-              <h2 className="text-lg font-bold text-red-700">Insufficient Stock Warning</h2>
-            </div>
-            <p className="text-sm text-gray-600 mb-4">
-              The following RMs do not have sufficient stock. The indent will be created as{' '}
-              <strong className="text-red-600">PENDING STOCK</strong> and auto-activates when the missing materials are inwarded.
-            </p>
-            <div className="bg-red-50 border border-red-100 rounded-lg p-3 mb-4 space-y-2">
-              {shortfallItems.map(c => (
-                <div key={c.rmCode} className="text-sm">
-                  <div className="font-semibold text-red-700">{c.rmName} <span className="font-mono text-xs text-red-400">[{c.rmCode}]</span></div>
-                  <div className="text-xs text-red-600 flex gap-4 mt-0.5">
-                    <span>Required: <strong>{Number(c.required || c.requiredQty).toFixed(3)}</strong></span>
-                    <span>Available: <strong>{Number(c.available || c.availableQty).toFixed(3)}</strong></span>
-                    <span className="font-bold">Short: {Number(c.shortfall).toFixed(3)}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="flex gap-3">
-              <Button variant="warning" fullWidth loading={creating} onClick={doCreate}>
-                {creating ? 'Creating...' : 'Create as PENDING STOCK'}
-              </Button>
-              <Button variant="secondary" fullWidth onClick={() => setShowStockModal(false)}>Cancel</Button>
-            </div>
-          </div>
-        </div>
+        <StockShortfallModal
+          shortfallItems={shortfallItems} creating={creating}
+          onConfirm={doCreate} onCancel={() => setShowStockModal(false)}
+        />
       )}
 
-      {/* Create Indent Modal */}
       {showForm && (
-        <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-40 p-4 overflow-y-auto">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl mt-8 mb-8">
-            <div className="px-6 py-4 border-b flex items-center justify-between">
-              <h2 className="text-lg font-bold text-gray-900">Create Production Indent</h2>
-              <IconButton icon={X} tooltip="Close" onClick={closeForm} />
-            </div>
-            <div className="px-6 py-5 space-y-4">
-              {error && <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-sm">O {error}</div>}
-
-              <div className="relative">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Product Name *</label>
-                <input value={prodSearch}
-                  onChange={e => { setProdSearch(e.target.value); setShowProdDrop(true); setForm(f => ({ ...f, productCode: '', productName: '' })); setStockCheck(null); setBatchNoAuto(''); setSfgInfo(null) }}
-                  onFocus={() => setShowProdDrop(true)}
-                  onBlur={() => setTimeout(() => setShowProdDrop(false), 200)}
-                  placeholder="Type to search product..."
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500" />
-                {showProdDrop && filteredProducts.length > 0 && (
-                  <div className="absolute z-20 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-48 overflow-y-auto">
-                    {filteredProducts.map(p => (
-                      <button key={p.productCode} type="button" onMouseDown={() => selectProduct(p)}
-                        className="w-full text-left px-3 py-2 hover:bg-blue-50 text-sm">
-                        <span className="font-medium">{p.productName}</span>
-                        <span className="text-gray-400 ml-2 text-xs">{p.productCode}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {form.productCode && (
-                <div className="bg-blue-50 border border-blue-100 px-3 py-2 rounded-lg text-sm text-blue-800 flex items-center gap-2">
-                  o. <strong>{form.productName}</strong>
-                  <span className="text-blue-400 font-mono text-xs">[{form.productCode}]</span>
-                </div>
-              )}
-
-              {sfgInfo && sfgInfo.totalSfg > 0 && (
-                <div className="bg-amber-50 border border-amber-200 px-4 py-3 rounded-lg text-sm text-amber-800">
-                  "️ Available SFG: <strong>{Number(sfgInfo.totalSfg).toFixed(2)}</strong> units from previous batches.
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Batch Size *</label>
-                  <input type="number" step="0.01" value={form.batchSize}
-                    onChange={e => handleBatchSizeChange(e.target.value)} placeholder="e.g. 1000"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Batch No * {loadingBatchNo && <span className="text-xs text-blue-400">fetching...</span>}
-                    {batchNoAuto && !loadingBatchNo && <span className="text-xs text-green-600 ml-1">(auto)</span>}
-                  </label>
-                  <input value={form.batchNo} onChange={e => setForm(f => ({ ...f, batchNo: e.target.value }))}
-                    placeholder="Auto-generated"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500" />
-                </div>
-              </div>
-
-              {recipePreview.length > 0 && (
-                <div className="border rounded-lg overflow-hidden">
-                  <div className="px-3 py-2 bg-gray-50 border-b flex items-center justify-between">
-                    <span className="text-xs font-semibold text-gray-500 uppercase">BOM Preview — {recipePreview.length} Items</span>
-                    {checkingStock && <span className="text-xs text-blue-500 animate-pulse">Checking stock?</span>}
-                    {stockCheck && !checkingStock && (
-                      <span className={`text-xs font-semibold ${stockCheck.allOk ? 'text-green-600' : 'text-red-600'}`}>
-                        {stockCheck.allOk ? 'o. All available' : `s ${shortfallItems.length} short`}
-                      </span>
-                    )}
-                  </div>
-                  <div className="overflow-x-auto max-h-44">
-                    <table className="w-full text-xs">
-                      <thead className="bg-gray-50 sticky top-0">
-                        <tr>
-                          <th className="px-3 py-2 text-left text-gray-500">Item Name</th>
-                          <th className="px-3 py-2 text-right text-gray-500">Required</th>
-                          <th className="px-3 py-2 text-right text-gray-500">Available</th>
-                          <th className="px-3 py-2 text-center text-gray-500">Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {recipePreview.map(r => (
-                          <tr key={r.rmCode} className={`border-t ${r.ok ? '' : 'bg-red-50'}`}>
-                            <td className="px-3 py-1.5 font-medium">{r.rmName}</td>
-                            <td className="px-3 py-1.5 text-right">{Number(r.required || r.requiredQty).toFixed(3)}</td>
-                            <td className={`px-3 py-1.5 text-right font-semibold ${r.ok ? 'text-green-700' : 'text-red-600'}`}>
-                              {Number(r.available || r.availableQty).toFixed(3)}
-                            </td>
-                            <td className="px-3 py-1.5 text-center">
-                              {r.ok ? <span className="text-green-600 font-bold">o"</span>
-                                : <span className="text-red-600 text-xs font-bold">^'{Number(r.shortfall).toFixed(3)}</span>}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">DI No *</label>
-                <input value={form.diNo} onChange={e => setForm(f => ({ ...f, diNo: e.target.value }))}
-                  placeholder="e.g. DI-2026-042"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500" />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Plant</label>
-                  <input value={form.plant} onChange={e => setForm(f => ({ ...f, plant: e.target.value }))}
-                    placeholder="Plant A"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Equipment</label>
-                  <select value={form.equipment} onChange={e => setForm(f => ({ ...f, equipment: e.target.value, cycleBatchSize: '' }))}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="">— Select (optional) —</option>
-                    {equipmentList.map(eq => (
-                      <option key={eq.equipId} value={eq.equipName}>{eq.equipName}{eq.plant ? ` (${eq.plant})` : ''}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {form.equipment && (
-                <div className="border border-indigo-200 bg-indigo-50 rounded-xl p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-indigo-700 font-semibold text-sm">sT️ Multi-Cycle Production</span>
-                    <span className="text-xs text-indigo-500">Equipment selected: {form.equipment}</span>
-                  </div>
-                  <p className="text-xs text-indigo-600 mb-3">
-                    If your equipment can't process the full batch at once, set the cycle size. Each cycle = one blender run.
-                  </p>
-                  <div className="grid grid-cols-3 gap-3 items-end">
-                    <div className="col-span-2">
-                      <label className="block text-xs font-medium text-indigo-700 mb-1">Cycle Batch Size (per run)</label>
-                      <input type="number" step="0.01" min="1" value={form.cycleBatchSize}
-                        onChange={e => setForm(f => ({ ...f, cycleBatchSize: e.target.value }))}
-                        placeholder={`e.g. ${form.batchSize ? Math.round(parseFloat(form.batchSize) / 5) || 1000 : 1000}`}
-                        className="w-full border border-indigo-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-400 bg-white" />
-                    </div>
-                    <div className="text-center">
-                      {form.cycleBatchSize && form.batchSize && parseFloat(form.cycleBatchSize) > 0 ? (() => {
-                        const cycles = Math.round(parseFloat(form.batchSize) / parseFloat(form.cycleBatchSize))
-                        return (
-                          <div className="bg-indigo-600 text-white rounded-lg px-3 py-2">
-                            <div className="text-2xl font-bold">{cycles}</div>
-                            <div className="text-xs">cycle{cycles !== 1 ? 's' : ''}</div>
-                          </div>
-                        )
-                      })() : <div className="bg-gray-100 text-gray-400 rounded-lg px-3 py-2 text-xs">Enter cycle size</div>}
-                    </div>
-                  </div>
-                  {form.cycleBatchSize && form.batchSize && parseFloat(form.cycleBatchSize) > 0 && (() => {
-                    const cycles = Math.round(parseFloat(form.batchSize) / parseFloat(form.cycleBatchSize))
-                    return (
-                      <div className="mt-2 bg-white border border-indigo-200 rounded-lg px-3 py-2 text-xs text-indigo-800">
-                        Will create <strong>{cycles} indents</strong> of <strong>{parseFloat(form.cycleBatchSize).toFixed(2)} KG</strong> each
-                      </div>
-                    )
-                  })()}
-                </div>
-              )}
-            </div>
-
-            <div className="px-6 py-4 border-t flex gap-3">
-              <Button variant="primary" fullWidth loading={creating} disabled={creating} onClick={handleSubmit}>
-                {creating ? 'Creating...' : checkingStock ? 'Checking Stock...' : (() => {
-                  if (form.cycleBatchSize && form.batchSize && parseFloat(form.cycleBatchSize) > 0) {
-                    const n = Math.round(parseFloat(form.batchSize) / parseFloat(form.cycleBatchSize))
-                    return `Create ${n} Cycle Indent${n !== 1 ? 's' : ''}`
-                  }
-                  return 'Create Indent'
-                })()}
-              </Button>
-              <Button variant="secondary" fullWidth onClick={closeForm}>Cancel</Button>
-            </div>
-          </div>
-        </div>
+        <CreateIndentModal
+          form={form} setForm={setForm} error={error}
+          prodSearch={prodSearch} setProdSearch={setProdSearch}
+          showProdDrop={showProdDrop} setShowProdDrop={setShowProdDrop}
+          filteredProducts={filteredProducts} onSelectProduct={selectProduct}
+          sfgInfo={sfgInfo} setStockCheck={setStockCheck} setBatchNoAuto={setBatchNoAuto} setSfgInfo={setSfgInfo}
+          batchNoAuto={batchNoAuto} loadingBatchNo={loadingBatchNo}
+          onBatchSizeChange={handleBatchSizeChange}
+          recipePreview={recipePreview} checkingStock={checkingStock} stockCheck={stockCheck} shortfallItems={shortfallItems}
+          equipmentList={equipmentList}
+          creating={creating}
+          onSubmit={handleSubmit} onClose={closeForm}
+        />
       )}
     </div>
   )

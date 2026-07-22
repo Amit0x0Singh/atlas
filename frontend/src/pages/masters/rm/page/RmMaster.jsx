@@ -6,7 +6,7 @@ import { usePackingMaterials } from '../../../../hooks/masters/usePackingMateria
 import './RmMaster.css'
 import { Button, BackButton, PageHeader } from '../../../../components/ui'
 import { getChips } from '../../packing/components/packing-constants/packingConstants.jsx'
-import RmTable from '../components/rm-table/RmTable.jsx'
+import RmTable from '../components/rm-table/page/RmTable.jsx'
 import RmForm  from '../components/rm-form/RmForm.jsx'
 import RmDetailModal from '../components/rm-detail-modal/RmDetailModal.jsx'
 

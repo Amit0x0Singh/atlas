@@ -108,9 +108,15 @@ model MicrobialSfgContainer {
   typeCode     String   @map("type_code")
   seqNo        Int      @default(1) @map("seq_no")
   location     String?
+  rack         Int?
+  shelf        Int?
+  side         String?
+  position     String?
   capacityKg   Float?   @map("capacity_kg")
   currentQtyKg Float    @default(0) @map("current_qty_kg")
   fillStatus   String   @default("EMPTY") @map("fill_status")
+  inactive         Boolean  @default(false)
+  inactiveLocation String?  @map("inactive_location")
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
 
@@ -136,6 +142,10 @@ model MicrobialSfgInward {
   location          String?
   moisture          Float?
   shelfLifeDays     Int?     @map("shelf_life_days")
+  pouchNos          Int?     @map("pouch_nos")
+  pouchQty          Float?   @map("pouch_qty")
+  receivedBy        String?  @map("received_by")
+  remarks           String?
   fillStatus        String   @default("PARTIAL") @map("fill_status")
   status            String   @default("ACTIVE")
   createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz()
@@ -144,6 +154,7 @@ model MicrobialSfgInward {
   container  MicrobialSfgContainer? @relation(fields: [containerId], references: [containerId])
   microbe    MicrobeMaster?         @relation(fields: [microbeId], references: [microbeId])
   allocations MicrobialSfgAllocation[]
+  outwardLines MicrobialSfgOutwardLine[]
 
   @@map("microbial_sfg_inward")
 }
@@ -168,4 +179,46 @@ model MicrobialSfgAllocation {
   inward MicrobialSfgInward? @relation(fields: [inwardId], references: [inwardId])
 
   @@map("microbial_sfg_allocation")
+}
+
+model MicrobialSfgOutward {
+  outwardId    String   @id @default(dbgenerated("gen_random_uuid()::text")) @map("outward_id")
+  productName  String   @map("product_name")
+  customerName String?  @map("customer_name")
+  diNumber     String?  @map("di_number")
+  batchCode    String?  @map("batch_code")
+  section      String?  @map("section")
+  orderQtyKg   Float?   @map("order_qty_kg")
+  issuerName   String?  @map("issuer_name")
+  receiverName String?  @map("receiver_name")
+  issuedAt     DateTime @default(now()) @map("issued_at") @db.Timestamptz()
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  lines MicrobialSfgOutwardLine[]
+
+  @@map("microbial_sfg_outward")
+}
+
+model MicrobialSfgOutwardLine {
+  lineId          String   @id @default(dbgenerated("gen_random_uuid()::text")) @map("line_id")
+  outwardId       String   @map("outward_id")
+  microbeId       String?  @map("microbe_id")
+  microbeCode     String   @map("microbe_code")
+  microbeName     String   @map("microbe_name")
+  microbeType     String   @map("microbe_type")
+  requiredQtyKg   Float    @map("required_qty_kg")
+  requiredCfuPerG Float    @map("required_cfu_per_g")
+  inwardId        String   @map("inward_id")
+  containerId     String   @map("container_id")
+  containerCode   String   @map("container_code")
+  qtyIssuedKg     Float    @map("qty_issued_kg")
+  cfuPerGAtIssue  Float    @map("cfu_per_g_at_issue")
+  balanceAfterKg  Float    @map("balance_after_kg")
+  isPartial       Boolean  @default(false) @map("is_partial")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  outward MicrobialSfgOutward @relation(fields: [outwardId], references: [outwardId], onDelete: Cascade)
+  inward  MicrobialSfgInward  @relation(fields: [inwardId], references: [inwardId])
+
+  @@map("microbial_sfg_outward_line")
 }

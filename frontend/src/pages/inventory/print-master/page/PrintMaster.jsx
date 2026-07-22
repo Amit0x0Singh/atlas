@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { BackButton, Button, PageHeader, Modal } from "../../../../components/ui";
 import { CheckCircle, Printer, ArrowLeftRight } from "lucide-react";
-import GenerateForm from "../components/generate-form/GenerateForm.jsx";
+import GenerateForm from "../components/generate-form/page/GenerateForm.jsx";
 import GateInwardPanel from "../components/gate-inward-panel/GateInwardPanel.jsx";
 
 export default function PrintMaster() {
@@ -20,6 +20,8 @@ export default function PrintMaster() {
 
   return (
     <div className="flex flex-col h-full">
+      
+      
       <PageHeader
         icon={Printer}
         title="Print Master — Generate Pack Labels"
@@ -39,9 +41,11 @@ export default function PrintMaster() {
         </>}
       />
 
+
       <div className="p-4 md:p-6">
       {/* Success popup — QR labels themselves are printed/downloaded from
           Pack Records, not from here, so this just confirms generation. */}
+        
       <Modal open={!!successInfo} onClose={() => setSuccessInfo(null)} size="sm">
         <div className="p-6 text-center">
           <div className="w-14 h-14 rounded-full bg-green-100 text-green-600 flex items-center justify-center mx-auto mb-4">
@@ -72,6 +76,7 @@ export default function PrintMaster() {
           reloadTrigger={gatePanelTrigger}
         />
       </div>
+        
       </div>
     </div>
   );

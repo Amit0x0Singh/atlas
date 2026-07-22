@@ -1,4 +1,5 @@
 import prisma from '../../../../../db.js'
+import { slotCode } from '../../shared/status.js'
 
 function excelDateToIso(val) {
   if (val === null || val === undefined || val === '') return ''
@@ -39,6 +40,8 @@ export const createSfgInward = async (req, res) => {
       container_id, new_container_code, microbe_id, microbe_code, microbe_name, microbe_type, type_code,
       inhouse_cfu_per_g, biomass_batch_code, date_of_harvest, total_qty_kg,
       location, moisture, shelf_life_days, fill_status,
+      rack, shelf, side, position,
+      pouch_nos, pouch_qty, received_by, remarks,
     } = req.body || {}
 
     if (!microbe_code || !microbe_type || !inhouse_cfu_per_g || !biomass_batch_code || !date_of_harvest || !total_qty_kg)
@@ -54,6 +57,15 @@ export const createSfgInward = async (req, res) => {
       if (!resolvedContainerId) {
         const seq = await getNextContainerSeq(microbe_code, tCode)
         const code = new_container_code || buildContainerCode(microbe_code, tCode, seq)
+
+        let resolvedLocation = location || null
+        const hasSlot = rack && shelf && side && position
+        if (hasSlot) {
+          const clash = await tx.microbialSfgContainer.findFirst({ where: { rack: Number(rack), shelf: Number(shelf), side, position } })
+          if (clash) throw new Error(`Slot ${slotCode(rack, shelf, side, position)} is already occupied by ${clash.containerCode}`)
+          resolvedLocation = slotCode(rack, shelf, side, position)
+        }
+
         const container = await tx.microbialSfgContainer.create({
           data: {
             containerCode: code,
@@ -63,7 +75,11 @@ export const createSfgInward = async (req, res) => {
             microbeType: microbe_type,
             typeCode: tCode,
             seqNo: seq,
-            location: location || null,
+            location: resolvedLocation,
+            rack: hasSlot ? Number(rack) : null,
+            shelf: hasSlot ? Number(shelf) : null,
+            side: hasSlot ? side : null,
+            position: hasSlot ? position : null,
             currentQtyKg: qty,
             fillStatus: fill_status || 'PARTIAL',
           },
@@ -74,6 +90,20 @@ export const createSfgInward = async (req, res) => {
         const container = await tx.microbialSfgContainer.findUnique({ where: { containerId: resolvedContainerId } })
         if (!container) throw new Error('Container not found')
         resolvedContainerCode = container.containerCode
+
+        // Adding a batch to an INACTIVE container reactivates it, but its old
+        // slot isn't auto-restored (may be occupied by now) — a fresh
+        // rack/shelf/side/position must be supplied, same as microbe.HTM.
+        if (container.inactive) {
+          const hasSlot = rack && shelf && side && position
+          if (!hasSlot) throw new Error(`${container.containerCode} is inactive — a storage slot is required to reactivate it`)
+          const clash = await tx.microbialSfgContainer.findFirst({ where: { rack: Number(rack), shelf: Number(shelf), side, position, containerId: { not: resolvedContainerId } } })
+          if (clash) throw new Error(`Slot ${slotCode(rack, shelf, side, position)} is already occupied by ${clash.containerCode}`)
+          await tx.microbialSfgContainer.update({
+            where: { containerId: resolvedContainerId },
+            data: { inactive: false, inactiveLocation: null, location: slotCode(rack, shelf, side, position), rack: Number(rack), shelf: Number(shelf), side, position },
+          })
+        }
       }
 
       const inward = await tx.microbialSfgInward.create({
@@ -92,6 +122,10 @@ export const createSfgInward = async (req, res) => {
           location: location || null,
           moisture: moisture != null ? Number(moisture) : null,
           shelfLifeDays: shelf_life_days != null ? Number(shelf_life_days) : null,
+          pouchNos: pouch_nos != null ? Number(pouch_nos) : null,
+          pouchQty: pouch_qty != null ? Number(pouch_qty) : null,
+          receivedBy: received_by || null,
+          remarks: remarks || null,
           fillStatus: fill_status || 'PARTIAL',
         },
       })
@@ -99,11 +133,7 @@ export const createSfgInward = async (req, res) => {
       if (container_id) {
         await tx.microbialSfgContainer.update({
           where: { containerId: resolvedContainerId },
-          data: {
-            currentQtyKg: { increment: qty },
-            fillStatus: fill_status || 'PARTIAL',
-            location: location || undefined,
-          },
+          data: { currentQtyKg: { increment: qty }, fillStatus: fill_status || 'PARTIAL' },
         })
       }
 

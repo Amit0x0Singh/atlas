@@ -22,7 +22,7 @@ export default function MicrobeList({ paginated, total, loading, search, page, l
         <p className="text-gray-400 text-center py-10 text-sm">Loading...</p>
       ) : total === 0 ? (
         <div className="text-center py-14 text-gray-400">
-          <p className="text-sm font-medium">No microbes found. Add one or import from Excel.</p>
+          <p className="text-sm font-medium">No microbes found. Add one to get started.</p>
         </div>
       ) : (
         <div className="overflow-x-auto">

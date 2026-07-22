@@ -6,9 +6,11 @@ import { genId, incrCode, scaleToQty, state as printState } from '../../utils/bo
 import { readArchivedBoms, readMeta, archiveBoms } from '../../utils/bomIssuanceStorage.js'
 import { toCanonical } from '../../../../../utils/uom.js'
 import { makeRows, toComponents, fromComponents } from '../components-table/ComponentsTable.jsx'
-import IssueBomTab from '../issue-bom-tab/IssueBomTab.jsx'
+import IssueBomTab from '../issue-bom-tab/page/IssueBomTab.jsx'
 import ArchiveTab from '../archive-tab/ArchiveTab.jsx'
-import { CheckCircle, AlertCircle, Loader, X, FileText, Archive } from 'lucide-react'
+import StatusBanner from './components/StatusBanner.jsx'
+import BomIssuanceTabs from './components/BomIssuanceTabs.jsx'
+import { FileText, Archive } from 'lucide-react'
 
 const TABS = [
   { id: 'issue',   label: 'Issue BOM', icon: FileText },
@@ -278,40 +280,11 @@ export default function BomIssuance() {
     }
   }
 
-  const bannerCls = {
-    loading: 'bg-blue-50 border-blue-200 text-blue-800',
-    success: 'bg-green-50 border-green-200 text-green-800',
-    error:   'bg-red-50 border-red-200 text-red-700',
-  }
-
   return (
     <div className="flex flex-col h-full bg-slate-50">
-      {banner && (
-        <div className={`px-5 py-2.5 border-b flex items-center gap-2 text-[13px] font-medium flex-shrink-0 ${bannerCls[banner.type]}`}>
-          {banner.type === 'loading' && <Loader size={14} className="animate-spin flex-shrink-0" />}
-          {banner.type === 'success' && <CheckCircle size={14} className="flex-shrink-0" />}
-          {banner.type === 'error'   && <AlertCircle size={14} className="flex-shrink-0" />}
-          <span>{banner.msg}</span>
-          {banner.type !== 'loading' && (
-            <button onClick={() => setBanner(null)} className="ml-auto opacity-60 hover:opacity-100 flex-shrink-0"><X size={14} /></button>
-          )}
-        </div>
-      )}
+      <StatusBanner banner={banner} onDismiss={() => setBanner(null)} />
 
-      <div className="bg-white border-b border-slate-200 flex px-6 overflow-x-auto flex-shrink-0 gap-1">
-        {TABS.map(t => {
-          const Icon = t.icon
-          const active = activeTab === t.id
-          return (
-            <button key={t.id} onClick={() => setActiveTab(t.id)}
-              className={`flex items-center gap-1.5 px-4 py-3.5 text-[13px] font-semibold border-b-2 -mb-px whitespace-nowrap transition-colors
-                ${active ? 'text-indigo-600 border-indigo-600' : 'text-slate-400 border-transparent hover:text-slate-700 hover:border-slate-200'}`}>
-              <Icon size={14.5} />
-              {t.label}
-            </button>
-          )
-        })}
-      </div>
+      <BomIssuanceTabs tabs={TABS} activeTab={activeTab} onChange={setActiveTab} />
 
       <div className="flex-1 overflow-y-auto">
         {activeTab === 'issue' && (

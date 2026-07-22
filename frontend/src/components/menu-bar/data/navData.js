@@ -13,8 +13,9 @@ export const APP_NAV = [
   {
     group: 'DASHBOARD',
     items: [
-      { to: '/stock',           label: 'Dashboard',       Icon: LayoutDashboard },
-      { to: '/rm-material',     label: 'RM Material',     Icon: Package },
+      { to: '/stock',              label: 'Dashboard',       Icon: LayoutDashboard },
+      { to: '/rm-material',        label: 'RM Material',     Icon: Package },
+      { to: '/microbes-dashboard', label: 'Microbial',        Icon: Microscope },
     ],
   },
   {
@@ -26,7 +27,7 @@ export const APP_NAV = [
       { to: '/supplier-master',  label: 'Supplier Master', Icon: Building },
       // { to: '/employee-master',  label: 'Employee Data',   Icon: Users },
       { to: '/recipe',           label: 'Recipe / BOM',    Icon: GitBranch },
-      { to: '/microbes-master',  label: 'Microbes Master', Icon: Microscope },
+      { to: '/microbes-master',  label: 'Microbial Master', Icon: Microscope },
     ],
   },
   {
@@ -45,7 +46,7 @@ export const APP_NAV = [
       { to: '/containers',      label: 'Container',        Icon: Container },
       { to: '/ledger',          label: 'Stock Transaction', Icon: BarChart2 },
       { to: '/grn',             label: 'GRN',              Icon: ClipboardList },
-      { to: '/microbial-inward', label: 'Microbial Inward', Icon: Snowflake },
+      { to: '/microbe-transaction', label: 'Microbial Transaction', Icon: Snowflake },
       // { to: '/location-master', label: 'Location Master',  Icon: MapPin },
       // { to: '/indent',          label: 'Indent Management', Icon: ListChecks },
     ],

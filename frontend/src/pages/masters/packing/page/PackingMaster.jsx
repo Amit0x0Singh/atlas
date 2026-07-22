@@ -4,7 +4,7 @@ import { Button, BackButton, PageHeader } from '../../../../components/ui'
 import CategoryList  from '../components/category-list/CategoryList.jsx'
 import SubTypeGrid   from '../components/sub-type-grid/SubTypeGrid.jsx'
 import ItemList      from '../components/item-list/ItemList.jsx'
-import PackingForm   from '../components/packing-form/PackingForm.jsx'
+import PackingForm   from '../components/packing-form/page/PackingForm.jsx'
 import { CAT, EMPTY_FORM } from '../components/packing-constants/packingConstants.jsx'
 import { usePackingMaterials, useCreatePackingMaterial, useUpdatePackingMaterial, useDeletePackingMaterial } from '../../../../hooks/masters/usePackingMaterials.js'
 

@@ -45,7 +45,29 @@ export const queryKeys = {
     all: () => ['microbes'],
   },
   microbialContainers: {
-    all: () => ['microbial-containers'],
+    all: (filters) => filters ? ['microbial-containers', filters] : ['microbial-containers'],
+  },
+  microbialSfgInward: {
+    all:     (filters) => filters ? ['microbial-sfg-inward', filters] : ['microbial-sfg-inward'],
+    summary: () => ['microbial-sfg-inward', 'summary'],
+  },
+  microbialSfgOutward: {
+    all:    (filters) => filters ? ['microbial-sfg-outward', filters] : ['microbial-sfg-outward'],
+    detail: (id) => ['microbial-sfg-outward', id],
+  },
+  microbialSfgHistory: {
+    all: (filters) => filters ? ['microbial-sfg-history', filters] : ['microbial-sfg-history'],
+  },
+  microbialSfgDashboard: {
+    all: () => ['microbial-sfg-dashboard'],
+  },
+  microbialSfgStorage: {
+    grid:            () => ['microbial-sfg-storage', 'grid'],
+    availableSlots:  (filters) => ['microbial-sfg-storage', 'available-slots', filters ?? null],
+  },
+  microbialSfgStockSummary: {
+    microbeWise:     () => ['microbial-sfg-stock-summary', 'microbe-wise'],
+    containerLedger: () => ['microbial-sfg-stock-summary', 'container-ledger'],
   },
   locations: {
     all: () => ['locations'],

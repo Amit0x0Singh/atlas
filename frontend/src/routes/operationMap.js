@@ -17,6 +17,8 @@ export const OPERATION_ROUTES = [
 
   { prefix: '/erp/microbial',   operation: 'production' },
   { prefix: '/microbial-inward', operation: 'production' },
+  { prefix: '/microbe-transaction', operation: 'production' },
+  { prefix: '/microbes-dashboard',  operation: 'production' },
   { prefix: '/planning',        operation: 'production' },
   { prefix: '/erp/planning',    operation: 'production' },
   { prefix: '/erp/bom',         operation: 'production' },

@@ -6,7 +6,11 @@ import { updateMicrobe } from "./update/sfg-master.controller.js";
 import { deleteMicrobe } from "./delete/sfg-master.controller.js";
 
 const SfgMasterRouter = express.Router();
-const adminOnly = authorize(["admin"]);
+// Same operation scope as the rest of the microbial module (erp-microbial,
+// sfg/inward) — a production/Microbial-plant admin account manages this
+// master data, not just the literal "admin" operation. `authenticate` alone
+// already requires role === 'admin' for mutating methods.
+const adminOnly = authorize(["production"]);
 
 SfgMasterRouter.post("/microbial-sfg/masters/migrate", authenticate, adminOnly, migrateTables);
 SfgMasterRouter.post("/microbial-sfg/masters/microbes/import", authenticate, adminOnly, importMicrobes);

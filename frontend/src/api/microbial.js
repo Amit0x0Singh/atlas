@@ -25,6 +25,25 @@ export const microbialSfgApi = {
   allocate:           (data)    => api.post('/microbial-sfg/planning/allocate', data),
   listAllocations:    (planId)  => api.get(`/microbial-sfg/planning/allocations/${planId}`),
   cancelAllocation:   (id)      => api.delete(`/microbial-sfg/planning/allocations/${id}`),
+  // Outward / Issuance
+  previewOutward:     (data)    => api.post('/microbial-sfg/outward/preview', data),
+  createOutward:      (data)    => api.post('/microbial-sfg/outward', data),
+  listOutward:        (params)  => api.get('/microbial-sfg/outward', { params }),
+  getOutward:         (id)      => api.get(`/microbial-sfg/outward/${id}`),
+  // History (merged inward + outward ledger)
+  history:            (params)  => api.get('/microbial-sfg/history', { params }),
+  // Executive dashboard (KPIs, health score, reorder signals, velocity, ABC, dormancy, insights, decisions)
+  dashboard:          ()        => api.get('/microbial-sfg/dashboard'),
+  // Storage — real rack/shelf/side/position slot grid
+  storageGrid:        ()        => api.get('/microbial-sfg/storage/grid'),
+  availableSlots:     (params)  => api.get('/microbial-sfg/storage/available-slots', { params }),
+  markContainerInactive: (id)   => api.patch(`/microbial-sfg/storage/containers/${id}/inactive`),
+  reactivateContainer:   (id)   => api.patch(`/microbial-sfg/storage/containers/${id}/reactivate`),
+  // Stock Summary
+  microbeWiseSummary: ()        => api.get('/microbial-sfg/stock-summary/microbe-wise'),
+  containerLedger:    ()        => api.get('/microbial-sfg/stock-summary/container-ledger'),
+  // Alt-container swap picker (Issuance)
+  eligibleBatches:    (params)  => api.get('/microbial-sfg/outward/eligible-batches', { params }),
 }
 
 

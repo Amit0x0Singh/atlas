@@ -72,7 +72,7 @@ router.use("/", MasterDataRouter);
 
 // ── Microbial ─────────────────────────────────────────────────────────────────
 // Handles: /api/microbial-sfg/*, /api/microbial/*
-// router.use("/", MicrobialRouter);
+router.use("/", MicrobialRouter);
 
 // ── Export ────────────────────────────────────────────────────────────────────
 // Handles: /api/export/*
