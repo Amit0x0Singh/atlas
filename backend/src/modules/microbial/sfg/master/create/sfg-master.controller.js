@@ -1,5 +1,6 @@
 import prisma from '../../../../../db.js'
 import { normalizeUom, CANONICAL_UNITS } from '../../../../../utils/uom.js'
+import { getMaxMicrobeCodeNum, formatMicrobeCode } from '../../../../../utils/microbe-code.js'
 
 export const migrateTables = async (req, res) => {
   return res.json({ success: true, message: 'Microbial SFG tables managed by Prisma — no migration needed' })
@@ -22,9 +23,10 @@ export const createMicrobe = async (req, res) => {
     if (existing)
       return res.status(409).json({ success: false, error: 'Microbe name already exists', code: 'CONFLICT' })
 
-    // microbe_code is never accepted here — the DB assigns it (sequence default).
+    // microbe_code is never accepted here — computed from MAX(existing)+1.
+    const nextNum = await getMaxMicrobeCodeNum(prisma)
     const row = await prisma.microbeMaster.create({
-      data: { microbeName: microbe_name.trim(), uom: canonicalUom },
+      data: { microbeName: microbe_name.trim(), microbeCode: formatMicrobeCode(nextNum + 1), uom: canonicalUom },
     })
     return res.status(201).json({ success: true, data: row })
   } catch (e) {
@@ -42,6 +44,9 @@ export const importMicrobes = async (req, res) => {
 
     let imported = 0, skipped = 0
     const errors = []
+    // Computed once, then incremented in-memory per new row — a batch of
+    // several new microbes in one import all need distinct, sequential codes.
+    let nextNum = await getMaxMicrobeCodeNum(prisma)
 
     for (const r of rows) {
       const keys = Object.keys(r)
@@ -64,15 +69,16 @@ export const importMicrobes = async (req, res) => {
       }
 
       try {
-        // microbe_code is never taken from the sheet — the DB assigns it
-        // (sequence default) for new rows; existing names just get their uom refreshed.
+        // microbe_code is never taken from the sheet — computed from
+        // MAX(existing)+1 for new rows; existing names just get their uom refreshed.
         const existing = await prisma.microbeMaster.findFirst({
           where: { microbeName: { equals: name, mode: 'insensitive' } },
         })
         if (existing) {
           await prisma.microbeMaster.update({ where: { microbeId: existing.microbeId }, data: { uom: canonicalUom } })
         } else {
-          await prisma.microbeMaster.create({ data: { microbeName: name, uom: canonicalUom } })
+          nextNum++
+          await prisma.microbeMaster.create({ data: { microbeName: name, microbeCode: formatMicrobeCode(nextNum), uom: canonicalUom } })
         }
         imported++
       } catch (e) {

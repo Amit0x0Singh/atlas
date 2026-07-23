@@ -8,6 +8,7 @@ import * as XLSX from 'xlsx'
 // Note: Excel forbids "/" in sheet tab names, hence "Recipe BOM" not "Recipe / BOM".
 const TEMPLATE_SHEETS = [
   { name: 'Supplier Master',  columns: ['Supplier Name', 'GSTIN', 'Phone', 'Email', 'Address'] },
+  { name: 'Microbe Master',   columns: ['Microbe Name', 'UOM'] },
   { name: 'Product Master',   columns: ['Product Name', 'Plant Name'] },
   { name: 'Equipment Master', columns: ['Equipment Name', 'Working Volume', 'Operation', 'Plant'] },
   { name: 'RM Master',        columns: ['Item Code', 'Item Name', 'UOM', 'Category', 'Sub Category'] },

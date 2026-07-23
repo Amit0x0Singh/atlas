@@ -2,6 +2,8 @@ import prisma from '../../../../db.js'
 import * as XLSX from 'xlsx'
 import { normalizePlant } from '../../../../utils/plant.js'
 import { syncTotalRecipe } from '../../../production/recipe/recipe-utils.js'
+import { normalizeUom, CANONICAL_UNITS } from '../../../../utils/uom.js'
+import { getMaxMicrobeCodeNum, formatMicrobeCode } from '../../../../utils/microbe-code.js'
 
 function col(row, ...keys) {
   for (const key of keys) {
@@ -113,6 +115,7 @@ export const previewImport = async (req, res) => {
       const headers = columns.map(k => k.toLowerCase().replace(/[^a-z0-9]/g, ''))
 
       if (/supplier|vendor/i.test(n)) detectedAs[name] = 'Supplier Master'
+      else if (/microbe/i.test(n)) detectedAs[name] = 'Microbe Master'
       else if (/product/i.test(n) && !/print|pack|recipe|bom|formula|rm|material|equipment|equip/i.test(n)) detectedAs[name] = 'Product Master'
       else if (/equipment|equip/i.test(n)) detectedAs[name] = 'Equipment Master'
       else if (/rm|material|raw.?mat/i.test(n) && !/print|pack|inward|outward|recipe|bom|product/i.test(n)) detectedAs[name] = 'RM Master'
@@ -131,6 +134,8 @@ export const previewImport = async (req, res) => {
           detectedAs[name] = 'Supplier Master (auto-detected by columns)'
         } else if (headers.some(h => h.includes('equipname') || h.includes('equipmentname') || h.includes('workcenter'))) {
           detectedAs[name] = 'Equipment Master (auto-detected by columns)'
+        } else if (headers.some(h => h.includes('microbename')) || headers.includes('microbe')) {
+          detectedAs[name] = 'Microbe Master (auto-detected by columns)'
         } else {
           // Column-based RM auto-detection
           const hasCode = headers.some(h => h.includes('code') || h.includes('itemcode') || h.includes('itemno') || h.includes('srno'))
@@ -155,6 +160,7 @@ export const executeImport = async (req, res) => {
 
     const results = {
       rmMaster: 0, productMaster: 0, equipmentMaster: 0, supplierMaster: 0,
+      microbeMaster: 0,
       recipeBom: 0, printMaster: 0, inward: 0, outward: 0,
       unmatchedRm: 0,
       errors: []
@@ -194,6 +200,50 @@ export const executeImport = async (req, res) => {
           }
           results.supplierMaster++
         } catch (e) { results.errors.push(`Supplier row: ${e.message}`) }
+      }
+    }
+
+    // ── MICROBE MASTER ─────────────────────────────────────────────────────
+    // Sheet-name match first; falls back to column-signature detection (an
+    // exact "Microbe" or "Microbe Name" header) for files where the tab was
+    // never renamed from the spreadsheet tool's default ("Sheet1" etc).
+    // colExact() for the bare "Microbe" header specifically — a substring
+    // match on "microbe" would also match "Microbe Code" and grab the wrong
+    // column, since both headers contain that substring.
+    // microbe_code is never read from the sheet, even if the sheet has one —
+    // computed from MAX(existing)+1, same rule as the interactive "Add
+    // Microbe" form (see backend/src/utils/microbe-code.js).
+    let microbeSheet = wb.SheetNames.find(s => /microbe/i.test(s))
+    if (!microbeSheet) {
+      microbeSheet = wb.SheetNames.find(s => {
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets[s], { defval: '' })
+        if (!rows.length) return false
+        const headers = Object.keys(rows[0]).map(k => k.toLowerCase().replace(/[^a-z0-9]/g, ''))
+        return headers.some(h => h.includes('microbename')) || headers.includes('microbe')
+      })
+    }
+    if (microbeSheet) {
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[microbeSheet], { defval: '' })
+      let nextMicrobeNum = await getMaxMicrobeCodeNum(prisma)
+      for (const row of rows) {
+        try {
+          const microbeName = colExact(row, 'microbe') || col(row, 'microbename', 'microbe name', 'name', 'species')
+          const rawUom = col(row, 'uom', 'unit', 'unit of measure') || 'KG'
+          if (!microbeName) continue
+          const canonicalUom = normalizeUom(rawUom)
+          if (!CANONICAL_UNITS.includes(canonicalUom)) {
+            results.errors.push(`Microbe row "${microbeName}": unknown uom "${rawUom}" — must convert to one of ${CANONICAL_UNITS.join(', ')}`)
+            continue
+          }
+          const existing = await prisma.microbeMaster.findFirst({ where: { microbeName: { equals: microbeName, mode: 'insensitive' } } })
+          if (existing) {
+            await prisma.microbeMaster.update({ where: { microbeId: existing.microbeId }, data: { uom: canonicalUom } })
+          } else {
+            nextMicrobeNum++
+            await prisma.microbeMaster.create({ data: { microbeName, microbeCode: formatMicrobeCode(nextMicrobeNum), uom: canonicalUom } })
+          }
+          results.microbeMaster++
+        } catch (e) { results.errors.push(`Microbe row: ${e.message}`) }
       }
     }
 
@@ -669,7 +719,7 @@ export const executeImport = async (req, res) => {
     return res.json({
       success: true,
       data: results,
-      message: `Import complete — Products: ${results.productMaster}, Equipment: ${results.equipmentMaster}, RM: ${results.rmMaster}, Recipe/BOM: ${results.recipeBom}${results.missingQtyOrUom ? ` (${results.missingQtyOrUom} with missing qty/uom)` : ''}, Customer Profiles: ${results.customerProfiles || 0}, Packs: ${results.printMaster}, Inward: ${results.inward}, Outward: ${results.outward}`
+      message: `Import complete — Suppliers: ${results.supplierMaster}, Microbes: ${results.microbeMaster}, Products: ${results.productMaster}, Equipment: ${results.equipmentMaster}, RM: ${results.rmMaster}, Recipe/BOM: ${results.recipeBom}${results.missingQtyOrUom ? ` (${results.missingQtyOrUom} with missing qty/uom)` : ''}, Customer Profiles: ${results.customerProfiles || 0}, Packs: ${results.printMaster}, Inward: ${results.inward}, Outward: ${results.outward}`
     })
   } catch (e) {
     console.error(e)

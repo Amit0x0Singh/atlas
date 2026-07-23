@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Building, FlaskConical, Wrench, Layers, GitBranch, Printer, ArrowDownToLine, Info, ChevronDown } from 'lucide-react'
+import { Building, Microscope, FlaskConical, Wrench, Layers, GitBranch, Printer, ArrowDownToLine, Info, ChevronDown } from 'lucide-react'
 
 const BADGE = {
   Required:  'bg-red-50 text-red-600 ring-red-100',
@@ -25,6 +25,18 @@ const SHEETS = [
       { name: 'Address', kind: 'Optional' },
     ],
     behavior: 'Existing suppliers are matched by name (case-insensitive) and updated instead of duplicated.',
+  },
+  {
+    sheet: 'Microbe Master',
+    icon: Microscope,
+    color: 'bg-purple-50 text-purple-600',
+    match: 'Sheet name contains "microbe"',
+    cols: [
+      { name: 'Microbe (or Microbe Name)', kind: 'Required' },
+      { name: 'UOM', kind: 'Optional' },
+      { name: 'Microbe Code', kind: 'Auto-generated' },
+    ],
+    behavior: 'Microbe Code is always generated automatically (mc00001, mc00002…) — never read from the sheet, even if one is present. Existing microbes are matched by name (case-insensitive) and just get their UOM refreshed. UOM defaults to KG if left blank.',
   },
   {
     sheet: 'Product Master',

@@ -38,7 +38,7 @@ export const APP_NAV = [
     ],
   },
   {
-    group: 'INVENTORY / MATERIALS',
+    group: 'Transactions',
     items: [
       { to: '/print-master',    label: 'Print Master',     Icon: Printer },
       { to: '/inward',          label: 'Inward',           Icon: ArrowDownToLine },

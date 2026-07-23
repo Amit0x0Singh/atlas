@@ -1,5 +1,5 @@
 import {
-  CircleCheckBig, FlaskConical, Layers, GitBranch, Wrench, Building, Printer,
+  CircleCheckBig, FlaskConical, Layers, GitBranch, Wrench, Building, Microscope, Printer,
   ArrowDownToLine, ArrowUpFromLine, Repeat2, Ban, CircleX, TriangleAlert, Info,
 } from 'lucide-react'
 import ResultCard from '../result-card/ResultCard.jsx'
@@ -11,6 +11,7 @@ import ResultCard from '../result-card/ResultCard.jsx'
 // controller's own comments).
 const CATEGORIES = [
   { key: 'supplierMaster',  label: 'Supplier Master',  icon: Building },
+  { key: 'microbeMaster',   label: 'Microbe Master',   icon: Microscope },
   { key: 'productMaster',   label: 'Product Master',   icon: FlaskConical },
   { key: 'equipmentMaster', label: 'Equipment Master', icon: Wrench },
   { key: 'rmMaster',        label: 'RM Master',        icon: Layers },

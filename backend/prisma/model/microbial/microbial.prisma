@@ -74,11 +74,13 @@ model MicrobialTransaction {
 model MicrobeMaster {
   microbeId   String   @id @default(dbgenerated("gen_random_uuid()::text")) @map("microbe_id")
   microbeName String   @map("microbe_name")
-  // Backend-generated (Postgres sequence default) — never accepted from the
-  // client, same convention as ProductMaster.productCode / EquipmentMaster.equipCode.
-  // Existing rows keep whatever code they were created with; only microbes
-  // created from now on get this mc00001-style code.
-  microbeCode String   @unique @default(dbgenerated("('mc' || lpad((nextval('microbe_master_mc_code_seq'::regclass))::text, 5, '0'))")) @map("microbe_code")
+  // Backend-generated — never accepted from the client, whether the
+  // interactive "Add Microbe" form or a bulk Import Master Data sheet.
+  // Computed application-side from MAX(existing microbe_code)+1 (see
+  // backend/src/utils/microbe-code.js), not a raw DB sequence — a sequence
+  // only ever increments and never rolls back on a deleted/failed insert,
+  // so it can drift far ahead of the real row count over time.
+  microbeCode String   @unique @map("microbe_code")
   uom         String?  @map("uom")
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
