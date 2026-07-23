@@ -53,7 +53,7 @@ export function fromComponents(comps, minRows) {
   return rows
 }
 
-export default function ComponentsTable({ rows, onChange, rmList = [], products = [], onSaveCorrections, savingCorrections }) {
+export default function ComponentsTable({ rows, onChange, rmList = [], products = [], microbes = [], onSaveCorrections, savingCorrections }) {
   const rowCountRef = useRef(null)
   const [suggestIdx, setSuggestIdx] = useState(null)
 
@@ -73,9 +73,27 @@ export default function ComponentsTable({ rows, onChange, rmList = [], products 
     return map
   }, [products])
 
-  // Returns { code, kind: 'rm' | 'product' } | undefined
+  // ...or a microbial culture, which lives in Microbe Master with an
+  // mc00001-style code instead of an RM item code — previously not checked
+  // at all here, so every microbe ingredient showed as an unmatched "NAN".
+  const microbeByNameLower = useMemo(() => {
+    const map = new Map()
+    microbes.forEach(m => map.set((m.microbeName || '').trim().toLowerCase(), m))
+    return map
+  }, [microbes])
+
+  // Returns { code, kind: 'rm' | 'product' | 'microbe' } | undefined
+  // Microbe Master is checked FIRST, ahead of RM Master: every one of the 69
+  // real microbes also exists as a legacy RM Master row under the same name
+  // (added there before Microbe Master existed as its own thing, e.g.
+  // "Saccharomyces cerevisiae" = RM "SC" AND Microbe "mc00059"). A name that
+  // matches both must always resolve to the real mc00001-style code, never
+  // the stale RM one — Store doesn't issue microbes, so a component ending
+  // up on the RM side is a silent misroute, not a cosmetic label choice.
   const matchFor = (name) => {
     const key = (name || '').trim().toLowerCase()
+    const microbe = microbeByNameLower.get(key)
+    if (microbe) return { code: microbe.microbeCode, kind: 'microbe', item: microbe }
     const rm = rmByNameLower.get(key)
     if (rm) return { code: rm.itemCode, kind: 'rm', item: rm }
     const product = productByNameLower.get(key)
@@ -86,11 +104,16 @@ export default function ComponentsTable({ rows, onChange, rmList = [], products 
   const suggestionsFor = (text) => {
     const q = (text || '').trim().toLowerCase()
     if (!q) return []
-    const rmHits = rmList.filter(rm => (rm.itemName || '').toLowerCase().includes(q))
+    // RM hits that duplicate a Microbe Master name are dropped — only the
+    // real mc00... code should ever be offered for a microbe, never the
+    // legacy RM stand-in (see matchFor above).
+    const rmHits = rmList.filter(rm => (rm.itemName || '').toLowerCase().includes(q) && !microbeByNameLower.has((rm.itemName || '').trim().toLowerCase()))
       .map(rm => ({ kind: 'rm', code: rm.itemCode, name: rm.itemName, uom: rm.uom }))
+    const microbeHits = microbes.filter(m => (m.microbeName || '').toLowerCase().includes(q))
+      .map(m => ({ kind: 'microbe', code: m.microbeCode, name: m.microbeName, uom: m.uom }))
     const productHits = products.filter(p => (p.productName || '').toLowerCase().includes(q))
       .map(p => ({ kind: 'product', code: p.productCode, name: p.productName }))
-    return [...rmHits, ...productHits].slice(0, 8)
+    return [...rmHits, ...microbeHits, ...productHits].slice(0, 8)
   }
 
   // Rows whose typed name now resolves to a *different* code than the one
@@ -110,7 +133,7 @@ export default function ComponentsTable({ rows, onChange, rmList = [], products 
       }
     }
     return [...seen.values()]
-  }, [rows, rmByNameLower, productByNameLower])
+  }, [rows, rmByNameLower, productByNameLower, microbeByNameLower])
 
   const applyRowCount = () => {
     const n = Math.max(1, Math.min(200, parseInt(rowCountRef.current.value, 10) || 25))
@@ -180,6 +203,9 @@ export default function ComponentsTable({ rows, onChange, rmList = [], products 
             ⚠ <b>{corrections.length}</b> corrected name{corrections.length !== 1 ? 's' : ''} ready to save back to Recipe Master
             {corrections.some(c => c.kind === 'product') && (
               <span className="ml-1 text-[9px] font-bold text-blue-600 bg-blue-50 border border-blue-200 rounded px-1 py-0.5 align-middle">includes SFG</span>
+            )}
+            {corrections.some(c => c.kind === 'microbe') && (
+              <span className="ml-1 text-[9px] font-bold text-purple-600 bg-purple-50 border border-purple-200 rounded px-1 py-0.5 align-middle">includes MICROBE</span>
             )}.
             This updates the mapping for <b>every product</b> that uses the old code, not just this batch.
           </span>
@@ -232,6 +258,9 @@ export default function ComponentsTable({ rows, onChange, rmList = [], products 
                               {s.kind === 'product' && (
                                 <span className="text-[9px] font-bold text-blue-600 bg-blue-50 border border-blue-200 rounded px-1 py-0.5">SFG</span>
                               )}
+                              {s.kind === 'microbe' && (
+                                <span className="text-[9px] font-bold text-purple-600 bg-purple-50 border border-purple-200 rounded px-1 py-0.5">MICROBE</span>
+                              )}
                               <span className="font-mono text-[10px] text-gray-400">{s.code}</span>
                             </span>
                           </button>
@@ -246,11 +275,16 @@ export default function ComponentsTable({ rows, onChange, rmList = [], products 
                           <span className="text-[9px] font-bold text-blue-600 bg-blue-50 border border-blue-200 rounded px-1 py-0.5 font-sans">SFG</span>
                           {matched.code}
                         </span>
+                      ) : matched.kind === 'microbe' ? (
+                        <span className="inline-flex items-center gap-1 font-mono text-[12px] text-purple-700" title="Matched a Microbe Master item — this is a microbe code, and Store won't issue it. It routes to Microbe Outward instead.">
+                          <span className="text-[9px] font-bold text-purple-600 bg-purple-50 border border-purple-200 rounded px-1 py-0.5 font-sans">MICROBE</span>
+                          {matched.code}
+                        </span>
                       ) : (
                         <span className="font-mono text-[12px] text-emerald-700">{matched.code}</span>
                       )
                     ) : (
-                      <span className="font-mono text-[12px] font-bold text-red-600" title="This name doesn't match any Raw Material Master or Product Master item">NAN</span>
+                      <span className="font-mono text-[12px] font-bold text-red-600" title="This name doesn't match any Raw Material Master, Product Master, or Microbe Master item">NAN</span>
                     )}
                   </td>
                   <td className="p-0"><input value={r.qty} onChange={e => updateCell(idx, 'qty', e.target.value)}

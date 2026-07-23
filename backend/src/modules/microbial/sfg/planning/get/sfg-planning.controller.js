@@ -96,6 +96,63 @@ export const checkPlanMicrobes = async (req, res) => {
   }
 }
 
+// Auto-detects which lines of a product's recipe are actually microbes (by
+// matching the recipe line's ingredient name against Microbe Master — no
+// recipe rows currently carry the isMicrobe/requiredCfu flags this module's
+// other endpoints expect), so the Microbe Outward page can prefill
+// requirement rows from a selected production task the same way Material
+// Issue by BOM prefills raw-material rows. Required CFU/g defaults to that
+// microbe's current stock-weighted average potency (no per-recipe target
+// potency exists yet) — the frontend keeps it editable.
+export const getProductMicrobeRequirements = async (req, res) => {
+  try {
+    const { product_code, qty } = req.query
+    if (!product_code) return res.status(400).json({ success: false, error: 'product_code required', code: 'VALIDATION_ERROR' })
+    const orderQty = Number(qty) || 0
+
+    const [recipeRows, microbes] = await Promise.all([
+      prisma.recipeDb.findMany({ where: { productCode: product_code } }),
+      prisma.microbeMaster.findMany(),
+    ])
+
+    const microbeByName = new Map(microbes.map((m) => [m.microbeName.trim().toLowerCase(), m]))
+
+    const matched = recipeRows
+      .map((r) => ({ recipe: r, microbe: microbeByName.get(r.rmName.trim().toLowerCase()) }))
+      .filter((x) => x.microbe)
+
+    if (!matched.length) return res.json({ success: true, has_microbes: false, microbes: [] })
+
+    const results = []
+    for (const { recipe, microbe } of matched) {
+      const activeInward = await prisma.microbialSfgInward.findMany({
+        where: { microbeCode: microbe.microbeCode, status: 'ACTIVE', remainingQtyKg: { gt: 0 } },
+        select: { remainingQtyKg: true, inhouseCfuPerG: true },
+      })
+      const totalKg = activeInward.reduce((s, i) => s + Number(i.remainingQtyKg), 0)
+      const avgCfuPerG = totalKg > 0
+        ? activeInward.reduce((s, i) => s + Number(i.inhouseCfuPerG) * Number(i.remainingQtyKg), 0) / totalKg
+        : 0
+
+      results.push({
+        microbe_id: microbe.microbeId,
+        microbe_code: microbe.microbeCode,
+        microbe_name: microbe.microbeName,
+        rm_code: recipe.rmCode,
+        rm_name: recipe.rmName,
+        qty_per_unit: Number(recipe.qtyPerUnit),
+        required_qty_kg: Number((Number(recipe.qtyPerUnit) * orderQty).toFixed(4)),
+        required_cfu_per_g: avgCfuPerG ? Number(avgCfuPerG.toFixed(2)) : null,
+        current_stock_kg: Number(totalKg.toFixed(3)),
+      })
+    }
+
+    return res.json({ success: true, has_microbes: true, microbes: results })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+  }
+}
+
 export const getAllocationsForPlan = async (req, res) => {
   try {
     const rows = await prisma.microbialSfgAllocation.findMany({

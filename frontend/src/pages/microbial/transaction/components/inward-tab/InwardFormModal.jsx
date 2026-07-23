@@ -19,12 +19,14 @@ const EMPTY_FORM = {
   rack: '', shelf: '', side: '', position: '',
 }
 
+const MICROBE_TYPE_OPTIONS = ['Biomass', 'SDP']
+
 const RACKS = Array.from({ length: 15 }, (_, i) => i + 1)
 const SHELVES = Array.from({ length: 8 }, (_, i) => i + 1)
 const SIDES = ['B', 'F']
 const POSITIONS = ['L', 'M', 'R']
 
-export default function InwardFormModal({ open, onClose, microbes, typeOptions, recentRecords, onSave, saving }) {
+export default function InwardFormModal({ open, onClose, microbes, recentRecords, onSave, saving }) {
   const [form, setForm] = useState(EMPTY_FORM)
   const [showChooser, setShowChooser] = useState(false)
   const [chooserContainers, setChooserContainers] = useState([])
@@ -176,12 +178,13 @@ export default function InwardFormModal({ open, onClose, microbes, typeOptions, 
             </div>
             <div>
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Microbe Type *</label>
-              <input
+              <select
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                list="mt-type-options" placeholder="e.g. Wettable Powder"
                 value={form.microbe_type} onChange={handleTypeChange} required
-              />
-              <datalist id="mt-type-options">{typeOptions.map((t) => <option key={t} value={t} />)}</datalist>
+              >
+                <option value="">— Select type —</option>
+                {MICROBE_TYPE_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
             </div>
           </div>
 

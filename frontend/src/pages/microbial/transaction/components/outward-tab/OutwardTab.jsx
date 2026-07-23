@@ -1,18 +1,24 @@
-import { useState } from 'react'
-import { Plus, Send, RotateCcw } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Send, RotateCcw, ArrowLeft } from 'lucide-react'
 import { Button } from '../../../../../components/ui'
 import { useMicrobes } from '../../../../../hooks/masters/useMicrobes.js'
 import { usePreviewOutward, useCreateOutward, useMicrobialOutward, useEligibleBatches } from '../../../../../hooks/microbial/useMicrobialOutward.js'
+import { microbialSfgApi } from '../../../../../api/microbial.js'
+import { planTasksApi } from '../../../../../api/production.js'
+import { productApi } from '../../../../../api/masters.js'
+import { PLANT_BADGE } from '../../../../production/planning/data/plantConfig.js'
+import TaskPicker from './TaskPicker.jsx'
 import RequirementRow from './RequirementRow.jsx'
 import RecentIssuances from './RecentIssuances.jsx'
 import GrandSummary from './GrandSummary.jsx'
 import AltContainerModal from './AltContainerModal.jsx'
 
 let rid = 0
-const newRow = () => ({
+const newRow = (m = {}) => ({
   id: `row-${++rid}`,
-  microbe_id: '', microbe_code: '', microbe_name: '',
-  required_qty_kg: '', required_cfu_per_g: '',
+  microbe_id: m.microbe_id || '', microbe_code: m.microbe_code || '', microbe_name: m.microbe_name || '',
+  required_qty_kg: m.required_qty_kg != null ? String(m.required_qty_kg) : '',
+  required_cfu_per_g: m.required_cfu_per_g != null ? String(m.required_cfu_per_g) : '',
   calc: null,
 })
 
@@ -22,8 +28,20 @@ const EMPTY_HEADER = {
 }
 
 export default function OutwardTab() {
+  // Microbes are issued strictly against a planner-sent task's recipe — same
+  // rule Store follows for "Material Issue by BOM." There is no path to a
+  // blank manual form; a task must be selected first every time.
+  const [step, setStep] = useState('select')
+  const [selectedTask, setSelectedTask] = useState(null)
+  const [checking, setChecking] = useState(false)
+
+  const [tasks, setTasks] = useState([])
+  const [loadingTasks, setLoadingTasks] = useState(false)
+  const [taskFilter, setTaskFilter] = useState({ plant: '', date: '' })
+  const [products, setProducts] = useState([])
+
   const [header, setHeader] = useState(EMPTY_HEADER)
-  const [rows, setRows] = useState([newRow()])
+  const [rows, setRows] = useState([])
   const [calculatingId, setCalculatingId] = useState(null)
   const [altPickerRow, setAltPickerRow] = useState(null)
   const [altBatches, setAltBatches] = useState([])
@@ -34,20 +52,28 @@ export default function OutwardTab() {
   const eligibleBatches = useEligibleBatches()
   const { data: recent = [] } = useMicrobialOutward()
 
+  useEffect(() => {
+    setLoadingTasks(true)
+    planTasksApi.list().then((r) => setTasks(r.data || [])).catch(() => {}).finally(() => setLoadingTasks(false))
+  }, [])
+
+  useEffect(() => {
+    productApi.list().then((r) => setProducts(r.data || [])).catch(() => {})
+  }, [])
+
   const setHeaderField = (k, v) => setHeader((p) => ({ ...p, [k]: v }))
 
   const updateRow = (id, patch) => setRows((rs) => rs.map((r) => (r.id === id ? { ...r, ...patch } : r)))
   const removeRow = (id) => setRows((rs) => rs.filter((r) => r.id !== id))
-  const addRow = () => setRows((rs) => [...rs, newRow()])
 
-  const calculateRow = async (row) => {
-    setCalculatingId(row.id)
+  const calculateRow = async (row, { silent } = {}) => {
+    if (!silent) setCalculatingId(row.id)
     try {
       const res = await preview.mutateAsync({
         requirements: [{ microbe_code: row.microbe_code, required_qty_kg: Number(row.required_qty_kg), required_cfu_per_g: Number(row.required_cfu_per_g) }],
       })
       const calc = res?.[0]
-      if (calc?.error) { alert(calc.error); return }
+      if (calc?.error) { if (!silent) alert(calc.error); return }
       updateRow(row.id, {
         calc: {
           total_cfu_needed: calc.total_cfu_needed,
@@ -56,8 +82,47 @@ export default function OutwardTab() {
           allocations: calc.allocations,
         },
       })
+    } catch (err) { if (!silent) alert(err.message) }
+    if (!silent) setCalculatingId(null)
+  }
+
+  // Selecting a task pulls the product's recipe, auto-detects microbe
+  // ingredients (name-matched against Microbe Master), and pre-fills both
+  // the header and every requirement row — nothing here is typed from scratch.
+  const selectTask = async (task) => {
+    setChecking(true)
+    try {
+      const match = products.find((p) =>
+        p.productName?.toLowerCase() === task.productName?.toLowerCase() ||
+        (task.productCode && p.productCode === task.productCode)
+      )
+      const productCode = match?.productCode || task.productCode
+      if (!productCode) { alert(`Could not resolve a product code for "${task.productName}". Check Product Master.`); return }
+
+      const res = await microbialSfgApi.productMicrobes({ product_code: productCode, qty: task.qty })
+      if (!res.has_microbes || !res.microbes?.length) {
+        alert(`No microbe ingredients were detected in the recipe for "${task.productName}". Nothing to issue here.`)
+        return
+      }
+
+      const newRows = res.microbes.map((m) => newRow(m))
+      setHeader({
+        ...EMPTY_HEADER,
+        product_name: task.productName || '',
+        di_number: task.diNo || '',
+        batch_code: task.batchCode || '',
+        order_qty_kg: task.qty != null ? String(task.qty) : '',
+      })
+      setRows(newRows)
+      setSelectedTask(task)
+      setStep('issue')
+
+      newRows.filter((r) => Number(r.required_cfu_per_g) > 0).forEach((r) => calculateRow(r, { silent: true }))
+
+      planTasksApi.update(task.id, { microbeIssueStarted: true, microbeIssueStartedAt: new Date().toISOString() }).catch(() => {})
+      setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, microbeIssueStarted: true } : t)))
     } catch (err) { alert(err.message) }
-    setCalculatingId(null)
+    finally { setChecking(false) }
   }
 
   const updateAllocationQty = (rowId, inwardId, val) => {
@@ -121,7 +186,9 @@ export default function OutwardTab() {
     setAltPickerRow(null)
   }
 
-  const resetAll = () => { setHeader(EMPTY_HEADER); setRows([newRow()]) }
+  const backToSelect = () => {
+    setStep('select'); setSelectedTask(null); setHeader(EMPTY_HEADER); setRows([])
+  }
 
   const readyRows = rows.filter((r) => r.microbe_code && r.calc && r.calc.allocations.length)
 
@@ -156,18 +223,45 @@ export default function OutwardTab() {
     try {
       const result = await createOutward.mutateAsync(payload)
       alert(`Issued successfully — ${result.lines.length} batch pick(s) recorded for ${result.product_name}.`)
-      resetAll()
+      backToSelect()
     } catch (err) { alert(err.message) }
+  }
+
+  if (step === 'select') {
+    return (
+      <TaskPicker
+        tasks={tasks}
+        loadingTasks={loadingTasks}
+        taskFilter={taskFilter}
+        setTaskFilter={setTaskFilter}
+        onSelectTask={selectTask}
+        checking={checking}
+      />
+    )
   }
 
   return (
     <div className="space-y-6">
       <div className="bg-white border border-gray-200 rounded-xl p-5">
-        <h3 className="text-base font-bold text-gray-900 mb-4">Multi-Microbe Issuance</h3>
+        <div className="flex items-start justify-between gap-3 mb-4">
+          <div>
+            <h3 className="text-base font-bold text-gray-900">Multi-Microbe Issuance</h3>
+            {selectedTask && (
+              <div className="flex items-center gap-2 mt-1 text-xs text-gray-500 flex-wrap">
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${PLANT_BADGE[selectedTask.plant] || 'bg-gray-100 text-gray-600'}`}>{selectedTask.plant}</span>
+                <span>Task {selectedTask.taskId || selectedTask.id}</span>
+                {selectedTask.date && <span>· {selectedTask.date}</span>}
+              </div>
+            )}
+          </div>
+          <button type="button" onClick={backToSelect} className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-blue-600 shrink-0">
+            <ArrowLeft size={14} /> Change Task
+          </button>
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-2">
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Product Name *</label>
-            <input className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500" value={header.product_name} onChange={(e) => setHeaderField('product_name', e.target.value)} />
+            <input className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50" value={header.product_name} readOnly />
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Customer</label>
@@ -175,11 +269,11 @@ export default function OutwardTab() {
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">DI Number</label>
-            <input className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500" value={header.di_number} onChange={(e) => setHeaderField('di_number', e.target.value)} />
+            <input className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50" value={header.di_number} readOnly />
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Batch Code</label>
-            <input className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500" value={header.batch_code} onChange={(e) => setHeaderField('batch_code', e.target.value)} />
+            <input className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50" value={header.batch_code} readOnly />
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Section</label>
@@ -187,7 +281,7 @@ export default function OutwardTab() {
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Order Qty (kg)</label>
-            <input className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500" type="number" min="0" step="any" value={header.order_qty_kg} onChange={(e) => setHeaderField('order_qty_kg', e.target.value)} />
+            <input className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50" type="number" min="0" step="any" value={header.order_qty_kg} readOnly />
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Issuer Name</label>
@@ -217,7 +311,6 @@ export default function OutwardTab() {
             onAllocationChange={(inwardId) => openAltPicker(row.id, inwardId)}
           />
         ))}
-        <Button type="button" variant="outline-gray" icon={Plus} onClick={addRow}>Add Microbe</Button>
       </div>
 
       <GrandSummary rows={rows} />
@@ -226,7 +319,7 @@ export default function OutwardTab() {
         <Button type="button" variant="primary" icon={Send} disabled={createOutward.isPending} loading={createOutward.isPending} onClick={handleSubmit}>
           Confirm & Issue All
         </Button>
-        <Button type="button" variant="outline-gray" icon={RotateCcw} onClick={resetAll}>Reset</Button>
+        <Button type="button" variant="outline-gray" icon={RotateCcw} onClick={backToSelect}>Cancel</Button>
       </div>
 
       <RecentIssuances items={recent} />

@@ -108,6 +108,11 @@ model ProductionTask {
   // started it.
   bomIssueStarted   Boolean   @default(false) @map("bom_issue_started")
   bomIssueStartedAt DateTime? @map("bom_issue_started_at") @db.Timestamptz()
+  // Same idea as bomIssueStarted, tracked independently — RM issuance (store)
+  // and microbe issuance (SFG store) are separate people/pages drawing on the
+  // same task, so one starting shouldn't hide the task from the other.
+  microbeIssueStarted   Boolean   @default(false) @map("microbe_issue_started")
+  microbeIssueStartedAt DateTime? @map("microbe_issue_started_at") @db.Timestamptz()
   createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
 

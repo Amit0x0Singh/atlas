@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { recipeApi, productApi } from '../../../../../api/masters.js'
 import { rmApi } from '../../../../../api/inventory.js'
 import { planTasksApi } from '../../../../../api/production.js'
+import { microbialSfgApi } from '../../../../../api/microbial.js'
 import { genId, incrCode, scaleToQty, state as printState } from '../../utils/bomPrintTemplates.js'
 import { readArchivedBoms, readMeta, archiveBoms } from '../../utils/bomIssuanceStorage.js'
 import { toCanonical } from '../../../../../utils/uom.js'
@@ -61,6 +62,7 @@ export default function BomIssuance() {
   const [activeRecipe, setActiveRecipe]     = useState(null) // { productCode, perUnitComponents }
   const [recipeLoadedMsg, setRecipeLoadedMsg] = useState('')
   const [rmList, setRmList]                 = useState([])
+  const [microbes, setMicrobes]             = useState([])
   const [savingCorrections, setSavingCorrections] = useState(false)
 
   const [archivedBoms, setArchivedBoms] = useState(() => readArchivedBoms())
@@ -70,6 +72,7 @@ export default function BomIssuance() {
     recipeApi.products().then(r => setRecipeProducts(r.data || [])).catch(() => {})
     rmApi.list({}).then(r => setRmList(r.data || [])).catch(() => {})
     productApi.list().then(r => setProducts(r.data || [])).catch(() => {})
+    microbialSfgApi.listMicrobes().then(r => setMicrobes(r.data || [])).catch(() => {})
   }, [])
 
   // Keep the shared print-template settings singleton in sync with the React toggles.
@@ -201,26 +204,29 @@ export default function BomIssuance() {
     }
 
     // Every real component (not a section header) must resolve to a Raw
-    // Material Master item OR a Product Master item by exact name — a
-    // component can legitimately be an SFG (semi-finished good) used as an
-    // ingredient in another product's recipe, in which case it matches
-    // Product Master by product code instead of RM Master. Same check
-    // ComponentsTable shows as a red "NAN" Item Code. Blocking here instead
-    // of just flagging it visually is deliberate: an unresolved component
-    // means Material Issue by BOM won't know which stock to deduct, so the
-    // batch can't be planned until it's fixed (rename the component to match
-    // RM Master or Product Master exactly, or add the missing item first).
+    // Material Master item, a Microbe Master item, OR a Product Master item
+    // by exact name — a component can legitimately be an SFG (semi-finished
+    // good) used as an ingredient in another product's recipe, in which case
+    // it matches Product Master by product code instead of RM Master; or a
+    // microbial culture, matching Microbe Master instead (Store never issues
+    // these — they route to Microbe Outward). Same check ComponentsTable
+    // shows as a red "NAN" Item Code. Blocking here instead of just flagging
+    // it visually is deliberate: an unresolved component means Material
+    // Issue by BOM won't know which stock to deduct, so the batch can't be
+    // planned until it's fixed (rename the component to match one of the
+    // three masters exactly, or add the missing item first).
     const rmByNameLower = new Map(rmList.map(rm => [(rm.itemName || '').trim().toLowerCase(), rm]))
     const productByNameLowerForComps = new Map(products.map(p => [(p.productName || '').trim().toLowerCase(), p]))
+    const microbeByNameLowerForComps = new Map(microbes.map(m => [(m.microbeName || '').trim().toLowerCase(), m]))
     const unmatched = comps.filter(c => {
       if (c.isHeader || !c.component) return false
       const key = c.component.trim().toLowerCase()
-      return !rmByNameLower.has(key) && !productByNameLowerForComps.has(key)
+      return !rmByNameLower.has(key) && !productByNameLowerForComps.has(key) && !microbeByNameLowerForComps.has(key)
     })
     if (unmatched.length) {
       return setError(
-        `${unmatched.length} component${unmatched.length !== 1 ? 's' : ''} don't match any Raw Material Master or Product Master item (shown as "NAN" in Item Code): ${unmatched.map(c => c.component).join(', ')}. ` +
-        `Fix the name to match RM Master or Product Master exactly, or add the item first, then try again.`
+        `${unmatched.length} component${unmatched.length !== 1 ? 's' : ''} don't match any Raw Material Master, Product Master, or Microbe Master item (shown as "NAN" in Item Code): ${unmatched.map(c => c.component).join(', ')}. ` +
+        `Fix the name to match one of those masters exactly, or add the item first, then try again.`
       )
     }
 
@@ -294,7 +300,7 @@ export default function BomIssuance() {
             productSuggestions={suggestions} onProductSearch={onProductSearch} onSelectProduct={onSelectProduct}
             recipeLoadedMsg={recipeLoadedMsg}
             onGenerate={onGenerate} generating={generating} error={error}
-            rmList={rmList} products={products} onSaveCorrections={handleSaveCorrections} savingCorrections={savingCorrections}
+            rmList={rmList} products={products} microbes={microbes} onSaveCorrections={handleSaveCorrections} savingCorrections={savingCorrections}
           />
         )}
         {activeTab === 'archive' && (

@@ -22,6 +22,7 @@ export const microbialSfgApi = {
   // Planning integration
   checkPlanMicrobes:  (planId, mf) =>
     api.get(`/microbial-sfg/planning/check/${planId}`, { params: { multiplication_factor: mf } }),
+  productMicrobes:    (params)  => api.get('/microbial-sfg/planning/product-microbes', { params }),
   allocate:           (data)    => api.post('/microbial-sfg/planning/allocate', data),
   listAllocations:    (planId)  => api.get(`/microbial-sfg/planning/allocations/${planId}`),
   cancelAllocation:   (id)      => api.delete(`/microbial-sfg/planning/allocations/${id}`),

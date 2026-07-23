@@ -63,13 +63,22 @@ export const fixRmMapping = async (req, res) => {
     const log = []
     for (const m of mappings) {
       if (!m.fromCode || !m.toCode) continue
-      // A mapping target can be an RM Master item, or (kind: 'product') an
-      // SFG being used as an ingredient — resolved from Product Master instead.
+      // A mapping target can be an RM Master item, a Microbe Master item
+      // (kind: 'microbe'), or (kind: 'product') an SFG being used as an
+      // ingredient — resolved from Product Master instead.
       let targetName
+      let isMicrobe = false
+      let microbeCode = null
       if (m.kind === 'product') {
         const targetProduct = await prisma.productMaster.findUnique({ where: { productCode: m.toCode } })
         if (!targetProduct) { log.push({ from: m.fromCode, error: `Target product ${m.toCode} not found in Product Master` }); continue }
         targetName = targetProduct.productName
+      } else if (m.kind === 'microbe') {
+        const targetMicrobe = await prisma.microbeMaster.findUnique({ where: { microbeCode: m.toCode } })
+        if (!targetMicrobe) { log.push({ from: m.fromCode, error: `Target microbe ${m.toCode} not found in Microbe Master` }); continue }
+        targetName = targetMicrobe.microbeName
+        isMicrobe = true
+        microbeCode = targetMicrobe.microbeCode
       } else {
         const targetRm = await prisma.rmMaster.findUnique({ where: { itemCode: m.toCode } })
         if (!targetRm) { log.push({ from: m.fromCode, error: `Target RM ${m.toCode} not found in RM Master` }); continue }
@@ -78,12 +87,15 @@ export const fixRmMapping = async (req, res) => {
       const affected = await prisma.recipeDb.findMany({ where: { rmCode: m.fromCode } })
       for (const row of affected) {
         try {
-          const existing = await prisma.recipeDb.findUnique({ where: { productCode_rmCode: { productCode: row.productCode, rmCode: m.toCode } } })
+          // RecipeDb's real unique key is (productCode, recipeNo, rmCode) —
+          // recipeNo was added after this compound-key name was first written
+          // and this lookup was never updated, so it always threw before.
+          const existing = await prisma.recipeDb.findUnique({ where: { productCode_recipeNo_rmCode: { productCode: row.productCode, recipeNo: row.recipeNo, rmCode: m.toCode } } })
           if (existing) {
-            await prisma.recipeDb.update({ where: { productCode_rmCode: { productCode: row.productCode, rmCode: m.toCode } }, data: { qtyPerUnit: row.qtyPerUnit, uom: row.uom } })
+            await prisma.recipeDb.update({ where: { productCode_recipeNo_rmCode: { productCode: row.productCode, recipeNo: row.recipeNo, rmCode: m.toCode } }, data: { qtyPerUnit: row.qtyPerUnit, uom: row.uom, isMicrobe, microbeCode } })
             await prisma.recipeDb.delete({ where: { id: row.id } })
           } else {
-            await prisma.recipeDb.update({ where: { id: row.id }, data: { rmCode: m.toCode, rmName: targetName } })
+            await prisma.recipeDb.update({ where: { id: row.id }, data: { rmCode: m.toCode, rmName: targetName, isMicrobe, microbeCode } })
           }
           totalFixed++
         } catch (e) { log.push({ from: m.fromCode, rowId: row.id, error: e.message }) }

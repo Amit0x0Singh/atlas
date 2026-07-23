@@ -72,7 +72,6 @@ export default function InwardTab() {
         open={showForm}
         onClose={() => setShowForm(false)}
         microbes={microbes}
-        typeOptions={typeOptions}
         recentRecords={allRecords}
         onSave={handleSave}
         saving={createInward.isPending}
