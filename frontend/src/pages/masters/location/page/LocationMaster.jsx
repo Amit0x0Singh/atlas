@@ -1,12 +1,12 @@
 import { useState } from 'react'
-import { Plus, Camera, Square } from 'lucide-react'
+import { Plus, ScanBarcode } from 'lucide-react'
 import { Button, BackButton } from '../../../../components/ui'
 import Pagination from '../../../../components/pagination/Pagination.jsx'
-import QRScanner        from '../components/qr-scanner/QRScanner.jsx'
+import ScannerPanel from '../../../../components/ScannerPanel/ScannerPanel.jsx'
 import LocationCard      from '../components/location-card/LocationCard.jsx'
 import LocationForm      from '../components/location-form/LocationForm.jsx'
 import WorkflowInfoCard  from '../components/workflow-info/WorkflowInfoCard.jsx'
-import { useQrLocationScanner } from '../hooks/useQrLocationScanner.js'
+import { bulkApi } from '../../../../api/inventory.js'
 import { useLocations, useCreateLocation, useDeleteLocation } from '../../../../hooks/inventory/useLocations.js'
 import { useRmMaster } from '../../../../hooks/inventory/useRmMaster.js'
 
@@ -16,15 +16,24 @@ export default function LocationMaster() {
   const [msg, setMsg]             = useState({ type: '', text: '' })
   const [page, setPage]           = useState(1)
   const [limit, setLimit]         = useState(15)
+  const [showScanner, setShowScanner] = useState(false)
 
   const [form, setForm]           = useState({ locationId: '', locationName: '', itemCode: '', itemName: '', uom: 'KG' })
   const [rmSearch, setRmSearch]   = useState('')
   const [showRmDrop, setShowRmDrop] = useState(false)
 
-  const { scanning, videoRef, canvasRef, startCamera, stopCamera } = useQrLocationScanner({
-    onFound: (locationId) => setExpanded(locationId),
-    onError: (text) => setMsg({ type: 'error', text }),
-  })
+  // Strips the "LOC:" prefix, validates the scanned id against the backend,
+  // and expands that location's card — or reports the error inline.
+  const onScanLocation = async (raw) => {
+    const locationId = raw.startsWith('LOC:') ? raw.slice(4) : raw
+    try {
+      await bulkApi.getLocation(locationId)
+      setExpanded(locationId)
+      setShowScanner(false)
+    } catch {
+      setMsg({ type: 'error', text: `Location "${locationId}" not found` })
+    }
+  }
 
   const { data: locations = [], isLoading: loading } = useLocations()
   const { data: rmList = [] } = useRmMaster()
@@ -80,12 +89,12 @@ export default function LocationMaster() {
         </div>
         <div className="flex gap-2 items-center">
           <Button
-            variant={scanning ? 'danger-solid' : 'outline-gray'}
-            icon={scanning ? Square : Camera}
-            onClick={scanning ? stopCamera : startCamera}
+            variant={showScanner ? 'danger-solid' : 'outline-gray'}
+            icon={ScanBarcode}
+            onClick={() => setShowScanner(s => !s)}
             size="sm"
           >
-            {scanning ? 'Stop Scanner' : 'Scan QR'}
+            {showScanner ? 'Hide Scanner' : 'Scan QR'}
           </Button>
           <Button variant="success" icon={Plus} onClick={openAdd} size="sm">New Location</Button>
           <BackButton />
@@ -100,7 +109,16 @@ export default function LocationMaster() {
 
       <WorkflowInfoCard />
 
-      {scanning && <QRScanner videoRef={videoRef} canvasRef={canvasRef} />}
+      {showScanner && (
+        <div className="bg-white border border-gray-200 rounded-xl p-4 mb-4 max-w-md">
+          <ScannerPanel
+            accent="indigo"
+            onScan={onScanLocation}
+            placeholder="Or type the Location ID…"
+            scanHint="Point at location QR code"
+          />
+        </div>
+      )}
 
       {loading ? <p className="text-gray-400">Loading...</p> : (
         <div className="space-y-3">

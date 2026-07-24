@@ -1,39 +1,11 @@
-import Pagination from '../../../../../components/pagination/Pagination.jsx'
 import { fillBadgeCls, statusBadgeCls, fmtCfu, fmtDate } from '../../utils/format.js'
 
-export default function InwardTable({
-  rows, loading, microbeOptions, typeOptions,
-  filterMicrobe, setFilterMicrobe, filterType, setFilterType, filterStatus, setFilterStatus,
-  page, limit, total, onPageChange, onLimitChange,
-}) {
+export default function InwardTable({ rows, loading }) {
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-5">
-      <div className="flex flex-wrap items-center gap-3 mb-4">
-        <select
-          className="border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 w-[190px]"
-          value={filterMicrobe}
-          onChange={(e) => setFilterMicrobe(e.target.value)}
-        >
-          <option value="">All Microbes</option>
-          {microbeOptions.map((c) => <option key={c} value={c}>{c}</option>)}
-        </select>
-        <select
-          className="border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 w-[170px]"
-          value={filterType}
-          onChange={(e) => setFilterType(e.target.value)}
-        >
-          <option value="">All Types</option>
-          {typeOptions.map((t) => <option key={t} value={t}>{t}</option>)}
-        </select>
-        <select
-          className="border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 w-[140px]"
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-        >
-          <option value="">All Status</option>
-          <option value="ACTIVE">Active</option>
-          <option value="EXHAUSTED">Exhausted</option>
-        </select>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-sm font-bold text-gray-700">Recent Inward Entries</h3>
+        <span className="text-xs text-gray-400">See Transaction History for the full record</span>
       </div>
 
       {loading ? (
@@ -78,8 +50,6 @@ export default function InwardTable({
           </table>
         </div>
       )}
-
-      <Pagination page={page} total={total} limit={limit} onChange={onPageChange} onLimitChange={onLimitChange} />
     </div>
   )
 }

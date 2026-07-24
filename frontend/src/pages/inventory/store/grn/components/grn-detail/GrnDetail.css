@@ -11,6 +11,20 @@
   align-items: flex-start;
 }
 
+.gd-company-block {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.gd-company-logo {
+  width: 100px;
+  /* height: 100px; */
+  object-fit: contain;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
 .gd-company-name {
   font-size: 18px;
   font-weight: 800;
@@ -220,6 +234,7 @@
 
 /* ─── Print ────────────────────────────────────────────────────────────────── */
 @media print {
+
   /* Force backgrounds and colours to appear in print */
   * {
     -webkit-print-color-adjust: exact !important;

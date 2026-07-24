@@ -1,8 +1,7 @@
 import { useState, useCallback } from 'react'
 import { outwardApi } from '../../../../../../api/inventory.js'
-import { Button, IconButton } from '../../../../../../components/ui'
-import QRScanner from '../../../../../../components/QRScanner/QRScanner.jsx'
-import { Camera } from 'lucide-react'
+import { Button } from '../../../../../../components/ui'
+import ScannerPanel from '../../../../../../components/ScannerPanel/ScannerPanel.jsx'
 import './WarehouseToWarehouse.css'
 
 const WAREHOUSES = ['Main Store', 'Cold Store', 'RM Store', 'FG Store', 'Quarantine Store']
@@ -17,7 +16,6 @@ export default function WarehouseToWarehouse() {
   const [submitting, setSub]    = useState(false)
   const [error, setError]       = useState('')
   const [success, setSuccess]   = useState('')
-  const [showScanner, setShowScanner] = useState(false)
 
   // Looks up a pack directly by its packId (as scanned from the QR code or
   // typed in) via a dedicated single-pack endpoint — no more guessing an RM
@@ -39,10 +37,7 @@ export default function WarehouseToWarehouse() {
     }
   }, [])
 
-  const lookupPack = () => lookupPackById(packId.trim())
-
-  const onQRScan = useCallback((value) => {
-    setShowScanner(false)
+  const onScan = useCallback((value) => {
     const id = value.trim()
     setPackId(id)
     lookupPackById(id)
@@ -61,14 +56,6 @@ export default function WarehouseToWarehouse() {
 
   return (
     <div className="p-4 md:p-6 max-w-lg">
-      {showScanner && (
-        <QRScanner
-          label="Scan Pack QR Code"
-          onScan={onQRScan}
-          onClose={() => setShowScanner(false)}
-        />
-      )}
-
       <p className="text-sm text-gray-500 mb-5">
         Move a pack from one warehouse/location to another. Stock quantity remains the same — only the location is updated.
       </p>
@@ -79,26 +66,20 @@ export default function WarehouseToWarehouse() {
       <div className="space-y-4">
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-1">Pack ID *</label>
-          <div className="flex gap-2">
-            <IconButton icon={Camera} onClick={() => setShowScanner(true)} tooltip="Scan pack QR code" variant="purple" size="md" />
-            <input
-              value={packId}
-              onChange={e => setPackId(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && lookupPack()}
-              placeholder="e.g. AZO-AZOS-2026-001-001"
-              className="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 text-sm font-mono outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <Button onClick={lookupPack} disabled={loading} loading={loading} variant="secondary" size="sm">
-              Lookup
-            </Button>
-          </div>
+          <ScannerPanel
+            accent="blue"
+            onScan={onScan}
+            scanHint="Point at pack QR code"
+            allowManualEntry={false}
+          />
+          {loading && <p className="text-xs text-gray-400 mt-1.5">Looking up…</p>}
           <p className="text-xs text-gray-400 mt-1.5">
             Scan the bag's QR code to auto-fill its current warehouse below.
           </p>
           {packInfo && (
             <div className="mt-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-sm">
-              <span className="font-medium text-blue-800">{packInfo.itemName}</span>
-              <span className="text-blue-600 ml-2">· Lot: {packInfo.lotNo} · Bag #{packInfo.bagNo} · {packInfo.remainingQty} {packInfo.uom} available</span>
+              <span className="font-mono font-semibold text-blue-900">{packId}</span>
+              <span className="text-blue-600 ml-2">· {packInfo.itemName} · Lot: {packInfo.lotNo} · Bag #{packInfo.bagNo} · {packInfo.remainingQty} {packInfo.uom} available</span>
               {packInfo.warehouse && <span className="text-blue-600 ml-2">· Currently in: {packInfo.warehouse}</span>}
             </div>
           )}

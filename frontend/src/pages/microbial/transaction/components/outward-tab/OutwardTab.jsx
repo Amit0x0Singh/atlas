@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Send, RotateCcw, ArrowLeft } from 'lucide-react'
 import { Button } from '../../../../../components/ui'
-import { useMicrobes } from '../../../../../hooks/masters/useMicrobes.js'
 import { usePreviewOutward, useCreateOutward, useMicrobialOutward, useEligibleBatches } from '../../../../../hooks/microbial/useMicrobialOutward.js'
 import { microbialSfgApi } from '../../../../../api/microbial.js'
 import { planTasksApi } from '../../../../../api/production.js'
@@ -34,11 +33,14 @@ export default function OutwardTab() {
   const [step, setStep] = useState('select')
   const [selectedTask, setSelectedTask] = useState(null)
   const [checking, setChecking] = useState(false)
+  const [sessionId, setSessionId] = useState(null)
 
   const [tasks, setTasks] = useState([])
   const [loadingTasks, setLoadingTasks] = useState(false)
   const [taskFilter, setTaskFilter] = useState({ plant: '', date: '' })
   const [products, setProducts] = useState([])
+  const [sessions, setSessions] = useState([])
+  const [loadingSessions, setLoadingSessions] = useState(false)
 
   const [header, setHeader] = useState(EMPTY_HEADER)
   const [rows, setRows] = useState([])
@@ -46,7 +48,6 @@ export default function OutwardTab() {
   const [altPickerRow, setAltPickerRow] = useState(null)
   const [altBatches, setAltBatches] = useState([])
 
-  const { data: microbes = [] } = useMicrobes()
   const preview = usePreviewOutward()
   const createOutward = useCreateOutward()
   const eligibleBatches = useEligibleBatches()
@@ -60,6 +61,26 @@ export default function OutwardTab() {
   useEffect(() => {
     productApi.list().then((r) => setProducts(r.data || [])).catch(() => {})
   }, [])
+
+  const loadSessions = () => {
+    setLoadingSessions(true)
+    microbialSfgApi.outwardSessions.list().then((r) => setSessions(r.data || [])).catch(() => {}).finally(() => setLoadingSessions(false))
+  }
+  useEffect(() => { loadSessions() }, [])
+
+  // Auto-saves the in-progress issuance server-side on every change — if the
+  // user navigates away or closes the tab before confirming, the task stays
+  // resumable from the picker instead of silently vanishing (it was already
+  // flagged microbeIssueStarted the moment the task was opened).
+  useEffect(() => {
+    if (step !== 'issue' || !sessionId) return
+    microbialSfgApi.outwardSessions.upsert(sessionId, {
+      plan_task_id: selectedTask?.id || null,
+      header,
+      rows,
+    }).catch(() => {})
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [header, rows, sessionId])
 
   const setHeaderField = (k, v) => setHeader((p) => ({ ...p, [k]: v }))
 
@@ -106,15 +127,17 @@ export default function OutwardTab() {
       }
 
       const newRows = res.microbes.map((m) => newRow(m))
-      setHeader({
+      const newHeader = {
         ...EMPTY_HEADER,
         product_name: task.productName || '',
         di_number: task.diNo || '',
         batch_code: task.batchCode || '',
         order_qty_kg: task.qty != null ? String(task.qty) : '',
-      })
+      }
+      setHeader(newHeader)
       setRows(newRows)
       setSelectedTask(task)
+      setSessionId(Date.now().toString())
       setStep('issue')
 
       newRows.filter((r) => Number(r.required_cfu_per_g) > 0).forEach((r) => calculateRow(r, { silent: true }))
@@ -123,6 +146,28 @@ export default function OutwardTab() {
       setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, microbeIssueStarted: true } : t)))
     } catch (err) { alert(err.message) }
     finally { setChecking(false) }
+  }
+
+  // Picks up a session that was auto-saved when the page was left mid-issuance
+  // — same product/batch/rows/allocations exactly as they were, editable further.
+  const resumeSession = (s) => {
+    setHeader({ ...EMPTY_HEADER, ...s.header })
+    setRows((s.rows || []).map((r) => ({ ...r, id: r.id || `row-${++rid}` })))
+    setSelectedTask(tasks.find((t) => t.id === s.plan_task_id) || null)
+    setSessionId(s.id)
+    setStep('issue')
+  }
+
+  // Abandons a saved session entirely and frees the underlying task back up
+  // (if any) so it reappears as a fresh pending task in the picker.
+  const discardSession = async (s) => {
+    if (!confirm('Discard this in-progress issuance? This cannot be undone.')) return
+    await microbialSfgApi.outwardSessions.delete(s.id).catch(() => {})
+    setSessions((prev) => prev.filter((x) => x.id !== s.id))
+    if (s.plan_task_id) {
+      planTasksApi.update(s.plan_task_id, { microbeIssueStarted: false, microbeIssueStartedAt: null }).catch(() => {})
+      setTasks((prev) => prev.map((t) => (t.id === s.plan_task_id ? { ...t, microbeIssueStarted: false } : t)))
+    }
   }
 
   const updateAllocationQty = (rowId, inwardId, val) => {
@@ -186,8 +231,11 @@ export default function OutwardTab() {
     setAltPickerRow(null)
   }
 
+  // Leaving the issue screen (Change Task / Cancel) never deletes the saved
+  // session — it just navigates back, so the in-progress work stays resumable.
   const backToSelect = () => {
-    setStep('select'); setSelectedTask(null); setHeader(EMPTY_HEADER); setRows([])
+    setStep('select'); setSelectedTask(null); setHeader(EMPTY_HEADER); setRows([]); setSessionId(null)
+    loadSessions()
   }
 
   const readyRows = rows.filter((r) => r.microbe_code && r.calc && r.calc.allocations.length)
@@ -222,6 +270,7 @@ export default function OutwardTab() {
 
     try {
       const result = await createOutward.mutateAsync(payload)
+      if (sessionId) microbialSfgApi.outwardSessions.delete(sessionId).catch(() => {})
       alert(`Issued successfully — ${result.lines.length} batch pick(s) recorded for ${result.product_name}.`)
       backToSelect()
     } catch (err) { alert(err.message) }
@@ -236,6 +285,10 @@ export default function OutwardTab() {
         setTaskFilter={setTaskFilter}
         onSelectTask={selectTask}
         checking={checking}
+        sessions={sessions}
+        loadingSessions={loadingSessions}
+        onResumeSession={resumeSession}
+        onDiscardSession={discardSession}
       />
     )
   }
@@ -261,19 +314,19 @@ export default function OutwardTab() {
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-2">
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Product Name *</label>
-            <input className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50" value={header.product_name} readOnly />
+            <input className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none bg-gray-50 cursor-default" value={header.product_name} readOnly />
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Customer</label>
-            <input className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500" value={header.customer_name} onChange={(e) => setHeaderField('customer_name', e.target.value)} />
+            <input className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none bg-gray-50 cursor-default" value={header.customer_name} readOnly />
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">DI Number</label>
-            <input className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50" value={header.di_number} readOnly />
+            <input className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none bg-gray-50 cursor-default" value={header.di_number} readOnly />
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Batch Code</label>
-            <input className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50" value={header.batch_code} readOnly />
+            <input className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none bg-gray-50 cursor-default" value={header.batch_code} readOnly />
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Section</label>
@@ -281,7 +334,7 @@ export default function OutwardTab() {
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Order Qty (kg)</label>
-            <input className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50" type="number" min="0" step="any" value={header.order_qty_kg} readOnly />
+            <input className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none bg-gray-50 cursor-default" type="number" min="0" step="any" value={header.order_qty_kg} readOnly />
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Issuer Name</label>
@@ -300,7 +353,6 @@ export default function OutwardTab() {
             key={row.id}
             index={i}
             row={row}
-            microbes={microbes}
             canRemove={rows.length > 1}
             calculating={calculatingId === row.id}
             onChange={(patch) => updateRow(row.id, patch)}

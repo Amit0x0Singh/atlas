@@ -1,4 +1,4 @@
-import { X, Package, Hash, Layers, Droplets, Beaker, Clock } from 'lucide-react'
+import { X, Package, Hash, Layers, Droplets, Beaker, Clock, ArrowLeftRight } from 'lucide-react'
 import { Modal } from '../../../../../components/ui'
 
 const fmtDateTime = (d) => d
@@ -71,10 +71,12 @@ export default function RmDetailModal({ item, onClose }) {
       {/* Body */}
       <div className="px-6 py-5 max-h-[65vh] overflow-y-auto">
         <div className="grid grid-cols-2 gap-3">
-          <StatCard icon={Beaker}   label="UOM"          value={item.uom} />
-          <StatCard icon={Droplets} label="Density"      value={density} empty={density == null} />
-          <StatCard icon={Layers}   label="Category"     value={item.category}    empty={!item.category} />
-          <StatCard icon={Layers}   label="Sub Category" value={item.subCategory} empty={!item.subCategory} />
+          <StatCard icon={Beaker}        label="UOM"                value={item.uom} />
+          <StatCard icon={ArrowLeftRight} label="Operation UOM"     value={item.operationUom} empty={!item.operationUom} />
+          <StatCard icon={ArrowLeftRight} label="Conversion Required" value={item.conversionRequired ? 'Yes' : 'No'} />
+          <StatCard icon={Droplets}      label="Density"            value={density} empty={density == null} />
+          <StatCard icon={Layers}        label="Category"           value={item.category}    empty={!item.category} />
+          <StatCard icon={Layers}        label="Sub Category"       value={item.subCategory} empty={!item.subCategory} />
         </div>
       </div>
 

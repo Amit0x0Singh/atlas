@@ -18,7 +18,7 @@ export default function RmMaster() {
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing]   = useState(null)
   const [viewing, setViewing]   = useState(null)
-  const [form, setForm]         = useState({ itemCode: '', itemName: '', uom: 'KG', trackingType: 'PACK', category: '', subCategory: '', state: '', density: '' })
+  const [form, setForm]         = useState({ itemCode: '', itemName: '', uom: 'KG', operationUom: '', trackingType: 'PACK', category: '', subCategory: '', state: '', density: '', conversionRequired: false })
   const [msg, setMsg]           = useState('')
   const [page, setPage]         = useState(1)
   const [limit, setLimit]       = useState(15)
@@ -40,14 +40,15 @@ export default function RmMaster() {
 
   const openAdd = () => {
     setEditing(null)
-    setForm({ itemCode: '', itemName: '', uom: 'KG', trackingType: 'PACK', category: '', subCategory: '', state: '', density: '' })
+    setForm({ itemCode: '', itemName: '', uom: 'KG', operationUom: '', trackingType: 'PACK', category: '', subCategory: '', state: '', density: '', conversionRequired: false })
     setShowForm(true); setMsg('')
   }
   const openEdit = (item) => {
     setEditing(item)
     setForm({
-      itemCode: item.itemCode, itemName: item.itemName, uom: item.uom, trackingType: item.trackingType || 'PACK',
+      itemCode: item.itemCode, itemName: item.itemName, uom: item.uom, operationUom: item.operationUom || '', trackingType: item.trackingType || 'PACK',
       category: item.category || '', subCategory: item.subCategory || '', state: item.state || '', density: item.density ?? '',
+      conversionRequired: !!item.conversionRequired,
     })
     setShowForm(true); setMsg('')
   }
@@ -56,9 +57,10 @@ export default function RmMaster() {
     if (!form.itemCode || !form.itemName || !form.uom) { setMsg('All fields required'); return }
     setMsg('')
     const data = {
-      itemName: form.itemName, uom: form.uom, trackingType: form.trackingType,
+      itemName: form.itemName, uom: form.uom, operationUom: form.operationUom || '', trackingType: form.trackingType,
       category: form.category, subCategory: form.subCategory, state: form.state,
       density: form.state === 'LIQUID' ? form.density : '',
+      conversionRequired: form.conversionRequired,
     }
     try {
       if (editing) await updateRm.mutateAsync({ code: form.itemCode, data })

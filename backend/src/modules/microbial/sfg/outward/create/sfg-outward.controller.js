@@ -1,6 +1,28 @@
 import prisma from '../../../../../db.js'
 import { toSnakeRow } from '../../../../../utils/caseTransform.js'
 
+// Auto-saved on every header/row change while an issuance is in progress —
+// same role as upsertBomSession for Material Issue by BOM. `id` is client-
+// generated (once, when a task is first opened) so repeated saves just
+// update the same row instead of piling up duplicates.
+export const upsertOutwardSession = async (req, res) => {
+  const { id } = req.params
+  const { plan_task_id, header, rows } = req.body || {}
+  if (!id || !header || !rows)
+    return res.status(400).json({ success: false, error: 'id, header, rows required', code: 'VALIDATION_ERROR' })
+  try {
+    const data = { planTaskId: plan_task_id || null, header, rows }
+    const session = await prisma.microbialSfgOutwardSession.upsert({
+      where: { id },
+      create: { id, ...data },
+      update: data,
+    })
+    return res.json({ success: true, data: toSnakeRow(session) })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+  }
+}
+
 // Persists an issuance built from the (possibly user-edited) allocations the
 // client got back from POST /outward/preview. Quantities are re-validated
 // against live remaining_qty_kg inside the transaction — a stale preview

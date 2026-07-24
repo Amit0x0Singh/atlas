@@ -66,7 +66,16 @@ const getGrnDetail = async (req, res) => {
 
     if (packs.length === 0)
       return res.status(404).json({ success: false, error: 'No packs found for this invoice', code: 'NOT_FOUND' })
-   
+
+    // Which of the co-located companies (SOM Phytopharma / Agrilife / DVS)
+    // this shipment belongs to — recorded on the Gate Inward entry, matched
+    // back here by invoice no. so the GRN letterhead shows the right one.
+    const gateInward = await prisma.gateInward.findFirst({
+      where: { invoiceNo },
+      orderBy: { createdAt: 'desc' },
+      select: { companyName: true },
+    })
+
     const itemMap = {}
     for (const p of packs) {
       if (!itemMap[p.itemCode]) {
@@ -84,6 +93,7 @@ const getGrnDetail = async (req, res) => {
       success: true,
       data: {
         invoiceNo, supplier: packs[0].supplier || 'Unknown', receivedDate: packs[0].receivedDate,
+        company: gateInward?.companyName || null,
         items: Object.values(itemMap), allPacks: packs,
         totalPacks: packs.length, totalQty: packs.reduce((s, p) => s + Number(p.packQty), 0),
       }

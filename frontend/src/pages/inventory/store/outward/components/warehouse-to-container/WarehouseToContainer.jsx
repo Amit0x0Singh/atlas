@@ -1,28 +1,19 @@
-﻿import { useState, useCallback } from 'react'
+﻿import { useState } from 'react'
 import { containerApi, outwardApi, packsApi } from '../../../../../../api/inventory.js'
-import { useQrScanner } from '../../../../../../hooks/useQrScanner.js'
 import { Button, IconButton } from '../../../../../../components/ui'
-import { X, Camera, CameraOff } from 'lucide-react'
+import ScannerPanel from '../../../../../../components/ScannerPanel/ScannerPanel.jsx'
+import { X } from 'lucide-react'
 import './WarehouseToContainer.css'
 
 export default function WarehouseToContainer() {
   const [selectedPack, setPack]      = useState(null)   // the scanned/chosen bag
   const [container,    setContainer] = useState(null)   // auto-detected container
   const [availPacks,   setAvailPacks] = useState([])    // other available bags for same RM
-  const [packInput,    setPackInput] = useState('')
   const [qty,          setQty]       = useState('')
   const [loading,      setLoading]   = useState(false)
   const [submitting,   setSub]       = useState(false)
   const [error,        setError]     = useState('')
   const [success,      setSuccess]   = useState('')
-
-  // ─── QR scanner for the bag ─────────────────────────────────────────────
-  const onBagScan = useCallback((raw) => {
-    const id = raw.startsWith('PACK:') ? raw.slice(5) : raw
-    bagScanner.stop()
-    loadBag(id.trim())
-  }, [])
-  const bagScanner = useQrScanner(onBagScan)
 
   // ─── Load bag → auto-detect container ───────────────────────────────────
   const loadBag = async (packId) => {
@@ -88,7 +79,7 @@ export default function WarehouseToContainer() {
 
   const reset = () => {
     setPack(null); setContainer(null); setAvailPacks([]); setQty('')
-    setPackInput(''); setError(''); bagScanner.stop()
+    setError('')
   }
 
   const spaceLeft = container ? container.capacity - container.currentQty : 0
@@ -98,7 +89,6 @@ export default function WarehouseToContainer() {
 
       {error   && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm">{error}</div>}
       {success && <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-4 text-sm">{success}</div>}
-      {bagScanner.camError && <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded-lg mb-4 text-sm">{bagScanner.camError}</div>}
 
       {/* ─── Step 1: Scan bag — shown when no bag selected yet ─── */}
       {!selectedPack && (
@@ -107,46 +97,13 @@ export default function WarehouseToContainer() {
             Scan a bag QR code — the container will be detected automatically.
           </p>
 
-          {/* Camera */}
-          <div className={`bg-black rounded-xl overflow-hidden relative mb-4 wtc-camera-wrap ${bagScanner.active ? 'block' : 'hidden'}`}>
-            <video ref={bagScanner.videoRef} className="w-full h-full object-cover" playsInline muted />
-            <canvas ref={bagScanner.canvasRef} className="hidden" />
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="w-40 h-40 border-2 border-orange-400 rounded-lg" />
-            </div>
-            <div className="absolute bottom-2 left-0 right-0 text-center text-white text-xs bg-black/50 py-1">
-              Point at bag QR code
-            </div>
-          </div>
-
-          {/* Scan button */}
-          <Button
-            onClick={bagScanner.active ? bagScanner.stop : bagScanner.start}
-            variant={bagScanner.active ? 'danger' : 'warning'}
-            icon={bagScanner.active ? CameraOff : Camera}
-            fullWidth
-            className="mb-4">
-            {bagScanner.active ? 'Stop Camera' : 'Scan Bag QR'}
-          </Button>
-
-          {/* Manual entry */}
-          <div className="flex gap-2">
-            <input
-              value={packInput}
-              onChange={e => setPackInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && loadBag(packInput.trim())}
-              placeholder="Or enter pack ID manually…"
-              className="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 text-sm font-mono outline-none focus:ring-2 focus:ring-orange-400"
-            />
-            <Button
-              onClick={() => loadBag(packInput.trim())}
-              disabled={loading || !packInput.trim()}
-              loading={loading}
-              variant="secondary"
-              size="sm">
-              {loading ? 'Loading…' : 'Load'}
-            </Button>
-          </div>
+          <ScannerPanel
+            accent="orange"
+            onScan={(val) => loadBag((val.startsWith('PACK:') ? val.slice(5) : val).trim())}
+            scanHint="Point at bag QR code"
+            allowManualEntry={false}
+          />
+          {loading && <p className="text-xs text-gray-400 mt-2">Loading…</p>}
         </div>
       )}
 

@@ -4,11 +4,19 @@ import MetaField from '../meta-field/MetaField.jsx'
 import { Button } from '../../../../../../components/ui'
 import { Printer } from 'lucide-react'
 
-const COMPANY = {
-  name:     'SOM Phytopharma (India) Ltd',
-  address:  'Plot No 154/A5-1, SVCIE, IDA Bollaram,',
-  address2: 'Sangareddy Dist, Hyderabad, TS — 502325, India',
+// The three co-located companies material can be gate-inwarded under (see
+// frontend/src/pages/inventory/gate/data/companies.js) — same facility/
+// address, different legal entity + logo on the printed GRN.
+const ADDRESS = {
+  line1: 'Plot No 154/A5-1, SVCIE, IDA Bollaram,',
+  line2: 'Sangareddy Dist, Hyderabad, TS — 502325, India',
 }
+const COMPANY_INFO = {
+  'SOM Phytopharma': { name: 'SOM Phytopharma (India) Ltd', logo: '/som.png' },
+  'Agrilife':        { name: 'Agrilife',                    logo: '/agrilife.png' },
+  'DVS':             { name: 'DVS',                          logo: '/DVS.png' },
+}
+const DEFAULT_COMPANY_KEY = 'SOM Phytopharma'
 
 function grnNumber(grn) {
   return `GRN-${grn.invoiceNo?.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 10) || 'NOINV'}-${new Date(grn.createdAt).getFullYear()}`
@@ -40,6 +48,8 @@ export default function GrnDetail({ selected, detail, loading }) {
 
   if (!detail) return null
 
+  const company = COMPANY_INFO[detail.company] || COMPANY_INFO[DEFAULT_COMPANY_KEY]
+
   return (
     <div className="max-w-4xl">
       <div className="flex items-center justify-between mb-5">
@@ -57,10 +67,13 @@ export default function GrnDetail({ selected, detail, loading }) {
           {/* Letterhead */}
           <div className="gd-letterhead">
             <div className="gd-letterhead-inner">
-              <div>
-                <h1 className="gd-company-name">{COMPANY.name}</h1>
-                <p className="gd-company-addr">{COMPANY.address}</p>
-                <p className="gd-company-addr2">{COMPANY.address2}</p>
+              <div className="gd-company-block">
+                <img src={company.logo} alt={company.name} className="gd-company-logo" />
+                <div>
+                  <h1 className="gd-company-name">{company.name}</h1>
+                  <p className="gd-company-addr">{ADDRESS.line1}</p>
+                  <p className="gd-company-addr2">{ADDRESS.line2}</p>
+                </div>
               </div>
               <div className="gd-doc-label">
                 <div className="gd-doc-tag">DOCUMENT</div>

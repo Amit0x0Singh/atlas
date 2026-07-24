@@ -54,6 +54,20 @@ export default function RmForm({ editing, form, onChange, saving, msg, onSave, o
               </select>
             </div>
             <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Operation UOM</label>
+              <select
+                value={form.operationUom || ''}
+                onChange={e => onChange('operationUom', e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+              >
+                <option value="">— Same as UOM —</option>
+                {CANONICAL_UNITS.map(u => <option key={u}>{u}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Tracking Type *</label>
               <select
                 value={form.trackingType}
@@ -64,7 +78,23 @@ export default function RmForm({ editing, form, onChange, saving, msg, onSave, o
                 <option value="BULK">BULK — Location QR</option>
               </select>
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Conversion Required *</label>
+              <select
+                value={form.conversionRequired ? 'YES' : 'NO'}
+                onChange={e => onChange('conversionRequired', e.target.value === 'YES')}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+              >
+                <option value="NO">No</option>
+                <option value="YES">Yes</option>
+              </select>
+            </div>
           </div>
+          {form.conversionRequired && (
+            <p className="text-xs text-gray-400 -mt-2">
+              A conversion factor (Density, below) is applied between UOM and Operation UOM when issuing this item.
+            </p>
+          )}
 
           {form.trackingType === 'BULK' && (
             <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2 text-xs text-green-800">

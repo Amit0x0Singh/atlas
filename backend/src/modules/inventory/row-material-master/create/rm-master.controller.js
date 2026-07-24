@@ -4,7 +4,7 @@ import { padItemCode } from '../../../../utils/item-code.js'
 
 export const createRm = async (req, res) => {
   try {
-    const { itemName, uom, trackingType, category, subCategory, state, density } = req.body
+    const { itemName, uom, operationUom, trackingType, category, subCategory, state, density, conversionRequired } = req.body
     const rawItemCode = req.body.itemCode
     const itemCode = rawItemCode ? padItemCode(rawItemCode) : rawItemCode
     if (!itemCode || !itemName || !uom)
@@ -15,6 +15,12 @@ export const createRm = async (req, res) => {
     const canonicalUom = normalizeUom(uom)
     if (!CANONICAL_UNITS.includes(canonicalUom))
       return res.status(400).json({ success: false, error: `uom must convert to one of ${CANONICAL_UNITS.join(', ')} — got "${uom}"`, code: 'VALIDATION_ERROR' })
+    let canonicalOperationUom = null
+    if (operationUom) {
+      canonicalOperationUom = normalizeUom(operationUom)
+      if (!CANONICAL_UNITS.includes(canonicalOperationUom))
+        return res.status(400).json({ success: false, error: `operationUom must convert to one of ${CANONICAL_UNITS.join(', ')} — got "${operationUom}"`, code: 'VALIDATION_ERROR' })
+    }
     // Check both the padded and as-typed form — a pre-existing legacy row
     // saved before this padding rule (e.g. unpadded "177822") must still be
     // caught as a duplicate, not slip past because this request now checks
@@ -23,11 +29,12 @@ export const createRm = async (req, res) => {
     if (existing) return res.status(409).json({ success: false, error: 'Item code or name already exists', code: 'CONFLICT' })
     const item = await prisma.rmMaster.create({
       data: {
-        itemCode, itemName, uom: canonicalUom, trackingType: trackingType || 'PACK',
+        itemCode, itemName, uom: canonicalUom, operationUom: canonicalOperationUom, trackingType: trackingType || 'PACK',
         category: category || null,
         subCategory: subCategory || null,
         state: state || null,
         density: density ? parseFloat(density) : null,
+        conversionRequired: conversionRequired === true,
       }
     })
     return res.status(201).json({ success: true, data: item })

@@ -1,15 +1,13 @@
-import { Camera } from 'lucide-react'
-import { IconButton } from '../../../../../../../components/ui'
+import ScannerPanel from '../../../../../../../components/ScannerPanel/ScannerPanel.jsx'
 import StockShortageBanner from './StockShortageBanner.jsx'
 
 export default function IssuePanel({
   line, remaining, packs, containers, loadingRes,
-  scanInput, setScanInput, scanInputRef,
   scanErr, setScanErr,
   foundSource, setFoundSource,
   issueQty, setIssueQty,
   issuing, issueError,
-  onScanInput, onOpenScanner, onSubmit,
+  onScan, onSubmit,
   // context for purchase indent
   selProduct, batchQty, batchUom, batchRef, diNo,
 }) {
@@ -48,24 +46,12 @@ export default function IssuePanel({
             <label className="text-xs font-semibold text-gray-700 mb-1.5 block">
               Scan Pack or Container QR Code
             </label>
-            <div className="flex gap-2">
-              <IconButton icon={Camera} onClick={onOpenScanner} tooltip="Open camera scanner" variant="purple" size="md" />
-              <input
-                ref={scanInputRef}
-                value={scanInput}
-                onChange={e => { setScanInput(e.target.value); setScanErr(''); setFoundSource(null) }}
-                onKeyDown={e => { if (e.key === 'Enter' && scanInput.trim()) onScanInput(scanInput) }}
-                placeholder="Scan QR code or type Pack / Container ID..."
-                className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono outline-none focus:ring-2 focus:ring-indigo-400"
-              />
-              <button
-                type="button"
-                onClick={() => scanInput.trim() && onScanInput(scanInput)}
-                disabled={!scanInput.trim()}
-                className="px-3 py-2 text-xs font-semibold border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-40 transition-colors">
-                Find
-              </button>
-            </div>
+            <ScannerPanel
+              accent="indigo"
+              onScan={(val) => { setScanErr(''); setFoundSource(null); onScan(val) }}
+              scanHint="Point camera at pack or container QR"
+              allowManualEntry={false}
+            />
             <p className="text-xs text-gray-400 mt-1.5">
               Works with pack bags and containers — one scanner for both.
               Container QR must start with <span className="font-mono">CONT:</span>
@@ -163,17 +149,6 @@ export default function IssuePanel({
                   </p>
                 )}
               </div>
-            </div>
-          )}
-
-          {/* ── Prompt when nothing scanned yet ── */}
-          {!foundSource && !scanErr && !noStock && (
-            <div className="text-center py-4">
-              <button type="button" onClick={onOpenScanner}
-                className="flex items-center gap-2 mx-auto px-4 py-2 border border-indigo-300 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-50 transition-colors">
-                Open Camera Scanner
-              </button>
-              <p className="text-xs text-gray-400 mt-2">or type / scan the ID in the field above</p>
             </div>
           )}
         </div>

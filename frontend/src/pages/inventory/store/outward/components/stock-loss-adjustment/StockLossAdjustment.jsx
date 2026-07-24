@@ -1,8 +1,8 @@
-﻿import { useState, useCallback } from 'react'
+﻿import { useState } from 'react'
 import { outwardApi, packsApi } from '../../../../../../api/inventory.js'
-import { useQrScanner } from '../../../../../../hooks/useQrScanner.js'
 import { Button, IconButton } from '../../../../../../components/ui'
-import { X, Camera, CameraOff } from 'lucide-react'
+import ScannerPanel from '../../../../../../components/ScannerPanel/ScannerPanel.jsx'
+import { X } from 'lucide-react'
 import './StockLossAdjustment.css'
 
 
@@ -17,7 +17,6 @@ const REASONS = [
 
 export default function StockLossAdjustment() {
   const [pack,       setPack]       = useState(null)
-  const [packInput,  setPackInput]  = useState('')
   const [lossQty,    setLossQty]    = useState('')
   const [reason,     setReason]     = useState('')
   const [customReason, setCustomReason] = useState('')
@@ -25,14 +24,6 @@ export default function StockLossAdjustment() {
   const [submitting, setSub]        = useState(false)
   const [error,      setError]      = useState('')
   const [success,    setSuccess]    = useState('')
-
-  // ─── QR scanner ──────────────────────────────────────────────────────────
-  const onScan = useCallback((raw) => {
-    const id = raw.startsWith('PACK:') ? raw.slice(5) : raw
-    scanner.stop()
-    loadPack(id.trim())
-  }, [])
-  const scanner = useQrScanner(onScan)
 
   // ─── Load pack by ID ─────────────────────────────────────────────────────
   const loadPack = async (packId) => {
@@ -85,7 +76,7 @@ export default function StockLossAdjustment() {
 
   const reset = () => {
     setPack(null); setLossQty(''); setReason(''); setCustomReason('')
-    setPackInput(''); setError(''); scanner.stop()
+    setError('')
   }
 
   return (
@@ -93,7 +84,6 @@ export default function StockLossAdjustment() {
 
       {error   && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm">{error}</div>}
       {success && <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-4 text-sm">{success}</div>}
-      {scanner.camError && <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded-lg mb-4 text-sm">{scanner.camError}</div>}
 
       {/* ─── Step 1: Scan bag ─── */}
       {!pack && (
@@ -102,44 +92,13 @@ export default function StockLossAdjustment() {
             Scan the bag QR code to record a stock loss against that specific bag.
           </p>
 
-          {/* Camera */}
-          <div className={`bg-black rounded-xl overflow-hidden relative mb-4 sla-camera-wrap ${scanner.active ? 'block' : 'hidden'}`}>
-            <video ref={scanner.videoRef} className="w-full h-full object-cover" playsInline muted />
-            <canvas ref={scanner.canvasRef} className="hidden" />
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="w-40 h-40 border-2 border-red-400 rounded-lg" />
-            </div>
-            <div className="absolute bottom-2 left-0 right-0 text-center text-white text-xs bg-black/50 py-1">
-              Point at bag QR code
-            </div>
-          </div>
-
-          <Button
-            onClick={scanner.active ? scanner.stop : scanner.start}
-            variant={scanner.active ? 'danger' : 'danger-solid'}
-            icon={scanner.active ? CameraOff : Camera}
-            fullWidth
-            className="mb-4">
-            {scanner.active ? 'Stop Camera' : 'Scan Bag QR'}
-          </Button>
-
-          <div className="flex gap-2">
-            <input
-              value={packInput}
-              onChange={e => setPackInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && loadPack(packInput.trim())}
-              placeholder="Or enter pack ID manually…"
-              className="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 text-sm font-mono outline-none focus:ring-2 focus:ring-red-400"
-            />
-            <Button
-              onClick={() => loadPack(packInput.trim())}
-              disabled={loading || !packInput.trim()}
-              loading={loading}
-              variant="secondary"
-              size="sm">
-              {loading ? 'Loading…' : 'Load'}
-            </Button>
-          </div>
+          <ScannerPanel
+            accent="red"
+            onScan={(val) => loadPack((val.startsWith('PACK:') ? val.slice(5) : val).trim())}
+            scanHint="Point at bag QR code"
+            allowManualEntry={false}
+          />
+          {loading && <p className="text-xs text-gray-400 mt-2">Loading…</p>}
         </div>
       )}
 

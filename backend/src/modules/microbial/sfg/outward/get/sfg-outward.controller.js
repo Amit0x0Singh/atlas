@@ -76,6 +76,18 @@ export const listEligibleBatches = async (req, res) => {
   }
 }
 
+// In-progress issuance sessions (header + rows saved as the user fills the
+// form) — lets the picker show "resume" instead of letting a task vanish
+// the moment it's opened for issuance.
+export const listOutwardSessions = async (req, res) => {
+  try {
+    const sessions = await prisma.microbialSfgOutwardSession.findMany({ orderBy: { updatedAt: 'desc' } })
+    return res.json({ success: true, data: toSnakeRow(sessions) })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+  }
+}
+
 export const listSfgOutward = async (req, res) => {
   try {
     const { microbe_code, from, to } = req.query

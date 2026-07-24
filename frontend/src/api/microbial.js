@@ -45,6 +45,12 @@ export const microbialSfgApi = {
   containerLedger:    ()        => api.get('/microbial-sfg/stock-summary/container-ledger'),
   // Alt-container swap picker (Issuance)
   eligibleBatches:    (params)  => api.get('/microbial-sfg/outward/eligible-batches', { params }),
+  // In-progress issuance sessions — resumable if the page is left mid-issuance
+  outwardSessions: {
+    list:   ()         => api.get('/microbial-sfg/outward/sessions'),
+    upsert: (id, data) => api.put(`/microbial-sfg/outward/sessions/${encodeURIComponent(id)}`, data),
+    delete: (id)       => api.delete(`/microbial-sfg/outward/sessions/${encodeURIComponent(id)}`),
+  },
 }
 
 

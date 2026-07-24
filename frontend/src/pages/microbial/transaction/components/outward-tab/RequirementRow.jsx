@@ -2,12 +2,7 @@ import { Calculator, RefreshCw, Trash2, X } from 'lucide-react'
 import { Button } from '../../../../../components/ui'
 import { fmtCfu, fmtDate } from '../../utils/format.js'
 
-export default function RequirementRow({ index, row, microbes, canRemove, onChange, onCalculate, onRemove, onAllocationQtyChange, onAllocationRemove, onAllocationChange, calculating }) {
-  const handleMicrobeChange = (e) => {
-    const m = microbes.find((x) => x.microbeId === e.target.value)
-    onChange({ microbe_id: m?.microbeId || '', microbe_code: m?.microbeCode || '', microbe_name: m?.microbeName || '', calc: null })
-  }
-
+export default function RequirementRow({ index, row, canRemove, onChange, onCalculate, onRemove, onAllocationQtyChange, onAllocationRemove, onAllocationChange, calculating }) {
   const pickedTotal = row.calc ? row.calc.allocations.reduce((s, a) => s + Number(a.qty_issued_kg), 0) : 0
   const shortKg = row.required_qty_kg ? Math.max(0, Number(row.required_qty_kg) - pickedTotal) : 0
   const canCalc = row.microbe_code && Number(row.required_qty_kg) > 0 && Number(row.required_cfu_per_g) > 0
@@ -18,11 +13,10 @@ export default function RequirementRow({ index, row, microbes, canRemove, onChan
         <div className="w-6 h-6 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-1">{index + 1}</div>
         <div className="flex-1 grid grid-cols-1 sm:grid-cols-4 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Microbe *</label>
-            <select className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500" value={row.microbe_id} onChange={handleMicrobeChange}>
-              <option value="">— Select microbe —</option>
-              {microbes.map((m) => <option key={m.microbeId} value={m.microbeId}>{m.microbeName} ({m.microbeCode})</option>)}
-            </select>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Microbe</label>
+            <div className="w-full border border-gray-200 bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-700 truncate" title={`${row.microbe_name} (${row.microbe_code})`}>
+              {row.microbe_name} <span className="text-gray-400 font-mono text-xs">({row.microbe_code})</span>
+            </div>
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Required Qty (kg) *</label>

@@ -224,3 +224,20 @@ model MicrobialSfgOutwardLine {
 
   @@map("microbial_sfg_outward_line")
 }
+
+// Persists an in-progress Microbe Outward issuance (header + requirement
+// rows, including any FEFO allocations already calculated) keyed by a
+// client-generated id, mirroring BomIssueSession's role for Material Issue
+// by BOM — so navigating away or closing the tab mid-issuance never loses
+// work, and the task stays resumable instead of vanishing from the picker
+// once microbeIssueStarted is set.
+model MicrobialSfgOutwardSession {
+  id         String   @id
+  planTaskId String?  @map("plan_task_id")
+  header     Json
+  rows       Json
+  startedAt  DateTime @default(now()) @map("started_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@map("microbial_sfg_outward_session")
+}

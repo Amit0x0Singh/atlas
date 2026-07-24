@@ -1,6 +1,6 @@
 ﻿import { useState, useEffect } from "react";
 import { cpProfileApi } from "../../../../../api/sales.js";
-import { BLANK_ITEM } from "../../shared/constants.js";
+import { BLANK_ITEM, COMPANIES } from "../../shared/constants.js";
 import { suggestNextBatch, addDays, calcTotalCS } from "../../shared/utils.js";
 import OrderHeaderFields from "./components/OrderHeaderFields.jsx";
 import LineItemRow from "../line-item-row/LineItemRow.jsx";

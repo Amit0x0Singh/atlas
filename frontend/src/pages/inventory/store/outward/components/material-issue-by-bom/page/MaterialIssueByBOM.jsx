@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { outwardApi, containerApi } from '../../../../../../../api/inventory.js'
 import { recipeApi, productApi } from '../../../../../../../api/masters.js'
 import { planTasksApi } from '../../../../../../../api/production.js'
@@ -48,7 +48,6 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
   const [containers, setContainers] = useState([])
   const [loadingRes, setLoadingRes] = useState(false)
   // scan state
-  const [scanInput, setScanInput]   = useState('')
   const [scanErr, setScanErr]       = useState('')
   const [foundSource, setFoundSource] = useState(null)
   // foundSource: { type:'pack'|'container', id, availableQty, uom, lotNo?, bagNo?, supplier?, itemName? }
@@ -56,9 +55,6 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
   const [issuing, setIssuing]       = useState(false)
   const [issueError, setIssueError] = useState('')
   const [lineMsg, setLineMsg]       = useState({})
-  const [showScanner, setShowScanner] = useState(false)
-
-  const scanInputRef = useRef(null)
 
   // Load products
   useEffect(() => {
@@ -109,23 +105,17 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bomLines, sessionId])
 
-  // Auto-focus scan input when panel opens
-  useEffect(() => {
-    if (activeIdx !== null) {
-      const t = setTimeout(() => scanInputRef.current?.focus(), 80)
-      return () => clearTimeout(t)
-    }
-  }, [activeIdx])
-
   // ─── Load BOM ──────────────────────────────────────────────────────────────
   const loadBom = async () => {
     if (!selProduct || !batchQty || parseFloat(batchQty) <= 0) return
     setLoadingBom(true); setError('')
     try {
       const res = await recipeApi.list({ productCode: selProduct.productCode })
-      const raw = res.data || []
+      // Microbe ingredients are issued separately on the Microbial Transaction
+      // page (against the same recipe) — Store only handles raw materials here.
+      const raw = (res.data || []).filter(r => !r.isMicrobe)
       if (raw.length === 0) {
-        setError('No BOM found for this product. Add recipe lines in Recipe Master first.')
+        setError('No raw material BOM found for this product. Add recipe lines in Recipe Master first.')
         setLoadingBom(false); return
       }
       const batch = parseFloat(batchQty)
@@ -191,7 +181,9 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
     let cancelled = false
     recipeApi.list({ productCode: selProduct.productCode }).then(res => {
       if (cancelled) return
-      const current = res.data || []
+      // Same microbe exclusion as loadBom — a microbe added/edited in the
+      // recipe since this session started must not surface as BOM drift here.
+      const current = (res.data || []).filter(r => !r.isMicrobe)
       const currentByCode = new Map(current.map(r => [r.rmCode, r]))
       const sessionCodes  = new Set(bomLines.map(l => l.rmCode))
 
@@ -250,7 +242,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
   // ─── Load packs + containers silently (for scan matching only) ───────────
   const loadResources = useCallback(async (rmCode) => {
     setLoadingRes(true)
-    setScanInput(''); setScanErr(''); setFoundSource(null); setIssueQty(''); setIssueError('')
+    setScanErr(''); setFoundSource(null); setIssueQty(''); setIssueError('')
     try {
       const [packsRes, contsRes] = await Promise.allSettled([
         outwardApi.availablePacks(rmCode),
@@ -277,7 +269,6 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
   const handleScan = useCallback((rawValue) => {
     const val = rawValue.trim()
     if (!val) return
-    setScanInput(val)
     setScanErr('')
     setFoundSource(null)
     setIssueError('')
@@ -309,12 +300,6 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
 
     setScanErr(`"${val}" not found for ${line.rmName}. Scan the correct pack or container QR code.`)
   }, [bomLines, activeIdx, packs, containers])
-
-  // QR camera callback — closes modal then processes value
-  const onQRScan = useCallback((value) => {
-    setShowScanner(false)
-    handleScan(value)
-  }, [handleScan])
 
   // ─── Submit issue ────────────────────────────────────────────────────────
   const submitIssue = async () => {
@@ -353,7 +338,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
         if (updatedLines.filter(l => !l.orphaned).every(l => l.issued >= l.required - 0.001)) outwardApi.bomSessions.delete(sessionId).catch(() => {})
       } else {
         // More qty needed — reset scan, keep panel open
-        setScanInput(''); setFoundSource(null); setScanErr(''); setIssueQty(String(remaining.toFixed(3)))
+        setFoundSource(null); setScanErr(''); setIssueQty(String(remaining.toFixed(3)))
         await loadResources(line.rmCode)
       }
     } catch (e) { setIssueError(e.message) }
@@ -409,16 +394,9 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
       onOpenIssuePanel={openIssuePanel}
       onIssueAnother={() => { setStep('select'); setActiveIdx(null); setBomLines([]) }}
       lineMsg={lineMsg}
-      showScanner={showScanner}
-      onOpenScanner={() => setShowScanner(true)}
-      onCloseScanner={() => setShowScanner(false)}
-      onQRScan={onQRScan}
       packs={packs}
       containers={containers}
       loadingRes={loadingRes}
-      scanInput={scanInput}
-      setScanInput={setScanInput}
-      scanInputRef={scanInputRef}
       scanErr={scanErr}
       setScanErr={setScanErr}
       foundSource={foundSource}
@@ -427,7 +405,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
       setIssueQty={setIssueQty}
       issuing={issuing}
       issueError={issueError}
-      onScanInput={handleScan}
+      onScan={handleScan}
       onSubmit={submitIssue}
     />
   )

@@ -22,6 +22,10 @@ model RmMaster {
   itemCode     String   @id @map("item_code")
   itemName     String   @unique @map("item_name")
   uom          String
+  // Unit this item is actually consumed/issued in on the shop floor when it
+  // differs from the stock unit (uom) — e.g. stocked in KG but dosed in L.
+  // Left null when operations use the same unit as stock.
+  operationUom String?  @map("operation_uom")
   trackingType String   @default("PACK") @map("tracking_type") // PACK | BULK
   category     String?  @map("category")
   subCategory  String?  @map("sub_category")
@@ -30,6 +34,10 @@ model RmMaster {
   // vice versa) by converting through mass = density × volume. Only
   // meaningful for state = LIQUID; left null for solids/gases.
   density      Float?   @map("density")
+  // Whether uom -> operationUom needs a conversion factor (density) applied
+  // before issuance — flagged explicitly rather than just inferred from
+  // uom !== operationUom, since a store operator sets this by hand.
+  conversionRequired Boolean @default(false) @map("conversion_required")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 

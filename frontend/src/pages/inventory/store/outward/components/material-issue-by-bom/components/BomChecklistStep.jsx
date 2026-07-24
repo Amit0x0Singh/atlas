@@ -1,4 +1,3 @@
-import QRScanner from '../../../../../../../components/QRScanner/QRScanner.jsx'
 import { Button, BackButton } from '../../../../../../../components/ui'
 import IssuePanel from './IssuePanel.jsx'
 
@@ -7,22 +6,13 @@ export default function BomChecklistStep({
   bomLines, activeIdx, totalDone, totalRequired, progress,
   recipeDrift, onSyncRecipe, onBack, onOpenIssuePanel, onIssueAnother,
   lineMsg,
-  showScanner, onOpenScanner, onCloseScanner, onQRScan,
   packs, containers, loadingRes,
-  scanInput, setScanInput, scanInputRef, scanErr, setScanErr,
+  scanErr, setScanErr,
   foundSource, setFoundSource, issueQty, setIssueQty,
-  issuing, issueError, onScanInput, onSubmit,
+  issuing, issueError, onScan, onSubmit,
 }) {
   return (
     <>
-      {showScanner && (
-        <QRScanner
-          label="Scan Pack or Container QR Code"
-          onScan={onQRScan}
-          onClose={onCloseScanner}
-        />
-      )}
-
       <div className="p-4 md:p-6">
         {/* Header */}
         <div className="flex items-start justify-between mb-4 flex-wrap gap-3">
@@ -206,9 +196,6 @@ export default function BomChecklistStep({
                     packs={packs}
                     containers={containers}
                     loadingRes={loadingRes}
-                    scanInput={scanInput}
-                    setScanInput={setScanInput}
-                    scanInputRef={scanInputRef}
                     scanErr={scanErr}
                     setScanErr={setScanErr}
                     foundSource={foundSource}
@@ -217,8 +204,7 @@ export default function BomChecklistStep({
                     setIssueQty={setIssueQty}
                     issuing={issuing}
                     issueError={issueError}
-                    onScanInput={onScanInput}
-                    onOpenScanner={onOpenScanner}
+                    onScan={onScan}
                     onSubmit={onSubmit}
                     selProduct={selProduct}
                     batchQty={batchQty}
