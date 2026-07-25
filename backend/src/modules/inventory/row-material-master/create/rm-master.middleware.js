@@ -22,5 +22,7 @@ export const validateCreateRm = preprocess({
     subCategory:  { maxLength: 100 },
     state:        { enum: ['SOLID', 'LIQUID', 'GAS'] },
     density:      { positive: true },
+    lowStockLevel:  { positive: true },
+    highStockLevel: { positive: true },
   },
 })

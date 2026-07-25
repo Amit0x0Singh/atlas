@@ -13,9 +13,10 @@ const ADDRESS = {
 }
 const COMPANY_INFO = {
   'SOM Phytopharma': { name: 'SOM Phytopharma (India) Ltd', logo: '/som.png' },
-  'Agrilife':        { name: 'Agrilife',                    logo: '/agrilife.png' },
-  'DVS':             { name: 'DVS',                          logo: '/DVS.png' },
+  'Agrilife':        { name: 'AgriLife™ (India) Private Limited', logo: '/agrilife.png' },
+  'DVS':             { name: 'DVS BioLife Ltd',                          logo: '/DVS.png' },
 }
+
 const DEFAULT_COMPANY_KEY = 'SOM Phytopharma'
 
 function grnNumber(grn) {

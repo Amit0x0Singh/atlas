@@ -7,6 +7,7 @@ import './RmMaster.css'
 import { Button, BackButton, PageHeader } from '../../../../components/ui'
 import { getChips } from '../../packing/components/packing-constants/packingConstants.jsx'
 import RmTable from '../components/rm-table/page/RmTable.jsx'
+import RmStatCards from '../components/rm-table/components/RmStatCards.jsx'
 import RmForm  from '../components/rm-form/RmForm.jsx'
 import RmDetailModal from '../components/rm-detail-modal/RmDetailModal.jsx'
 
@@ -18,7 +19,7 @@ export default function RmMaster() {
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing]   = useState(null)
   const [viewing, setViewing]   = useState(null)
-  const [form, setForm]         = useState({ itemCode: '', itemName: '', uom: 'KG', operationUom: '', trackingType: 'PACK', category: '', subCategory: '', state: '', density: '', conversionRequired: false })
+  const [form, setForm]         = useState({ itemCode: '', itemName: '', uom: 'KG', operationUom: '', trackingType: 'PACK', category: '', subCategory: '', state: '', density: '', conversionRequired: false, lowStockLevel: '', highStockLevel: '' })
   const [msg, setMsg]           = useState('')
   const [page, setPage]         = useState(1)
   const [limit, setLimit]       = useState(15)
@@ -40,7 +41,7 @@ export default function RmMaster() {
 
   const openAdd = () => {
     setEditing(null)
-    setForm({ itemCode: '', itemName: '', uom: 'KG', operationUom: '', trackingType: 'PACK', category: '', subCategory: '', state: '', density: '', conversionRequired: false })
+    setForm({ itemCode: '', itemName: '', uom: 'KG', operationUom: '', trackingType: 'PACK', category: '', subCategory: '', state: '', density: '', conversionRequired: false, lowStockLevel: '', highStockLevel: '' })
     setShowForm(true); setMsg('')
   }
   const openEdit = (item) => {
@@ -49,6 +50,7 @@ export default function RmMaster() {
       itemCode: item.itemCode, itemName: item.itemName, uom: item.uom, operationUom: item.operationUom || '', trackingType: item.trackingType || 'PACK',
       category: item.category || '', subCategory: item.subCategory || '', state: item.state || '', density: item.density ?? '',
       conversionRequired: !!item.conversionRequired,
+      lowStockLevel: item.lowStockLevel ?? '', highStockLevel: item.highStockLevel ?? '',
     })
     setShowForm(true); setMsg('')
   }
@@ -61,6 +63,7 @@ export default function RmMaster() {
       category: form.category, subCategory: form.subCategory, state: form.state,
       density: form.state === 'LIQUID' ? form.density : '',
       conversionRequired: form.conversionRequired,
+      lowStockLevel: form.lowStockLevel, highStockLevel: form.highStockLevel,
     }
     try {
       if (editing) await updateRm.mutateAsync({ code: form.itemCode, data })
@@ -142,44 +145,48 @@ export default function RmMaster() {
         </>}
       />
 
-      <div className="p-6">
-      <RmTable
-        rmTotal={items.length}
-        packingTotal={packingItems.length}
-        packCount={packCount}
-        bulkCount={bulkCount}
-        visibleItems={visibleItems}
-        loading={loading || loadingPacking}
-        error={error}
-        page={page}
-        limit={limit}
-        filters={filters}
-        uomOptions={uomOptions}
-        filterType={filterType}
-        onFilterChange={setFilter}
-        onClearFilters={clearFilters}
-        onFilterType={t => { setFilterType(t); setPage(1) }}
-        onEdit={openEdit}
-        onDelete={del}
-        onViewPacking={goToPacking}
-        onRowClick={setViewing}
-        onPageChange={setPage}
-        onLimitChange={l => { setLimit(l); setPage(1) }}
-      />
-
-      {showForm && (
-        <RmForm
-          editing={editing}
-          form={form}
-          onChange={(field, val) => setForm(f => ({ ...f, [field]: val }))}
-          saving={saving}
-          msg={msg}
-          onSave={save}
-          onClose={() => setShowForm(false)}
+      <div className="p-6 space-y-5">
+        <RmStatCards
+          rmTotal={items.length}
+          packCount={packCount}
+          bulkCount={bulkCount}
+          packingTotal={packingItems.length}
+          loading={loading || loadingPacking}
         />
-      )}
 
-      <RmDetailModal item={viewing} onClose={() => setViewing(null)} />
+        <RmTable
+          visibleItems={visibleItems}
+          loading={loading || loadingPacking}
+          error={error}
+          page={page}
+          limit={limit}
+          filters={filters}
+          uomOptions={uomOptions}
+          filterType={filterType}
+          onFilterChange={setFilter}
+          onClearFilters={clearFilters}
+          onFilterType={t => { setFilterType(t); setPage(1) }}
+          onEdit={openEdit}
+          onDelete={del}
+          onViewPacking={goToPacking}
+          onRowClick={setViewing}
+          onPageChange={setPage}
+          onLimitChange={l => { setLimit(l); setPage(1) }}
+        />
+
+        {showForm && (
+          <RmForm
+            editing={editing}
+            form={form}
+            onChange={(field, val) => setForm(f => ({ ...f, [field]: val }))}
+            saving={saving}
+            msg={msg}
+            onSave={save}
+            onClose={() => setShowForm(false)}
+          />
+        )}
+
+        <RmDetailModal item={viewing} onClose={() => setViewing(null)} />
       </div>
     </div>
   )

@@ -1,4 +1,4 @@
-import { X, Package, Hash, Layers, Droplets, Beaker, Clock, ArrowLeftRight } from 'lucide-react'
+import { X, Package, Hash, Layers, Droplets, Beaker, Clock, ArrowLeftRight, TrendingDown, TrendingUp } from 'lucide-react'
 import { Modal } from '../../../../../components/ui'
 
 const fmtDateTime = (d) => d
@@ -37,6 +37,8 @@ export default function RmDetailModal({ item, onClose }) {
   const trackingColor = TRACKING_BADGE[item.trackingType || 'PACK']
   const stateColor = STATE_BADGE[item.state] || 'bg-gray-100 text-gray-600 ring-gray-200'
   const density = item.density != null && item.density !== '' ? `${item.density} kg/L` : null
+  const lowStock = item.lowStockLevel != null && item.lowStockLevel !== '' ? `${item.lowStockLevel} ${item.uom}` : null
+  const highStock = item.highStockLevel != null && item.highStockLevel !== '' ? `${item.highStockLevel} ${item.uom}` : null
 
   return (
     <Modal open={!!item} onClose={onClose} size="md">
@@ -77,6 +79,8 @@ export default function RmDetailModal({ item, onClose }) {
           <StatCard icon={Droplets}      label="Density"            value={density} empty={density == null} />
           <StatCard icon={Layers}        label="Category"           value={item.category}    empty={!item.category} />
           <StatCard icon={Layers}        label="Sub Category"       value={item.subCategory} empty={!item.subCategory} />
+          <StatCard icon={TrendingDown}  label="Low Stock Level"    value={lowStock}  empty={lowStock == null} />
+          <StatCard icon={TrendingUp}    label="High Stock Level"   value={highStock} empty={highStock == null} />
         </div>
       </div>
 

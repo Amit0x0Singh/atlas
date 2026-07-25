@@ -18,8 +18,12 @@ export default function RmTableRow({ item, onEdit, onDelete, onViewPacking, onRo
       className={`group hover:bg-blue-50/60 transition-colors ${!isPacking ? 'cursor-pointer' : ''}`}
       onClick={!isPacking ? () => onRowClick(item) : undefined}
     >
-      <td className="px-4 py-3 font-mono text-blue-700 font-medium whitespace-nowrap">{item.itemCode}</td>
-      <td className="px-4 py-3 text-gray-800">{item.itemName}</td>
+      <td className="px-4 py-3">
+        <div className="flex flex-col">
+          <span className="font-mono text-blue-700 font-medium text-xs">{item.itemCode}</span>
+          <span className="text-gray-800">{item.itemName}</span>
+        </div>
+      </td>
       <td className="px-4 py-3">
         <span className="bg-gray-100 px-2 py-0.5 rounded text-gray-700 text-xs font-medium">{item.uom}</span>
       </td>
@@ -56,6 +60,15 @@ export default function RmTableRow({ item, onEdit, onDelete, onViewPacking, onRo
       </td>
       <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
         {isPacking ? <span className="text-gray-300">—</span> : (item.density ?? '—')}
+      </td>
+      <td className="px-4 py-3 whitespace-nowrap">
+        {isPacking ? <span className="text-gray-300">—</span> : (
+          <span className="font-semibold">
+            <span className="text-red-600">{item.lowStockLevel ?? 0}</span>
+            <span className="text-gray-400 mx-1">/</span>
+            <span className="text-blue-600">{item.highStockLevel ?? 0}</span>
+          </span>
+        )}
       </td>
       <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
         {item.createdAt ? new Date(item.createdAt).toLocaleDateString('en-IN') : '—'}

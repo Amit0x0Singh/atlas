@@ -4,7 +4,7 @@ import { padItemCode } from '../../../../utils/item-code.js'
 
 export const createRm = async (req, res) => {
   try {
-    const { itemName, uom, operationUom, trackingType, category, subCategory, state, density, conversionRequired } = req.body
+    const { itemName, uom, operationUom, trackingType, category, subCategory, state, density, conversionRequired, lowStockLevel, highStockLevel } = req.body
     const rawItemCode = req.body.itemCode
     const itemCode = rawItemCode ? padItemCode(rawItemCode) : rawItemCode
     if (!itemCode || !itemName || !uom)
@@ -35,6 +35,8 @@ export const createRm = async (req, res) => {
         state: state || null,
         density: density ? parseFloat(density) : null,
         conversionRequired: conversionRequired === true,
+        lowStockLevel: lowStockLevel ? parseFloat(lowStockLevel) : null,
+        highStockLevel: highStockLevel ? parseFloat(highStockLevel) : null,
       }
     })
     return res.status(201).json({ success: true, data: item })

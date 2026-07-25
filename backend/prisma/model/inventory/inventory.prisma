@@ -38,6 +38,11 @@ model RmMaster {
   // before issuance — flagged explicitly rather than just inferred from
   // uom !== operationUom, since a store operator sets this by hand.
   conversionRequired Boolean @default(false) @map("conversion_required")
+  // Reorder thresholds (in uom) — lowStockLevel flags when stock needs
+  // replenishing, highStockLevel flags excess/overstock. Both optional;
+  // left null when this item isn't tracked against reorder levels.
+  lowStockLevel  Float?   @map("low_stock_level")
+  highStockLevel Float?   @map("high_stock_level")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 

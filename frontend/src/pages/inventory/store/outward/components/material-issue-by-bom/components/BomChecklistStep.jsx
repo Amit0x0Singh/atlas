@@ -206,11 +206,6 @@ export default function BomChecklistStep({
                     issueError={issueError}
                     onScan={onScan}
                     onSubmit={onSubmit}
-                    selProduct={selProduct}
-                    batchQty={batchQty}
-                    batchUom={batchUom}
-                    batchRef={batchRef}
-                    diNo={diNo}
                   />
                 )}
               </div>

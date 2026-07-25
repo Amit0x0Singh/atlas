@@ -8,8 +8,6 @@ export default function IssuePanel({
   issueQty, setIssueQty,
   issuing, issueError,
   onScan, onSubmit,
-  // context for purchase indent
-  selProduct, batchQty, batchUom, batchRef, diNo,
 }) {
   const totalAvailable   = packs.reduce((s, p) => s + (p.remainingQty || 0), 0)
                          + containers.reduce((s, c) => s + (c.currentQty || 0), 0)
@@ -27,8 +25,7 @@ export default function IssuePanel({
             <StockShortageBanner
               theme="amber"
               title={`No stock found for ${line.rmName}`}
-              message="No warehouse packs or containers have stock for this raw material. Raise a purchase indent so the purchasing team can procure it."
-              selProduct={selProduct} batchQty={batchQty} batchUom={batchUom} batchRef={batchRef} diNo={diNo}
+              message="No warehouse packs or containers have stock for this raw material."
             />
           )}
 
@@ -36,8 +33,7 @@ export default function IssuePanel({
             <StockShortageBanner
               theme="orange"
               title={`Stock insufficient for ${line.rmName}`}
-              message={<>Only <strong>{totalAvailable.toFixed(3)} {line.uom}</strong> available but <strong>{remaining} {line.uom}</strong> still needed. You can issue what's available now and raise an indent for the shortfall.</>}
-              selProduct={selProduct} batchQty={batchQty} batchUom={batchUom} batchRef={batchRef} diNo={diNo}
+              message={<>Only <strong>{totalAvailable.toFixed(3)} {line.uom}</strong> available but <strong>{remaining} {line.uom}</strong> still needed. You can issue what's available now.</>}
             />
           )}
 
