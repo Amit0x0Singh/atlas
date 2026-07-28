@@ -1,6 +1,6 @@
 import {
   CircleCheckBig, FlaskConical, Layers, GitBranch, Wrench, Building, Microscope, Printer,
-  ArrowDownToLine, ArrowUpFromLine, Repeat2, Ban, CircleX, TriangleAlert, Info,
+  ArrowDownToLine, ArrowUpFromLine, Repeat2, Ban, CircleX, Info,
 } from 'lucide-react'
 import ResultCard from '../result-card/ResultCard.jsx'
 
@@ -15,7 +15,7 @@ const CATEGORIES = [
   { key: 'productMaster',   label: 'Product Master',   icon: FlaskConical },
   { key: 'equipmentMaster', label: 'Equipment Master', icon: Wrench },
   { key: 'rmMaster',        label: 'RM Master',        icon: Layers },
-  { key: 'recipeBom',       label: 'Recipe / BOM',     icon: GitBranch, warningKeys: ['unmatchedRm', 'missingQtyOrUom', 'duplicateRecipeLineExtraRows', 'skippedMissingProductOrRm'] },
+  { key: 'recipeBom',       label: 'Recipe / BOM',     icon: GitBranch, warningKeys: ['unmatchedRm', 'duplicateRecipeLineExtraRows', 'skippedMissingProductOrRm'] },
   { key: 'printMaster',     label: 'Print Master',     icon: Printer },
   { key: 'inward',          label: 'Inward',           icon: ArrowDownToLine },
   { key: 'outward',         label: 'Outward',          icon: ArrowUpFromLine },
@@ -97,7 +97,7 @@ export default function ResultSummary({ result }) {
         <div className="mb-3 bg-gray-50 ring-1 ring-inset ring-gray-100 rounded-xl p-4 flex items-start gap-2">
           <Ban size={15} className="text-gray-400 shrink-0 mt-0.5" />
           <p className="text-gray-700 text-xs font-medium leading-relaxed">
-            {result.skippedMissingProductOrRm} row(s) were skipped entirely — blank Product Name and/or Raw Material. See the row-level warnings below for which ones.
+            {result.skippedMissingProductOrRm} row(s) were skipped entirely — blank Product Name and/or Recipe Item. See the row-level warnings below for which ones.
           </p>
         </div>
       )}
@@ -112,20 +112,6 @@ export default function ResultSummary({ result }) {
           </div>
           <p className="text-red-700 text-xs mt-1.5 ml-6">
             Add the missing RM(s) to RM Master with this exact name, then use <strong>Recipe DB → Fix RM Mapping</strong> to reconcile these "NaN" codes to the real item.
-          </p>
-        </div>
-      )}
-
-      {result.missingQtyOrUom > 0 && (
-        <div className="mb-3 bg-amber-50 ring-1 ring-inset ring-amber-100 rounded-xl p-4">
-          <div className="flex items-start gap-2">
-            <TriangleAlert size={15} className="text-amber-500 shrink-0 mt-0.5" />
-            <p className="text-amber-800 text-xs font-medium leading-relaxed">
-              {result.missingQtyOrUom} recipe row(s) had a blank or non-numeric Qty Per Unit and/or blank UOM — imported anyway instead of being skipped, with qty set to 0 and/or uom set to "NaN":
-            </p>
-          </div>
-          <p className="text-amber-700 text-xs mt-1.5 ml-6">
-            Open <strong>Recipe DB</strong> for the affected product(s) and fill in the correct qty/uom for any ingredient showing 0 or "NaN".
           </p>
         </div>
       )}

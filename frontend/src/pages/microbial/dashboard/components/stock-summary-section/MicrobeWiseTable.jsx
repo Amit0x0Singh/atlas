@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { stockStatusBadgeCls, fmtCfu, fmtDate } from '../../../transaction/utils/format.js'
+import { formatMeasurementString } from '../../../../../utils/measurement/formatMeasurement.js'
 
 export default function MicrobeWiseTable({ rows, onViewContainers }) {
   const [search, setSearch] = useState('')
@@ -40,7 +41,7 @@ export default function MicrobeWiseTable({ rows, onViewContainers }) {
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
-              <tr>{['Microbe', 'Code', 'Type', 'Containers', 'Balance (kg)', 'Batches', 'Avg CFU/g', 'Next Expiry', 'Status', ''].map((h) => (
+              <tr>{['Microbe', 'Code', 'Type', 'Containers', 'Balance', 'Batches', 'Avg CFU/g', 'Next Expiry', 'Status', ''].map((h) => (
                 <th key={h} className="text-left px-3 py-2 font-bold text-gray-500 uppercase tracking-wide bg-gray-50 border-b-2 border-gray-200 whitespace-nowrap">{h}</th>
               ))}</tr>
             </thead>
@@ -51,7 +52,7 @@ export default function MicrobeWiseTable({ rows, onViewContainers }) {
                   <td className="px-3 py-2 font-mono text-gray-600">{r.microbe_code}</td>
                   <td className="px-3 py-2"><span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 text-[10px] font-semibold">{r.microbe_type}</span></td>
                   <td className="px-3 py-2 text-center text-gray-700">{r.container_count}</td>
-                  <td className="px-3 py-2 font-bold text-gray-900">{r.total_balance_kg.toFixed(3)}</td>
+                  <td className="px-3 py-2 font-bold text-gray-900">{formatMeasurementString(r.total_balance_kg, 'KG')}</td>
                   <td className="px-3 py-2 text-center text-gray-700">{r.batch_count}</td>
                   <td className="px-3 py-2 font-mono text-gray-600">{fmtCfu(r.avg_cfu_per_g)}</td>
                   <td className="px-3 py-2 text-gray-600">{fmtDate(r.next_expiry)}</td>

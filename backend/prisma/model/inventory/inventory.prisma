@@ -32,9 +32,10 @@ model RmMaster {
   state        String?  @map("physical_state") // SOLID | LIQUID | GAS
   // kg per liter — lets a liquid item be purchased in KG and issued in L (or
   // vice versa) by converting through mass = density × volume. Only
-  // meaningful for state = LIQUID; left null for solids/gases.
+  // meaningful for state = LIQUID; left null for solids/gases. This is what
+  // the RM import sheet calls "Conversion Factor" — same value, same purpose.
   density      Float?   @map("density")
-  // Whether uom -> operationUom needs a conversion factor (density) applied
+  // Whether uom -> operationUom needs density applied as a conversion factor
   // before issuance — flagged explicitly rather than just inferred from
   // uom !== operationUom, since a store operator sets this by hand.
   conversionRequired Boolean @default(false) @map("conversion_required")

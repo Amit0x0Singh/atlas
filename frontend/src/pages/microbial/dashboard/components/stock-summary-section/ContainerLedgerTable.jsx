@@ -4,6 +4,7 @@ import { Button } from '../../../../../components/ui'
 import { stockStatusBadgeCls, fmtDate } from '../../../transaction/utils/format.js'
 import { exportCsv } from '../../utils/exportCsv.js'
 import { useReactivateContainer } from '../../../../../hooks/microbial/useMicrobialStorage.js'
+import { formatMeasurementString } from '../../../../../utils/measurement/formatMeasurement.js'
 
 export default function ContainerLedgerTable({ rows, filterSeed }) {
   const [expanded, setExpanded] = useState(false)
@@ -41,9 +42,9 @@ export default function ContainerLedgerTable({ rows, filterSeed }) {
     { label: 'Type', value: (r) => r.microbe_type },
     { label: 'Location', value: (r) => (r.inactive ? r.inactive_location : r.location) },
     { label: 'Batches', value: (r) => r.batch_count },
-    { label: 'Balance (kg)', value: (r) => r.balance_kg.toFixed(4) },
-    { label: 'Total In', value: (r) => r.total_in_kg.toFixed(3) },
-    { label: 'Total Out', value: (r) => r.total_out_kg.toFixed(3) },
+    { label: 'Balance', value: (r) => formatMeasurementString(r.balance_kg, 'KG') },
+    { label: 'Total In', value: (r) => formatMeasurementString(r.total_in_kg, 'KG') },
+    { label: 'Total Out', value: (r) => formatMeasurementString(r.total_out_kg, 'KG') },
     { label: 'Next Expiry', value: (r) => r.next_expiry ? fmtDate(r.next_expiry) : '' },
     { label: 'Status', value: (r) => (r.inactive ? 'Inactive' : r.status) },
   ])
@@ -87,7 +88,7 @@ export default function ContainerLedgerTable({ rows, filterSeed }) {
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
-                  <tr>{['Container', 'Microbe', 'Type', 'Location', 'Batches', 'Balance (kg)', 'Total In', 'Total Out', 'Next Expiry', 'Status', ''].map((h) => (
+                  <tr>{['Container', 'Microbe', 'Type', 'Location', 'Batches', 'Balance', 'Total In', 'Total Out', 'Next Expiry', 'Status', ''].map((h) => (
                     <th key={h} className="text-left px-3 py-2 font-bold text-gray-500 uppercase tracking-wide bg-gray-50 border-b-2 border-gray-200 whitespace-nowrap">{h}</th>
                   ))}</tr>
                 </thead>
@@ -102,9 +103,9 @@ export default function ContainerLedgerTable({ rows, filterSeed }) {
                       <td className="px-3 py-2"><span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 text-[10px] font-semibold">{r.microbe_type}</span></td>
                       <td className="px-3 py-2 text-gray-500">{r.inactive ? `${r.inactive_location || '—'} (freed)` : (r.location || '—')}</td>
                       <td className="px-3 py-2 text-center text-gray-700">{r.batch_count}</td>
-                      <td className="px-3 py-2 font-bold text-gray-900">{r.balance_kg.toFixed(4)}</td>
-                      <td className="px-3 py-2 text-gray-700">{r.total_in_kg.toFixed(3)}</td>
-                      <td className="px-3 py-2 text-gray-700">{r.total_out_kg.toFixed(3)}</td>
+                      <td className="px-3 py-2 font-bold text-gray-900">{formatMeasurementString(r.balance_kg, 'KG')}</td>
+                      <td className="px-3 py-2 text-gray-700">{formatMeasurementString(r.total_in_kg, 'KG')}</td>
+                      <td className="px-3 py-2 text-gray-700">{formatMeasurementString(r.total_out_kg, 'KG')}</td>
                       <td className="px-3 py-2 text-gray-600">{fmtDate(r.next_expiry)}</td>
                       <td className="px-3 py-2"><span className={stockStatusBadgeCls(r.status)}>{r.status}</span></td>
                       <td className="px-3 py-2">

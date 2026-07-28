@@ -11,8 +11,8 @@ const TEMPLATE_SHEETS = [
   { name: 'Microbe Master',   columns: ['Microbe Name', 'UOM'] },
   { name: 'Product Master',   columns: ['Product Name', 'Plant Name'] },
   { name: 'Equipment Master', columns: ['Equipment Name', 'Working Volume', 'Operation', 'Plant'] },
-  { name: 'RM Master',        columns: ['Item Code', 'Item Name', 'UOM', 'Category', 'Sub Category'] },
-  { name: 'Recipe BOM',       columns: ['Product Name', 'Raw Material', 'Qty Per Unit', 'UOM'] },
+  { name: 'RM Master',        columns: ['Item Name', 'Item Code', 'Category', 'Sub-Category', 'Inventory UOM', 'Operational UOM', 'Conversion Required', 'Conversion Factor'] },
+  { name: 'Recipe BOM',       columns: ['Plant', 'Product UOM', 'Product Name', 'Recipe Items', 'Qty (Per Kg of Product)', 'Recipe UOM', 'Microbe', 'CFU/g'] },
 ]
 
 export function downloadImportTemplate() {

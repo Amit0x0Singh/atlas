@@ -29,7 +29,7 @@ export default function RmTable({
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-700 whitespace-nowrap">Item</th>
-                <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-700 whitespace-nowrap">UOM</th>
+                <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-700 whitespace-nowrap">Inv. UOM</th>
                 <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-700 whitespace-nowrap">Opr. UOM</th>
                 <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-700 whitespace-nowrap">Pack Type</th>
                 <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-700 whitespace-nowrap">Category</th>

@@ -88,6 +88,18 @@ function getRoleType(concCfu) {
   return 'MICROBE'
 }
 
+// A Recipe/BOM sheet (Product + Recipe Item/Raw Material + Qty columns) can
+// also carry a bare "Microbe" Yes/No flag column — which, on its own, is
+// exactly what the Microbe Master column-signature fallback below looks for.
+// Without this check, a recipe sheet gets *also* misread as a Microbe Master
+// sheet, treating unrelated columns (e.g. Product Name) as microbe names.
+function isRecipeShapedHeaders(headers) {
+  const hasProd = headers.some(h => h.includes('product'))
+  const hasItem = headers.some(h => h === 'rawmaterial' || (h.includes('raw') && h.includes('material')) || h.includes('ingredient') || h.includes('recipeitem'))
+  const hasQty = headers.some(h => h.includes('qty') || h.includes('quantity'))
+  return hasProd && hasItem && hasQty
+}
+
 const nextRmCode = async (existingCodes) => {
   const allCodes = await prisma.rmMaster.findMany({ select: { itemCode: true } })
   const dbNums = allCodes.map(p => parseInt(p.itemCode.replace(/\D/g, ''))).filter(n => !isNaN(n))
@@ -126,7 +138,7 @@ export const previewImport = async (req, res) => {
       else {
         // Column-based BOM detection (product + raw material + qty)
         const hasProd = headers.some(h => h.includes('product'))
-        const hasRawMat = headers.some(h => h === 'rawmaterial' || (h.includes('raw') && h.includes('material')) || h.includes('ingredient'))
+        const hasRawMat = headers.some(h => h === 'rawmaterial' || (h.includes('raw') && h.includes('material')) || h.includes('ingredient') || h.includes('recipeitem'))
         const hasQty = headers.some(h => h.includes('qty') || h.includes('quantity'))
         if (hasProd && hasRawMat && hasQty) {
           detectedAs[name] = fileHasBom ? 'Recipe / BOM (auto-detected — filename match)' : 'Recipe / BOM (auto-detected by columns)'
@@ -219,6 +231,7 @@ export const executeImport = async (req, res) => {
         const rows = XLSX.utils.sheet_to_json(wb.Sheets[s], { defval: '' })
         if (!rows.length) return false
         const headers = Object.keys(rows[0]).map(k => k.toLowerCase().replace(/[^a-z0-9]/g, ''))
+        if (isRecipeShapedHeaders(headers)) return false
         return headers.some(h => h.includes('microbename')) || headers.includes('microbe')
       })
     }
@@ -357,14 +370,34 @@ export const executeImport = async (req, res) => {
         try {
           const itemCode = col(row, 'itemcode', 'item code', 'item_code', 'code', 'rm code', 'material code', 'mat code', 'part no', 'partno', 'sr no', 'srno', 'no')
           const itemName = col(row, 'itemname', 'item name', 'item_name', 'name', 'rm name', 'material name', 'description', 'desc', 'particulars', 'material')
-          const uom = col(row, 'uom', 'unit', 'unit of measure', 'unit of meas') || 'KG'
-          const category = colExact(row, 'category') || null
-          const subCategory = col(row, 'subcategory', 'sub category', 'sub_category', 'sub-category') || null
-          if (!itemCode || !itemName) continue
+          // Item Name + Item Code are the only hard requirements — everything
+          // else below defaults instead of failing, per the agreed import
+          // contract for this sheet.
+          const category = colExact(row, 'category') || 'None'
+          const subCategory = col(row, 'subcategory', 'sub category', 'sub_category', 'sub-category') || 'None'
+          // "Inventory UOM" and "Operational UOM" both contain "uom" as a
+          // substring, and Inventory UOM sits in an earlier column — matching
+          // the full phrase first (falling back to a bare "UOM" header for
+          // older single-uom-column sheets) keeps the two apart, same fix as
+          // Product UOM / Recipe UOM in the Recipe import above.
+          const inventoryUomRaw = col(row, 'inventory uom', 'inventoryuom') || colExact(row, 'uom') || col(row, 'unit', 'unit of measure', 'unit of meas')
+          const uom = inventoryUomRaw || 'NOS'
+          const operationalUomRaw = col(row, 'operational uom', 'operationaluom', 'operation uom', 'operationuom')
+          const operationUom = operationalUomRaw || 'NOS'
+          const conversionRequiredRaw = col(row, 'conversion required', 'conversionrequired')
+          const conversionRequired = /^(y|yes|true|1)$/i.test((conversionRequiredRaw || 'no').trim())
+          // "Conversion Factor" on this sheet IS density (kg per liter) — the
+          // same field the RM Master UI already exposes, used to convert a
+          // liquid item between KG and L at issuance. Not a separate concept.
+          const density = safeNum(col(row, 'conversion factor', 'conversionfactor'))
+          if (!itemCode || !itemName) {
+            results.errors.push(`⛔ Skipped row — missing ${!itemName ? 'Item Name' : ''}${!itemName && !itemCode ? ' and ' : ''}${!itemCode ? 'Item Code' : ''} (name: "${itemName || ''}", code: "${itemCode || ''}")`)
+            continue
+          }
           await prisma.rmMaster.upsert({
             where: { itemCode },
-            create: { itemCode, itemName, uom, category, subCategory },
-            update: { itemName, uom, category, subCategory }
+            create: { itemCode, itemName, uom, operationUom, category, subCategory, conversionRequired, density },
+            update: { itemName, uom, operationUom, category, subCategory, conversionRequired, density }
           })
           results.rmMaster++
         } catch (e) { results.errors.push(`RM row: ${e.message}`) }
@@ -386,7 +419,7 @@ export const executeImport = async (req, res) => {
           if (!rows.length) return false
           const hdrs = Object.keys(rows[0]).map(k => k.toLowerCase().replace(/[^a-z0-9]/g, ''))
           return hdrs.some(h => h.includes('product')) &&
-                 hdrs.some(h => h === 'rawmaterial' || (h.includes('raw') && h.includes('material')) || h.includes('ingredient')) &&
+                 hdrs.some(h => h === 'rawmaterial' || (h.includes('raw') && h.includes('material')) || h.includes('ingredient') || h.includes('recipeitem')) &&
                  hdrs.some(h => h.includes('qty') || h.includes('quantity'))
         })
         if (recipeSheet) results.errors.push(`ℹ️ BOM sheet auto-detected from filename: "${recipeSheet}" (tip: name the sheet tab "BOM" next time)`)
@@ -401,7 +434,7 @@ export const executeImport = async (req, res) => {
         if (!rows.length) return false
         const hdrs = Object.keys(rows[0]).map(k => k.toLowerCase().replace(/[^a-z0-9]/g, ''))
         return hdrs.some(h => h.includes('product')) &&
-               hdrs.some(h => h === 'rawmaterial' || (h.includes('raw') && h.includes('material')) || h.includes('ingredient')) &&
+               hdrs.some(h => h === 'rawmaterial' || (h.includes('raw') && h.includes('material')) || h.includes('ingredient') || h.includes('recipeitem')) &&
                hdrs.some(h => h.includes('qty') || h.includes('quantity'))
       })
       if (recipeSheet) results.errors.push(`ℹ️ BOM sheet auto-detected by columns: "${recipeSheet}" (tip: name the sheet tab "BOM" next time)`)
@@ -459,28 +492,51 @@ export const executeImport = async (req, res) => {
 
       for (const row of rows) {
         try {
-          const productName = col(row, 'productname', 'product name', 'product', 'finished good', 'fg name')
-          const rmName = col(row, 'rawmaterial', 'raw material', 'rm name', 'material name', 'ingredient', 'component name', 'component', 'rm')
-          // Product Name + Raw Material are the only hard requirements — a row
+          // Bare 'product' is deliberately not a col() substring key here — it
+          // would also match this same sheet's "Product UOM" column (which
+          // contains "product" too) and leak a unit like "kg" in as the
+          // product name whenever Product Name itself was left blank.
+          // colExact still allows a plain "Product" header (no other column
+          // normalizes to exactly that) without that risk.
+          const productName = col(row, 'productname', 'product name', 'finished good', 'fg name') || colExact(row, 'product')
+          // "Recipe Items" is this sheet format's ingredient-name column —
+          // checked alongside the older "Raw Material"/"Ingredient" headers
+          // so both formats resolve to the same field.
+          const rmName = col(row, 'recipeitems', 'recipe items', 'rawmaterial', 'raw material', 'rm name', 'material name', 'ingredient', 'component name', 'component', 'rm')
+          // Product Name + Recipe Item are the only hard requirements — a row
           // missing either genuinely can't be placed in a recipe and is skipped.
-          // Qty Per Unit / UOM being blank or unparseable (e.g. "q.s") must NOT
-          // drop the row — that used to silently lose ingredients like
-          // "Williopsis saturnus" that have a name but no numeric dose yet.
-          // safeNum() already floors blank/non-numeric qty to 0, which reads as
-          // an obvious "needs a value" flag in the BOM editor; UOM gets the same
-          // "NaN" placeholder convention already used for unmatched RM codes.
+          // Everything else below has an explicit default instead of being
+          // left blank/flagged, per the agreed import contract for this sheet.
           const qtyPerUnit = safeNum(col(row, 'qty', 'qtyperunit', 'qty per unit', 'quantity', 'qty/unit', 'qty per kg'))
-          const uom = col(row, 'uom', 'unit', 'unit of measure') || 'NaN'
-          // "unit" is deliberately not a fallback key here — it substring-matches
-          // "Qty/Unit"/"Qty Per Unit" headers on this same sheet and previously
-          // leaked a quantity value (e.g. "0.14") into the product's plant field.
+          // "Product UOM" and "Recipe UOM" both contain "uom" as a substring,
+          // and Product UOM sits in an earlier column — a plain col(row,'uom')
+          // lookup would grab Product UOM's value for the recipe line instead.
+          // Matching the full "recipe uom" phrase first (falling back to a
+          // bare "UOM" header for older single-uom-column sheets) keeps the
+          // two apart.
+          const recipeUomRaw = col(row, 'recipe uom', 'recipeuom') || colExact(row, 'uom') || col(row, 'unit', 'unit of measure')
+          const uom = recipeUomRaw || 'NOS'
+          const productUomRaw = col(row, 'product uom', 'productuom')
+          let canonicalProductUom = null
+          if (productUomRaw) {
+            const normalized = normalizeUom(productUomRaw)
+            if (CANONICAL_UNITS.includes(normalized)) canonicalProductUom = normalized
+            else results.errors.push(`⚠️ Product "${productName || '?'}": unrecognized Product UOM "${productUomRaw}" — left unset`)
+          }
           const plantRaw = col(row, 'plant', 'location', 'section')
           const section = normalizeRecipePlant(plantRaw)
+          // Explicit "Microbe" Yes/No column is the source of truth for this
+          // sheet format; the older Conc/CFU-presence heuristic (getRoleType)
+          // is kept as a fallback OR so pre-existing sheets without a Microbe
+          // column still classify correctly.
+          const microbeFlag = colExact(row, 'microbe') || col(row, 'is microbe', 'ismicrobe')
+          const isMicrobe = /^(y|yes|true|1)$/i.test((microbeFlag || 'no').trim())
+          const cfuPerG = safeNum(col(row, 'cfu/g', 'cfug', 'cfu per g', 'cfu'))
           const concCfu = col(row, 'conc', 'cfu', 'concentration', 'conccfu', 'concfcu')
-          const roleType = getRoleType(concCfu)
+          const roleType = (isMicrobe || getRoleType(concCfu)) ? 'MICROBE' : 'INGREDIENT'
           if (!productName || !rmName) {
             results.skippedMissingProductOrRm = (results.skippedMissingProductOrRm || 0) + 1
-            results.errors.push(`⛔ Skipped row — missing ${!productName ? 'Product Name' : ''}${!productName && !rmName ? ' and ' : ''}${!rmName ? 'Raw Material' : ''} (product: "${productName || ''}", rm: "${rmName || ''}")`)
+            results.errors.push(`⛔ Skipped row — missing ${!productName ? 'Product Name' : ''}${!productName && !rmName ? ' and ' : ''}${!rmName ? 'Recipe Item' : ''} (product: "${productName || ''}", item: "${rmName || ''}")`)
             continue
           }
 
@@ -493,12 +549,17 @@ export const executeImport = async (req, res) => {
             // No code to honor here — recipe sheets never carry one, so the
             // DB assigns a PR00001-style code the same way the direct Product
             // Master import path does above.
-            product = await prisma.productMaster.create({ data: { productName, plant: normalizePlant(section) } })
+            product = await prisma.productMaster.create({ data: { productName, plant: normalizePlant(section), uom: canonicalProductUom } })
             productsByName[productName.toLowerCase()] = product
             results.productMaster++
-          } else if (section && !product.plant.includes(section)) {
-            product = await prisma.productMaster.update({ where: { productCode: product.productCode }, data: { plant: { push: section } } })
-            productsByName[productName.toLowerCase()] = product
+          } else {
+            const productUpdate = {}
+            if (section && !product.plant.includes(section)) productUpdate.plant = { push: section }
+            if (!product.uom && canonicalProductUom) productUpdate.uom = canonicalProductUom
+            if (Object.keys(productUpdate).length) {
+              product = await prisma.productMaster.update({ where: { productCode: product.productCode }, data: productUpdate })
+              productsByName[productName.toLowerCase()] = product
+            }
           }
 
           // RM: exact name match only (case-insensitive, trimmed) — no fuzzy
@@ -529,8 +590,8 @@ export const executeImport = async (req, res) => {
           const finalRoleType = roleType || 'INGREDIENT'
           await prisma.recipeDb.upsert({
             where: { productCode_recipeNo_rmCode: { productCode: product.productCode, recipeNo: 1, rmCode } },
-            create: { productCode: product.productCode, productName: product.productName, rmCode, rmName, qtyPerUnit, uom, roleType: finalRoleType },
-            update: { qtyPerUnit, uom, productName: product.productName, rmName, roleType: finalRoleType }
+            create: { productCode: product.productCode, productName: product.productName, rmCode, rmName, qtyPerUnit, uom, roleType: finalRoleType, isMicrobe, requiredCfu: cfuPerG },
+            update: { qtyPerUnit, uom, productName: product.productName, rmName, roleType: finalRoleType, isMicrobe, requiredCfu: cfuPerG }
           })
 
           // Last occurrence of a duplicate key wins here, matching the
@@ -543,8 +604,6 @@ export const executeImport = async (req, res) => {
           const prevOccurrences = touchedRecipeRows.get(dupKey)?.occurrences || 0
           touchedRecipeRows.set(dupKey, {
             productName, rmName, rmCode, unmatched,
-            missingQtyOrUom: qtyPerUnit <= 0 || uom === 'NaN',
-            qtyPerUnit, uom,
             occurrences: prevOccurrences + 1,
           })
         } catch (e) { results.errors.push(`Recipe row: ${e.message}`) }
@@ -556,10 +615,6 @@ export const executeImport = async (req, res) => {
         if (v.unmatched) {
           results.unmatchedRm = (results.unmatchedRm || 0) + 1
           results.errors.push(`❌ RM not found: "${v.rmName}" (product: ${v.productName}) — imported with item code "${v.rmCode}"; add it to RM Master with this exact name, then use Fix RM Mapping to reconcile`)
-        }
-        if (v.missingQtyOrUom) {
-          results.missingQtyOrUom = (results.missingQtyOrUom || 0) + 1
-          results.errors.push(`⚠️ Missing qty/uom: "${v.rmName}" (product: ${v.productName}) — imported with qty=${v.qtyPerUnit}, uom="${v.uom}"; fill in the correct value in Recipe Master`)
         }
         // A source row count > 1 for the same product+ingredient means the
         // sheet itself repeats that line — recipe_db can only hold one qty
@@ -719,7 +774,7 @@ export const executeImport = async (req, res) => {
     return res.json({
       success: true,
       data: results,
-      message: `Import complete — Suppliers: ${results.supplierMaster}, Microbes: ${results.microbeMaster}, Products: ${results.productMaster}, Equipment: ${results.equipmentMaster}, RM: ${results.rmMaster}, Recipe/BOM: ${results.recipeBom}${results.missingQtyOrUom ? ` (${results.missingQtyOrUom} with missing qty/uom)` : ''}, Customer Profiles: ${results.customerProfiles || 0}, Packs: ${results.printMaster}, Inward: ${results.inward}, Outward: ${results.outward}`
+      message: `Import complete — Suppliers: ${results.supplierMaster}, Microbes: ${results.microbeMaster}, Products: ${results.productMaster}, Equipment: ${results.equipmentMaster}, RM: ${results.rmMaster}, Recipe/BOM: ${results.recipeBom}, Customer Profiles: ${results.customerProfiles || 0}, Packs: ${results.printMaster}, Inward: ${results.inward}, Outward: ${results.outward}`
     })
   } catch (e) {
     console.error(e)
