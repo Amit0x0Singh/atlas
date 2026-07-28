@@ -7,7 +7,7 @@ import BomRow from '../components/BomRow.jsx'
 import BomRowEditModal from '../components/BomRowEditModal.jsx'
 import './BomEditor.css'
 
-export default function BomEditor({ selectedProduct, bomRows, loadId, rmList, productList = [], saving, msg, onAddRow, onSaveAll, onUpdateRow, onSelectRm, onRemoveRow }) {
+export default function BomEditor({ selectedProduct, bomRows, loadId, rmList, productList = [], microbeList = [], saving, msg, onAddRow, onSaveAll, onUpdateRow, onSelectRm, onRemoveRow }) {
   // Only one row is ever being edited at a time, via the modal — it owns all
   // of its own search/draft state, so this just needs to know which row.
   const [editingIdx, setEditingIdx] = useState(null)
@@ -19,6 +19,7 @@ export default function BomEditor({ selectedProduct, bomRows, loadId, rmList, pr
   useEffect(() => { setEditingIdx(null) }, [loadId])
 
   const productByCode = useMemo(() => new Map(productList.map(p => [p.productCode, p])), [productList])
+  const microbeByCode = useMemo(() => new Map(microbeList.map(m => [m.microbeCode, m])), [microbeList])
 
   const openEdit = (idx) => setEditingIdx(idx)
   const closeEdit = () => setEditingIdx(null)
@@ -27,6 +28,9 @@ export default function BomEditor({ selectedProduct, bomRows, loadId, rmList, pr
   // code, so the readonly Item Code cell can flag it as an SFG rather than
   // implying it's a raw material.
   const isProductCode = (code) => !!code && productByCode.has(code)
+  // Same idea for Microbe Master codes (mc00001…) — used as a fallback so
+  // older rows saved before isMicrobe existed still get recognized by code.
+  const isMicrobeCode = (code) => !!code && microbeByCode.has(code)
 
   if (!selectedProduct) {
     return (
@@ -77,11 +81,12 @@ export default function BomEditor({ selectedProduct, bomRows, loadId, rmList, pr
             <thead className="bg-slate-800 text-white">
               <tr>
                 <th className="text-left px-3 py-3 font-semibold w-[4%]">#</th>
-                <th className="text-left px-3 py-3 font-semibold w-[34%]">Item Name</th>
-                <th className="text-left px-3 py-3 font-semibold w-[16%]">Item Code</th>
-                <th className="text-right px-3 py-3 font-semibold w-[14%]">Qty</th>
-                <th className="text-left px-3 py-3 font-semibold w-[16%]">Role</th>
-                <th className="text-center px-3 py-3 font-semibold w-[16%]">Action</th>
+                <th className="text-left px-3 py-3 font-semibold w-[28%]">Item Name</th>
+                <th className="text-left px-3 py-3 font-semibold w-[14%]">Item Code</th>
+                <th className="text-right px-3 py-3 font-semibold w-[11%]">Qty</th>
+                <th className="text-right px-3 py-3 font-semibold w-[13%]">CFU/g</th>
+                <th className="text-left px-3 py-3 font-semibold w-[15%]">Role</th>
+                <th className="text-center px-3 py-3 font-semibold w-[15%]">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -91,6 +96,7 @@ export default function BomEditor({ selectedProduct, bomRows, loadId, rmList, pr
                   row={row}
                   idx={idx}
                   isProductCode={isProductCode}
+                  isMicrobeCode={isMicrobeCode}
                   onEdit={openEdit}
                   onRemoveRow={onRemoveRow}
                 />
@@ -131,7 +137,7 @@ export default function BomEditor({ selectedProduct, bomRows, loadId, rmList, pr
                         return <div key={uom}>{friendly.value} <span className="text-xs text-amber-700">{friendly.unit}</span></div>
                       })}
                     </td>
-                    <td colSpan={2} />
+                    <td colSpan={3} />
                   </tr>
                 </tfoot>
               )
@@ -161,6 +167,7 @@ export default function BomEditor({ selectedProduct, bomRows, loadId, rmList, pr
         isProductCode={isProductCode}
         rmList={rmList}
         productList={productList}
+        microbeList={microbeList}
         onUpdateRow={onUpdateRow}
         onSelectRm={onSelectRm}
       />

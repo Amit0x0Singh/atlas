@@ -20,7 +20,12 @@ export const bulkSaveRecipe = async (req, res) => {
         return res.status(400).json({ success: false, error: `Row for ${r.rmName}: ${e.message}`, code: 'VALIDATION_ERROR' })
       }
       const recipeNo = r.recipeNo || 1
-      const data = { productCode: r.productCode, productName: r.productName, recipeNo, rmName: r.rmName, qtyPerUnit: canonical.qty, uom: canonical.uom, roleType: r.roleType || 'INGREDIENT' }
+      const data = {
+        productCode: r.productCode, productName: r.productName, recipeNo, rmName: r.rmName,
+        qtyPerUnit: canonical.qty, uom: canonical.uom, roleType: r.roleType || 'INGREDIENT',
+        isMicrobe: !!r.isMicrobe, microbeCode: r.microbeCode || null,
+        requiredCfu: r.requiredCfu != null && r.requiredCfu !== '' ? parseFloat(r.requiredCfu) : null,
+      }
 
       if (r.id) {
         // Editing an existing row: if the corrected name now resolves to a

@@ -7,10 +7,11 @@ import BomEditor         from '../components/bom-editor/page/BomEditor.jsx'
 import ReconcileModal    from '../components/reconcile-modal/ReconcileModal.jsx'
 import { useProducts } from '../../../../hooks/masters/useProducts.js'
 import { useRmMaster } from '../../../../hooks/inventory/useRmMaster.js'
+import { useMicrobes } from '../../../../hooks/masters/useMicrobes.js'
 import { useRecipe, useBulkSaveRecipe, useDeleteRecipeRow } from '../../../../hooks/masters/useRecipes.js'
 import { queryKeys } from '../../../../lib/queryKeys.js'
 
-const EMPTY_ROW = () => ({ id: null, rmCode: '', rmName: '', qtyPerUnit: '', uom: 'KG', roleType: 'INGREDIENT', _dirty: true })
+const EMPTY_ROW = () => ({ id: null, rmCode: '', rmName: '', qtyPerUnit: '', uom: 'KG', roleType: 'INGREDIENT', isMicrobe: false, microbeCode: null, requiredCfu: '', _dirty: true })
 
 export default function RecipeDB() {
   const [selectedProduct, setSelectedProduct] = useState(null)
@@ -31,6 +32,7 @@ export default function RecipeDB() {
   const qc = useQueryClient()
   const { data: productList = [], isLoading: productsLoading } = useProducts()
   const { data: rmList = [] } = useRmMaster()
+  const { data: microbeList = [] } = useMicrobes()
   const loading = productsLoading
   const recipeQuery = useRecipe(selectedProduct?.productCode)
   const bulkSaveRecipe = useBulkSaveRecipe()
@@ -60,16 +62,28 @@ export default function RecipeDB() {
     setBomRows(prev => prev.map((r, i) => i === idx ? { ...r, [field]: value, _dirty: true } : r))
   }
 
-  // `picked` is either an RM Master row ({ itemCode, itemName, uom }) or a
-  // Product Master row ({ productCode, productName }) — a recipe component
-  // can legitimately be an SFG (semi-finished good) used as an ingredient,
-  // in which case its code lives in Product Master, not RM Master.
+  // `picked` is an RM Master row ({ itemCode, itemName, uom }), a Product
+  // Master row ({ productCode, productName }) — a recipe component can
+  // legitimately be an SFG (semi-finished good) used as an ingredient, in
+  // which case its code lives in Product Master, not RM Master — or a
+  // Microbe Master row ({ microbeCode, microbeName, uom }).
   const selectRm = (idx, picked, kind = 'rm') => {
-    const code = kind === 'product' ? picked.productCode : picked.itemCode
-    const name = kind === 'product' ? picked.productName : picked.itemName
-    setBomRows(prev => prev.map((r, i) =>
-      i === idx ? { ...r, rmCode: code, rmName: name, uom: kind === 'product' ? r.uom : picked.uom, _dirty: true } : r
-    ))
+    const code = kind === 'product' ? picked.productCode : kind === 'microbe' ? picked.microbeCode : picked.itemCode
+    const name = kind === 'product' ? picked.productName : kind === 'microbe' ? picked.microbeName : picked.itemName
+    setBomRows(prev => prev.map((r, i) => {
+      if (i !== idx) return r
+      if (kind === 'microbe') {
+        return { ...r, rmCode: code, rmName: name, roleType: 'MICROBE', isMicrobe: true, microbeCode: code, _dirty: true }
+      }
+      // Re-picking a plain RM/product on a row that used to point at a
+      // microbe leaves it no longer actually microbe-linked — clear the
+      // stale flags instead of letting them keep pointing at the old microbe.
+      return {
+        ...r, rmCode: code, rmName: name, uom: kind === 'product' ? r.uom : picked.uom,
+        roleType: r.roleType === 'MICROBE' ? 'INGREDIENT' : r.roleType,
+        isMicrobe: false, microbeCode: null, _dirty: true,
+      }
+    }))
   }
 
   const addRow = () => setBomRows(prev => [...prev, EMPTY_ROW()])
@@ -108,6 +122,9 @@ export default function RecipeDB() {
         rmCode: r.rmCode, rmName: r.rmName,
         qtyPerUnit: r.qtyPerUnit, uom: r.uom,
         roleType: r.roleType || 'INGREDIENT',
+        isMicrobe: r.isMicrobe || false,
+        microbeCode: r.microbeCode || null,
+        requiredCfu: r.requiredCfu !== '' && r.requiredCfu != null ? r.requiredCfu : null,
       }))
       const res = await bulkSaveRecipe.mutateAsync(payload)
       setMsg({ type: 'success', text: `✅ ${res.saved} rows saved` })
@@ -142,6 +159,7 @@ export default function RecipeDB() {
           loadId={loadId}
           rmList={rmList}
           productList={productList}
+          microbeList={microbeList}
           saving={bulkSaveRecipe.isPending}
           msg={msg}
           onAddRow={addRow}

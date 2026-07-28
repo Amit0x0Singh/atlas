@@ -117,6 +117,9 @@ export default function ReconcileModal({ onClose, onFixed }) {
                                 {s.kind === 'product' && (
                                   <span className="text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-200 rounded px-1.5 py-0.5 ml-2 align-middle">SFG · Product Master</span>
                                 )}
+                                {s.kind === 'microbe' && (
+                                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-1.5 py-0.5 ml-2 align-middle">MICROBE · Microbe Master</span>
+                                )}
                                 <span className="font-mono text-xs text-indigo-600 ml-2">{s.itemCode}</span>
                               </div>
                               <span className={`text-xs px-2 py-0.5 rounded border font-semibold ${CONFIDENCE_STYLES[s.color]}`}>

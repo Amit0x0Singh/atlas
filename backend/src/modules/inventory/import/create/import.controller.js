@@ -452,6 +452,15 @@ export const executeImport = async (req, res) => {
       const rmsByName = {}
       const existingRms = await prisma.rmMaster.findMany()
       existingRms.forEach(r => { rmsByName[r.itemName.toLowerCase()] = r })
+      // A "Recipe Item" isn't always a raw material — it can be a microbe
+      // (biological ingredient, code lives in Microbe Master) or another
+      // product used as a semi-finished good (code lives in Product Master).
+      // Previously only RM Master was checked here, so every microbe row
+      // fell through to the "unmatched" NaN-placeholder path even though the
+      // microbe genuinely existed — this map lets those resolve properly.
+      const microbesByName = {}
+      const existingMicrobes = await prisma.microbeMaster.findMany()
+      existingMicrobes.forEach(m => { microbesByName[m.microbeName.toLowerCase()] = m })
 
       // Every recipe row must land in the DB — even one recipe_db has a
       // @@unique([productCode, recipeNo, rmCode]) constraint, so a product with
@@ -562,7 +571,7 @@ export const executeImport = async (req, res) => {
             }
           }
 
-          // RM: exact name match only (case-insensitive, trimmed) — no fuzzy
+          // Exact name match only (case-insensitive, trimmed) — no fuzzy
           // matching here. Fuzzy matching risks silently assigning the WRONG
           // item code (seen in testing: "Totally Fake Ingredient Alpha" fuzzy-
           // matched "Alpha Amylase- Liquid" at 80% confidence — clearly not
@@ -573,11 +582,29 @@ export const executeImport = async (req, res) => {
           // the same product) instead of being silently dropped, so 100% of
           // BOM lines still make it into recipe_db, reconcilable later via
           // Fix RM Mapping.
+          //
+          // Checked in this order: Microbe Master first — an actual name
+          // match there is a stronger, authoritative signal that the row is
+          // a microbe than the manually-typed "Microbe" Yes/No column, so it
+          // wins even if that column was left blank/No. Then RM Master, then
+          // Product Master (the ingredient is itself an SFG built from
+          // another BOM). Only if none of the three match does the row fall
+          // back to a "NaN" placeholder.
           const rm = rmsByName[rmName.toLowerCase()]
+          const microbeMatch = microbesByName[rmName.toLowerCase()]
+          const sfgMatch = productsByName[rmName.toLowerCase()]
           let rmCode
-          const unmatched = !rm
-          if (rm) {
+          let matchedMicrobeCode = null
+          let resolvedIsMicrobe = isMicrobe
+          const unmatched = !rm && !microbeMatch && !sfgMatch
+          if (microbeMatch) {
+            rmCode = microbeMatch.microbeCode
+            matchedMicrobeCode = microbeMatch.microbeCode
+            resolvedIsMicrobe = true
+          } else if (rm) {
             rmCode = rm.itemCode
+          } else if (sfgMatch && sfgMatch.productCode !== product.productCode) {
+            rmCode = sfgMatch.productCode
           } else {
             // Reuse the same placeholder on a re-import of the same file,
             // instead of minting a fresh NaN-n every time.
@@ -587,11 +614,11 @@ export const executeImport = async (req, res) => {
             rmCode = existingNanRow ? existingNanRow.rmCode : await nextNanCode(product.productCode)
           }
 
-          const finalRoleType = roleType || 'INGREDIENT'
+          const finalRoleType = (resolvedIsMicrobe || getRoleType(concCfu)) ? 'MICROBE' : (roleType || 'INGREDIENT')
           await prisma.recipeDb.upsert({
             where: { productCode_recipeNo_rmCode: { productCode: product.productCode, recipeNo: 1, rmCode } },
-            create: { productCode: product.productCode, productName: product.productName, rmCode, rmName, qtyPerUnit, uom, roleType: finalRoleType, isMicrobe, requiredCfu: cfuPerG },
-            update: { qtyPerUnit, uom, productName: product.productName, rmName, roleType: finalRoleType, isMicrobe, requiredCfu: cfuPerG }
+            create: { productCode: product.productCode, productName: product.productName, rmCode, rmName, qtyPerUnit, uom, roleType: finalRoleType, isMicrobe: resolvedIsMicrobe, microbeCode: matchedMicrobeCode, requiredCfu: cfuPerG },
+            update: { qtyPerUnit, uom, productName: product.productName, rmName, roleType: finalRoleType, isMicrobe: resolvedIsMicrobe, microbeCode: matchedMicrobeCode, requiredCfu: cfuPerG }
           })
 
           // Last occurrence of a duplicate key wins here, matching the
@@ -614,7 +641,7 @@ export const executeImport = async (req, res) => {
       for (const v of touchedRecipeRows.values()) {
         if (v.unmatched) {
           results.unmatchedRm = (results.unmatchedRm || 0) + 1
-          results.errors.push(`❌ RM not found: "${v.rmName}" (product: ${v.productName}) — imported with item code "${v.rmCode}"; add it to RM Master with this exact name, then use Fix RM Mapping to reconcile`)
+          results.errors.push(`❌ Ingredient not found in RM Master, Microbe Master, or Product Master: "${v.rmName}" (product: ${v.productName}) — imported with item code "${v.rmCode}"; add it to the correct master with this exact name, then use Fix RM Mapping to reconcile`)
         }
         // A source row count > 1 for the same product+ingredient means the
         // sheet itself repeats that line — recipe_db can only hold one qty

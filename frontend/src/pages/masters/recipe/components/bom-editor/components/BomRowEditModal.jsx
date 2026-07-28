@@ -27,7 +27,7 @@ function matchUomOption(rawUom) {
 // Esc all just discard the draft, so the popup behaves like a real
 // edit-then-commit dialog instead of live-editing the row underneath it.
 export default function BomRowEditModal({
-  open, onClose, row, idx, isProductCode, rmList = [], productList = [],
+  open, onClose, row, idx, isProductCode, rmList = [], productList = [], microbeList = [],
   onUpdateRow, onSelectRm,
 }) {
   const [draft, setDraft] = useState(null)
@@ -40,7 +40,7 @@ export default function BomRowEditModal({
   // (there aren't any today, but future-proof) can't clobber in-progress edits.
   useEffect(() => {
     if (open && row) {
-      setDraft({ rmCode: row.rmCode, rmName: row.rmName, uom: matchUomOption(row.uom), qtyPerUnit: row.qtyPerUnit, roleType: row.roleType })
+      setDraft({ rmCode: row.rmCode, rmName: row.rmName, uom: matchUomOption(row.uom), qtyPerUnit: row.qtyPerUnit, roleType: row.roleType, requiredCfu: row.requiredCfu ?? '' })
       setSearch(row.rmName || '')
       setDropOpen(false)
       setPickedHit(null)
@@ -57,13 +57,24 @@ export default function BomRowEditModal({
     ...productList
       .filter((p) => !q || p.productName.toLowerCase().includes(q) || p.productCode.toLowerCase().includes(q))
       .map((p) => ({ kind: 'product', code: p.productCode, name: p.productName, raw: p })),
+    ...microbeList
+      .filter((m) => !q || m.microbeName.toLowerCase().includes(q) || m.microbeCode.toLowerCase().includes(q))
+      .map((m) => ({ kind: 'microbe', code: m.microbeCode, name: m.microbeName, uom: m.uom, raw: m })),
   ]
 
   const handleSelectHit = (hit) => {
     setSearch(hit.name)
     setDropOpen(false)
     setPickedHit(hit)
-    setDraft((d) => ({ ...d, rmName: hit.name, rmCode: hit.code, uom: hit.kind === 'product' ? d.uom : matchUomOption(hit.uom || d.uom) }))
+    setDraft((d) => ({
+      ...d,
+      rmName: hit.name,
+      rmCode: hit.code,
+      uom: hit.kind === 'product' || hit.kind === 'microbe' ? d.uom : matchUomOption(hit.uom || d.uom),
+      // Picking an actual microbe unambiguously means this row's role is
+      // Microbe/CFU — no reason to make the user also flip the Role dropdown.
+      roleType: hit.kind === 'microbe' ? 'MICROBE' : (d.roleType === 'MICROBE' ? 'INGREDIENT' : d.roleType),
+    }))
   }
 
   const handleDone = () => {
@@ -71,7 +82,19 @@ export default function BomRowEditModal({
     else if (draft.rmName !== row.rmName) onUpdateRow(idx, 'rmName', draft.rmName)
     if (String(draft.qtyPerUnit) !== String(row.qtyPerUnit)) onUpdateRow(idx, 'qtyPerUnit', draft.qtyPerUnit)
     if (draft.uom !== row.uom) onUpdateRow(idx, 'uom', draft.uom)
-    if (draft.roleType !== row.roleType) onUpdateRow(idx, 'roleType', draft.roleType)
+    if (draft.roleType !== row.roleType) {
+      onUpdateRow(idx, 'roleType', draft.roleType)
+      // Role flipped away from Microbe without re-picking an item from the
+      // search (pickedHit already handles the microbe-link fields when a
+      // fresh item was selected) — clear the now-stale microbe link.
+      if (draft.roleType !== 'MICROBE' && !pickedHit && row.isMicrobe) {
+        onUpdateRow(idx, 'isMicrobe', false)
+        onUpdateRow(idx, 'microbeCode', null)
+      }
+    }
+    const draftCfu = draft.requiredCfu === '' ? null : draft.requiredCfu
+    const rowCfu = row.requiredCfu ?? null
+    if (String(draftCfu) !== String(rowCfu)) onUpdateRow(idx, 'requiredCfu', draftCfu)
     onClose()
   }
 
@@ -105,6 +128,9 @@ export default function BomRowEditModal({
                     {hit.kind === 'product' && (
                       <span className="text-[9px] font-bold text-blue-600 bg-blue-50 border border-blue-200 rounded px-1 py-0.5 ml-2 align-middle">SFG</span>
                     )}
+                    {hit.kind === 'microbe' && (
+                      <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-1 py-0.5 ml-2 align-middle">MICROBE</span>
+                    )}
                     <span className="text-gray-400 text-xs ml-2">{hit.code}</span>
                     {hit.uom && <span className="text-gray-300 text-xs ml-1">· {hit.uom}</span>}
                   </button>
@@ -117,9 +143,12 @@ export default function BomRowEditModal({
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Item Code</label>
             <div className="relative">
               <input value={draft.rmCode} readOnly
-                className={`w-full border border-gray-200 bg-gray-50 rounded-lg px-3 py-2 text-sm font-mono text-blue-700 outline-none ${isProductCode(draft.rmCode) ? 'pr-12' : ''}`} />
+                className={`w-full border border-gray-200 bg-gray-50 rounded-lg px-3 py-2 text-sm font-mono text-blue-700 outline-none ${isProductCode(draft.rmCode) || draft.roleType === 'MICROBE' ? 'pr-16' : ''}`} />
               {isProductCode(draft.rmCode) && (
                 <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-bold text-blue-600 bg-blue-50 border border-blue-200 rounded px-1 py-0.5" title="This code comes from Product Master (SFG), not RM Master">SFG</span>
+              )}
+              {draft.roleType === 'MICROBE' && (
+                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-1 py-0.5" title="This code comes from Microbe Master">MICROBE</span>
               )}
             </div>
           </div>
@@ -149,6 +178,16 @@ export default function BomRowEditModal({
               {ROLE_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
             </select>
           </div>
+
+          {draft.roleType === 'MICROBE' && (
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">CFU / g</label>
+              <input type="number" step="any" min="0" value={draft.requiredCfu}
+                onChange={(e) => setDraft((d) => ({ ...d, requiredCfu: e.target.value }))}
+                placeholder="e.g. 500000000"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-400" />
+            </div>
+          )}
         </div>
 
         <div className="flex justify-end gap-3 mt-6">

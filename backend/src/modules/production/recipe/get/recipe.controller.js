@@ -30,21 +30,24 @@ export const listRecipeProducts = async (req, res) => {
 // reconcile suggestions below) checks both.
 export const checkRmMapping = async (req, res) => {
   try {
-    const [validRms, validProducts] = await Promise.all([
+    const [validRms, validProducts, validMicrobes] = await Promise.all([
       prisma.rmMaster.findMany({ select: { itemCode: true, itemName: true } }),
       prisma.productMaster.findMany({ select: { productCode: true, productName: true } }),
+      prisma.microbeMaster.findMany({ select: { microbeCode: true, microbeName: true } }),
     ])
     const validRmCodes      = new Set(validRms.map(r => r.itemCode))
     const validProductCodes = new Set(validProducts.map(p => p.productCode))
+    const validMicrobeCodes = new Set(validMicrobes.map(m => m.microbeCode))
     const recipeCombos = await prisma.recipeDb.findMany({ distinct: ['rmCode'], select: { rmCode: true, rmName: true } })
     const matched = [], unmatched = []
     for (const r of recipeCombos) {
-      if (validRmCodes.has(r.rmCode) || validProductCodes.has(r.rmCode)) {
+      if (validRmCodes.has(r.rmCode) || validProductCodes.has(r.rmCode) || validMicrobeCodes.has(r.rmCode)) {
         matched.push({ ...r, status: 'ok' })
       } else {
         const candidates = [
           ...validRms.map(rm => ({ itemCode: rm.itemCode, itemName: rm.itemName, kind: 'rm' })),
           ...validProducts.map(p => ({ itemCode: p.productCode, itemName: p.productName, kind: 'product' })),
+          ...validMicrobes.map(m => ({ itemCode: m.microbeCode, itemName: m.microbeName, kind: 'microbe' })),
         ]
         const scored = candidates.map(c => { const res = findBestRmMatch(r.rmName, [c]); return res ? { ...c, score: res.score, method: res.method } : null }).filter(Boolean).sort((a, b) => b.score - a.score).slice(0, 3)
         const suggestions = scored.map(s => { const cl = confidenceLabel(s.score); return { itemCode: s.itemCode, itemName: s.itemName, kind: s.kind, score: s.score, pct: Math.round(s.score * 100), confidence: cl.label, color: cl.color } })

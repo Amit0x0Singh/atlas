@@ -15,12 +15,28 @@ const ROLE_TYPE_LABEL = {
   MICROBE:    'Microbe / CFU',
 }
 
+const SUPERSCRIPT = { '-': '⁻', 0: '⁰', 1: '¹', 2: '²', 3: '³', 4: '⁴', 5: '⁵', 6: '⁶', 7: '⁷', 8: '⁸', 9: '⁹' }
+
+// Renders a CFU/g count in compact scientific notation (e.g. "5.00×10¹¹") —
+// these values routinely run into the billions/trillions, where a plain
+// number is unreadable at a glance in a narrow table column.
+function fmtCfu(v) {
+  const n = Number(v)
+  if (!n || n <= 0) return '—'
+  const exp = Math.floor(Math.log10(n))
+  const mantissa = (n / 10 ** exp).toFixed(2)
+  const expStr = String(exp).split('').map((c) => SUPERSCRIPT[c] ?? c).join('')
+  return `${mantissa}×10${expStr}`
+}
+
 // Read-only row — all editing (item, qty, uom, role) happens in
 // BomRowEditModal via the Action column's Edit button, so the table itself
 // stays a clean, glanceable summary instead of a wall of inline inputs.
-export default function BomRow({ row, idx, isProductCode, onEdit, onRemoveRow }) {
+export default function BomRow({ row, idx, isProductCode, isMicrobeCode, onEdit, onRemoveRow }) {
   const qty = parseFloat(row.qtyPerUnit) || 0
   const friendly = formatMeasurement(qty, row.uom)
+  const isMicrobeRow = row.isMicrobe || row.roleType === 'MICROBE' || isMicrobeCode(row.rmCode)
+  const isSfgRow = isProductCode(row.rmCode)
 
   return (
     <tr className={`border-b border-gray-100 ${
@@ -43,10 +59,18 @@ export default function BomRow({ row, idx, isProductCode, onEdit, onRemoveRow })
         {friendly.formatted}
       </td>
 
+      <td className="px-3 py-2 text-sm font-semibold text-emerald-700 text-right">
+        {isMicrobeRow ? fmtCfu(row.requiredCfu) : <span className="text-gray-300">—</span>}
+      </td>
+
       <td className="px-3 py-2">
-        <span className={`text-xs font-semibold px-2 py-0.5 rounded ${ROLE_TYPE_STYLE[row.roleType] || ROLE_TYPE_STYLE.INGREDIENT}`}>
-          {ROLE_TYPE_LABEL[row.roleType] || ROLE_TYPE_LABEL.INGREDIENT}
-        </span>
+        {isSfgRow ? (
+          <span className="text-xs font-semibold px-2 py-0.5 rounded bg-blue-100 text-blue-700">SFG</span>
+        ) : (
+          <span className={`text-xs font-semibold px-2 py-0.5 rounded ${ROLE_TYPE_STYLE[row.roleType] || ROLE_TYPE_STYLE.INGREDIENT}`}>
+            {ROLE_TYPE_LABEL[row.roleType] || ROLE_TYPE_LABEL.INGREDIENT}
+          </span>
+        )}
       </td>
 
       <td className="px-2 py-1">
