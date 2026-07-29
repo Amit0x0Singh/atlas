@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import AppLayout from './components/layout/AppLayout.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import ResourcePage from './pages/ResourcePage.jsx';
+import BackupRestorePage from './pages/BackupRestorePage.jsx';
 import Login from './pages/Login.jsx';
 import { resources } from './data/resources.js';
 import { ToastProvider } from './components/common/Toast.jsx';
@@ -15,6 +16,7 @@ function AuthedApp() {
     <Routes>
       <Route element={<AppLayout />}>
         <Route index element={<Dashboard />} />
+        <Route path="backup-restore" element={<BackupRestorePage />} />
         {resources.map((resource) => (
           <Route
             key={resource.key}

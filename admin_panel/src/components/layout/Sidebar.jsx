@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import {
   PanelLeftClose, PanelLeftOpen, Search, Star, LayoutDashboard, LogOut, ChevronDown,
   Layers, Truck, Package, ShoppingBag, Factory, CalendarDays, Users, Microscope,
-  ShieldCheck, Bell, Archive,
+  ShieldCheck, Bell, Archive, DatabaseBackup,
 } from 'lucide-react';
 import { resources } from '../../data/resources.js';
 import { NAV_GROUPS } from '../../data/navGroups.js';
@@ -244,6 +244,21 @@ export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onClo
           >
             <LayoutDashboard size={16} className="flex-shrink-0" />
             {!collapsed && 'Dashboard'}
+          </NavLink>
+
+          <NavLink
+            to="/backup-restore"
+            title={collapsed ? 'Backup & Restore' : undefined}
+            className={({ isActive }) => [
+              'flex items-center gap-2.5 rounded-lg pl-2.5 pr-2 py-2 text-sm font-medium transition-colors border-l-2 mb-3',
+              isActive
+                ? 'border-blue-600 bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-400'
+                : 'border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/60',
+              collapsed ? 'justify-center px-2' : '',
+            ].join(' ')}
+          >
+            <DatabaseBackup size={16} className="flex-shrink-0" />
+            {!collapsed && 'Backup & Restore'}
           </NavLink>
 
           {!collapsed && favoriteResources.length > 0 && (

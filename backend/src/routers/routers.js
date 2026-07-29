@@ -15,6 +15,9 @@ import ExportRouter from "../modules/export/routes.js";
 // Admin Panel Router
 import AdminPanelRouter from "../modules/admin_panel/router.js";
 
+// Backup & Restore Router
+import BackupRouter from "../modules/backup/router.js";
+
 // Import controller
 import {
   previewImport,
@@ -95,6 +98,11 @@ router.post(
   executeImport,
 );
 
+
+// ---- backup & restore routes ─────────────────────────────────────────────────
+// Must be registered before AdminPanelRouter — its own /:resource catch-all
+// would otherwise 404 "backup" before this router is ever reached.
+router.use("/admin/backup", adminOnly, BackupRouter);
 
 // ---- admin planel routes (not prefixed with /api) ───────────────────────────────────────────
 // Full raw CRUD (incl. delete-all-rows per resource) across every model —
