@@ -20,6 +20,10 @@ function isProperlyCategorized(pm) {
   return (SUB_TYPES[pm.category] || []).some(s => s.value === pm.subType);
 }
 
+// This ERP instance always receives goods on behalf of one company — shown
+// as context on every generated pack label, never editable per-entry.
+const COMPANY_NAME = "SOM Phytopharma";
+
 const BLANK_ITEM = {
   selectedItem: null,   // { itemCode, itemName, uom, _type: 'rm'|'pm', _pmData?: {...} }
   numberOfBags: "",
@@ -158,6 +162,10 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed, onUnlin
             Invoice Details
           </p>
           <div className="gf-hdr-grid">
+            <div style={{ minWidth: 0 }}>
+              <label style={lbl}>Company</label>
+              <input value={COMPANY_NAME} readOnly style={{ ...inp, background: "#f8fafc", color: "#0f172a", cursor: "not-allowed" }} />
+            </div>
             <div style={{ minWidth: 0 }}>
               <label style={lbl}>Supplier *</label>
               <input value={hdr.supplier} readOnly placeholder="Select a gate entry →" style={{ ...inp, background: "#f8fafc", color: "#0f172a", cursor: "not-allowed" }} required />
