@@ -6,8 +6,8 @@ import { preprocess } from '../../../../middleware/preprocessing/index.js'
 
 export const validateGrnDetailQuery = preprocess({
   target: 'query',
-  excludeFromConversion: ['invoiceNo'],
+  excludeFromConversion: ['gateInwardId'],
   schema: {
-    invoiceNo: { required: true },
+    gateInwardId: { required: true },
   },
 })

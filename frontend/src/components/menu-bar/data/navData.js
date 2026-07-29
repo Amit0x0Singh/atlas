@@ -24,7 +24,7 @@ export const APP_NAV = [
       { to: '/rm-master',        label: 'Item',     Icon: Layers },
       { to: '/product-master',   label: 'Product',  Icon: FlaskConical },
       { to: '/equipment-master', label: 'Equipment',      Icon: Settings2 },
-      { to: '/supplier-master',  label: 'Supplier', Icon: Building },
+      { to: '/supplier-master',  label: 'Vendor', Icon: Building },
       // { to: '/employee-master',  label: 'Employee Data',   Icon: Users },
       { to: '/recipe',           label: 'Recipe',    Icon: GitBranch },
       { to: '/microbes-master',  label: 'Microbial', Icon: Microscope },

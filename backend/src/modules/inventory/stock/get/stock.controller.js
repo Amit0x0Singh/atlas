@@ -1,4 +1,5 @@
 import prisma from '../../../../db.js'
+import { flattenPack, packDetailInclude } from '../../../../services/pack-view.js'
 
 
 const listStock = async (req, res) => {
@@ -17,9 +18,9 @@ const listStock = async (req, res) => {
     // hundreds of concurrent queries (2 per RM) that exhausted the DB
     // connection pool once the RM register grew past a couple hundred items.
     const [packStocks, containers] = await Promise.all([
-      prisma.packBalance.groupBy({
+      prisma.packDetail.groupBy({
         by: ['itemCode'],
-        where: { remainingQty: { gt: 0 } },
+        where: { status: 'INWARDED', remainingQty: { gt: 0 } },
         _sum: { remainingQty: true },
         _count: { packId: true },
       }),
@@ -60,8 +61,8 @@ const getItemStock = async (req, res) => {
   try {
     const rm = await prisma.rmMaster.findUnique({ where: { itemCode: req.params.itemCode } })
     if (!rm) return res.status(404).json({ success: false, error: 'Item not found', code: 'NOT_FOUND' })
-    const packs = await prisma.packBalance.findMany({
-      where: { itemCode: rm.itemCode, remainingQty: { gt: 0 } }
+    const packs = await prisma.packDetail.findMany({
+      where: { itemCode: rm.itemCode, status: 'INWARDED', remainingQty: { gt: 0 } }
     })
     return res.json({ success: true, data: { rm, packs } })
   } catch (err) {
@@ -72,19 +73,16 @@ const getItemStock = async (req, res) => {
 const getRmHistory = async (req, res) => {
   try {
     const { itemCode } = req.params
-    const [rm, packs, balances] = await Promise.all([
+    const [rm, bags] = await Promise.all([
       prisma.rmMaster.findUnique({ where: { itemCode } }),
-      prisma.printMaster.findMany({ where: { itemCode }, orderBy: { createdAt: 'desc' } }),
-      prisma.packBalance.findMany({ where: { itemCode } }),
+      prisma.packDetail.findMany({
+        where: { itemCode }, include: packDetailInclude,
+        orderBy: { printMaster: { createdAt: 'desc' } },
+      }),
     ])
     if (!rm) return res.status(404).json({ success: false, error: 'Item not found', code: 'NOT_FOUND' })
-    const balMap = new Map(balances.map(b => [b.packId, b]))
-    const merged = packs.map(p => ({
-      ...p,
-      remainingQty:    balMap.get(p.packId)?.remainingQty ?? null,
-      balanceTotalQty: balMap.get(p.packId)?.totalQty     ?? null,
-    }))
-    return res.json({ success: true, data: { rm, packs: merged } })
+    const packs = bags.map(flattenPack).map(p => ({ ...p, balanceTotalQty: p.totalQty }))
+    return res.json({ success: true, data: { rm, packs } })
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
   }
@@ -152,9 +150,9 @@ const getDashboardStats = async (req, res) => {
       prisma.rmMaster.count(),
 
       // Items with stock (current snapshot — no period filter)
-      prisma.packBalance.groupBy({
+      prisma.packDetail.groupBy({
         by: ['itemCode'],
-        where: { remainingQty: { gt: 0 } },
+        where: { status: 'INWARDED', remainingQty: { gt: 0 } },
       }).then(r => r.length),
 
       // Gate inward
@@ -165,13 +163,13 @@ const getDashboardStats = async (req, res) => {
       // Gate outward
       prisma.gateOutward.count({ where: cw }),
 
-      // Packs generated (PrintMaster)
-      prisma.printMaster.count({ where: cAt ? { createdAt: cAt } : {} }),
+      // Packs generated (PackDetail bags — one row per physical pack/label)
+      prisma.packDetail.count({ where: cAt ? { printMaster: { createdAt: cAt } } : {} }),
       // Packs awaiting inward (current state)
-      prisma.printMaster.count({ where: { status: 'AWAITING_INWARD' } }),
+      prisma.packDetail.count({ where: { status: 'AWAITING_INWARD' } }),
 
       // Inward transactions
-      prisma.inward.count({ where: cAt ? { inwardTime: cAt } : {} }),
+      prisma.packDetail.count({ where: { status: 'INWARDED', ...(cAt ? { inwardedAt: cAt } : {}) } }),
 
       // Outward transactions
       prisma.outward.count({ where: cAt ? { timestamp: cAt } : {} }),

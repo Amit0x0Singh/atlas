@@ -1,28 +1,25 @@
 import prisma from "../../../../db.js";
 import getIssuedQty from "../utils/utils.js";
+import { flattenPack, packDetailInclude } from "../../../../services/pack-view.js";
 
 const getFifoPacks = async (rmCode) => {
-  const packs = await prisma.packBalance.findMany({
-    where: { itemCode: rmCode, remainingQty: { gt: 0 } },
+  const packs = await prisma.packDetail.findMany({
+    where: { itemCode: rmCode, status: 'INWARDED', remainingQty: { gt: 0 } },
+    include: packDetailInclude,
   });
   if (!packs.length) return [];
 
-  const packIds = packs.map((p) => p.packId);
-  const masters = await prisma.printMaster.findMany({
-    where: { packId: { in: packIds } },
-  });
-  const pmMap = Object.fromEntries(masters.map((p) => [p.packId, p]));
-
   return packs
+    .map(flattenPack)
     .map((p) => ({
       packId: p.packId,
       remainingQty: p.remainingQty,
       totalQty: p.totalQty,
-      lotNo: pmMap[p.packId]?.lotNo || "",
-      bagNo: pmMap[p.packId]?.bagNo || 0,
-      supplier: pmMap[p.packId]?.supplier || "",
-      receivedDate: pmMap[p.packId]?.receivedDate || null,
-      uom: pmMap[p.packId]?.uom || "KG",
+      lotNo: p.lotNo || "",
+      bagNo: p.bagNo || 0,
+      supplier: p.supplier || "",
+      receivedDate: p.receivedDate || null,
+      uom: p.uom || "KG",
     }))
     .sort((a, b) => {
       if (a.receivedDate && b.receivedDate)

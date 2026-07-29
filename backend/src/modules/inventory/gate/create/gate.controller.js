@@ -24,6 +24,9 @@ const createGateInward = async (req, res) => {
         companyName:  company.trim(),
         status:       'pending',
         createdBy:    req.user?.user_id   || null,
+        // Doubles as "received date" for anything linked to this gate entry
+        // (e.g. PrintMaster) — must be set at creation, not left null.
+        entryTime:    new Date(),
       },
     })
     return res.status(201).json({ success: true, data: row })

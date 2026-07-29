@@ -21,6 +21,7 @@ model GateInward {
   updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
 
   packs        ErpPack[]
+  printMasters PrintMaster[]
 
   @@map("gate_inward")
 }

@@ -1,4 +1,5 @@
 import prisma from '../../../../db.js'
+import { flattenPack, packDetailInclude } from '../../../../services/pack-view.js'
 
 export const listLedger = async (req, res) => {
   try {
@@ -43,6 +44,11 @@ export const getLedgerByItem = async (req, res) => {
   }
 }
 
+async function findFlatPack(packId) {
+  const bag = await prisma.packDetail.findUnique({ where: { packId }, include: packDetailInclude }).catch(() => null)
+  return bag ? flattenPack(bag) : null
+}
+
 export const getLedgerEntry = async (req, res) => {
   try {
     const entry = await prisma.stockLedger.findUnique({ where: { id: req.params.id } })
@@ -56,14 +62,19 @@ export const getLedgerEntry = async (req, res) => {
         detail.indent = await prisma.indentMaster.findUnique({ where: { indentId: outward.indentId }, include: { details: true } })
         detail.sfg = await prisma.sfgMaster.findFirst({ where: { indentId: outward.indentId } })
       }
-      detail.pack = await prisma.printMaster.findUnique({ where: { packId: entry.sourceId } }).catch(() => null)
+      detail.pack = await findFlatPack(entry.sourceId)
     }
     if (entry.transactionType === 'INWARD') {
-      detail.pack = await prisma.printMaster.findUnique({ where: { packId: entry.sourceId } }).catch(() => null)
-      detail.inward = await prisma.inward.findFirst({ where: { packId: entry.sourceId } })
+      const flat = await findFlatPack(entry.sourceId)
+      detail.pack = flat
+      detail.inward = flat && {
+        packId: flat.packId, itemCode: flat.itemCode, itemName: flat.itemName,
+        lotNo: flat.lotNo, bagNo: flat.bagNo, qty: flat.totalQty,
+        inwardTime: flat.inwardedAt, warehouse: flat.warehouse,
+      }
     }
     if (entry.transactionType === 'PACK_TO_CONTAINER') {
-      detail.pack = await prisma.printMaster.findUnique({ where: { packId: entry.sourceId } }).catch(() => null)
+      detail.pack = await findFlatPack(entry.sourceId)
     }
     return res.json({ success: true, data: { ...entry, detail } })
   } catch (err) {

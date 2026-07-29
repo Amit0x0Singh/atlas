@@ -65,8 +65,8 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed, onUnlin
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!hdr.supplier.trim() || !hdr.invoiceNo.trim() || !hdr.receivedDate) {
-      setError("Supplier, Invoice No and Received Date are all required before generating pack labels");
+    if (!linkedEntry?.inwardId) {
+      setError("Select a Gate Inward entry before generating pack labels");
       return;
     }
     for (let i = 0; i < items.length; i++) {
@@ -94,7 +94,7 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed, onUnlin
           itemCode:          it.selectedItem.itemCode,
           itemName:          it.selectedItem.itemName,
           uom:               it.selectedItem.uom,
-          ...hdr,
+          gateInwardId:      linkedEntry.inwardId,
           numberOfBags:      parseInt(it.numberOfBags),
           packQty:           parseFloat(it.packQty),
           customerBatchCode: it.customerBatchCode || undefined,

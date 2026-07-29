@@ -1,4 +1,5 @@
 import prisma from '../../../../../db.js'
+import { flattenPack, packDetailInclude } from '../../../../../services/pack-view.js'
 
 export const listOutward = async (req, res) => {
   try {
@@ -22,35 +23,24 @@ export const listOutward = async (req, res) => {
   }
 }
 
-// Single-pack lookup by packId (as scanned from the pack's QR code) — combines
-// printMaster (identity), packBalance (remaining qty) and the pack's most
-// recent inward row (current warehouse) in one call. Used by Warehouse
-// Transfer instead of guessing an RM code out of the packId string and
-// fetching the wrong item's "available packs" list.
+// Single-pack lookup by packId (as scanned from the pack's QR code) — identity,
+// remaining qty and current warehouse all live on PackDetail now. Used by
+// Warehouse Transfer instead of guessing an RM code out of the packId string
+// and fetching the wrong item's "available packs" list.
 export const getPackDetail = async (req, res) => {
   try {
     const { packId } = req.params
-    const [printMaster, packBalance, inwardRow] = await Promise.all([
-      prisma.printMaster.findUnique({ where: { packId } }),
-      prisma.packBalance.findUnique({ where: { packId } }),
-      prisma.inward.findFirst({ where: { packId }, orderBy: { inwardTime: 'desc' } }),
-    ])
-    if (!printMaster || !packBalance) {
+    const pack = await prisma.packDetail.findUnique({ where: { packId }, include: packDetailInclude })
+    if (!pack || pack.status !== 'INWARDED') {
       return res.status(404).json({ success: false, error: `Pack "${packId}" not found or not inwarded`, code: 'NOT_FOUND' })
     }
+    const flat = flattenPack(pack)
     return res.json({
       success: true,
       data: {
-        packId,
-        itemCode: printMaster.itemCode,
-        itemName: printMaster.itemName,
-        lotNo: printMaster.lotNo,
-        bagNo: printMaster.bagNo,
-        uom: printMaster.uom,
-        supplier: printMaster.supplier || '',
-        totalQty: packBalance.totalQty,
-        remainingQty: packBalance.remainingQty,
-        warehouse: inwardRow?.warehouse || '',
+        packId: flat.packId, itemCode: flat.itemCode, itemName: flat.itemName, lotNo: flat.lotNo,
+        bagNo: flat.bagNo, uom: flat.uom, supplier: flat.supplier || '',
+        totalQty: flat.totalQty, remainingQty: flat.remainingQty, warehouse: flat.warehouse || '',
       },
     })
   } catch (err) {
@@ -72,18 +62,19 @@ export const listBomSessions = async (req, res) => {
 
 export const getAvailablePacks = async (req, res) => {
   try {
-    const packs = await prisma.packBalance.findMany({
-      where: { itemCode: req.params.rmCode, remainingQty: { gt: 0 } },
-      orderBy: { packId: 'asc' }
+    const packs = await prisma.packDetail.findMany({
+      where: { itemCode: req.params.rmCode, status: 'INWARDED', remainingQty: { gt: 0 } },
+      orderBy: { packId: 'asc' },
+      include: packDetailInclude,
     })
-    const packIds = packs.map(p => p.packId)
-    const printMasters = await prisma.printMaster.findMany({ where: { packId: { in: packIds } } })
-    const pmMap = Object.fromEntries(printMasters.map(p => [p.packId, p]))
-    const data = packs.map(p => ({
-      packId: p.packId, itemCode: p.itemCode, remainingQty: p.remainingQty, totalQty: p.totalQty,
-      itemName: pmMap[p.packId]?.itemName || '', lotNo: pmMap[p.packId]?.lotNo || '',
-      bagNo: pmMap[p.packId]?.bagNo || 0, supplier: pmMap[p.packId]?.supplier || '',
-    }))
+    const data = packs.map(p => {
+      const flat = flattenPack(p)
+      return {
+        packId: flat.packId, itemCode: flat.itemCode, remainingQty: flat.remainingQty, totalQty: flat.totalQty,
+        itemName: flat.itemName || '', lotNo: flat.lotNo || '',
+        bagNo: flat.bagNo || 0, supplier: flat.supplier || '',
+      }
+    })
     return res.json({ success: true, data })
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })

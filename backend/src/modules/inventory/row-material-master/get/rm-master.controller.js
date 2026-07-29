@@ -26,7 +26,7 @@ export const getRm = async (req, res) => {
 
 export const listWarehouses = async (req, res) => {
   try {
-    const rows = await prisma.inward.findMany({ distinct: ['warehouse'], select: { warehouse: true } })
+    const rows = await prisma.packDetail.findMany({ where: { status: 'INWARDED' }, distinct: ['warehouse'], select: { warehouse: true } })
     return res.json({ success: true, data: rows.map(r => r.warehouse) })
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })

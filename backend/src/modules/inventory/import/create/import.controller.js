@@ -46,6 +46,28 @@ function parseWorkingVolume(val) {
   return { qty: parseFloat(m[1].replace(/,/g, '')) || 0, unit: m[2] ? m[2].toUpperCase() : null }
 }
 
+// One Gate Inward per unique supplier+invoice+received-date group in the
+// Print Master sheet — matched on the same triple before creating a new one,
+// so re-importing the same sheet (or an Inward-sheet follow-up pass) doesn't
+// spawn duplicate gate entries.
+async function findOrCreateImportGateInward(supplier, invoiceNo, receivedDate) {
+  const supplierName = supplier || 'Unknown Supplier'
+  const dayRange = receivedDate ? {
+    gte: new Date(receivedDate.getFullYear(), receivedDate.getMonth(), receivedDate.getDate()),
+    lt:  new Date(receivedDate.getFullYear(), receivedDate.getMonth(), receivedDate.getDate() + 1),
+  } : undefined
+
+  const existing = await prisma.gateInward.findFirst({
+    where: { supplierName, invoiceNo: invoiceNo || null, ...(dayRange ? { entryTime: dayRange } : {}) },
+    orderBy: { createdAt: 'desc' },
+  })
+  if (existing) return existing
+
+  return prisma.gateInward.create({
+    data: { supplierName, invoiceNo: invoiceNo || null, status: 'approved', entryTime: receivedDate || new Date() },
+  })
+}
+
 function parseDate(val) {
   if (!val) return null
   if (val instanceof Date) return val
@@ -663,15 +685,23 @@ export const executeImport = async (req, res) => {
     }
 
     // ── PRINT MASTER ───────────────────────────────────────────────────────
+    // Sheet rows are per-bag (old flat shape). Print Master headers now
+    // require a gateInwardId, so rows are grouped by supplier+invoice+
+    // received-date to find-or-create one Gate Inward entry per group, then
+    // grouped again by item+lot to find-or-create one Print Master header
+    // per group — mirroring what the live /packs/generate endpoint does.
     const pmSheet = wb.SheetNames.find(s => /print|pack.?master/i.test(s))
     if (pmSheet) {
       const rows = XLSX.utils.sheet_to_json(wb.Sheets[pmSheet], { defval: '' })
+      const gateInwardCache = new Map()
+      const headerCache = new Map()
+
       for (const row of rows) {
         try {
           const packId   = col(row, 'pack id', 'packid', 'pack_id')
           const itemCode = col(row, 'item code', 'itemcode', 'item_code')
           const itemName = col(row, 'item name', 'itemname', 'item_name')
-          const lotNo    = col(row, 'lot no', 'lotno', 'lot_no', 'batch code', 'batchcode')
+          const lotNo    = col(row, 'lot no', 'lotno', 'lot_no', 'batch code', 'batchcode') || '2025-001'
           const bagNo    = parseInt(col(row, 'bag no', 'bagno', 'bag_no', 'bag number') || '1') || 1
           const packQty  = safeNum(col(row, 'pack qty', 'packqty', 'pack_qty', 'qty per bag', 'quantity'))
           const uom      = col(row, 'uom', 'unit') || 'KG'
@@ -680,19 +710,43 @@ export const executeImport = async (req, res) => {
           const rdRaw    = col(row, 'received date', 'receiveddate', 'receipt date', 'date received')
           const receivedDate = parseDate(rdRaw)
           if (!packId || !itemCode) continue
+
+          const alreadyBag = await prisma.packDetail.findUnique({ where: { packId } })
+          if (alreadyBag) continue
+
           const rmExists = await prisma.rmMaster.findUnique({ where: { itemCode } })
           if (!rmExists && itemName) {
             await prisma.rmMaster.upsert({ where: { itemCode }, create: { itemCode, itemName, uom }, update: {} })
           }
           const statusRaw = col(row, 'status').toLowerCase()
           const status = statusRaw.includes('inward') || statusRaw === 'inwarded' ? 'INWARDED' : 'AWAITING_INWARD'
-          const existing = await prisma.printMaster.findUnique({ where: { packId } })
-          if (!existing) {
-            await prisma.printMaster.create({
-              data: { packId, itemCode, itemName: itemName || itemCode, lotNo: lotNo || '2025-001', bagNo, packQty, uom, supplier: supplier || null, invoiceNo: invoiceNo || null, receivedDate, status }
-            })
-            results.printMaster++
+
+          const giKey = `${supplier || ''}||${invoiceNo || ''}||${receivedDate ? receivedDate.toISOString().slice(0, 10) : ''}`
+          let gateInwardId = gateInwardCache.get(giKey)
+          if (!gateInwardId) {
+            const gi = await findOrCreateImportGateInward(supplier, invoiceNo, receivedDate)
+            gateInwardId = gi.inwardId
+            gateInwardCache.set(giKey, gateInwardId)
           }
+
+          const headerKey = `${itemCode}||${lotNo}`
+          let header = headerCache.get(headerKey)
+          if (!header) {
+            header = await prisma.printMaster.findUnique({ where: { itemCode_lotNo: { itemCode, lotNo } } })
+            if (!header) {
+              header = await prisma.printMaster.create({
+                data: { gateInwardId, itemCode, itemName: itemName || itemCode, lotNo, packQty, uom, numberOfBags: 0 },
+              })
+            }
+            headerCache.set(headerKey, header)
+          }
+
+          await prisma.packDetail.create({
+            data: { packId, printMasterId: header.id, itemCode, bagNo, totalQty: packQty, remainingQty: packQty, status },
+          })
+          await prisma.printMaster.update({ where: { id: header.id }, data: { numberOfBags: { increment: 1 } } })
+
+          results.printMaster++
         } catch (e) { results.errors.push(`Pack row: ${e.message}`) }
       }
     }
@@ -708,16 +762,13 @@ export const executeImport = async (req, res) => {
           const dateRaw   = col(row, 'date of inward', 'inward date', 'date', 'received date')
           const inwardTime = parseDate(dateRaw) || new Date()
           if (!packId) continue
-          const pack = await prisma.printMaster.findUnique({ where: { packId } })
+          const pack = await prisma.packDetail.findUnique({ where: { packId } })
           if (!pack) { results.errors.push(`Inward: Pack ${packId} not in Print Master`); continue }
-          const alreadyIn = await prisma.inward.findFirst({ where: { packId } })
-          if (alreadyIn) continue
+          if (pack.status === 'INWARDED') continue
           await prisma.$transaction(async (tx) => {
-            await tx.inward.create({ data: { packId, itemCode: pack.itemCode, itemName: pack.itemName, lotNo: pack.lotNo, bagNo: pack.bagNo, qty: pack.packQty, inwardTime, warehouse } })
-            await tx.packBalance.upsert({ where: { packId }, create: { packId, itemCode: pack.itemCode, totalQty: pack.packQty, remainingQty: pack.packQty }, update: {} })
-            await tx.printMaster.update({ where: { packId }, data: { status: 'INWARDED' } })
+            await tx.packDetail.update({ where: { packId }, data: { status: 'INWARDED', warehouse, inwardedAt: inwardTime } })
             const prev = await tx.stockLedger.findFirst({ where: { itemCode: pack.itemCode }, orderBy: { timestamp: 'desc' } })
-            await tx.stockLedger.create({ data: { itemCode: pack.itemCode, sourceId: packId, transactionType: 'INWARD', inQty: pack.packQty, balance: (prev?.balance || 0) + pack.packQty, reference: `Import | ${warehouse}` } })
+            await tx.stockLedger.create({ data: { itemCode: pack.itemCode, sourceId: packId, transactionType: 'INWARD', inQty: pack.totalQty, balance: (prev?.balance || 0) + pack.totalQty, reference: `Import | ${warehouse}` } })
           })
           results.inward++
         } catch (e) { results.errors.push(`Inward row: ${e.message}`) }
@@ -756,9 +807,9 @@ export const executeImport = async (req, res) => {
               indentId: bomNo || null, timestamp,
             }
           })
-          const pb = await prisma.packBalance.findUnique({ where: { packId: sourceId } })
+          const pb = await prisma.packDetail.findUnique({ where: { packId: sourceId } })
           if (pb) {
-            await prisma.packBalance.update({ where: { packId: sourceId }, data: { remainingQty: Math.max(0, pb.remainingQty - issuedQty) } })
+            await prisma.packDetail.update({ where: { packId: sourceId }, data: { remainingQty: Math.max(0, pb.remainingQty - issuedQty) } })
           }
           results.outward++
         } catch (e) { results.errors.push(`Outward row: ${e.message}`) }

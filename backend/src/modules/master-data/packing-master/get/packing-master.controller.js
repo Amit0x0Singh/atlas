@@ -7,11 +7,11 @@ export const listPackingMaterials = async (req, res) => {
       orderBy: [{ category: 'asc' }, { itemName: 'asc' }],
     })
 
-    // Aggregate live stock from packBalance for each item code
+    // Aggregate live stock from packDetail for each item code
     const itemCodes = items.map(i => i.itemCode)
-    const balances = await prisma.packBalance.groupBy({
+    const balances = await prisma.packDetail.groupBy({
       by: ['itemCode'],
-      where: { itemCode: { in: itemCodes }, remainingQty: { gt: 0 } },
+      where: { itemCode: { in: itemCodes }, status: 'INWARDED', remainingQty: { gt: 0 } },
       _sum: { remainingQty: true },
     })
     const balMap = new Map(balances.map(b => [b.itemCode, b._sum.remainingQty || 0]))

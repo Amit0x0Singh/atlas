@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { Plus } from 'lucide-react';
+import { Plus, Database } from 'lucide-react';
 import PageHeader from '../components/layout/PageHeader.jsx';
 import Button from '../components/common/Button.jsx';
 import Card from '../components/common/Card.jsx';
@@ -12,6 +12,7 @@ import Toolbar from '../components/table/Toolbar.jsx';
 import DataTable from '../components/table/DataTable.jsx';
 import Pagination from '../components/table/Pagination.jsx';
 import RowDetailDrawer from '../components/table/RowDetailDrawer.jsx';
+import SchemaModal from '../components/table/SchemaModal.jsx';
 import { exportToCsv } from '../components/table/csv.js';
 import DataFormModal from '../components/form/DataFormModal.jsx';
 import ImportDialog from '../components/form/ImportDialog.jsx';
@@ -51,6 +52,7 @@ export default function ResourcePage({ resource }) {
   const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
   const [deletingAll, setDeletingAll] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [schemaOpen, setSchemaOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
@@ -149,7 +151,12 @@ export default function ResourcePage({ resource }) {
         eyebrow={resource.model}
         title={resource.title}
         description={resource.description}
-        action={<Button icon={Plus} onClick={() => setModalState({ mode: 'create' })}>Add Record</Button>}
+        action={
+          <div className="flex items-center gap-2">
+            <Button variant="secondary" icon={Database} onClick={() => setSchemaOpen(true)}>Schema</Button>
+            <Button icon={Plus} onClick={() => setModalState({ mode: 'create' })}>Add Record</Button>
+          </div>
+        }
       />
 
       {loading ? (
@@ -262,6 +269,8 @@ export default function ResourcePage({ resource }) {
       )}
 
       <ImportDialog open={importOpen} resource={resource} onClose={() => setImportOpen(false)} onDone={reload} />
+
+      <SchemaModal open={schemaOpen} onClose={() => setSchemaOpen(false)} resource={resource} />
 
       <DeleteDialog
         open={!!deleteTarget}

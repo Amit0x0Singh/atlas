@@ -1,7 +1,11 @@
-import { useMemo, useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { PanelLeftClose, PanelLeftOpen, Search, Star, LayoutDashboard, LogOut } from 'lucide-react';
+import {
+  PanelLeftClose, PanelLeftOpen, Search, Star, LayoutDashboard, LogOut, ChevronDown,
+  Layers, Truck, Package, ShoppingBag, Factory, CalendarDays, Users, Microscope,
+  ShieldCheck, Bell, Archive,
+} from 'lucide-react';
 import { resources } from '../../data/resources.js';
 import { NAV_GROUPS } from '../../data/navGroups.js';
 import { useFavorites } from '../../hooks/useFavorites.js';
@@ -11,39 +15,40 @@ import { useAuth } from '../../context/AuthContext.jsx';
 export const EXPANDED_WIDTH = 280;
 export const COLLAPSED_WIDTH = 72;
 
-function NavGroup({ label, color, collapsed, children }) {
-  if (collapsed) {
-    return <div className="space-y-1 border-t border-slate-100 dark:border-slate-800 pt-3 first:border-0 first:pt-0">{children}</div>;
-  }
-  return (
-    <div>
-      <p
-        className="px-2.5 text-[10px] font-bold uppercase tracking-wider mb-1.5 text-slate-400 dark:text-slate-500"
-        style={color ? { color } : undefined}
-      >
-        {label}
-      </p>
-      <div className="space-y-0.5">{children}</div>
-    </div>
-  );
-}
+// One icon per group — shown next to the group label, and standalone on the
+// 72px collapsed rail where there's no room for the full accordion.
+const GROUP_ICONS = {
+  masters: Layers,
+  gate: Truck,
+  inventory: Package,
+  sales: ShoppingBag,
+  production: Factory,
+  planning: CalendarDays,
+  hr: Users,
+  microbial: Microscope,
+  system: ShieldCheck,
+  notifications: Bell,
+  legacy: Archive,
+};
 
-function ResourceNavItem({ resource, collapsed, isFavorite, onToggleFavorite }) {
+// Groups that start open on a fresh session — everything else stays
+// collapsed so a 10-group / 87-table nav doesn't force endless scrolling.
+const INITIALLY_OPEN = new Set(['masters']);
+
+function ResourceNavItem({ resource, isFavorite, onToggleFavorite }) {
   return (
     <NavLink
       to={`/${resource.path}`}
-      title={collapsed ? resource.title : undefined}
       className={({ isActive }) => [
         'group flex items-center gap-2.5 rounded-lg pl-2.5 pr-2 py-2 text-sm transition-colors border-l-2',
         isActive
           ? 'border-blue-600 bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-400 font-medium'
           : 'border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-200',
-        collapsed ? 'justify-center px-2' : '',
       ].join(' ')}
     >
       <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-current opacity-50" />
-      {!collapsed && <span className="truncate flex-1">{resource.title}</span>}
-      {!collapsed && onToggleFavorite && (
+      <span className="truncate flex-1">{resource.title}</span>
+      {onToggleFavorite && (
         <button
           type="button"
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); onToggleFavorite(resource.key); }}
@@ -59,11 +64,73 @@ function ResourceNavItem({ resource, collapsed, isFavorite, onToggleFavorite }) 
   );
 }
 
+// Collapsible accordion group — only the open group(s) render their items,
+// which is what keeps the nav scrollable instead of one giant always-open list.
+function NavGroup({ group, items, collapsed, isOpen, hasActive, onToggle, isFavorite, onToggleFavorite }) {
+  const Icon = GROUP_ICONS[group.key];
+
+  if (collapsed) {
+    return (
+      <button
+        type="button"
+        onClick={onToggle}
+        title={group.label}
+        className={[
+          'w-full flex items-center justify-center py-2 rounded-lg transition-colors',
+          hasActive ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60',
+        ].join(' ')}
+      >
+        {Icon && <Icon size={18} />}
+      </button>
+    );
+  }
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={onToggle}
+        className="w-full flex items-center gap-2 px-2.5 py-1 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/60"
+      >
+        {Icon && <Icon size={13} style={{ color: group.color }} className="flex-shrink-0" />}
+        <span
+          className={[
+            'flex-1 text-left text-[10px] font-bold uppercase tracking-wider',
+            hasActive ? '' : 'text-slate-400 dark:text-slate-500',
+          ].join(' ')}
+          style={hasActive ? { color: group.color } : undefined}
+        >
+          {group.label}
+        </span>
+        <ChevronDown
+          size={13}
+          className={`flex-shrink-0 text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+        />
+      </button>
+
+      {isOpen && (
+        <div className="space-y-0.5 mt-1">
+          {items.map((r) => (
+            <ResourceNavItem
+              key={r.key}
+              resource={r}
+              isFavorite={isFavorite(r.key)}
+              onToggleFavorite={onToggleFavorite}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onCloseMobile }) {
   const [navFilter, setNavFilter] = useState('');
+  const [openGroups, setOpenGroups] = useState(() => new Set(INITIALLY_OPEN));
   const { favorites, isFavorite, toggleFavorite } = useFavorites();
   const { recent } = useRecentPages();
   const { user, logout, isReadOnly } = useAuth();
+  const location = useLocation();
 
   const resourceByKey = useMemo(() => Object.fromEntries(resources.map((r) => [r.key, r])), []);
 
@@ -72,6 +139,25 @@ export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onClo
     ...g,
     items: resources.filter((r) => r.group === g.key && (!filter || r.title.toLowerCase().includes(filter))),
   })).filter((g) => g.items.length > 0);
+
+  // Whichever group holds the active route auto-opens, so deep-linking or
+  // clicking a favorite/recent item never lands on a collapsed section.
+  useEffect(() => {
+    const activePath = location.pathname.replace(/^\//, '');
+    const activeResource = resources.find((r) => r.path === activePath);
+    if (activeResource) {
+      setOpenGroups((prev) => new Set(prev).add(activeResource.group));
+    }
+  }, [location.pathname]);
+
+  const toggleGroup = (key) => {
+    if (collapsed) onToggleCollapse();
+    setOpenGroups((prev) => {
+      const next = new Set(prev);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
+  };
 
   const favoriteResources = favorites.map((k) => resourceByKey[k]).filter(Boolean);
   const recentResources = recent
@@ -143,13 +229,13 @@ export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onClo
           </div>
         )}
 
-        <nav className="flex-1 overflow-y-auto scrollbar-thin px-2.5 py-3 space-y-4">
+        <nav className="flex-1 overflow-y-auto scrollbar-thin px-2.5 py-3 space-y-1">
           <NavLink
             to="/"
             end
             title={collapsed ? 'Dashboard' : undefined}
             className={({ isActive }) => [
-              'flex items-center gap-2.5 rounded-lg pl-2.5 pr-2 py-2 text-sm font-medium transition-colors border-l-2',
+              'flex items-center gap-2.5 rounded-lg pl-2.5 pr-2 py-2 text-sm font-medium transition-colors border-l-2 mb-3',
               isActive
                 ? 'border-blue-600 bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-400'
                 : 'border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/60',
@@ -161,28 +247,44 @@ export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onClo
           </NavLink>
 
           {!collapsed && favoriteResources.length > 0 && (
-            <NavGroup label="Favorites" collapsed={collapsed}>
-              {favoriteResources.map((r) => (
-                <ResourceNavItem key={r.key} resource={r} collapsed={collapsed} isFavorite onToggleFavorite={toggleFavorite} />
-              ))}
-            </NavGroup>
+            <div className="mb-3">
+              <p className="px-2.5 text-[10px] font-bold uppercase tracking-wider mb-1.5 text-amber-500">Favorites</p>
+              <div className="space-y-0.5">
+                {favoriteResources.map((r) => (
+                  <ResourceNavItem key={r.key} resource={r} isFavorite onToggleFavorite={toggleFavorite} />
+                ))}
+              </div>
+            </div>
           )}
 
           {!collapsed && recentResources.length > 0 && (
-            <NavGroup label="Recent" collapsed={collapsed}>
-              {recentResources.map((r) => (
-                <ResourceNavItem key={r.key} resource={r} collapsed={collapsed} isFavorite={isFavorite(r.key)} onToggleFavorite={toggleFavorite} />
-              ))}
-            </NavGroup>
+            <div className="mb-3">
+              <p className="px-2.5 text-[10px] font-bold uppercase tracking-wider mb-1.5 text-slate-400 dark:text-slate-500">Recent</p>
+              <div className="space-y-0.5">
+                {recentResources.map((r) => (
+                  <ResourceNavItem key={r.key} resource={r} isFavorite={isFavorite(r.key)} onToggleFavorite={toggleFavorite} />
+                ))}
+              </div>
+            </div>
           )}
 
-          {grouped.map((group) => (
-            <NavGroup key={group.key} label={group.label} color={group.color} collapsed={collapsed}>
-              {group.items.map((r) => (
-                <ResourceNavItem key={r.key} resource={r} collapsed={collapsed} isFavorite={isFavorite(r.key)} onToggleFavorite={toggleFavorite} />
-              ))}
-            </NavGroup>
-          ))}
+          {grouped.map((group) => {
+            const hasActive = group.items.some((r) => `/${r.path}` === location.pathname);
+            const isOpen = Boolean(filter) || openGroups.has(group.key);
+            return (
+              <NavGroup
+                key={group.key}
+                group={group}
+                items={group.items}
+                collapsed={collapsed}
+                isOpen={isOpen}
+                hasActive={hasActive}
+                onToggle={() => toggleGroup(group.key)}
+                isFavorite={isFavorite}
+                onToggleFavorite={toggleFavorite}
+              />
+            );
+          })}
         </nav>
 
         <div className="flex items-center gap-2.5 px-3 py-3 border-t border-slate-100 dark:border-slate-800 flex-shrink-0">

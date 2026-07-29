@@ -6,7 +6,7 @@
  *   Store opens BOM → recipe lines with required qty + FIFO bags
  *   Scanner mode: plug in USB QR scanner / type packId + Enter → auto-issues
  *   Manual mode:  list of bags in FIFO order → click bag → confirm qty → issue
- *   Each issue deducts from PackBalance + writes StockLedger
+ *   Each issue deducts from PackDetail's remaining qty + writes StockLedger
  *   Remaining shown live after every scan
  *   Shortage: alert with option to raise purchase indent request
  */

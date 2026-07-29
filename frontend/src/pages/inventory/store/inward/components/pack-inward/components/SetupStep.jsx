@@ -36,7 +36,7 @@ export default function SetupStep({
               {pendingGroups.map(g => {
                 const sessionKey     = `${g.itemCode}-${g.lotNo}`
                 const partialSession = activeSessionMap[sessionKey]
-                const scannedCount   = partialSession?.scannedPackIds?.length || 0
+                const scannedCount   = partialSession?.scannedCount || 0
                 const isSelected     = selected?.itemCode === g.itemCode && selected?.lotNo === g.lotNo
 
                 return (
@@ -111,7 +111,7 @@ export default function SetupStep({
               {creating && scanMode === 'camera'
                 ? 'Starting…'
                 : selectedActiveSession
-                  ? `Phone Resume (${selectedActiveSession.scannedPackIds?.length || 0}/${selectedActiveSession.expectedBags})`
+                  ? `Phone Resume (${selectedActiveSession.scannedCount || 0}/${selectedActiveSession.expectedBags})`
                   : 'Phone Scanner'}
             </Button>
             <Button
@@ -127,7 +127,7 @@ export default function SetupStep({
               {creating && scanMode === 'hardware'
                 ? 'Starting…'
                 : selectedActiveSession
-                  ? `Gun Scanner Resume (${selectedActiveSession.scannedPackIds?.length || 0}/${selectedActiveSession.expectedBags})`
+                  ? `Gun Scanner Resume (${selectedActiveSession.scannedCount || 0}/${selectedActiveSession.expectedBags})`
                   : 'Gun Scanner'}
             </Button>
           </div>

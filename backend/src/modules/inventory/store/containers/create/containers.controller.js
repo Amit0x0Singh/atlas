@@ -36,22 +36,22 @@ export const fillContainer = async (req, res) => {
     const container = await prisma.containerMaster.findUnique({ where: { containerId: decodeURIComponent(containerId) } })
     if (!container) return res.status(404).json({ success: false, error: 'Container not found', code: 'NOT_FOUND' })
 
-    const packBalance = await prisma.packBalance.findUnique({ where: { packId } })
-    if (!packBalance) return res.status(404).json({ success: false, error: 'Pack not found or not yet inwarded', code: 'NOT_FOUND' })
+    const pack = await prisma.packDetail.findUnique({ where: { packId } })
+    if (!pack || pack.status !== 'INWARDED') return res.status(404).json({ success: false, error: 'Pack not found or not yet inwarded', code: 'NOT_FOUND' })
 
     const fill = parseFloat(qty)
     if (fill <= 0) return res.status(400).json({ success: false, error: 'Qty must be positive', code: 'VALIDATION_ERROR' })
-    if (fill > packBalance.remainingQty)
-      return res.status(400).json({ success: false, error: `Qty exceeds pack balance (${packBalance.remainingQty})` , code: 'VALIDATION_ERROR' })
+    if (fill > pack.remainingQty)
+      return res.status(400).json({ success: false, error: `Qty exceeds pack balance (${pack.remainingQty})` , code: 'VALIDATION_ERROR' })
 
     const spaceLeft = container.capacity - container.currentQty
     if (fill > spaceLeft)
       return res.status(400).json({ success: false, error: `Container only has ${spaceLeft.toFixed(3)} space remaining (capacity: ${container.capacity})` , code: 'VALIDATION_ERROR' })
 
     await prisma.$transaction(async (tx) => {
-      await tx.packBalance.update({
+      await tx.packDetail.update({
         where: { packId },
-        data: { remainingQty: packBalance.remainingQty - fill }
+        data: { remainingQty: pack.remainingQty - fill }
       })
       await tx.containerMaster.update({
         where: { containerId: container.containerId },

@@ -134,11 +134,9 @@ export default function RmMaster() {
       <PageHeader
         icon={Package}
         title="Item Master"
-        description={<>
-          Manage item codes, names and units ·{' '}
-          <span className="text-blue-600 font-medium">PACK</span> = individual QR per bag ·{' '}
-          <span className="text-green-600 font-medium">BULK</span> = location QR (bags/labels/consumables in bulk)
-        </>}
+        description={
+        <>Manage item details, inventory attributes and QR tracking configuration.</>
+           }
         actions={<>
           <Button variant="primary" icon={Plus} onClick={openAdd}>Add New Item</Button>
           <BackButton />

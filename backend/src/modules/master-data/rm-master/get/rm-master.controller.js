@@ -20,7 +20,8 @@ export const listRm = async (req, res) => {
 // NOTE: static paths like /meta/warehouses MUST come before /:itemCode
 // otherwise Express matches "meta" as the itemCode param
 export const getWarehouses = async (req, res) => {
-  const rows = await prisma.inward.findMany({
+  const rows = await prisma.packDetail.findMany({
+    where: { status: 'INWARDED' },
     distinct: ['warehouse'],
     select: { warehouse: true },
   })

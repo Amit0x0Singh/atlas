@@ -31,7 +31,7 @@ export default function GRN() {
   const loadDetail = async (grn) => {
     setSelected(grn); setDetail(null); setLoadingDetail(true)
     try {
-      const res = await grnApi.detail(grn.invoiceNo, grn.supplier)
+      const res = await grnApi.detail(grn.gateInwardId)
       setDetail(res.data)
     } catch (e) { setErrModal({ open: true, message: 'Failed to load GRN: ' + e.message }) }
     setLoadingDetail(false)

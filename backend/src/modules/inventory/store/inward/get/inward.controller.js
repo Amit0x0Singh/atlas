@@ -2,20 +2,35 @@ import prisma from "../../../../../db.js";
 import { generatePackBatch } from "../../../../../services/pack-generator.js";
 import { generateLabelBuffer, generateBatchLabelBuffer } from "../../../../../services/label-service.js";
 import { toCanonical } from "../../../../../utils/uom.js";
+import { flattenPack, packDetailInclude } from "../../../../../services/pack-view.js";
+import { getLotsInProgress, getLotProgress } from "../../../../../services/inward-service.js";
 
 const getPendingInwardGroups = async (req, res) => {
   try {
-    const groups = await prisma.printMaster.groupBy({
-
-      by: ["itemCode", "itemName", "lotNo"],
-      where: { status: "AWAITING_INWARD" },
+    // Bags stay listed here through the whole pre-submit lifecycle — not
+    // just AWAITING_INWARD. Once every bag in a lot has been scanned (moved
+    // to SCANNED) but the lot hasn't been submitted yet, filtering on
+    // AWAITING_INWARD alone would drop it from this list entirely, making
+    // an in-progress-but-fully-scanned lot impossible to select and submit.
+    const groups = await prisma.packDetail.groupBy({
+      by: ["printMasterId"],
+      where: { status: { in: ["AWAITING_INWARD", "SCANNED"] } },
       _count: { packId: true },
-
     });
+
+    if (groups.length === 0) return res.json({ success: true, data: [] });
+
+    const headers = await prisma.printMaster.findMany({
+      where: { id: { in: groups.map((g) => g.printMasterId) } },
+    });
+    const headerById = new Map(headers.map((h) => [h.id, h]));
 
     return res.json({
       success: true,
-      data: groups.map((g) => ({ itemCode: g.itemCode, itemName: g.itemName, lotNo: g.lotNo, bagCount: g._count.packId })),
+      data: groups.map((g) => {
+        const h = headerById.get(g.printMasterId);
+        return { itemCode: h.itemCode, itemName: h.itemName, lotNo: h.lotNo, bagCount: g._count.packId };
+      }),
     });
 
   } catch (err) {
@@ -44,14 +59,19 @@ const listPacks = async (req, res) => {
   try {
     const where = {};
     if (itemCode) where.itemCode = itemCode;
-    if (lotNo) where.lotNo = lotNo;
     if (status) where.status = status;
-    const [total, packs] = await Promise.all([
-      prisma.printMaster.count({ where }),
-      prisma.printMaster.findMany({ where, orderBy: { createdAt: "desc" }, skip: (page - 1) * limit, take: parseInt(limit) }),
+    if (lotNo) where.printMaster = { lotNo };
+
+    const [total, bags] = await Promise.all([
+      prisma.packDetail.count({ where }),
+      prisma.packDetail.findMany({
+        where, include: packDetailInclude,
+        orderBy: { printMaster: { createdAt: "desc" } },
+        skip: (page - 1) * limit, take: parseInt(limit),
+      }),
     ]);
 
-    return res.json({ success: true, data: packs, total, page: parseInt(page), limit: parseInt(limit) });
+    return res.json({ success: true, data: bags.map(flattenPack), total, page: parseInt(page), limit: parseInt(limit) });
 
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
@@ -61,11 +81,13 @@ const listPacks = async (req, res) => {
 const getPackById = async (req, res) => {
   const { packId } = req.params;
   try {
-    const pack = await prisma.printMaster.findUnique({ where: { packId: decodeURIComponent(packId) } });
+    const pack = await prisma.packDetail.findUnique({
+      where: { packId: decodeURIComponent(packId) }, include: packDetailInclude,
+    });
     if (!pack)
       return res.status(404).json({ success: false, error: "Pack not found", code: 'NOT_FOUND' });
 
-    return res.json({ success: true, data: pack });
+    return res.json({ success: true, data: flattenPack(pack) });
 
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
@@ -76,13 +98,16 @@ const getPackLabel = async (req, res) => {
   const { packId } = req.params;
   try {
 
-    const pack = await prisma.printMaster.findUnique({ where: { packId: decodeURIComponent(packId) } });
+    const pack = await prisma.packDetail.findUnique({
+      where: { packId: decodeURIComponent(packId) }, include: packDetailInclude,
+    });
     if (!pack)
        return res.status(404).json({ success: false, error: "Pack not found", code: 'NOT_FOUND' });
 
-    const buf = await generateLabelBuffer(pack);
-    const safeName = (pack.itemName || pack.itemCode).replace(/[^a-zA-Z0-9]/g, "_").slice(0, 20);
-    const filename = `${safeName}-${pack.itemCode}-${pack.lotNo}.pdf`;
+    const flat = flattenPack(pack);
+    const buf = await generateLabelBuffer(flat);
+    const safeName = (flat.itemName || flat.itemCode).replace(/[^a-zA-Z0-9]/g, "_").slice(0, 20);
+    const filename = `${safeName}-${flat.itemCode}-${flat.lotNo}.pdf`;
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `inline; filename="${filename}"`);
     return res.send(buf);
@@ -95,16 +120,18 @@ const getPackLabel = async (req, res) => {
 const getBatchLabels = async (req, res) => {
   const { itemCode, lotNo } = req.params;
   try {
-    const packs = await prisma.printMaster.findMany({
-      where: { itemCode: decodeURIComponent(itemCode), lotNo: decodeURIComponent(lotNo) },
+    const bags = await prisma.packDetail.findMany({
+      where: { itemCode: decodeURIComponent(itemCode), printMaster: { lotNo: decodeURIComponent(lotNo) } },
+      include: packDetailInclude,
       orderBy: { bagNo: "asc" },
     });
 
-    if (!packs.length)
+    if (!bags.length)
       return res.status(404).json({ success: false, error: "No packs found", code: 'NOT_FOUND' });
 
-    const buf = await generateBatchLabelBuffer(packs);
-    const sample = packs[0];
+    const flatPacks = bags.map(flattenPack);
+    const buf = await generateBatchLabelBuffer(flatPacks);
+    const sample = flatPacks[0];
     const safeName = (sample.itemName || sample.itemCode).replace(/[^a-zA-Z0-9]/g, "_").slice(0, 20);
     const filename = `labels-${safeName}-${sample.itemCode}-${sample.lotNo}.pdf`;
     res.setHeader("Content-Type", "application/pdf");
@@ -117,15 +144,20 @@ const getBatchLabels = async (req, res) => {
 }
 
 const generatePacks = async (req, res) => {
-  const { itemCode, itemName, numberOfBags, packQty, uom, supplier, invoiceNo, receivedDate, customerBatchCode, expiryDate } = req.body;
+  const { gateInwardId, itemCode, itemName, numberOfBags, packQty, uom, customerBatchCode, expiryDate } = req.body;
   try {
     if (!itemCode || !itemName || !numberOfBags || !packQty || !uom)
       return res.status(400).json({ success: false, error: "itemCode, itemName, numberOfBags, packQty, uom are required", code: 'VALIDATION_ERROR' });
 
-    // Supplier, invoice number and received date are mandatory for every
-    // pack generated here — same rule as print-master's generate-qr endpoint.
-    if (!supplier?.trim() || !invoiceNo?.trim() || !receivedDate)
-      return res.status(400).json({ success: false, error: "supplier, invoiceNo and receivedDate are required", code: 'VALIDATION_ERROR' });
+    // Every pack must be linked to the Gate Inward entry it physically
+    // arrived on — supplier/invoice/received-date are read through this FK
+    // rather than being typed in again here.
+    if (!gateInwardId)
+      return res.status(400).json({ success: false, error: "gateInwardId is required", code: 'VALIDATION_ERROR' });
+
+    const gateInward = await prisma.gateInward.findUnique({ where: { inwardId: gateInwardId } });
+    if (!gateInward)
+      return res.status(404).json({ success: false, error: "Gate Inward entry not found", code: 'NOT_FOUND' });
 
     let canonical;
     try {
@@ -134,7 +166,10 @@ const generatePacks = async (req, res) => {
       return res.status(400).json({ success: false, error: e.message, code: 'VALIDATION_ERROR' });
     }
 
-    const result = await generatePackBatch({ itemCode, itemName, numberOfBags: parseInt(numberOfBags), packQty: canonical.qty, uom: canonical.uom, supplier, invoiceNo, receivedDate, customerBatchCode, expiryDate });
+    const result = await generatePackBatch({
+      gateInwardId, itemCode, itemName, numberOfBags: parseInt(numberOfBags),
+      packQty: canonical.qty, uom: canonical.uom, customerBatchCode, expiryDate,
+    });
     return res.status(201).json({ success: true, data: result });
 
   } catch (err) {
@@ -147,13 +182,13 @@ const listInward = async (req, res) => {
 
   try {
 
-    const where = itemCode !== undefined ? { itemCode } : {}
+    const where = { status: 'INWARDED', ...(itemCode !== undefined ? { itemCode } : {}) }
     const [total, records] = await Promise.all([
-      prisma.inward.count({ where }),
-      prisma.inward.findMany({ where, orderBy: { inwardTime: 'desc' }, skip: (page - 1) * limit, take: parseInt(limit) })
+      prisma.packDetail.count({ where }),
+      prisma.packDetail.findMany({ where, include: packDetailInclude, orderBy: { inwardedAt: 'desc' }, skip: (page - 1) * limit, take: parseInt(limit) })
     ])
 
-    return res.json({ success: true, data: records, total })
+    return res.json({ success: true, data: records.map(flattenPack), total })
 
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
@@ -162,34 +197,18 @@ const listInward = async (req, res) => {
 
 const listActiveSessions = async (req, res) => {
   try {
-
-    const sessions = await prisma.inwardSession.findMany({
-      where: { status: 'ACTIVE' },
-      orderBy: { createdAt: 'desc' }
-    })
-
-    return res.json({ success: true, data: sessions })
-
+    const lots = await getLotsInProgress()
+    return res.json({ success: true, data: lots })
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
   }
 }
 
 const getSession = async (req, res) => {
-  const { sessionId } = req.params
+  const { itemCode, lotNo } = req.params
   try {
-    const session = await prisma.inwardSession.findUnique({ where: { sessionId } })
-    if (!session)
-       return res.status(404).json({ success: false, error: 'Session not found', code: 'NOT_FOUND' })
-
-    const allPacks = await prisma.printMaster.findMany({
-      where: { itemCode: session.itemCode, lotNo: session.lotNo },
-      orderBy: { bagNo: 'asc' }
-    })
-
-    const pendingPackIds = allPacks.filter(p => !session.scannedPackIds.includes(p.packId)).map(p => p.packId)
-    return res.json({ success: true, data: { ...session, pendingPackIds } })
-    
+    const progress = await getLotProgress(itemCode, lotNo)
+    return res.json({ success: true, data: { ...progress, bags: progress.bags.map(flattenPack) } })
   } catch (e) {
     return res.status(400).json({ success: false, error: e.message, code: 'VALIDATION_ERROR' })
   }

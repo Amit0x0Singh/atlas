@@ -37,7 +37,7 @@ export default function Dashboard() {
               <ResourceCard
                 key={resource.key}
                 resource={resource}
-                count={stats?.[resource.key]}
+                count={stats?.[resource.path]}
                 isFavorite
                 onToggleFavorite={toggleFavorite}
               />
@@ -54,7 +54,7 @@ export default function Dashboard() {
               <ResourceCard
                 key={resource.key}
                 resource={resource}
-                count={stats?.[resource.key]}
+                count={stats?.[resource.path]}
                 isFavorite={isFavorite(resource.key)}
                 onToggleFavorite={toggleFavorite}
               />

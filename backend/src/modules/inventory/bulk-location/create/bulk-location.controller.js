@@ -76,7 +76,7 @@ export const bulkOutward = async (req, res) => {
     }
     await prisma.outward.create({ data: { indentId: indentId || null, sourceId: lotEntryId, sourceType: 'BULK', rmCode: entry.itemCode, qtyIssued: qty, remarks: remarks || `Bulk issue from LOT: ${entry.lotNo}` } })
     const currentTotal = await prisma.bulkLotEntry.aggregate({ where: { itemCode: entry.itemCode, status: 'ACTIVE' }, _sum: { remainingQty: true } })
-    const packTotal = await prisma.packBalance.aggregate({ where: { itemCode: entry.itemCode, remainingQty: { gt: 0 } }, _sum: { remainingQty: true } })
+    const packTotal = await prisma.packDetail.aggregate({ where: { itemCode: entry.itemCode, status: 'INWARDED', remainingQty: { gt: 0 } }, _sum: { remainingQty: true } })
     const totalBalance = Number(currentTotal._sum.remainingQty || 0) + Number(packTotal._sum.remainingQty || 0)
     await prisma.stockLedger.create({ data: { itemCode: entry.itemCode, sourceId: lotEntryId, transactionType: 'BULK_OUTWARD', inQty: 0, outQty: qty, balance: totalBalance, reference: `LOT: ${entry.lotNo} | ${indentId ? `Indent: ${indentId}` : 'Direct issue'}` } })
     return res.json({ success: true, data: { lotEntryId, lotNo: entry.lotNo, issued: qty, remaining: newRemaining, status: newStatus } })

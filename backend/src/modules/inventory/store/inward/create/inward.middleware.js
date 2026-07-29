@@ -1,29 +1,21 @@
 /**
  * Store › Inward › Create — Local Middleware
- * Validates the pack-inward scanning session endpoints. sessionId/itemCode/
- * lotNo/packId/packIds are all identifiers that must never be reshaped by
- * sanitize/convert — sessionId is a cuid (NOT a uuid, so no format check is
- * applied beyond "present"), pack IDs are opaque QR-encoded strings. These
- * are listed in excludeFromConversion explicitly even where the default
+ * Validates the pack-inward scanning endpoints. itemCode/lotNo/packId/
+ * packIds are all identifiers that must never be reshaped by
+ * sanitize/convert — pack IDs are opaque QR-encoded strings. These are
+ * listed in excludeFromConversion explicitly even where the default
  * identifier-pattern guard would already catch them, since a wrong
- * conversion here would corrupt an active scanning session.
+ * conversion here would corrupt an in-progress scan.
  */
 import { preprocess } from '../../../../../middleware/preprocessing/index.js'
 import { isNonEmptyArray } from '../../../../../middleware/validators/common.js'
 
-export const validateCreateSession = preprocess({
-  excludeFromConversion: ['itemCode', 'lotNo', 'warehouse'],
-  schema: {
-    itemCode:  { required: true },
-    lotNo:     { required: true },
-    warehouse: { required: true },
-  },
-})
-
-export const validateSessionIdParam = preprocess({
+export const validateLotParams = preprocess({
   target: 'params',
+  excludeFromConversion: ['itemCode', 'lotNo'],
   schema: {
-    sessionId: { required: true },
+    itemCode: { required: true },
+    lotNo:    { required: true },
   },
 })
 

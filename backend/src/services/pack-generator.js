@@ -12,29 +12,33 @@ export function buildPackId(lbl, itemCode, year, lotNo, bagNo) {
   return `${lbl}-${itemCode}-${year}-${lotSeq}-${bagStr}`
 }
 
-export async function generatePackBatch({ itemCode, itemName, numberOfBags, packQty, uom, supplier, invoiceNo, receivedDate, customerBatchCode, expiryDate }) {
+export async function generatePackBatch({ gateInwardId, itemCode, itemName, numberOfBags, packQty, uom, customerBatchCode, expiryDate }) {
   const year = new Date().getFullYear()
   const lotNo = await generateLotNo(itemCode, year)
   const lbl = extractLbl(itemName)
-  const packs = []
-  for (let i = 1; i <= numberOfBags; i++) {
-    const packId = buildPackId(lbl, itemCode, year, lotNo, i)
-    packs.push({
-      packId,
-      itemCode,
-      itemName,
-      lotNo,
-      bagNo: i,
-      packQty,
-      uom,
-      supplier: supplier || null,
-      invoiceNo: invoiceNo || null,
-      receivedDate: receivedDate ? new Date(receivedDate) : null,
+
+  const printMaster = await prisma.printMaster.create({
+    data: {
+      gateInwardId, itemCode, itemName, lotNo, packQty, uom,
+      numberOfBags,
       customerBatchCode: customerBatchCode || null,
       expiryDate: expiryDate ? new Date(expiryDate) : null,
+    },
+  })
+
+  const bags = []
+  for (let i = 1; i <= numberOfBags; i++) {
+    bags.push({
+      packId: buildPackId(lbl, itemCode, year, lotNo, i),
+      printMasterId: printMaster.id,
+      itemCode,
+      bagNo: i,
+      totalQty: packQty,
+      remainingQty: packQty,
       status: 'AWAITING_INWARD',
     })
   }
-  await prisma.printMaster.createMany({ data: packs, skipDuplicates: true })
-  return { lotNo, packs }
+  await prisma.packDetail.createMany({ data: bags, skipDuplicates: true })
+
+  return { lotNo, printMasterId: printMaster.id, packs: bags }
 }

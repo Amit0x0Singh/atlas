@@ -81,8 +81,8 @@ const issuePackToBomSend = async (req, res) => {
         .status(400)
         .json({ success: false, error: "rmCode and packId are required" });
 
-    const pack = await prisma.packBalance.findUnique({ where: { packId } });
-    if (!pack)
+    const pack = await prisma.packDetail.findUnique({ where: { packId } });
+    if (!pack || pack.status !== 'INWARDED')
       return res
         .status(404)
         .json({ success: false, error: `Pack not found: ${packId}` });
@@ -133,7 +133,7 @@ const issuePackToBomSend = async (req, res) => {
         .json({ success: false, error: "Nothing to deduct" });
 
     await prisma.$transaction(async (tx) => {
-      await tx.packBalance.update({
+      await tx.packDetail.update({
         where: { packId },
         data: {
           remainingQty: parseFloat((pack.remainingQty - deduct).toFixed(3)),

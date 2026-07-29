@@ -24,10 +24,10 @@ export default function GrnList({ list, loading, search, selected, onSearch, onS
         <div className="divide-y divide-gray-100">
           {list.map(grn => (
             <button
-              key={grn.grnKey}
+              key={grn.gateInwardId}
               onClick={() => onSelect(grn)}
               className={`w-full text-left px-5 py-3.5 transition hover:bg-indigo-50
-                ${selected?.grnKey === grn.grnKey ? 'bg-indigo-50 border-l-4 border-indigo-500' : 'border-l-4 border-transparent'}`}
+                ${selected?.gateInwardId === grn.gateInwardId ? 'bg-indigo-50 border-l-4 border-indigo-500' : 'border-l-4 border-transparent'}`}
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">

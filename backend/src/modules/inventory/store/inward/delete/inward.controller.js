@@ -1,11 +1,11 @@
-import { removeScanFromSession } from '../../../../../services/inward-service.js'
+import { removeScan as removeScanFromLot } from '../../../../../services/inward-service.js'
 
-const removeScan = async (req, res) => { 
-  const { sessionId, packId } = req.params 
+const removeScan = async (req, res) => {
+  const { itemCode, lotNo, packId } = req.params
   try {
 
-    const result = await removeScanFromSession(sessionId, decodeURIComponent(packId))
-    return res.json(result)
+    const result = await removeScanFromLot(itemCode, lotNo, decodeURIComponent(packId))
+    return res.json({ success: true, data: result })
 
   } catch (e) {
     return res.status(400).json({ success: false, error: e.message, code: 'VALIDATION_ERROR' })

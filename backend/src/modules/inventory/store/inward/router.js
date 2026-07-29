@@ -5,9 +5,10 @@ import {
   getPackLabel, getBatchLabels, generatePacks,
   listInward, listActiveSessions, getSession
 } from './get/inward.controller.js'
-import { createSession, scanPack, batchScanPack, submitSession } from './create/inward.controller.js'
-import { validateCreateSession, validateSessionIdParam, validateScanPack, validateBatchScanPack } from './create/inward.middleware.js'
+import { scanPack, batchScanPack, submitLot } from './create/inward.controller.js'
+import { validateLotParams, validateScanPack, validateBatchScanPack } from './create/inward.middleware.js'
 import { removeScan } from './delete/inward.controller.js'
+import { plantReturn } from '../print-master/plant-return/plant-return.controller.js'
 
 const InwardRouter = express.Router()
 const storeOrAbove = authorize(['store'])
@@ -20,15 +21,18 @@ InwardRouter.get('/packs/labels/lot/:itemCode/:lotNo', getBatchLabels)
 InwardRouter.get('/packs/:packId', authenticate, getPackById)
 InwardRouter.get('/packs', authenticate, listPacks)
 InwardRouter.post('/packs/generate', authenticate, storeOrAbove, generatePacks)
+InwardRouter.post('/packs/plant-return', authenticate, storeOrAbove, plantReturn)
 
 // ── Inward records ─────────────────────────────────────────────────────────────
+// Scan/submit are scoped by (itemCode, lotNo) — i.e. one Print Master header
+// — instead of a separately-created session id; scan progress lives on each
+// PackDetail row's status, so there's nothing to "create" before scanning.
 InwardRouter.get('/inward', authenticate, listInward)
-InwardRouter.get('/inward/sessions', authenticate, listActiveSessions)
-InwardRouter.post('/inward/sessions', authenticate, storeOrAbove, validateCreateSession, createSession)
-InwardRouter.get('/inward/sessions/:sessionId', authenticate, validateSessionIdParam, getSession)
-InwardRouter.post('/inward/sessions/:sessionId/scan', authenticate, storeOrAbove, validateSessionIdParam, validateScanPack, scanPack)
-InwardRouter.post('/inward/sessions/:sessionId/batch-scan', authenticate, storeOrAbove, validateSessionIdParam, validateBatchScanPack, batchScanPack)
-InwardRouter.delete('/inward/sessions/:sessionId/scan/:packId', authenticate, storeOrAbove, removeScan)
-InwardRouter.post('/inward/sessions/:sessionId/submit', authenticate, storeOrAbove, validateSessionIdParam, submitSession)
+InwardRouter.get('/inward/lots/in-progress', authenticate, listActiveSessions)
+InwardRouter.get('/inward/lots/:itemCode/:lotNo', authenticate, validateLotParams, getSession)
+InwardRouter.post('/inward/lots/:itemCode/:lotNo/scan', authenticate, storeOrAbove, validateLotParams, validateScanPack, scanPack)
+InwardRouter.post('/inward/lots/:itemCode/:lotNo/batch-scan', authenticate, storeOrAbove, validateLotParams, validateBatchScanPack, batchScanPack)
+InwardRouter.delete('/inward/lots/:itemCode/:lotNo/scan/:packId', authenticate, storeOrAbove, validateLotParams, removeScan)
+InwardRouter.post('/inward/lots/:itemCode/:lotNo/submit', authenticate, storeOrAbove, validateLotParams, submitLot)
 
 export default InwardRouter

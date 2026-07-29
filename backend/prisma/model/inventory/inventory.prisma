@@ -5,10 +5,8 @@
 //   BulkLocation     — Physical storage locations for bulk (non-pack) raw materials
 //   BulkLotEntry     — Individual lot records within a bulk location
 //   BulkLotSequence  — Auto-increment sequence for bulk lot numbers (per item/year)
-//   PrintMaster      — Label/pack records generated before physical inward
-//   InwardSession    — Grouping session for scanning packs during goods receipt
-//   Inward           — Individual pack inward transactions
-//   PackBalance      — Running balance per pack (total vs remaining qty)
+//   PrintMaster      — Header: one row per item generated within a Gate Inward entry
+//   PackDetail       — One row per physical bag: scan/inward status + remaining qty
 //   ContainerMaster  — Reusable containers (drums, IBC, etc.) with current fill level
 //   LotSequence      — Auto-increment sequence for pack lot numbers (per item/year)
 //   StockLedger      — Append-only ledger of all IN/OUT stock movements
@@ -104,62 +102,55 @@ model LotSequence {
   @@map("lot_sequence")
 }
 
+// Header — one row per item generated within a single Gate Inward entry.
+// Supplier/invoice/received-date live on the linked GateInward and are not
+// duplicated here (see gateInward relation).
 model PrintMaster {
-  packId            String    @id @map("pack_id")
+  id                String    @id @default(cuid())
+  gateInwardId      String    @map("gate_inward_id") @db.Uuid
   itemCode          String    @map("item_code")
   itemName          String    @map("item_name")
   lotNo             String    @map("lot_no")
-  bagNo             Int       @map("bag_no")
   packQty           Float     @map("pack_qty")
+  numberOfBags      Int       @map("number_of_bags")
   uom               String
-  supplier          String?
-  invoiceNo         String?   @map("invoice_no")
-  receivedDate      DateTime? @map("received_date")
   customerBatchCode String?   @map("customer_batch_code")
   expiryDate        DateTime? @map("expiry_date")
-  status            String    @default("AWAITING_INWARD")
   createdAt         DateTime  @default(now()) @map("created_at")
 
-  @@unique([itemCode, lotNo, bagNo])
+  gateInward GateInward   @relation(fields: [gateInwardId], references: [inwardId])
+  bags       PackDetail[]
+
+  @@unique([itemCode, lotNo])
+  @@index([gateInwardId])
   @@map("print_master")
 }
 
-model InwardSession {
-  sessionId       String   @id @default(cuid()) @map("session_id")
-  itemCode        String   @map("item_code")
-  lotNo           String   @map("lot_no")
-  warehouse       String
-  expectedBags    Int      @map("expected_bags")
-  scannedPackIds  String[] @map("scanned_pack_ids")
-  packWarehouses  Json     @default("{}") @map("pack_warehouses")
-  status          String   @default("ACTIVE")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+// One row per physical bag — absorbs what used to be split across
+// InwardSession (scan progress), Inward (inward transaction history) and
+// PackBalance (remaining qty). `status` tracks the bag's lifecycle:
+// AWAITING_INWARD -> SCANNED -> INWARDED.
+model PackDetail {
+  packId        String    @id @map("pack_id")
+  printMasterId String    @map("print_master_id")
+  // Denormalized from PrintMaster so stock queries can groupBy/aggregate by
+  // item directly on this table (Prisma can't groupBy a related field) —
+  // mirrors what PackBalance.itemCode already did.
+  itemCode      String    @map("item_code")
+  bagNo         Int       @map("bag_no")
+  totalQty      Float     @map("total_qty")
+  remainingQty  Float     @map("remaining_qty")
+  status        String    @default("AWAITING_INWARD")
+  warehouse     String?
+  scannedAt     DateTime? @map("scanned_at")
+  inwardedAt    DateTime? @map("inwarded_at")
 
-  @@map("inward_session")
-}
+  printMaster PrintMaster @relation(fields: [printMasterId], references: [id])
 
-model Inward {
-  id         String   @id @default(cuid())
-  packId     String   @map("pack_id")
-  itemCode   String   @map("item_code")
-  itemName   String   @map("item_name")
-  lotNo      String   @map("lot_no")
-  bagNo      Int      @map("bag_no")
-  qty        Float
-  inwardTime DateTime @default(now()) @map("inward_time")
-  warehouse  String
-
-  @@map("inward")
-}
-
-model PackBalance {
-  packId       String @id @map("pack_id")
-  itemCode     String @map("item_code")
-  totalQty     Float  @map("total_qty")
-  remainingQty Float  @map("remaining_qty")
-
-  @@map("pack_balance")
+  @@unique([printMasterId, bagNo])
+  @@index([itemCode])
+  @@index([status])
+  @@map("pack_detail")
 }
 
 model ContainerMaster {

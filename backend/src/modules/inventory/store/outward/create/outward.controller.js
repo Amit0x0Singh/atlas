@@ -1,4 +1,5 @@
 import prisma from '../../../../../db.js'
+import { packDetailInclude } from '../../../../../services/pack-view.js'
 
 const bomScan = async (req, res) => {
   const { indentId, rmCode, packId } = req.body
@@ -28,19 +29,20 @@ const packReduction = async (req, res) => {
   const { packId, qty } = req.body
   if (!packId || !qty) return res.status(400).json({ success: false, error: 'packId and qty required', code: 'VALIDATION_ERROR' })
   try {
-    const packBalance = await prisma.packBalance.findUnique({ where: { packId } })
-    if (!packBalance) return res.status(404).json({ success: false, error: 'Pack not found', code: 'NOT_FOUND' })
+    const pack = await prisma.packDetail.findUnique({ where: { packId }, include: packDetailInclude })
+    if (!pack || pack.status !== 'INWARDED') return res.status(404).json({ success: false, error: 'Pack not found', code: 'NOT_FOUND' })
     const deduct = parseFloat(qty)
-    if (deduct > packBalance.remainingQty)
+    if (deduct > pack.remainingQty)
       return res.status(400).json({ success: false, error: 'Qty exceeds pack balance', code: 'VALIDATION_ERROR' })
-    const pack = await prisma.printMaster.findUnique({ where: { packId } })
     const itemCode = pack.itemCode
-    const containerId = `${pack.itemName.replace(/[^a-zA-Z0-9]/g,'').slice(0,3).toUpperCase()}-${itemCode}-CONT001`
+    const itemName = pack.printMaster.itemName
+    const uom = pack.printMaster.uom
+    const containerId = `${itemName.replace(/[^a-zA-Z0-9]/g,'').slice(0,3).toUpperCase()}-${itemCode}-CONT001`
     await prisma.$transaction(async (tx) => {
-      await tx.packBalance.update({ where: { packId }, data: { remainingQty: packBalance.remainingQty - deduct } })
+      await tx.packDetail.update({ where: { packId }, data: { remainingQty: pack.remainingQty - deduct } })
       await tx.containerMaster.upsert({
         where: { itemCode },
-        create: { containerId, itemCode, itemName: pack.itemName, capacity: 10000, currentQty: deduct, uom: pack.uom },
+        create: { containerId, itemCode, itemName, capacity: 10000, currentQty: deduct, uom },
         update: { currentQty: { increment: deduct } }
       })
       await tx.outward.create({ data: { sourceId: packId, sourceType: 'PACK_REDUCTION', rmCode: itemCode, qtyIssued: deduct } })
@@ -62,21 +64,18 @@ const bagLossAdjustment = async (req, res) => {
     if (isNaN(loss) || loss <= 0)
       return res.status(400).json({ success: false, error: 'lossQty must be a positive number', code: 'VALIDATION_ERROR' })
 
-    const [packBalance, pack] = await Promise.all([
-      prisma.packBalance.findUnique({ where: { packId } }),
-      prisma.printMaster.findUnique({ where: { packId } }),
-    ])
-    if (!packBalance) return res.status(404).json({ success: false, error: 'Pack not found or not inwarded', code: 'NOT_FOUND' })
-    if (!pack)        return res.status(404).json({ success: false, error: 'Pack not found in print master', code: 'NOT_FOUND' })
-    if (loss > packBalance.remainingQty)
-      return res.status(400).json({ success: false, error: `Loss (${loss}) exceeds remaining qty (${packBalance.remainingQty})` , code: 'VALIDATION_ERROR' })
+    const pack = await prisma.packDetail.findUnique({ where: { packId } })
+    if (!pack || pack.status !== 'INWARDED') return res.status(404).json({ success: false, error: 'Pack not found or not inwarded', code: 'NOT_FOUND' })
+    if (loss > pack.remainingQty)
+      return res.status(400).json({ success: false, error: `Loss (${loss}) exceeds remaining qty (${pack.remainingQty})` , code: 'VALIDATION_ERROR' })
 
-    const newRemaining = packBalance.remainingQty - loss
-    const newStatus    = newRemaining <= 0 ? 'EXHAUSTED' : 'PARTIALLY_ISSUED'
+    const newRemaining = pack.remainingQty - loss
+    // Not stored — EXHAUSTED/PARTIALLY_ISSUED are derived from remainingQty
+    // wherever packs are listed (see pack-view.js), never written back.
+    const newStatus = newRemaining <= 0 ? 'EXHAUSTED' : 'PARTIALLY_ISSUED'
 
     await prisma.$transaction(async (tx) => {
-      await tx.packBalance.update({ where: { packId }, data: { remainingQty: newRemaining } })
-      await tx.printMaster.update({ where: { packId }, data: { status: newStatus } })
+      await tx.packDetail.update({ where: { packId }, data: { remainingQty: newRemaining } })
       await tx.outward.create({
         data: { sourceId: packId, sourceType: 'STOCK_ADJUSTMENT', rmCode: pack.itemCode, qtyIssued: loss, remarks: reason.trim() }
       })
@@ -121,12 +120,11 @@ const warehouseTransfer = async (req, res) => {
   if (!packId || !toWarehouse)
     return res.status(400).json({ success: false, error: 'packId and toWarehouse required', code: 'VALIDATION_ERROR' })
   try {
-    const pack = await prisma.printMaster.findUnique({ where: { packId } })
+    const pack = await prisma.packDetail.findUnique({ where: { packId } })
     if (!pack) return res.status(404).json({ success: false, error: 'Pack not found', code: 'NOT_FOUND' })
-    const packBalance = await prisma.packBalance.findUnique({ where: { packId } })
-    if (!packBalance || packBalance.remainingQty <= 0)
+    if (pack.status !== 'INWARDED' || pack.remainingQty <= 0)
       return res.status(400).json({ success: false, error: 'Pack is exhausted or not inwarded', code: 'VALIDATION_ERROR' })
-    await prisma.inward.updateMany({ where: { packId }, data: { warehouse: toWarehouse } })
+    await prisma.packDetail.update({ where: { packId }, data: { warehouse: toWarehouse } })
     const prevLedger = await prisma.stockLedger.findFirst({ where: { itemCode: pack.itemCode }, orderBy: { timestamp: 'desc' } })
     await prisma.stockLedger.create({
       data: {
@@ -146,15 +144,14 @@ const directIssue = async (req, res) => {
   if (!packId || !qty || !plant)
     return res.status(400).json({ success: false, error: 'packId, qty, plant required', code: 'VALIDATION_ERROR' })
   try {
-    const packBalance = await prisma.packBalance.findUnique({ where: { packId } })
-    if (!packBalance) return res.status(404).json({ success: false, error: 'Pack not found or not inwarded', code: 'NOT_FOUND' })
+    const pack = await prisma.packDetail.findUnique({ where: { packId } })
+    if (!pack || pack.status !== 'INWARDED') return res.status(404).json({ success: false, error: 'Pack not found or not inwarded', code: 'NOT_FOUND' })
     const issue = parseFloat(qty)
     if (issue <= 0) return res.status(400).json({ success: false, error: 'Qty must be positive', code: 'VALIDATION_ERROR' })
-    if (issue > packBalance.remainingQty)
-      return res.status(400).json({ success: false, error: `Qty exceeds pack balance (${packBalance.remainingQty})` , code: 'VALIDATION_ERROR' })
-    const pack = await prisma.printMaster.findUnique({ where: { packId } })
+    if (issue > pack.remainingQty)
+      return res.status(400).json({ success: false, error: `Qty exceeds pack balance (${pack.remainingQty})` , code: 'VALIDATION_ERROR' })
     await prisma.$transaction(async (tx) => {
-      await tx.packBalance.update({ where: { packId }, data: { remainingQty: packBalance.remainingQty - issue } })
+      await tx.packDetail.update({ where: { packId }, data: { remainingQty: pack.remainingQty - issue } })
       await tx.outward.create({
         data: { sourceId: packId, sourceType: 'DIRECT_ISSUE', rmCode: pack.itemCode, qtyIssued: issue, remarks: `To: ${plant}${remarks ? ' | ' + remarks : ''}` }
       })
@@ -167,7 +164,7 @@ const directIssue = async (req, res) => {
         }
       })
     })
-    return res.json({ success: true, issued: issue, remainingQty: packBalance.remainingQty - issue })
+    return res.json({ success: true, issued: issue, remainingQty: pack.remainingQty - issue })
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
   }
@@ -185,20 +182,20 @@ const bomDirectIssue = async (req, res) => {
     const ref = `BOM: ${productName || productCode || ''}${batchSize ? ' | Batch: ' + batchSize + ' kg' : ''}${batchRef ? ' | Ref: ' + batchRef : ''}`
 
     if (source === 'pack') {
-      const packBalance = await prisma.packBalance.findUnique({ where: { packId: sourceId } })
-      if (!packBalance) return res.status(404).json({ success: false, error: 'Pack not found or not inwarded', code: 'NOT_FOUND' })
-      if (packBalance.itemCode !== rmCode)
-        return res.status(400).json({ success: false, error: `Pack item code (${packBalance.itemCode}) does not match RM (${rmCode})` , code: 'VALIDATION_ERROR' })
-      if (issue > packBalance.remainingQty)
-        return res.status(400).json({ success: false, error: `Qty (${issue}) exceeds pack balance (${packBalance.remainingQty})` , code: 'VALIDATION_ERROR' })
+      const pack = await prisma.packDetail.findUnique({ where: { packId: sourceId } })
+      if (!pack || pack.status !== 'INWARDED') return res.status(404).json({ success: false, error: 'Pack not found or not inwarded', code: 'NOT_FOUND' })
+      if (pack.itemCode !== rmCode)
+        return res.status(400).json({ success: false, error: `Pack item code (${pack.itemCode}) does not match RM (${rmCode})` , code: 'VALIDATION_ERROR' })
+      if (issue > pack.remainingQty)
+        return res.status(400).json({ success: false, error: `Qty (${issue}) exceeds pack balance (${pack.remainingQty})` , code: 'VALIDATION_ERROR' })
 
       await prisma.$transaction(async (tx) => {
-        await tx.packBalance.update({ where: { packId: sourceId }, data: { remainingQty: packBalance.remainingQty - issue } })
+        await tx.packDetail.update({ where: { packId: sourceId }, data: { remainingQty: pack.remainingQty - issue } })
         await tx.outward.create({ data: { sourceId, sourceType: 'BOM_ISSUANCE', rmCode, qtyIssued: issue, remarks: ref } })
         const prev = await tx.stockLedger.findFirst({ where: { itemCode: rmCode }, orderBy: { timestamp: 'desc' } })
         await tx.stockLedger.create({ data: { itemCode: rmCode, sourceId, transactionType: 'BOM_ISSUANCE', outQty: issue, balance: (prev?.balance || 0) - issue, reference: ref } })
       })
-      return res.json({ success: true, issued: issue, remaining: packBalance.remainingQty - issue })
+      return res.json({ success: true, issued: issue, remaining: pack.remainingQty - issue })
     }
 
     // source === 'container'
@@ -263,19 +260,19 @@ const _issuePack = async ({ indentId, rmCode, packId, forcedQty }) => {
   if (!detail) throw new Error('RM not found in indent')
   if (detail.balanceQty <= 0) throw new Error('RM already fully issued')
 
-  const packBalance = await prisma.packBalance.findUnique({ where: { packId } })
-  if (!packBalance) throw new Error('Pack not inwarded or not found')
-  if (packBalance.remainingQty <= 0) throw new Error('Pack exhausted (no remaining qty)')
-  if (packBalance.itemCode !== rmCode) throw new Error(`Pack item code (${packBalance.itemCode}) does not match RM (${rmCode})`)
+  const pack = await prisma.packDetail.findUnique({ where: { packId } })
+  if (!pack || pack.status !== 'INWARDED') throw new Error('Pack not inwarded or not found')
+  if (pack.remainingQty <= 0) throw new Error('Pack exhausted (no remaining qty)')
+  if (pack.itemCode !== rmCode) throw new Error(`Pack item code (${pack.itemCode}) does not match RM (${rmCode})`)
 
   const deduct = forcedQty !== undefined
-    ? Math.min(forcedQty, packBalance.remainingQty, detail.balanceQty)
-    : Math.min(packBalance.remainingQty, detail.balanceQty)
+    ? Math.min(forcedQty, pack.remainingQty, detail.balanceQty)
+    : Math.min(pack.remainingQty, detail.balanceQty)
 
   if (deduct <= 0) throw new Error('Nothing to deduct')
 
   await prisma.$transaction(async (tx) => {
-    await tx.packBalance.update({ where: { packId }, data: { remainingQty: packBalance.remainingQty - deduct } })
+    await tx.packDetail.update({ where: { packId }, data: { remainingQty: pack.remainingQty - deduct } })
     await tx.indentDetails.update({
       where: { id: detail.id },
       data: { issuedQty: detail.issuedQty + deduct, balanceQty: detail.balanceQty - deduct }

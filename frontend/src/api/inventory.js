@@ -21,15 +21,17 @@ export const packsApi = {
   batchLabelsUrl: (itemCode, lotNo) => `/api/packs/labels/lot/${itemCode}/${encodeURIComponent(lotNo)}`,
 }
 
+// Scan/submit are scoped by (itemCode, lotNo) — one Print Master header —
+// instead of a separately-created session id; there's nothing to "create"
+// before scanning, so getLotProgress doubles as the old createSession call.
 export const inwardApi = {
-  createSession:  (data)                  => api.post('/inward/sessions', data),
-  scan:           (sessionId, packId, warehouse) => api.post(`/inward/sessions/${sessionId}/scan`, { packId, warehouse }),
-  batchScan:      (sessionId, packIds, warehouse) => api.post(`/inward/sessions/${sessionId}/batch-scan`, { packIds, warehouse }),
-  removeScan:     (sessionId, packId)     => api.delete(`/inward/sessions/${sessionId}/scan/${encodeURIComponent(packId)}`),
-  getSession:     (sessionId)             => api.get(`/inward/sessions/${sessionId}`),
-  submit:         (sessionId, transactedBy) => api.post(`/inward/sessions/${sessionId}/submit`, { transactedBy }),
-  activeSessions: ()                      => api.get('/inward/sessions'),
-  history:        (params)                => api.get('/inward', { params }),
+  getLotProgress: (itemCode, lotNo)               => api.get(`/inward/lots/${encodeURIComponent(itemCode)}/${encodeURIComponent(lotNo)}`),
+  scan:           (itemCode, lotNo, packId, warehouse) => api.post(`/inward/lots/${encodeURIComponent(itemCode)}/${encodeURIComponent(lotNo)}/scan`, { packId, warehouse }),
+  batchScan:      (itemCode, lotNo, packIds, warehouse) => api.post(`/inward/lots/${encodeURIComponent(itemCode)}/${encodeURIComponent(lotNo)}/batch-scan`, { packIds, warehouse }),
+  removeScan:     (itemCode, lotNo, packId)       => api.delete(`/inward/lots/${encodeURIComponent(itemCode)}/${encodeURIComponent(lotNo)}/scan/${encodeURIComponent(packId)}`),
+  submit:         (itemCode, lotNo, warehouse)    => api.post(`/inward/lots/${encodeURIComponent(itemCode)}/${encodeURIComponent(lotNo)}/submit`, { warehouse }),
+  lotsInProgress: ()                              => api.get('/inward/lots/in-progress'),
+  history:        (params)                        => api.get('/inward', { params }),
 }
 
 export const outwardApi = {
@@ -98,7 +100,7 @@ export const importApi = {
 
 export const grnApi = {
   list:   ()                     => api.get('/grn'),
-  detail: (invoiceNo, supplier)  => api.get('/grn/detail', { params: { invoiceNo, supplier } }),
+  detail: (gateInwardId)         => api.get('/grn/detail', { params: { gateInwardId } }),
 }
 
 export const bulkApi = {

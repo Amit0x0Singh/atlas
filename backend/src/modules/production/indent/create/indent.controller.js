@@ -5,7 +5,7 @@ const getStockChecks = async (productCode, batchSize) => {
   const size = parseFloat(batchSize)
   return Promise.all(recipe.map(async (r) => {
     const required = parseFloat((r.qtyPerUnit * size).toFixed(4))
-    const packStock = await prisma.packBalance.aggregate({ where: { itemCode: r.rmCode, remainingQty: { gt: 0 } }, _sum: { remainingQty: true } })
+    const packStock = await prisma.packDetail.aggregate({ where: { itemCode: r.rmCode, status: 'INWARDED', remainingQty: { gt: 0 } }, _sum: { remainingQty: true } })
     const container = await prisma.containerMaster.findUnique({ where: { itemCode: r.rmCode } }).catch(() => null)
     const available = Number(packStock._sum.remainingQty || 0) + Number(container?.currentQty || 0)
     return { rmCode: r.rmCode, rmName: r.rmName, required, available, shortfall: Math.max(0, required - available), ok: available >= required }

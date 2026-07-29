@@ -16,10 +16,8 @@ export const MODELS = {
   'bulk-lot-entry':     { model: 'bulkLotEntry',           idField: 'id',                      orderBy: { createdAt: 'desc' } },
   'bulk-lot-sequence':  { model: 'bulkLotSequence',        idField: ['itemCode', 'year'],       orderBy: { year: 'desc' } },
   'lot-sequence':       { model: 'lotSequence',            idField: ['itemCode', 'year'],       orderBy: { year: 'desc' } },
-  'print-master':       { model: 'printMaster',            idField: 'packId',                  orderBy: { createdAt: 'desc' } },
-  'inward-session':     { model: 'inwardSession',          idField: 'sessionId',               orderBy: { createdAt: 'desc' } },
-  'inward':             { model: 'inward',                 idField: 'id',                      orderBy: { inwardTime: 'desc' } },
-  'pack-balance':       { model: 'packBalance',            idField: 'packId'                                                  },
+  'print-master':       { model: 'printMaster',            idField: 'id',                       orderBy: { createdAt: 'desc' } },
+  'pack-detail':        { model: 'packDetail',             idField: 'packId'                                                  },
   'container-master':   { model: 'containerMaster',        idField: 'containerId'                                             },
   'stock-ledger':       { model: 'stockLedger',            idField: 'id',                      orderBy: { timestamp: 'desc' } },
   'outward':            { model: 'outward',                idField: 'id',                      orderBy: { timestamp: 'desc' } },
@@ -111,6 +109,9 @@ export const MODELS = {
   'microbial-sfg-containers':    { model: 'microbialSfgContainer',    idField: 'containerId',   orderBy: { createdAt: 'desc' } },
   'microbial-sfg-inward':        { model: 'microbialSfgInward',       idField: 'inwardId',      orderBy: { createdAt: 'desc' } },
   'microbial-sfg-allocations':   { model: 'microbialSfgAllocation',   idField: 'allocationId',  orderBy: { createdAt: 'desc' } },
+  'microbial-sfg-outward':       { model: 'microbialSfgOutward',      idField: 'outwardId',     orderBy: { createdAt: 'desc' } },
+  'microbial-sfg-outward-line':  { model: 'microbialSfgOutwardLine',  idField: 'lineId',        orderBy: { createdAt: 'desc' } },
+  'microbial-sfg-outward-session': { model: 'microbialSfgOutwardSession', idField: 'id',        orderBy: { updatedAt: 'desc' } },
 
   // ── Notifications ──────────────────────────────────────────────────────────
   'notifications':              { model: 'erpNotification',         idField: 'notifId',    orderBy: { createdAt: 'desc' } },

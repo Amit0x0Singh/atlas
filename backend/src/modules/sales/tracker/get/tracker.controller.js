@@ -1,4 +1,5 @@
 import prisma from "../../../../db.js";
+import { flattenPack, packDetailInclude } from "../../../../services/pack-view.js";
 
 // GET /api/tracker
 export const listTrackerIndents = async (req, res) => {
@@ -65,7 +66,7 @@ export const getTrackerDetail = async (req, res) => {
     ];
     const packs =
       packIds.length > 0
-        ? await prisma.printMaster.findMany({ where: { packId: { in: packIds } } })
+        ? await prisma.packDetail.findMany({ where: { packId: { in: packIds } }, include: packDetailInclude }).then(bags => bags.map(flattenPack))
         : [];
     const packMap = Object.fromEntries(packs.map((p) => [p.packId, p]));
 

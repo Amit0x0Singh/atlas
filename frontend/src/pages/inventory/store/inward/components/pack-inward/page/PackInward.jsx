@@ -25,7 +25,7 @@ const FLUSH_RETRY_MS    = 3000
 // it. SCAN_BURST_IDLE_MS is how long to wait before treating a lingering,
 // unmatched buffer as a genuine unrecognized scan instead of staying silent.
 const SCAN_BURST_IDLE_MS = 300
-const localScanKey = (sessionId) => `inward-scan:${sessionId}`
+const localScanKey = (itemCode, lotNo) => `inward-scan:${itemCode}::${lotNo}`
 
 // Haptic feedback so an operator scanning bag-after-bag doesn't need to
 // glance at the screen to know a scan landed — a short single buzz for a
@@ -156,13 +156,13 @@ export default function PackInward() {
   const loadGroups = async () => {
     try {
       setLoading(true)
-      const [pendingRes, sessionsRes] = await Promise.all([
+      const [pendingRes, lotsRes] = await Promise.all([
         packsApi.pendingInward(),
-        inwardApi.activeSessions(),
+        inwardApi.lotsInProgress(),
       ])
       setPending(pendingRes.data || [])
       const map = {}
-      for (const s of (sessionsRes.data || [])) {
+      for (const s of (lotsRes.data || [])) {
         map[`${s.itemCode}-${s.lotNo}`] = s
       }
       setActiveSessionMap(map)
@@ -177,14 +177,13 @@ export default function PackInward() {
     try {
       const sessionKey  = `${selected.itemCode}-${selected.lotNo}`
       const isResume    = !!activeSessionMap[sessionKey]
-      // One round trip: createSession now returns the full pack list for
-      // this item/lot too, so there's no separate getSession() follow-up
-      // just to fetch the same session a second time.
-      const createRes   = await inwardApi.createSession({ itemCode: selected.itemCode, lotNo: selected.lotNo, warehouse })
-      const sessionData = createRes.data
+      // Scan progress lives directly on each bag's status — there's no
+      // session to create, just the current progress to fetch.
+      const progressRes = await inwardApi.getLotProgress(selected.itemCode, selected.lotNo)
+      const sessionData = progressRes.data
       const alreadyScanned = (sessionData?.scannedPackIds?.length || 0) > 0
 
-      packMapRef.current = new Map((sessionData.packs || []).map(p => [p.packId, p]))
+      packMapRef.current = new Map((sessionData.bags || []).map(p => [p.packId, p]))
       scannedSetRef.current = new Set(sessionData.scannedPackIds || [])
       pendingQueueRef.current = []
 
@@ -192,7 +191,7 @@ export default function PackInward() {
       // server — e.g. the tab crashed or lost network mid-session.
       let restored = sessionData
       try {
-        const raw = localStorage.getItem(localScanKey(sessionData.sessionId))
+        const raw = localStorage.getItem(localScanKey(sessionData.itemCode, sessionData.lotNo))
         if (raw) {
           const saved = JSON.parse(raw)
           const toReplay = (saved.queue || []).filter(
@@ -339,10 +338,10 @@ export default function PackInward() {
 
   // Persists the not-yet-synced queue so a crash/reload can recover it —
   // removed entirely once the queue drains so nothing lingers in storage.
-  const persistLocalQueue = (sessionId) => {
-    if (!sessionId) return
-    if (pendingQueueRef.current.length === 0) localStorage.removeItem(localScanKey(sessionId))
-    else localStorage.setItem(localScanKey(sessionId), JSON.stringify({ queue: pendingQueueRef.current }))
+  const persistLocalQueue = (itemCode, lotNo) => {
+    if (!itemCode || !lotNo) return
+    if (pendingQueueRef.current.length === 0) localStorage.removeItem(localScanKey(itemCode, lotNo))
+    else localStorage.setItem(localScanKey(itemCode, lotNo), JSON.stringify({ queue: pendingQueueRef.current }))
   }
 
   const scheduleFlush = () => {
@@ -366,7 +365,7 @@ export default function PackInward() {
     let failed = false
     const toSync = [...pendingQueueRef.current]
     try {
-      const res = await inwardApi.batchScan(cur.sessionId, toSync, warehouseRef.current)
+      const res = await inwardApi.batchScan(cur.itemCode, cur.lotNo, toSync, warehouseRef.current)
       // Drop only what we actually sent — anything queued after this
       // request started (scanned while it was in flight) stays queued.
       pendingQueueRef.current = pendingQueueRef.current.filter(id => !toSync.includes(id))
@@ -381,7 +380,7 @@ export default function PackInward() {
       scannedSetRef.current = new Set(merged.scannedPackIds)
       sessionRef.current = merged
       setSession(merged)
-      persistLocalQueue(cur.sessionId)
+      persistLocalQueue(cur.itemCode, cur.lotNo)
 
       // Only surface true failures — ALREADY_SCANNED just means another
       // device synced that pack first, which is expected and harmless.
@@ -420,7 +419,6 @@ export default function PackInward() {
     if (pack.status !== 'AWAITING_INWARD') { vibrateScanError(); setScanError(`Pack ${packId} is already ${pack.status}`); return }
 
     vibrateScanOk()
-    const wh = warehouseRef.current
     scannedSetRef.current.add(packId)
     pendingQueueRef.current.push(packId)
 
@@ -428,12 +426,11 @@ export default function PackInward() {
       ...cur,
       scannedPackIds: [...cur.scannedPackIds, packId],
       pendingPackIds: cur.pendingPackIds.filter(id => id !== packId),
-      packWarehouses: { ...(cur.packWarehouses || {}), [packId]: wh },
     }
     sessionRef.current = next
     setSession(next)
 
-    persistLocalQueue(cur.sessionId)
+    persistLocalQueue(cur.itemCode, cur.lotNo)
     scheduleFlush()
   }
 
@@ -509,13 +506,13 @@ export default function PackInward() {
       }
       sessionRef.current = next
       setSession(next)
-      persistLocalQueue(cur.sessionId)
+      persistLocalQueue(cur.itemCode, cur.lotNo)
       return
     }
 
     // Already synced — remove it server-side (Undo is rare, an immediate call is fine).
     try {
-      const res = await inwardApi.removeScan(cur.sessionId, packId)
+      const res = await inwardApi.removeScan(cur.itemCode, cur.lotNo, packId)
       scannedSetRef.current.delete(packId)
       sessionRef.current = res.data
       setSession(res.data)
@@ -539,8 +536,8 @@ export default function PackInward() {
       // committing the inward — submit only ever acts on what's in the DB.
       await flushPendingScans()
       setDoneStats({ submitted: scanned.length, leftOver: pending.length })
-      await inwardApi.submit(cur.sessionId, 'Operator')
-      localStorage.removeItem(localScanKey(cur.sessionId))
+      await inwardApi.submit(cur.itemCode, cur.lotNo, warehouseRef.current)
+      localStorage.removeItem(localScanKey(cur.itemCode, cur.lotNo))
       stopCamera()
       setStep(STEPS.DONE)
     } catch (e) { setScanError(e.message) }
