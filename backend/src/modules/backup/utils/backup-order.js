@@ -36,6 +36,10 @@ if (modelsByAccessor.size !== BUSINESS_ACCESSORS.size) {
 const dependsOn = new Map([...modelsByAccessor.keys()].map((a) => [a, new Set()]));
 // parentAccessor -> [childAccessor, ...] for onDelete: Cascade relations only.
 export const CASCADE_DEPENDENTS = {};
+// Every FK edge between two business-tracked models, cascade or not — the raw
+// material both cascade-expansion above AND the Data Management module's
+// external-reference impact-preview are built from (one DMMF walk serves both).
+export const FK_EDGES = [];
 
 for (const [childAccessor, model] of modelsByAccessor) {
   for (const field of model.fields) {
@@ -43,6 +47,22 @@ for (const [childAccessor, model] of modelsByAccessor) {
     const parentAccessor = accessorOf(field.type);
     if (!modelsByAccessor.has(parentAccessor) || parentAccessor === childAccessor) continue;
     dependsOn.get(childAccessor).add(parentAccessor);
+    // Whether each FK scalar column can actually be null — Prisma rejects a
+    // `{not: null}` filter on a required (non-nullable) field outright, so
+    // callers need this to build a valid "does any referencing row exist"
+    // query instead of assuming every FK is optional.
+    const fkFieldsNullable = field.relationFromFields.map((fName) => {
+      const scalarField = model.fields.find((f) => f.name === fName);
+      return scalarField ? !scalarField.isRequired : true;
+    });
+    FK_EDGES.push({
+      childAccessor,
+      parentAccessor,
+      fkFields: field.relationFromFields,
+      referencedFields: field.relationToFields,
+      fkFieldsNullable,
+      onDelete: field.relationOnDelete ?? null,
+    });
     if (field.relationOnDelete === 'Cascade') {
       (CASCADE_DEPENDENTS[parentAccessor] ??= []).push(childAccessor);
     }

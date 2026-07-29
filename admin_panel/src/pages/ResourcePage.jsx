@@ -13,6 +13,7 @@ import DataTable from '../components/table/DataTable.jsx';
 import Pagination from '../components/table/Pagination.jsx';
 import RowDetailDrawer from '../components/table/RowDetailDrawer.jsx';
 import SchemaModal from '../components/table/SchemaModal.jsx';
+import StartDeleteModal from '../components/data-management/StartDeleteModal.jsx';
 import { exportToCsv } from '../components/table/csv.js';
 import DataFormModal from '../components/form/DataFormModal.jsx';
 import ImportDialog from '../components/form/ImportDialog.jsx';
@@ -33,11 +34,26 @@ function getLocalId(resource, record) {
     : record[resource.idField];
 }
 
+// resource.model is the display-facing Prisma model name (e.g. 'GateInward');
+// the Data Management/Backup APIs address tables by their Prisma Client
+// accessor (camelCase first letter) — same transform used on the backend.
+function modelAccessorFor(resource) {
+  return resource.model.charAt(0).toLowerCase() + resource.model.slice(1);
+}
+
+function recordIdsFor(resource, records) {
+  return records.map((r) =>
+    Array.isArray(resource.idField)
+      ? Object.fromEntries(resource.idField.map((f) => [f, r[f]]))
+      : { [resource.idField]: r[resource.idField] },
+  );
+}
+
 export default function ResourcePage({ resource }) {
   const { quickCreateRequestId } = useOutletContext();
   const {
     records, total, page, limit, loading, saving, error,
-    setPage, setLimit, reload, save, remove, removeAll,
+    setPage, setLimit, reload, save, remove,
   } = useResourceRecords(resource);
 
   const { visit } = useRecentPages();
@@ -49,13 +65,14 @@ export default function ResourcePage({ resource }) {
   const [modalState, setModalState] = useState(null);
   const [drawerRecord, setDrawerRecord] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
-  const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
-  const [deletingAll, setDeletingAll] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [schemaOpen, setSchemaOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
-  const [bulkDeleting, setBulkDeleting] = useState(false);
-  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
+  // Pre-scoped Data Management delete flow — set by either "Delete all
+  // records" ({deleteType:'TABLE'}) or "Delete selected" ({deleteType:
+  // 'RECORD', ids}), both of which now go through the same backup-first,
+  // audited, password-gated pipeline instead of the old direct-delete calls.
+  const [deleteFlow, setDeleteFlow] = useState(null);
 
   const searchRef = useRef(null);
 
@@ -126,23 +143,9 @@ export default function ResourcePage({ resource }) {
     }
   }
 
-  async function handleDeleteAll() {
-    setDeletingAll(true);
-    const ok = await removeAll();
-    setDeletingAll(false);
-    if (ok) setConfirmDeleteAll(false);
-  }
-
-  async function handleBulkDelete() {
-    setBulkDeleting(true);
-    const targets = records.filter((rec) => selectedIds.has(getLocalId(resource, rec)));
-    for (const rec of targets) {
-      // eslint-disable-next-line no-await-in-loop
-      await remove(rec);
-    }
-    setBulkDeleting(false);
-    setConfirmBulkDelete(false);
+  function handleDeleteFlowDone() {
     setSelectedIds(new Set());
+    reload();
   }
 
   return (
@@ -193,7 +196,18 @@ export default function ResourcePage({ resource }) {
           <div className="flex items-center gap-3 px-4 py-2.5 bg-blue-50 dark:bg-blue-950/40 border-b border-blue-100 dark:border-blue-900 text-sm text-blue-700 dark:text-blue-300">
             <span className="font-medium">{selectedIds.size} selected</span>
             <button type="button" onClick={() => setSelectedIds(new Set())} className="text-blue-500 hover:underline">Clear</button>
-            <Button variant="danger" size="sm" className="ml-auto" onClick={() => setConfirmBulkDelete(true)}>Delete selected</Button>
+            <Button
+              variant="danger"
+              size="sm"
+              className="ml-auto"
+              onClick={() => setDeleteFlow({
+                deleteType: 'RECORD',
+                table: modelAccessorFor(resource),
+                ids: recordIdsFor(resource, records.filter((rec) => selectedIds.has(getLocalId(resource, rec)))),
+              })}
+            >
+              Delete selected
+            </Button>
           </div>
         )}
 
@@ -242,7 +256,12 @@ export default function ResourcePage({ resource }) {
       </Card>
 
       <div className="flex justify-end">
-        <Button variant="ghost" size="sm" onClick={() => setConfirmDeleteAll(true)} disabled={total === 0}>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setDeleteFlow({ deleteType: 'TABLE', table: modelAccessorFor(resource) })}
+          disabled={total === 0}
+        >
           Delete all {total.toLocaleString()} records
         </Button>
       </div>
@@ -278,24 +297,12 @@ export default function ResourcePage({ resource }) {
         onCancel={() => setDeleteTarget(null)}
       />
 
-      <DeleteDialog
-        open={confirmDeleteAll}
-        title="Delete all records?"
-        message={<>This will permanently remove all <strong>{total.toLocaleString()}</strong> rows from <code>{resource.path}</code>. This cannot be undone.</>}
-        confirmLabel="Delete all"
-        loading={deletingAll}
-        onConfirm={handleDeleteAll}
-        onCancel={() => setConfirmDeleteAll(false)}
-      />
-
-      <DeleteDialog
-        open={confirmBulkDelete}
-        title={`Delete ${selectedIds.size} selected records?`}
-        message="This cannot be undone."
-        confirmLabel="Delete selected"
-        loading={bulkDeleting}
-        onConfirm={handleBulkDelete}
-        onCancel={() => setConfirmBulkDelete(false)}
+      <StartDeleteModal
+        open={!!deleteFlow}
+        initialScope={deleteFlow}
+        tables={[]}
+        onClose={() => setDeleteFlow(null)}
+        onDone={handleDeleteFlowDone}
       />
     </div>
   );

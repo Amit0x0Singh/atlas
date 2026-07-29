@@ -27,7 +27,15 @@ function writeChunk(stream, chunk) {
 // file — never buffers the whole export in memory. Runs fire-and-forget
 // after createBackup() has already responded to the HTTP request; progress
 // is polled off the BackupJob row this function keeps updating as it goes.
-export async function runBackupExport(backupJobId, { tables, auditCtx }) {
+//
+// `whereByTable` is optional and only ever passed by the Data Management
+// delete pipeline's pre-delete safeguard backup — every existing call site
+// (the plain "Create Backup" flow) omits it, so `findMany({..., where:
+// undefined})` behaves exactly as before. When present, the exported file is
+// stamped `"scope":"PARTIAL"` (vs `"FULL"`) so a re-uploaded file is
+// self-describing even without its BackupJob row — the restore engine reads
+// this to decide whether restoring may safely wipe the whole table first.
+export async function runBackupExport(backupJobId, { tables, auditCtx, whereByTable }) {
   ensureStorageDirs();
   const fileName = `${backupJobId}.json.gz`;
   const filePath = path.join(BACKUPS_DIR, fileName);
@@ -46,9 +54,10 @@ export async function runBackupExport(backupJobId, { tables, auditCtx }) {
   let recordCount = 0;
 
   try {
+    const scope = whereByTable ? 'PARTIAL' : 'FULL';
     await writeChunk(
       gzip,
-      `{"version":1,"createdAt":${JSON.stringify(new Date().toISOString())},` +
+      `{"version":1,"scope":${JSON.stringify(scope)},"createdAt":${JSON.stringify(new Date().toISOString())},` +
         `"tables":${JSON.stringify(orderedTables)},"data":{`,
     );
 
@@ -61,7 +70,7 @@ export async function runBackupExport(backupJobId, { tables, auditCtx }) {
       let tableRowCount = 0;
       for (;;) {
         // eslint-disable-next-line no-await-in-loop
-        const page = await prisma[table].findMany({ skip, take: PAGE_SIZE });
+        const page = await prisma[table].findMany({ skip, take: PAGE_SIZE, where: whereByTable?.[table] });
         if (page.length === 0) break;
         for (const row of page) {
           // eslint-disable-next-line no-await-in-loop
@@ -94,6 +103,7 @@ export async function runBackupExport(backupJobId, { tables, auditCtx }) {
       where: { id: backupJobId },
       data: {
         status: 'COMPLETED',
+        scope,
         fileSizeBytes: BigInt(size),
         filePath,
         fileName,

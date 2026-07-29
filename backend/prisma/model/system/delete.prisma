@@ -1,0 +1,33 @@
+// ─── DATA MANAGEMENT — RECORD/TABLE/MODULE DELETE ────────────────────────────
+//
+// DeleteJob — metadata + progress for a Record-wise / Table-wise / Module-wise
+// / Selected-Tables delete. Every DeleteJob has exactly one linked BackupJob
+// (created and confirmed COMPLETED before any row is removed) so every delete
+// is undoable through the existing Backup & Restore "Restore" action.
+//
+// ─────────────────────────────────────────────────────────────────────────────
+
+model DeleteJob {
+  id             String     @id @default(cuid())
+  deleteType     String     @db.VarChar(20)                    // RECORD | TABLE | MODULE | SELECTED
+  tables         String[]   @default([])                       // resolved accessor names, cascade-expanded
+  modules        String[]   @default([])                       // group keys (deleteType = MODULE only)
+  recordScope    Json?      @map("record_scope")                // RECORD only: { table, ids: [{...pk fields}] }
+  status         String     @default("PENDING") @db.VarChar(20)
+  // PENDING | BACKING_UP | DELETING | COMPLETED | FAILED
+  tablesTotal    Int        @default(0) @map("tables_total")
+  tablesDone     Int        @default(0) @map("tables_done")
+  currentTable   String?    @map("current_table")
+  recordCount    Int        @default(0) @map("record_count")
+  tableBreakdown Json?      @map("table_breakdown")             // { tableName: rowsDeleted }
+  backupJobId    String?    @map("backup_job_id")
+  backupJob      BackupJob? @relation(fields: [backupJobId], references: [id], onDelete: SetNull)
+  deletedBy      String?    @map("deleted_by") @db.VarChar(200)
+  deletedByName  String?    @map("deleted_by_name") @db.VarChar(200)
+  errorMessage   String?    @map("error_message")
+  remarks        String?
+  createdAt      DateTime   @default(now()) @map("created_at") @db.Timestamptz()
+  completedAt    DateTime?  @map("completed_at") @db.Timestamptz()
+
+  @@map("delete_jobs")
+}

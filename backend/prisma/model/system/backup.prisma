@@ -14,6 +14,7 @@ model BackupJob {
   id             String    @id @default(cuid())
   name           String    @db.VarChar(200)
   type           String    @db.VarChar(20)                    // FULL | MODULE | SELECTED
+  scope          String    @default("FULL") @db.VarChar(10)   // FULL (whole table) | PARTIAL (row-filtered)
   status         String    @default("RUNNING") @db.VarChar(20) // RUNNING | COMPLETED | FAILED
   tables         String[]  @default([])                       // Prisma accessor names included
   modules        String[]  @default([])                       // group keys (type = MODULE only)
@@ -33,6 +34,7 @@ model BackupJob {
   completedAt    DateTime? @map("completed_at") @db.Timestamptz()
 
   restoreJobs RestoreJob[]
+  deleteJobs  DeleteJob[]
 
   @@map("backup_jobs")
 }

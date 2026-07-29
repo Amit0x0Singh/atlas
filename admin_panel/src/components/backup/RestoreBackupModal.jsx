@@ -86,8 +86,15 @@ export default function RestoreBackupModal({ open, onClose, onDone, presetJob })
     }
   }
 
+  // A PARTIAL (row-scoped) backup — e.g. the Data Management module's
+  // auto-safeguard backup before a Record-wise delete — only ever
+  // re-inserts the specific rows it contains; it never wipes the table
+  // first, so the warning here is materially less scary than for a FULL
+  // backup and should say so rather than implying the whole table is at risk.
   const confirmMessage = selectedBackup
-    ? <>This will permanently overwrite data in <strong>{selectedBackup.tableCount} table(s)</strong> from "{selectedBackup.name}". This cannot be undone.</>
+    ? selectedBackup.scope === 'PARTIAL'
+      ? <>This will re-insert the previously removed row(s) from "{selectedBackup.name}" into <strong>{selectedBackup.tableCount} table(s)</strong>. It will not remove or alter any other current data in these tables.</>
+      : <>This will permanently overwrite data in <strong>{selectedBackup.tableCount} table(s)</strong> from "{selectedBackup.name}". This cannot be undone.</>
     : <>This will permanently overwrite data in the table(s) contained in <strong>{file?.name}</strong>. This cannot be undone.</>;
 
   return (

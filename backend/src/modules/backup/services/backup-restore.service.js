@@ -65,7 +65,9 @@ export async function validateBackupFile(filePath) {
     }
   }
 
-  return { parsed, tables: parsed.tables };
+  // Files predating this field have no "scope" key at all — default to FULL
+  // so every existing backup keeps restoring exactly as it always has.
+  return { parsed, tables: parsed.tables, scope: parsed.scope ?? 'FULL' };
 }
 
 // JSON round-trips BigInt columns as strings (see backup-export.service.js) —
@@ -112,8 +114,9 @@ export async function runRestore(restoreJobId, filePath, auditCtx = {}) {
 async function runRestoreInner(restoreJobId, filePath, auditCtx) {
   let parsed;
   let requestedTables;
+  let scope;
   try {
-    ({ parsed, tables: requestedTables } = await validateBackupFile(filePath));
+    ({ parsed, tables: requestedTables, scope } = await validateBackupFile(filePath));
   } catch (err) {
     await prisma.restoreJob.update({
       where: { id: restoreJobId },
@@ -145,16 +148,25 @@ async function runRestoreInner(restoreJobId, filePath, auditCtx) {
   try {
     await prisma.$transaction(
       async (tx) => {
-        for (const table of deleteOrder) {
-          // eslint-disable-next-line no-await-in-loop
-          await tx[table].deleteMany({});
+        // FULL backups contain the whole table, so restoring means "make
+        // this table exactly match the file" — wipe first. PARTIAL backups
+        // (row-scoped, e.g. the Data Management delete pipeline's safeguard
+        // backups) contain only specific rows — wiping the table first would
+        // destroy every OTHER current row, so skip it entirely; `createMany`
+        // with `skipDuplicates` re-inserts just what was removed and leaves
+        // everything else untouched.
+        if (scope === 'FULL') {
+          for (const table of deleteOrder) {
+            // eslint-disable-next-line no-await-in-loop
+            await tx[table].deleteMany({});
+          }
         }
         for (const table of insertOrder) {
           const rows = coerceBigInts(table, parsed.data[table] ?? []);
           for (const batch of chunk(rows, CHUNK_SIZE)) {
             if (batch.length === 0) continue;
             // eslint-disable-next-line no-await-in-loop
-            await tx[table].createMany({ data: batch });
+            await tx[table].createMany({ data: batch, skipDuplicates: scope !== 'FULL' });
           }
           recordCount += rows.length;
           // Progress is tracked outside the transaction (plain `prisma`, not

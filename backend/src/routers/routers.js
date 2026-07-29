@@ -18,6 +18,9 @@ import AdminPanelRouter from "../modules/admin_panel/router.js";
 // Backup & Restore Router
 import BackupRouter from "../modules/backup/router.js";
 
+// Data Management (Delete) Router
+import DataManagementRouter from "../modules/data-management/router.js";
+
 // Import controller
 import {
   previewImport,
@@ -98,6 +101,11 @@ router.post(
   executeImport,
 );
 
+
+// ---- data management (delete) routes ─────────────────────────────────────────
+// Must be registered before AdminPanelRouter for the same reason as
+// /admin/backup below — its own /:resource catch-all would 404 this first.
+router.use("/admin/data-management", adminOnly, DataManagementRouter);
 
 // ---- backup & restore routes ─────────────────────────────────────────────────
 // Must be registered before AdminPanelRouter — its own /:resource catch-all
