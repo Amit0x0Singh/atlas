@@ -51,14 +51,26 @@ export async function restoreFromUpload(file) {
   return data.data;
 }
 
-export async function downloadBackup(id, fileName) {
-  const { data } = await http.get(`/backup/${id}/download`, { responseType: 'blob' });
-  const url = URL.createObjectURL(data);
+function triggerBlobDownload(blob, fileName) {
+  const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = fileName || `${id}.json.gz`;
+  a.download = fileName;
   document.body.appendChild(a);
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
+}
+
+export async function downloadBackup(id, fileName) {
+  const { data } = await http.get(`/backup/${id}/download`, { responseType: 'blob' });
+  triggerBlobDownload(data, fileName || `${id}.json.gz`);
+}
+
+// Reporting/analysis export (.xlsx) — a derived view of the backup's data,
+// never used for restoring. The original .json.gz stays untouched.
+export async function downloadBackupExcel(id, name) {
+  const { data } = await http.get(`/backup/${id}/download/excel`, { responseType: 'blob' });
+  const safeName = (name || id).replace(/[\\/?*[\]:]/g, '_');
+  triggerBlobDownload(data, `${safeName}.xlsx`);
 }

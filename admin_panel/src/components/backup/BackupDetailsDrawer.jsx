@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { createPortal } from 'react-dom';
-import { X, Download, RotateCcw, Trash2 } from 'lucide-react';
+import { X, RotateCcw, Trash2 } from 'lucide-react';
 import Button from '../common/Button.jsx';
 import StatusBadge from '../common/StatusBadge.jsx';
+import DownloadMenu from './DownloadMenu.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
-import { getBackupDetails, downloadBackup } from '../../api/backup.js';
+import { getBackupDetails, downloadBackup, downloadBackupExcel } from '../../api/backup.js';
 
 function formatBytes(bytes) {
   if (bytes == null) return '—';
@@ -103,14 +104,12 @@ export default function BackupDetailsDrawer({ backupId, onClose, onRestore, onDe
 
             <div className="flex gap-2 px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 flex-shrink-0">
               <Button variant="secondary" onClick={onClose}>Close</Button>
-              <Button
-                variant="secondary"
-                icon={Download}
+              <DownloadMenu
+                variant="text"
                 disabled={job?.status !== 'COMPLETED'}
-                onClick={() => downloadBackup(job.id, job.fileName)}
-              >
-                Download
-              </Button>
+                onDownloadOriginal={() => downloadBackup(job.id, job.fileName)}
+                onExportExcel={() => downloadBackupExcel(job.id, job.name)}
+              />
               {!isReadOnly && (
                 <>
                   <Button

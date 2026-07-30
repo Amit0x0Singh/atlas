@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Download, RotateCcw, Trash2, Eye, RefreshCw } from 'lucide-react';
+import { RotateCcw, Trash2, Eye, RefreshCw } from 'lucide-react';
 import Card from '../common/Card.jsx';
 import Button from '../common/Button.jsx';
 import EmptyState from '../common/EmptyState.jsx';
@@ -7,9 +7,10 @@ import DeleteDialog from '../common/DeleteDialog.jsx';
 import StatusBadge from '../common/StatusBadge.jsx';
 import SearchBar from '../table/SearchBar.jsx';
 import Pagination from '../table/Pagination.jsx';
+import DownloadMenu from './DownloadMenu.jsx';
 import { useToast } from '../common/Toast.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
-import { listBackups, deleteBackup, downloadBackup } from '../../api/backup.js';
+import { listBackups, deleteBackup, downloadBackup, downloadBackupExcel } from '../../api/backup.js';
 
 function formatBytes(bytes) {
   if (bytes == null) return '—';
@@ -60,6 +61,14 @@ export default function BackupHistoryTable({ refreshSignal, onViewDetails, onRes
       await downloadBackup(job.id, job.fileName);
     } catch {
       showToast('Unable to download backup.', 'danger');
+    }
+  }
+
+  async function handleExportExcel(job) {
+    try {
+      await downloadBackupExcel(job.id, job.name);
+    } catch {
+      showToast('Unable to export to Excel.', 'danger');
     }
   }
 
@@ -146,15 +155,11 @@ export default function BackupHistoryTable({ refreshSignal, onViewDetails, onRes
                       >
                         <Eye size={15} />
                       </button>
-                      <button
-                        type="button"
-                        title="Download"
+                      <DownloadMenu
                         disabled={job.status !== 'COMPLETED'}
-                        onClick={() => handleDownload(job)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-600 disabled:opacity-30 disabled:pointer-events-none"
-                      >
-                        <Download size={15} />
-                      </button>
+                        onDownloadOriginal={() => handleDownload(job)}
+                        onExportExcel={() => handleExportExcel(job)}
+                      />
                       {!isReadOnly && (
                         <>
                           <button

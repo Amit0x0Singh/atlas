@@ -181,7 +181,7 @@ export default function ItemLine({ idx, item, rmList, pmList, receivedDate, onCh
       {/* Qty fields */}
       <div className="gf-qty-grid" style={{ marginBottom: "10px" }}>
         <div>
-          <label style={lbl}>Number of Bags *</label>
+          <label style={lbl}>Number of packs *</label>
           <input type="number" min="1"
             value={item.numberOfBags}
             onChange={e => onChange({ ...item, numberOfBags: e.target.value })}
@@ -189,7 +189,7 @@ export default function ItemLine({ idx, item, rmList, pmList, receivedDate, onCh
           />
         </div>
         <div>
-          <label style={lbl}>Qty per Bag ({item.selectedItem?.uom || "KG"}) *</label>
+          <label style={lbl}>Qty per Pack ({item.selectedItem?.uom || "KG"}) *</label>
           <input type="number" step="0.01" min="0.01"
             value={item.packQty}
             onChange={e => onChange({ ...item, packQty: e.target.value })}

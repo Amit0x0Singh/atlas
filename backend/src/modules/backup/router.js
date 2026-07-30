@@ -4,7 +4,7 @@ import { createBackup } from './create/backup.controller.js';
 import {
   listBackups, getBackupDetails, getBackupStatus, getRestoreStatus, listRestoresForBackup,
 } from './get/backup.controller.js';
-import { downloadBackup } from './download/backup.controller.js';
+import { downloadBackup, downloadBackupExcel } from './download/backup.controller.js';
 import { restoreFromHistory, restoreFromUpload } from './restore/backup.controller.js';
 import { deleteBackup } from './delete/backup.controller.js';
 import { getTablesMetadata } from './metadata/backup.controller.js';
@@ -39,6 +39,7 @@ router.get('/:id', getBackupDetails);
 router.get('/:id/status', getBackupStatus);
 router.get('/:id/restores', listRestoresForBackup);
 router.get('/:id/download', downloadBackup);
+router.get('/:id/download/excel', downloadBackupExcel);
 router.post('/:id/restore', restoreFromHistory);
 router.delete('/:id', deleteBackup);
 
