@@ -73,10 +73,10 @@ export default function RmForm({ editing, form, onChange, saving, msg, onSave, o
             <SectionHeading icon={Beaker} tone="bg-indigo-50 text-indigo-600">Units & Tracking</SectionHeading>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div>
-                <label className={LABEL}>UOM *</label>
+                <label className={LABEL}>Inventory UOM *</label>
                 <select
-                  value={form.uom}
-                  onChange={e => onChange('uom', e.target.value)}
+                  value={form.inventoryUom}
+                  onChange={e => onChange('inventoryUom', e.target.value)}
                   className={FIELD}
                 >
                   {/* This item's tracking unit has no accompanying quantity to
@@ -87,13 +87,13 @@ export default function RmForm({ editing, form, onChange, saving, msg, onSave, o
                 </select>
               </div>
               <div>
-                <label className={LABEL}>Operation UOM</label>
+                <label className={LABEL}>Operational UOM</label>
                 <select
-                  value={form.operationUom || ''}
-                  onChange={e => onChange('operationUom', e.target.value)}
+                  value={form.operationalUom || ''}
+                  onChange={e => onChange('operationalUom', e.target.value)}
                   className={FIELD}
                 >
-                  <option value="">— Same as UOM —</option>
+                  <option value="">— Same as Inventory UOM —</option>
                   {CANONICAL_UNITS.map(u => <option key={u}>{u}</option>)}
                 </select>
               </div>
@@ -209,7 +209,7 @@ export default function RmForm({ editing, form, onChange, saving, msg, onSave, o
               </div>
             </div>
             <p className={`${HINT} mt-2`}>
-              Reorder thresholds in {form.uom || 'the item\'s UOM'} — Low flags when stock needs replenishing, High flags overstock.
+              Reorder thresholds in {form.inventoryUom || 'the item\'s Inventory UOM'} — Low flags when stock needs replenishing, High flags overstock.
             </p>
           </div>
         </div>

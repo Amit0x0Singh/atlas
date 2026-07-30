@@ -40,7 +40,7 @@ export default function RmTableFilters({ filters, uomOptions, filterType, result
           </div>
         </div>
         <div>
-          <label className={label}>UOM</label>
+          <label className={label}>Inventory UOM</label>
           <select value={filters.uom} onChange={e => onFilterChange('uom', e.target.value)} className={`${inputCls} cursor-pointer`}>
             <option value="">All UOMs</option>
             {uomOptions.map(u => <option key={u} value={u}>{u}</option>)}
@@ -82,7 +82,7 @@ export default function RmTableFilters({ filters, uomOptions, filterType, result
         <div className="flex flex-wrap gap-1.5 mt-2.5 pt-2.5 border-t border-gray-100">
           {filters.itemCode && <FilterChip label={`Item Code: "${filters.itemCode}"`} onRemove={() => onFilterChange('itemCode', '')} />}
           {filters.itemName && <FilterChip label={`Item Name: "${filters.itemName}"`} onRemove={() => onFilterChange('itemName', '')} />}
-          {filters.uom && <FilterChip label={`UOM: ${filters.uom}`} onRemove={() => onFilterChange('uom', '')} />}
+          {filters.uom && <FilterChip label={`Inventory UOM: ${filters.uom}`} onRemove={() => onFilterChange('uom', '')} />}
           {filterType !== 'ALL' && <FilterChip label={`Type: ${filterType}`} onRemove={() => onFilterType('ALL')} />}
           {filters.packingSpec && <FilterChip label={`Packing Spec: "${filters.packingSpec}"`} onRemove={() => onFilterChange('packingSpec', '')} />}
         </div>

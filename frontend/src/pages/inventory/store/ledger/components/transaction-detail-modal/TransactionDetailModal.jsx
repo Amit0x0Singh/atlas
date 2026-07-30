@@ -30,6 +30,9 @@ export default function TransactionDetailModal({ detail, onClose }) {
                   <DRow label="Source / Pack ID" value={detail.entry.sourceId} mono />
                   <DRow label="In Qty"           value={detail.entry.inQty  > 0 ? `+${Number(detail.entry.inQty).toFixed(3)}`  : '—'} />
                   <DRow label="Out Qty"          value={detail.entry.outQty > 0 ? `-${Number(detail.entry.outQty).toFixed(3)}` : '—'} />
+                  {detail.detail?.outward?.operationalUom && Number(detail.detail.outward.operationalQty) !== Number(detail.detail.outward.qtyIssued) && (
+                    <DRow label="Issued (Operational UOM)" value={`${Number(detail.detail.outward.operationalQty).toFixed(3)} ${detail.detail.outward.operationalUom}`} />
+                  )}
                   <DRow label="Balance After"    value={Number(detail.entry.balance).toFixed(3)} />
                   <DRow label="Reference"        value={detail.entry.reference || '—'} />
                 </DGrid>

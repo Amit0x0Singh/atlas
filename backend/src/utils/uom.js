@@ -94,3 +94,25 @@ export function toCanonical(qty, rawUnit) {
   if (!hit) throw new Error(`Unknown unit "${rawUnit}" — cannot convert to a canonical unit`)
   return { qty: Number(qty) * hit.factor, uom: CANONICAL[hit.family], special: false }
 }
+
+/**
+ * Converts a quantity between two units using density (kg per liter) as the
+ * KG<->L pivot — this is how a raw material's Inventory UOM and Operational
+ * UOM are reconciled (e.g. stored in KG, issued in L). Units are run through
+ * normalizeUom() first since real data isn't guaranteed to already be
+ * canonical (e.g. "kg" vs "KG"). Same-unit pairs pass through untouched and
+ * never require density. NOS can't be converted this way — only KG<->L.
+ */
+export function convertByDensity(qty, fromUom, toUom, density) {
+  const from = normalizeUom(fromUom)
+  const to = normalizeUom(toUom)
+  if (!from || !to) throw new Error(`Unknown unit — cannot convert "${fromUom}" to "${toUom}"`)
+  if (from === to) return { qty: Number(qty), converted: false }
+  const massOrVolume = (u) => u === CANONICAL.MASS || u === CANONICAL.VOLUME
+  if (!massOrVolume(from) || !massOrVolume(to))
+    throw new Error(`Cannot convert between ${from} and ${to} — density conversion only supports KG <-> L`)
+  if (!density || density <= 0)
+    throw new Error('Density is required to convert between KG and L for this item')
+  const kg = from === CANONICAL.MASS ? Number(qty) : Number(qty) * density
+  return { qty: to === CANONICAL.MASS ? kg : kg / density, converted: true }
+}

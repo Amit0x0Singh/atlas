@@ -422,9 +422,9 @@ export const executeImport = async (req, res) => {
           // older single-uom-column sheets) keeps the two apart, same fix as
           // Product UOM / Recipe UOM in the Recipe import above.
           const inventoryUomRaw = col(row, 'inventory uom', 'inventoryuom') || colExact(row, 'uom') || col(row, 'unit', 'unit of measure', 'unit of meas')
-          const uom = inventoryUomRaw || 'NOS'
+          const inventoryUom = inventoryUomRaw || 'NOS'
           const operationalUomRaw = col(row, 'operational uom', 'operationaluom', 'operation uom', 'operationuom')
-          const operationUom = operationalUomRaw || 'NOS'
+          const operationalUom = operationalUomRaw || 'NOS'
           const conversionRequiredRaw = col(row, 'conversion required', 'conversionrequired')
           const conversionRequired = /^(y|yes|true|1)$/i.test((conversionRequiredRaw || 'no').trim())
           // "Conversion Factor" on this sheet IS density (kg per liter) — the
@@ -437,8 +437,8 @@ export const executeImport = async (req, res) => {
           }
           await prisma.rmMaster.upsert({
             where: { itemCode },
-            create: { itemCode, itemName, uom, operationUom, category, subCategory, conversionRequired, density },
-            update: { itemName, uom, operationUom, category, subCategory, conversionRequired, density }
+            create: { itemCode, itemName, inventoryUom, operationalUom, category, subCategory, conversionRequired, density },
+            update: { itemName, inventoryUom, operationalUom, category, subCategory, conversionRequired, density }
           })
           results.rmMaster++
         } catch (e) { results.errors.push(`RM row: ${e.message}`) }

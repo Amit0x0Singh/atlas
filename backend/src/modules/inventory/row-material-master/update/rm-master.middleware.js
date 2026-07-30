@@ -1,7 +1,8 @@
 /**
  * RM Master › Update — Local Middleware
- * Validates PUT /api/rm/:itemCode. uom's canonical-unit normalization stays
- * in the controller (business logic, not a generic concern).
+ * Validates PUT /api/rm/:itemCode. inventoryUom's canonical-unit
+ * normalization stays in the controller (business logic, not a generic
+ * concern).
  */
 import { preprocess } from '../../../../middleware/preprocessing/index.js'
 

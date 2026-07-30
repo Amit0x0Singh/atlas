@@ -19,7 +19,7 @@ export default function RmMaster() {
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing]   = useState(null)
   const [viewing, setViewing]   = useState(null)
-  const [form, setForm]         = useState({ itemCode: '', itemName: '', uom: 'KG', operationUom: '', trackingType: 'PACK', category: '', subCategory: '', state: '', density: '', conversionRequired: false, lowStockLevel: '', highStockLevel: '' })
+  const [form, setForm]         = useState({ itemCode: '', itemName: '', inventoryUom: 'KG', operationalUom: '', trackingType: 'PACK', category: '', subCategory: '', state: '', density: '', conversionRequired: false, lowStockLevel: '', highStockLevel: '' })
   const [msg, setMsg]           = useState('')
   const [page, setPage]         = useState(1)
   const [limit, setLimit]       = useState(15)
@@ -41,13 +41,13 @@ export default function RmMaster() {
 
   const openAdd = () => {
     setEditing(null)
-    setForm({ itemCode: '', itemName: '', uom: 'KG', operationUom: '', trackingType: 'PACK', category: '', subCategory: '', state: '', density: '', conversionRequired: false, lowStockLevel: '', highStockLevel: '' })
+    setForm({ itemCode: '', itemName: '', inventoryUom: 'KG', operationalUom: '', trackingType: 'PACK', category: '', subCategory: '', state: '', density: '', conversionRequired: false, lowStockLevel: '', highStockLevel: '' })
     setShowForm(true); setMsg('')
   }
   const openEdit = (item) => {
     setEditing(item)
     setForm({
-      itemCode: item.itemCode, itemName: item.itemName, uom: item.uom, operationUom: item.operationUom || '', trackingType: item.trackingType || 'PACK',
+      itemCode: item.itemCode, itemName: item.itemName, inventoryUom: item.inventoryUom, operationalUom: item.operationalUom || '', trackingType: item.trackingType || 'PACK',
       category: item.category || '', subCategory: item.subCategory || '', state: item.state || '', density: item.density ?? '',
       conversionRequired: !!item.conversionRequired,
       lowStockLevel: item.lowStockLevel ?? '', highStockLevel: item.highStockLevel ?? '',
@@ -56,10 +56,10 @@ export default function RmMaster() {
   }
 
   const save = async () => {
-    if (!form.itemCode || !form.itemName || !form.uom) { setMsg('All fields required'); return }
+    if (!form.itemCode || !form.itemName || !form.inventoryUom) { setMsg('All fields required'); return }
     setMsg('')
     const data = {
-      itemName: form.itemName, uom: form.uom, operationUom: form.operationUom || '', trackingType: form.trackingType,
+      itemName: form.itemName, inventoryUom: form.inventoryUom, operationalUom: form.operationalUom || '', trackingType: form.trackingType,
       category: form.category, subCategory: form.subCategory, state: form.state,
       density: form.state === 'LIQUID' ? form.density : '',
       conversionRequired: form.conversionRequired,
@@ -110,7 +110,7 @@ export default function RmMaster() {
         (filterType === 'ALL' || (i.trackingType || 'PACK') === filterType) &&
         matchesText(i.itemCode, code) &&
         matchesText(i.itemName, name) &&
-        (!filters.uom || i.uom === filters.uom)
+        (!filters.uom || i.inventoryUom === filters.uom)
       )
       .map(i => ({ ...i, kind: 'rm' }))
   }, [items, filterType, filters])
@@ -121,7 +121,7 @@ export default function RmMaster() {
 
   const uomOptions = useMemo(() => {
     const set = new Set()
-    items.forEach(i => i.uom && set.add(i.uom))
+    items.forEach(i => i.inventoryUom && set.add(i.inventoryUom))
     packingItems.forEach(p => p.uom && set.add(p.uom))
     return [...set].sort()
   }, [items, packingItems])

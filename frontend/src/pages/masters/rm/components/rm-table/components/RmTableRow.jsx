@@ -25,13 +25,13 @@ export default function RmTableRow({ item, onEdit, onDelete, onViewPacking, onRo
         </div>
       </td>
       <td className="px-4 py-3">
-        <span className="bg-gray-100 px-2 py-0.5 rounded text-gray-700 text-xs font-medium">{item.uom}</span>
+        <span className="bg-gray-100 px-2 py-0.5 rounded text-gray-700 text-xs font-medium">{item.inventoryUom}</span>
       </td>
       <td className="px-4 py-3">
         {isPacking ? (
           <span className="text-gray-300">—</span>
         ) : (
-          <span className="bg-gray-100 px-2 py-0.5 rounded text-gray-700 text-xs font-medium">{item.operationUom || item.uom}</span>
+          <span className="bg-gray-100 px-2 py-0.5 rounded text-gray-700 text-xs font-medium">{item.operationalUom || item.inventoryUom}</span>
         )}
       </td>
       <td className="px-4 py-3">

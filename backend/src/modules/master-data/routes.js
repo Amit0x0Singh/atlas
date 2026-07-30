@@ -4,11 +4,12 @@ import ProductMasterRouter from './product-master/router.js'
 import EquipmentMasterRouter from './equipment-master/router.js'
 import ErpMastersRouter from './erp-masters/router.js'
 import PackingMasterRouter from './packing-master/router.js'
-import RmMasterRouter from './rm-master/router.js'
 
 const MasterDataRouter = express.Router()
 
-MasterDataRouter.use('/rm', RmMasterRouter)
+// Note: RM Master ('/rm') is served by inventory/row-material-master's
+// router (mounted earlier in routers.js) — a duplicate './rm-master' tree
+// here was removed as dead/unreachable code, see git history if needed.
 MasterDataRouter.use('/', ProductMasterRouter)
 MasterDataRouter.use('/', EquipmentMasterRouter)
 MasterDataRouter.use('/', ErpMastersRouter)

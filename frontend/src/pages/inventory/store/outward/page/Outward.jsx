@@ -202,7 +202,10 @@ export default function Outward() {
                     <td className="px-4 py-2.5 text-xs text-gray-800 font-medium">{h.rmName || h.rmCode}</td>
                     <td className="px-4 py-2.5 font-mono text-xs text-gray-500 max-w-[150px] truncate">{h.sourceId}</td>
                     <td className="px-4 py-2.5 text-right font-bold text-red-600 whitespace-nowrap">
-                      {Number(h.qtyIssued).toFixed(3)}
+                      {Number(h.operationalQty ?? h.qtyIssued).toFixed(3)} {h.operationalUom || ''}
+                      {h.operationalUom && Number(h.operationalQty) !== Number(h.qtyIssued) && (
+                        <div className="text-[10px] font-normal text-gray-400">({Number(h.qtyIssued).toFixed(3)} deducted)</div>
+                      )}
                     </td>
                     <td className="px-4 py-2.5 text-xs text-gray-400 max-w-[130px] truncate">{h.remarks || '—'}</td>
                   </tr>

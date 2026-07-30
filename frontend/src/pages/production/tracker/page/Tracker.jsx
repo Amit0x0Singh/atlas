@@ -209,7 +209,12 @@ export default function Tracker() {
                                         <p className="font-mono text-indigo-700 text-sm font-semibold">{tx.packId || tx.sourceId || '—'}</p>
                                       </div>
                                       <div className="text-right">
-                                        <p className="text-red-600 font-bold text-lg">−{Number(tx.qtyIssued).toFixed(3)}</p>
+                                        <p className="text-red-600 font-bold text-lg">
+                                          −{Number(tx.operationalQty ?? tx.qtyIssued).toFixed(3)} {tx.operationalUom || ''}
+                                        </p>
+                                        {tx.operationalUom && Number(tx.operationalQty) !== Number(tx.qtyIssued) && (
+                                          <p className="text-[10px] text-gray-400">({Number(tx.qtyIssued).toFixed(3)} deducted)</p>
+                                        )}
                                       </div>
                                     </div>
                                     {tx.packDetails && (

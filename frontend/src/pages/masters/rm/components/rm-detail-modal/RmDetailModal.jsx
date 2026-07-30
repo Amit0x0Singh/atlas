@@ -37,8 +37,8 @@ export default function RmDetailModal({ item, onClose }) {
   const trackingColor = TRACKING_BADGE[item.trackingType || 'PACK']
   const stateColor = STATE_BADGE[item.state] || 'bg-gray-100 text-gray-600 ring-gray-200'
   const density = item.density != null && item.density !== '' ? `${item.density} kg/L` : null
-  const lowStock = item.lowStockLevel != null && item.lowStockLevel !== '' ? `${item.lowStockLevel} ${item.uom}` : null
-  const highStock = item.highStockLevel != null && item.highStockLevel !== '' ? `${item.highStockLevel} ${item.uom}` : null
+  const lowStock = item.lowStockLevel != null && item.lowStockLevel !== '' ? `${item.lowStockLevel} ${item.inventoryUom}` : null
+  const highStock = item.highStockLevel != null && item.highStockLevel !== '' ? `${item.highStockLevel} ${item.inventoryUom}` : null
 
   return (
     <Modal open={!!item} onClose={onClose} size="md">
@@ -73,8 +73,8 @@ export default function RmDetailModal({ item, onClose }) {
       {/* Body */}
       <div className="px-6 py-5 max-h-[65vh] overflow-y-auto">
         <div className="grid grid-cols-2 gap-3">
-          <StatCard icon={Beaker}        label="UOM"                value={item.uom} />
-          <StatCard icon={ArrowLeftRight} label="Operation UOM"     value={item.operationUom} empty={!item.operationUom} />
+          <StatCard icon={Beaker}        label="Inventory UOM"      value={item.inventoryUom} />
+          <StatCard icon={ArrowLeftRight} label="Operational UOM"   value={item.operationalUom} empty={!item.operationalUom} />
           <StatCard icon={ArrowLeftRight} label="Conversion Required" value={item.conversionRequired ? 'Yes' : 'No'} />
           <StatCard icon={Droplets}      label="Density"            value={density} empty={density == null} />
           <StatCard icon={Layers}        label="Category"           value={item.category}    empty={!item.category} />

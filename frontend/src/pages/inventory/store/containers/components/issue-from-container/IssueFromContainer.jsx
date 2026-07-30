@@ -1,7 +1,7 @@
 ﻿import { useState, useRef, useEffect } from 'react'
 import './IssueFromContainer.css'
 import jsQR from 'jsqr'
-import { containerApi } from '../../../../../../api/inventory.js'
+import { containerApi, rmApi } from '../../../../../../api/inventory.js'
 import { indentApi } from '../../../../../../api/production.js'
 import { Button } from '../../../../../../components/ui'
 
@@ -17,6 +17,11 @@ export default function IssueFromContainer({ preselected, onDone }) {
   const [error, setError]           = useState('')
   const [successMsg, setSuccess]    = useState('')
   const [cameraOn, setCameraOn]     = useState(false)
+  // RM master record for the loaded container's item — used only to show the
+  // Operational UOM entry unit; the server always re-derives and validates
+  // the actual conversion before deducting stock.
+  const [rmInfo, setRmInfo]         = useState(null)
+  const entryUom = rmInfo?.operationalUom || rmInfo?.inventoryUom || container?.uom
 
   const videoRef    = useRef(null)
   const canvasRef   = useRef(null)
@@ -80,6 +85,8 @@ export default function IssueFromContainer({ preselected, onDone }) {
       setLoadingC(true)
       const r = await containerApi.get(trimmed)
       setContainer(r.data)
+      setRmInfo(null)
+      rmApi.get(r.data.itemCode).then(rmRes => setRmInfo(rmRes.data)).catch(() => {})
     } catch (e) { setError(e.response?.data?.error || 'Container not found: ' + trimmed) }
     finally { setLoadingC(false) }
   }
@@ -87,7 +94,9 @@ export default function IssueFromContainer({ preselected, onDone }) {
   const submit = async () => {
     const q = parseFloat(qty)
     if (!q || q <= 0) { setError('Enter a valid quantity'); return }
-    if (q > container.currentQty) { setError(`Qty exceeds container balance (${container.currentQty})`); return }
+    // Not pre-checked against container.currentQty here — qty is in the
+    // Operational UOM, currentQty is in the Inventory UOM, so they aren't
+    // directly comparable client-side. The server converts and validates.
     setSub(true); setError(''); setSuccess('')
     try {
       const r = await containerApi.issue(container.containerId, {
@@ -95,7 +104,7 @@ export default function IssueFromContainer({ preselected, onDone }) {
         indentId: indentId || undefined,
         remarks: remarks || undefined,
       })
-      setSuccess(`Issued ${r.issued} ${container.uom} from ${container.containerId}. Remaining: ${r.data.currentQty} ${r.data.uom}`)
+      setSuccess(`Issued ${qty} ${entryUom} (${r.issued} ${r.data.uom} deducted) from ${container.containerId}. Remaining: ${r.data.currentQty} ${r.data.uom}`)
       setContainer(r.data)
       setQty(''); setRemarks(''); setIndentId('')
       onDone?.()
@@ -200,11 +209,14 @@ export default function IssueFromContainer({ preselected, onDone }) {
           {container.currentQty > 0 && (
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Qty to Issue *</label>
-                <input type="number" min="0.001" step="0.001" max={container.currentQty}
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Qty to Issue ({entryUom}) *</label>
+                <input type="number" min="0.001" step="0.001"
                   value={qty} onChange={e => setQty(e.target.value)}
                   className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-green-500"
                 />
+                {rmInfo?.operationalUom && rmInfo.operationalUom !== rmInfo.inventoryUom && (
+                  <p className="text-xs text-gray-400 mt-1">Stock is tracked in {rmInfo.inventoryUom} — entered qty converts automatically.</p>
+                )}
               </div>
 
               <div>

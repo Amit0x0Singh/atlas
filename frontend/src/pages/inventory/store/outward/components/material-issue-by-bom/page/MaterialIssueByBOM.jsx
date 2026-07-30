@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
-import { outwardApi, containerApi } from '../../../../../../../api/inventory.js'
+import { outwardApi, containerApi, rmApi } from '../../../../../../../api/inventory.js'
 import { recipeApi, productApi } from '../../../../../../../api/masters.js'
 import { planTasksApi } from '../../../../../../../api/production.js'
 import { useIsMobile } from '../../../../../../../hooks/useIsMobile.js'
+import { convertByDensity } from '../../../../../../../utils/uom.js'
 import SelectStep from '../components/SelectStep.jsx'
 import BomChecklistStep from '../components/BomChecklistStep.jsx'
 import './MaterialIssueByBOM.css'
@@ -60,6 +61,41 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
   useEffect(() => {
     productApi.list().then(r => setProducts(r.data || [])).catch(() => {})
   }, [])
+
+  // RM master lookup — used only to know each line's Operational UOM/density
+  // for display and default-qty conversion; the server always re-derives and
+  // validates the actual conversion before deducting stock.
+  const [rmByCode, setRmByCode] = useState(new Map())
+  useEffect(() => {
+    rmApi.list().then(r => setRmByCode(new Map((r.data || []).map(rm => [rm.itemCode, rm])))).catch(() => {})
+  }, [])
+
+  // The unit the operator should enter a line's issue qty in — Operational
+  // UOM when the RM has one configured, otherwise the same unit shown for
+  // "Required"/"Issued" (Inventory UOM). Falls back to the line's own uom
+  // when the code isn't in RM Master (e.g. an SFG ingredient).
+  const entryUomFor = useCallback((line) => {
+    const rm = rmByCode.get(line.rmCode)
+    return rm?.operationalUom || rm?.inventoryUom || line.uom
+  }, [rmByCode])
+
+  // Best-effort conversions for display/default-qty purposes only — fall
+  // back to the raw qty unchanged when conversion isn't possible (same
+  // unit, RM not found, or missing density). The server always re-derives
+  // and validates the real conversion before deducting stock.
+  const toEntryQty = useCallback((line, inventoryQty) => {
+    const rm = rmByCode.get(line.rmCode)
+    if (!rm) return inventoryQty
+    try { return convertByDensity(inventoryQty, rm.inventoryUom, entryUomFor(line), rm.density).qty }
+    catch { return inventoryQty }
+  }, [rmByCode, entryUomFor])
+
+  const toInventoryQty = useCallback((line, entryQty) => {
+    const rm = rmByCode.get(line.rmCode)
+    if (!rm) return entryQty
+    try { return convertByDensity(entryQty, entryUomFor(line), rm.inventoryUom, rm.density).qty }
+    catch { return entryQty }
+  }, [rmByCode, entryUomFor])
 
   // Load production tasks
   useEffect(() => {
@@ -277,13 +313,16 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
     if (!line) return
     const remaining = parseFloat((line.required - line.issued).toFixed(3))
 
+    const entryUom = entryUomFor(line)
+
     // Container QR encodes "CONT:{containerId}"
     if (val.startsWith('CONT:')) {
       const containerId = val.slice(5)
       const cont = containers.find(c => c.containerId === containerId)
       if (cont) {
-        setFoundSource({ type: 'container', id: cont.containerId, availableQty: cont.currentQty, uom: cont.uom || line.uom, itemName: cont.itemName })
-        setIssueQty(String(Math.min(remaining, cont.currentQty).toFixed(3)))
+        const maxEntryQty = toEntryQty(line, Math.min(remaining, cont.currentQty))
+        setFoundSource({ type: 'container', id: cont.containerId, availableQty: cont.currentQty, uom: cont.uom || line.uom, entryUom, maxEntryQty, itemName: cont.itemName })
+        setIssueQty(String(maxEntryQty.toFixed(3)))
       } else {
         setScanErr(`Container "${containerId}" has no stock for ${line.rmName}. Check the container or inward stock first.`)
       }
@@ -293,13 +332,14 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
     // Pack QR encodes raw packId
     const pack = packs.find(p => p.packId === val)
     if (pack) {
-      setFoundSource({ type: 'pack', id: pack.packId, availableQty: pack.remainingQty, uom: line.uom, lotNo: pack.lotNo, bagNo: pack.bagNo, supplier: pack.supplier })
-      setIssueQty(String(Math.min(remaining, pack.remainingQty).toFixed(3)))
+      const maxEntryQty = toEntryQty(line, Math.min(remaining, pack.remainingQty))
+      setFoundSource({ type: 'pack', id: pack.packId, availableQty: pack.remainingQty, uom: line.uom, entryUom, maxEntryQty, lotNo: pack.lotNo, bagNo: pack.bagNo, supplier: pack.supplier })
+      setIssueQty(String(maxEntryQty.toFixed(3)))
       return
     }
 
     setScanErr(`"${val}" not found for ${line.rmName}. Scan the correct pack or container QR code.`)
-  }, [bomLines, activeIdx, packs, containers])
+  }, [bomLines, activeIdx, packs, containers, entryUomFor, toEntryQty])
 
   // ─── Submit issue ────────────────────────────────────────────────────────
   const submitIssue = async () => {
@@ -307,11 +347,16 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
     const qty  = parseFloat(issueQty)
     if (!foundSource) { setIssueError('Scan a pack or container QR code first'); return }
     if (!qty || qty <= 0) { setIssueError('Enter a valid quantity'); return }
-    if (qty > foundSource.availableQty) { setIssueError(`Qty exceeds available stock (${foundSource.availableQty} ${foundSource.uom})`); return }
+    // Best-effort client-side check only (entered qty is Operational UOM,
+    // availableQty is Inventory UOM) — the server re-derives and validates
+    // the real conversion before deducting stock.
+    if (toInventoryQty(line, qty) > foundSource.availableQty) {
+      setIssueError(`Qty exceeds available stock (${foundSource.availableQty} ${foundSource.uom})`); return
+    }
 
     setIssuing(true); setIssueError('')
     try {
-      await outwardApi.bomDirect({
+      const res = await outwardApi.bomDirect({
         source:      foundSource.type,
         sourceId:    foundSource.id,
         qty,
@@ -322,14 +367,19 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
         batchRef,
       })
 
-      const newIssued  = parseFloat((line.issued + qty).toFixed(3))
+      // res.issued is the actual Inventory-UOM qty deducted (server-derived,
+      // authoritative) — required/issued/remaining tracking below must use
+      // this, not the operator-entered `qty` (Operational UOM), or a
+      // conversion would silently corrupt the checklist's progress math.
+      const deducted = res.issued
+      const newIssued  = parseFloat((line.issued + deducted).toFixed(3))
       const updatedLines = bomLines.map((l, i) =>
         i === activeIdx ? { ...l, issued: newIssued } : l
       )
       setBomLines(updatedLines)
       setLineMsg(prev => ({
         ...prev,
-        [activeIdx]: `Issued ${qty} ${line.uom} from ${foundSource.type === 'pack' ? 'Pack' : 'Container'}: ${foundSource.id}`,
+        [activeIdx]: `Issued ${qty} ${entryUomFor(line)}${deducted !== qty ? ` (${deducted} ${line.uom} deducted)` : ''} from ${foundSource.type === 'pack' ? 'Pack' : 'Container'}: ${foundSource.id}`,
       }))
 
       const remaining = parseFloat((line.required - newIssued).toFixed(3))

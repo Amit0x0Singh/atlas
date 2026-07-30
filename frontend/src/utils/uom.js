@@ -121,3 +121,25 @@ export function formatQty(canonicalQty, canonicalUom, decimals = 3) {
   const rounded = Number(qty.toFixed(decimals))
   return `${rounded} ${unit}`
 }
+
+/**
+ * Converts a quantity between two units using density (kg per liter) as the
+ * KG<->L pivot — mirrors backend/src/utils/uom.js's convertByDensity. Used
+ * for client-side display only (e.g. showing an Inventory-UOM stock ceiling
+ * in Operational UOM terms); the server always re-derives and validates this
+ * itself before actually deducting stock. Same-unit pairs pass through
+ * untouched. NOS can't be converted this way — only KG<->L.
+ */
+export function convertByDensity(qty, fromUom, toUom, density) {
+  const from = normalizeUom(fromUom)
+  const to = normalizeUom(toUom)
+  if (!from || !to) throw new Error(`Unknown unit — cannot convert "${fromUom}" to "${toUom}"`)
+  if (from === to) return { qty: Number(qty), converted: false }
+  const massOrVolume = (u) => u === CANONICAL.MASS || u === CANONICAL.VOLUME
+  if (!massOrVolume(from) || !massOrVolume(to))
+    throw new Error(`Cannot convert between ${from} and ${to} — density conversion only supports KG <-> L`)
+  if (!density || density <= 0)
+    throw new Error('Density is required to convert between KG and L for this item')
+  const kg = from === CANONICAL.MASS ? Number(qty) : Number(qty) * density
+  return { qty: to === CANONICAL.MASS ? kg : kg / density, converted: true }
+}

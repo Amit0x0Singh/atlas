@@ -35,7 +35,7 @@ const listStock = async (req, res) => {
       return {
         itemCode: rm.itemCode,
         itemName: rm.itemName,
-        uom: rm.uom,
+        uom: rm.inventoryUom,
         stockInPacks: packStock?._sum.remainingQty || 0,
         activePacks: packStock?._count.packId || 0,
         stockInContainer: container?.currentQty || 0,

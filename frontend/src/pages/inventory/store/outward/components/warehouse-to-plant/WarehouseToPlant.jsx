@@ -1,7 +1,8 @@
 ﻿import { useState, useEffect } from 'react'
-import { outwardApi } from '../../../../../../api/inventory.js'
+import { outwardApi, rmApi } from '../../../../../../api/inventory.js'
 import { indentApi } from '../../../../../../api/production.js'
 import { Button } from '../../../../../../components/ui'
+import { convertByDensity } from '../../../../../../utils/uom.js'
 import './WarehouseToPlant.css'
 
 export default function WarehouseToPlant() {
@@ -9,6 +10,10 @@ export default function WarehouseToPlant() {
   const [packs, setPacks]           = useState([])
   const [loadingPacks, setLoadingP] = useState(false)
   const [selectedPack, setPack]     = useState(null)
+  // RM master record for the searched item — used only to show the
+  // Operational UOM entry unit and a converted stock hint; the server always
+  // re-derives and validates the actual conversion before deducting stock.
+  const [rmInfo, setRmInfo]         = useState(null)
   const [mode, setMode]             = useState('direct') // 'direct' | 'indent'
   const [plant, setPlant]           = useState('')
   const [qty, setQty]               = useState('')
@@ -16,6 +21,7 @@ export default function WarehouseToPlant() {
   const [indents, setIndents]       = useState([])
   const [selectedIndent, setIndent] = useState(null)
   const [selectedRm, setRm]         = useState(null)
+  const [indentRmInfo, setIndentRmInfo] = useState(null)
   const [submitting, setSub]        = useState(false)
   const [error, setError]           = useState('')
   const [success, setSuccess]       = useState('')
@@ -27,15 +33,43 @@ export default function WarehouseToPlant() {
   const searchPacks = async () => {
     const code = rmCode.trim().toUpperCase()
     if (!code) return
-    setError(''); setPack(null); setQty('')
+    setError(''); setPack(null); setQty(''); setRmInfo(null)
     try {
       setLoadingP(true)
-      const r = await outwardApi.availablePacks(code)
-      setPacks(r.data || [])
-      if (!r.data?.length) setError(`No available stock for "${code}"`)
+      const [packsRes, rmRes] = await Promise.allSettled([
+        outwardApi.availablePacks(code),
+        rmApi.get(code),
+      ])
+      setPacks(packsRes.status === 'fulfilled' ? (packsRes.value.data || []) : [])
+      if (rmRes.status === 'fulfilled') setRmInfo(rmRes.value.data)
+      if (packsRes.status !== 'fulfilled' || !packsRes.value.data?.length) setError(`No available stock for "${code}"`)
     } catch (e) { setError(e.message) }
     finally { setLoadingP(false) }
   }
+
+  const entryUom = rmInfo?.operationalUom || rmInfo?.inventoryUom || 'kg'
+  const packMaxInEntryUom = (pack) => {
+    if (!pack || !rmInfo) return pack?.remainingQty
+    try {
+      return convertByDensity(pack.remainingQty, rmInfo.inventoryUom, entryUom, rmInfo.density).qty
+    } catch { return pack.remainingQty }
+  }
+
+  const selectIndentRm = async (d) => {
+    setRm(d); setIndentRmInfo(null)
+    const inventoryQty = Math.min(selectedPack?.remainingQty || d.balanceQty, d.balanceQty)
+    setQty(String(inventoryQty))
+    try {
+      const r = await rmApi.get(d.rmCode)
+      setIndentRmInfo(r.data)
+      const entry = r.data.operationalUom || r.data.inventoryUom
+      if (entry !== r.data.inventoryUom) {
+        const converted = convertByDensity(inventoryQty, r.data.inventoryUom, entry, r.data.density)
+        setQty(String(converted.qty.toFixed(3)))
+      }
+    } catch { /* RM lookup failed — keep inventory-uom default, server still validates */ }
+  }
+  const indentEntryUom = indentRmInfo?.operationalUom || indentRmInfo?.inventoryUom
 
   const submit = async () => {
     const q = parseFloat(qty)
@@ -95,12 +129,12 @@ export default function WarehouseToPlant() {
           {packs.length > 0 && (
             <div className="space-y-2 max-h-72 overflow-y-auto border border-gray-200 rounded-lg p-2 bg-white">
               {packs.map(p => (
-                <button key={p.packId} onClick={() => { setPack(p); setQty(String(p.remainingQty)); setError('') }}
+                <button key={p.packId} onClick={() => { setPack(p); setQty(String(packMaxInEntryUom(p).toFixed?.(3) ?? packMaxInEntryUom(p))); setError('') }}
                   className={`w-full text-left px-3 py-2.5 rounded-lg border text-sm transition ${selectedPack?.packId === p.packId ? 'bg-blue-50 border-blue-400' : 'border-gray-100 hover:bg-gray-50'}`}>
                   <div className="font-mono text-xs text-gray-800 truncate">{p.packId}</div>
                   <div className="flex justify-between mt-1 text-xs text-gray-500">
                     <span>Lot: {p.lotNo} | Bag #{p.bagNo}</span>
-                    <span className="font-semibold text-green-700">{p.remainingQty} kg</span>
+                    <span className="font-semibold text-green-700">{p.remainingQty} {rmInfo?.inventoryUom || 'kg'}</span>
                   </div>
                   {p.supplier && <div className="text-xs text-gray-400">{p.supplier}</div>}
                 </button>
@@ -125,12 +159,15 @@ export default function WarehouseToPlant() {
                 </datalist>
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Qty *</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Qty ({entryUom}) *</label>
                 <input type="number" min="0.001" step="0.001"
-                  max={selectedPack?.remainingQty}
+                  max={selectedPack ? packMaxInEntryUom(selectedPack) : undefined}
                   value={qty} onChange={e => setQty(e.target.value)}
                   className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500"
                 />
+                {rmInfo?.operationalUom && rmInfo.operationalUom !== rmInfo.inventoryUom && (
+                  <p className="text-xs text-gray-400 mt-1">Stock is tracked in {rmInfo.inventoryUom} — entered qty converts automatically.</p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">Remarks</label>
@@ -148,7 +185,7 @@ export default function WarehouseToPlant() {
                   {indents.length === 0
                     ? <p className="text-gray-400 text-sm p-2">No open indents</p>
                     : indents.map(i => (
-                      <button key={i.indentId} onClick={() => { setIndent(i); setRm(null); setQty('') }}
+                      <button key={i.indentId} onClick={() => { setIndent(i); setRm(null); setIndentRmInfo(null); setQty('') }}
                         className={`w-full text-left px-3 py-2 rounded-lg border text-sm ${selectedIndent?.indentId === i.indentId ? 'bg-blue-50 border-blue-400' : 'border-gray-100 hover:bg-gray-50'}`}>
                         <div className="font-medium">{i.productName}</div>
                         <div className="text-xs text-gray-400">Batch: {i.batchNo} | {i.batchSize} kg</div>
@@ -162,7 +199,7 @@ export default function WarehouseToPlant() {
                   <label className="block text-sm font-semibold text-gray-700 mb-1">Select RM from Indent *</label>
                   <div className="space-y-1 max-h-36 overflow-y-auto border border-gray-200 rounded-lg p-2 bg-white">
                     {(selectedIndent.details || []).filter(d => d.balanceQty > 0).map(d => (
-                      <button key={d.id} onClick={() => { setRm(d); setQty(String(Math.min(selectedPack?.remainingQty || d.balanceQty, d.balanceQty))) }}
+                      <button key={d.id} onClick={() => selectIndentRm(d)}
                         className={`w-full text-left px-3 py-2 rounded-lg border text-xs ${selectedRm?.id === d.id ? 'bg-blue-50 border-blue-400' : 'border-gray-100 hover:bg-gray-50'}`}>
                         <span className="font-medium">{d.rmName}</span>
                         <span className="text-gray-400 ml-2">Balance: {d.balanceQty}</span>
@@ -173,10 +210,13 @@ export default function WarehouseToPlant() {
               )}
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Qty *</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Qty {indentEntryUom ? `(${indentEntryUom})` : ''} *</label>
                 <input type="number" min="0.001" step="0.001" value={qty} onChange={e => setQty(e.target.value)}
                   className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500"
                 />
+                {indentRmInfo?.operationalUom && indentRmInfo.operationalUom !== indentRmInfo.inventoryUom && (
+                  <p className="text-xs text-gray-400 mt-1">Balance is tracked in {indentRmInfo.inventoryUom} — entered qty converts automatically.</p>
+                )}
               </div>
             </div>
           )}

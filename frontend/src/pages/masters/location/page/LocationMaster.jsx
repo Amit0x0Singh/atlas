@@ -50,7 +50,7 @@ export default function LocationMaster() {
         r.itemCode.toLowerCase().includes(rmSearch.toLowerCase()))
 
   const selectRm = (rm) => {
-    setForm(f => ({ ...f, itemCode: rm.itemCode, itemName: rm.itemName, uom: rm.uom }))
+    setForm(f => ({ ...f, itemCode: rm.itemCode, itemName: rm.itemName, uom: rm.inventoryUom }))
     setRmSearch(rm.itemName)
     setShowRmDrop(false)
   }

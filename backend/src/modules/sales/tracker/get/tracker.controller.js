@@ -77,6 +77,8 @@ export const getTrackerDetail = async (req, res) => {
           outwardId: o.id,
           packId: o.sourceId,
           qtyIssued: o.qtyIssued,
+          operationalQty: o.operationalQty,
+          operationalUom: o.operationalUom,
           timestamp: o.timestamp,
           sourceType: o.sourceType,
           remarks: o.remarks,

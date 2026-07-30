@@ -19,27 +19,30 @@
 model RmMaster {
   itemCode           String   @id @map("item_code")
   itemName           String   @unique @map("item_name")
-  uom                String
+  // Unit this item is stored/tracked in inventory (packs, containers, stock
+  // ledger). Every stock quantity for this item lives in this unit.
+  inventoryUom       String   @map("inventory_uom")
   // Unit this item is actually consumed/issued in on the shop floor when it
-  // differs from the stock unit (uom) — e.g. stocked in KG but dosed in L.
-  // Left null when operations use the same unit as stock.
-  operationUom       String?  @map("operation_uom")
+  // differs from the inventory unit — e.g. stocked in KG but dosed in L.
+  // Left null when operations use the same unit as inventory.
+  operationalUom     String?  @map("operational_uom")
   trackingType       String   @default("PACK") @map("tracking_type") // PACK | BULK
   category           String?  @map("category")
   subCategory        String?  @map("sub_category")
   state              String?  @map("physical_state") // SOLID | LIQUID | GAS
-  // kg per liter — lets a liquid item be purchased in KG and issued in L (or
+  // kg per liter — lets a liquid item be stored in KG and issued in L (or
   // vice versa) by converting through mass = density × volume. Only
   // meaningful for state = LIQUID; left null for solids/gases. This is what
   // the RM import sheet calls "Conversion Factor" — same value, same purpose.
   density            Float?   @map("density")
-  // Whether uom -> operationUom needs density applied as a conversion factor
-  // before issuance — flagged explicitly rather than just inferred from
-  // uom !== operationUom, since a store operator sets this by hand.
+  // Whether inventoryUom -> operationalUom needs density applied as a
+  // conversion factor before issuance — flagged explicitly rather than just
+  // inferred from inventoryUom !== operationalUom, since a store operator
+  // sets this by hand.
   conversionRequired Boolean  @default(false) @map("conversion_required")
-  // Reorder thresholds (in uom) — lowStockLevel flags when stock needs
-  // replenishing, highStockLevel flags excess/overstock. Both optional;
-  // left null when this item isn't tracked against reorder levels.
+  // Reorder thresholds (in inventoryUom) — lowStockLevel flags when stock
+  // needs replenishing, highStockLevel flags excess/overstock. Both
+  // optional; left null when this item isn't tracked against reorder levels.
   lowStockLevel      Float?   @map("low_stock_level")
   highStockLevel     Float?   @map("high_stock_level")
   createdAt          DateTime @default(now()) @map("created_at")
@@ -186,7 +189,17 @@ model Outward {
   sourceId   String   @map("source_id")
   sourceType String   @map("source_type")
   rmCode     String   @map("rm_code")
+  // Actual quantity deducted from inventory, in the item's Inventory UOM —
+  // the ledger truth. Unchanged in meaning from before Operational UOM
+  // conversion existed, so anything summing this field for reconciliation
+  // keeps working.
   qtyIssued  Float    @map("qty_issued")
+  // Qty as entered/displayed in the item's Operational UOM at issue time —
+  // equal to qtyIssued (and operationalUom equal to the item's inventoryUom)
+  // when no conversion applied. Null on rows written before this field
+  // existed; display code falls back to qtyIssued/the item's uom then.
+  operationalQty Float?   @map("operational_qty")
+  operationalUom String?  @map("operational_uom")
   remarks    String?
   timestamp  DateTime @default(now())
 

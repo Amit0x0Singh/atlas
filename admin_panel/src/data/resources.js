@@ -55,8 +55,8 @@ export const resources = [
     fields: [
       field('itemCode', 'Item Code'),
       field('itemName', 'Item Name'),
-      field('uom', 'UOM'),
-      field('operationUom', 'Operation UOM'),
+      field('inventoryUom', 'Inventory UOM'),
+      field('operationalUom', 'Operational UOM'),
       field('trackingType', 'Tracking Type', 'select', { options: ['PACK', 'BULK'] }),
       field('category', 'Category'),
       field('subCategory', 'Sub Category'),

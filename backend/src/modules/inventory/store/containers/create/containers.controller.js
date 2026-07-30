@@ -1,5 +1,6 @@
 import prisma from '../../../../../db.js'
 import { toCanonical } from '../../../../../utils/uom.js'
+import { resolveIssueQty } from '../../outward/services/uom-conversion.service.js'
 
 export const createContainer = async (req, res) => {
   try {
@@ -88,8 +89,17 @@ export const issueFromContainer = async (req, res) => {
     const container = await prisma.containerMaster.findUnique({ where: { containerId: decodeURIComponent(containerId) } })
     if (!container) return res.status(404).json({ success: false, error: 'Container not found', code: 'NOT_FOUND' })
 
-    const issue = parseFloat(qty)
-    if (issue <= 0) return res.status(400).json({ success: false, error: 'Qty must be positive', code: 'VALIDATION_ERROR' })
+    const entered = parseFloat(qty)
+    if (entered <= 0) return res.status(400).json({ success: false, error: 'Qty must be positive', code: 'VALIDATION_ERROR' })
+
+    // entered is in the item's Operational UOM — convert to Inventory UOM
+    // (server-authoritative) before checking/deducting the container balance.
+    let issue, operationalQty, operationalUom
+    try {
+      ({ inventoryQty: issue, operationalQty, operationalUom } = await resolveIssueQty(container.itemCode, entered))
+    } catch (e) {
+      return res.status(400).json({ success: false, error: e.message, code: 'VALIDATION_ERROR' })
+    }
     if (issue > container.currentQty)
       return res.status(400).json({ success: false, error: `Qty exceeds container balance (${container.currentQty})` , code: 'VALIDATION_ERROR' })
 
@@ -121,6 +131,8 @@ export const issueFromContainer = async (req, res) => {
           sourceType: 'CONTAINER_ISSUE',
           rmCode: container.itemCode,
           qtyIssued: issue,
+          operationalQty,
+          operationalUom,
           remarks: remarks || null
         }
       })

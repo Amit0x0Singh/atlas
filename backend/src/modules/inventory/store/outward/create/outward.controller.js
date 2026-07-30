@@ -1,5 +1,18 @@
 import prisma from '../../../../../db.js'
 import { packDetailInclude } from '../../../../../services/pack-view.js'
+import { resolveIssueQty, toOperationalDisplay } from '../services/uom-conversion.service.js'
+
+// Best-effort inverse conversion for a fully-automatic deduction (no operator
+// qty to validate against) — falls back to same-unit display rather than
+// blocking an otherwise-valid auto-issue just because a display conversion
+// can't be computed (e.g. conversionRequired left false on an old item).
+function safeOperationalDisplay(rm, inventoryQty) {
+  try {
+    return toOperationalDisplay(rm, inventoryQty)
+  } catch {
+    return { operationalQty: inventoryQty, operationalUom: rm.inventoryUom }
+  }
+}
 
 const bomScan = async (req, res) => {
   const { indentId, rmCode, packId } = req.body
@@ -146,14 +159,23 @@ const directIssue = async (req, res) => {
   try {
     const pack = await prisma.packDetail.findUnique({ where: { packId } })
     if (!pack || pack.status !== 'INWARDED') return res.status(404).json({ success: false, error: 'Pack not found or not inwarded', code: 'NOT_FOUND' })
-    const issue = parseFloat(qty)
-    if (issue <= 0) return res.status(400).json({ success: false, error: 'Qty must be positive', code: 'VALIDATION_ERROR' })
+    const entered = parseFloat(qty)
+    if (entered <= 0) return res.status(400).json({ success: false, error: 'Qty must be positive', code: 'VALIDATION_ERROR' })
+
+    // entered is in the item's Operational UOM — convert to Inventory UOM
+    // (server-authoritative) before checking/deducting the pack balance.
+    let issue, operationalQty, operationalUom
+    try {
+      ({ inventoryQty: issue, operationalQty, operationalUom } = await resolveIssueQty(pack.itemCode, entered))
+    } catch (e) {
+      return res.status(400).json({ success: false, error: e.message, code: 'VALIDATION_ERROR' })
+    }
     if (issue > pack.remainingQty)
       return res.status(400).json({ success: false, error: `Qty exceeds pack balance (${pack.remainingQty})` , code: 'VALIDATION_ERROR' })
     await prisma.$transaction(async (tx) => {
       await tx.packDetail.update({ where: { packId }, data: { remainingQty: pack.remainingQty - issue } })
       await tx.outward.create({
-        data: { sourceId: packId, sourceType: 'DIRECT_ISSUE', rmCode: pack.itemCode, qtyIssued: issue, remarks: `To: ${plant}${remarks ? ' | ' + remarks : ''}` }
+        data: { sourceId: packId, sourceType: 'DIRECT_ISSUE', rmCode: pack.itemCode, qtyIssued: issue, operationalQty, operationalUom, remarks: `To: ${plant}${remarks ? ' | ' + remarks : ''}` }
       })
       const prevLedger = await tx.stockLedger.findFirst({ where: { itemCode: pack.itemCode }, orderBy: { timestamp: 'desc' } })
       await tx.stockLedger.create({
@@ -177,9 +199,18 @@ const bomDirectIssue = async (req, res) => {
   if (!['pack', 'container'].includes(source))
     return res.status(400).json({ success: false, error: 'source must be "pack" or "container"', code: 'VALIDATION_ERROR' })
   try {
-    const issue = parseFloat(qty)
-    if (issue <= 0) return res.status(400).json({ success: false, error: 'Qty must be positive', code: 'VALIDATION_ERROR' })
+    const entered = parseFloat(qty)
+    if (entered <= 0) return res.status(400).json({ success: false, error: 'Qty must be positive', code: 'VALIDATION_ERROR' })
     const ref = `BOM: ${productName || productCode || ''}${batchSize ? ' | Batch: ' + batchSize + ' kg' : ''}${batchRef ? ' | Ref: ' + batchRef : ''}`
+
+    // entered is in the item's Operational UOM — convert to Inventory UOM
+    // (server-authoritative) before checking/deducting the pack/container.
+    let issue, operationalQty, operationalUom
+    try {
+      ({ inventoryQty: issue, operationalQty, operationalUom } = await resolveIssueQty(rmCode, entered))
+    } catch (e) {
+      return res.status(400).json({ success: false, error: e.message, code: 'VALIDATION_ERROR' })
+    }
 
     if (source === 'pack') {
       const pack = await prisma.packDetail.findUnique({ where: { packId: sourceId } })
@@ -191,7 +222,7 @@ const bomDirectIssue = async (req, res) => {
 
       await prisma.$transaction(async (tx) => {
         await tx.packDetail.update({ where: { packId: sourceId }, data: { remainingQty: pack.remainingQty - issue } })
-        await tx.outward.create({ data: { sourceId, sourceType: 'BOM_ISSUANCE', rmCode, qtyIssued: issue, remarks: ref } })
+        await tx.outward.create({ data: { sourceId, sourceType: 'BOM_ISSUANCE', rmCode, qtyIssued: issue, operationalQty, operationalUom, remarks: ref } })
         const prev = await tx.stockLedger.findFirst({ where: { itemCode: rmCode }, orderBy: { timestamp: 'desc' } })
         await tx.stockLedger.create({ data: { itemCode: rmCode, sourceId, transactionType: 'BOM_ISSUANCE', outQty: issue, balance: (prev?.balance || 0) - issue, reference: ref } })
       })
@@ -208,7 +239,7 @@ const bomDirectIssue = async (req, res) => {
 
     await prisma.$transaction(async (tx) => {
       await tx.containerMaster.update({ where: { containerId: sourceId }, data: { currentQty: { decrement: issue } } })
-      await tx.outward.create({ data: { sourceId, sourceType: 'BOM_ISSUANCE', rmCode, qtyIssued: issue, remarks: ref } })
+      await tx.outward.create({ data: { sourceId, sourceType: 'BOM_ISSUANCE', rmCode, qtyIssued: issue, operationalQty, operationalUom, remarks: ref } })
       const prev = await tx.stockLedger.findFirst({ where: { itemCode: rmCode }, orderBy: { timestamp: 'desc' } })
       await tx.stockLedger.create({ data: { itemCode: rmCode, sourceId, transactionType: 'BOM_ISSUANCE', outQty: issue, balance: (prev?.balance || 0) - issue, reference: ref } })
     })
@@ -265,11 +296,26 @@ const _issuePack = async ({ indentId, rmCode, packId, forcedQty }) => {
   if (pack.remainingQty <= 0) throw new Error('Pack exhausted (no remaining qty)')
   if (pack.itemCode !== rmCode) throw new Error(`Pack item code (${pack.itemCode}) does not match RM (${rmCode})`)
 
-  const deduct = forcedQty !== undefined
-    ? Math.min(forcedQty, pack.remainingQty, detail.balanceQty)
-    : Math.min(pack.remainingQty, detail.balanceQty)
+  // forcedQty (bomManual) is operator-entered in the item's Operational UOM —
+  // convert to Inventory UOM (server-authoritative) before clamping against
+  // the inventory-uom balances below. bomScan has no operator input at all;
+  // the deduct amount is already inventory-uom, dictated purely by stock.
+  let rm, deduct
+  if (forcedQty !== undefined) {
+    const resolved = await resolveIssueQty(rmCode, forcedQty)
+    rm = resolved.rm
+    deduct = Math.min(resolved.inventoryQty, pack.remainingQty, detail.balanceQty)
+  } else {
+    rm = await prisma.rmMaster.findUnique({ where: { itemCode: rmCode } })
+    deduct = Math.min(pack.remainingQty, detail.balanceQty)
+  }
 
   if (deduct <= 0) throw new Error('Nothing to deduct')
+
+  // What actually got deducted (post-clamp) converted back to Operational
+  // UOM for the transaction record — reflects a partial fulfillment
+  // accurately even when less than the operator's requested qty was issued.
+  const { operationalQty, operationalUom } = safeOperationalDisplay(rm, deduct)
 
   await prisma.$transaction(async (tx) => {
     await tx.packDetail.update({ where: { packId }, data: { remainingQty: pack.remainingQty - deduct } })
@@ -277,7 +323,7 @@ const _issuePack = async ({ indentId, rmCode, packId, forcedQty }) => {
       where: { id: detail.id },
       data: { issuedQty: detail.issuedQty + deduct, balanceQty: detail.balanceQty - deduct }
     })
-    await tx.outward.create({ data: { indentId, sourceId: packId, sourceType: 'BOM_ISSUANCE', rmCode, qtyIssued: deduct } })
+    await tx.outward.create({ data: { indentId, sourceId: packId, sourceType: 'BOM_ISSUANCE', rmCode, qtyIssued: deduct, operationalQty, operationalUom } })
     const prevLedger = await tx.stockLedger.findFirst({ where: { itemCode: rmCode }, orderBy: { timestamp: 'desc' } })
     const newBal = (prevLedger?.balance || 0) - deduct
     await tx.stockLedger.create({ data: { itemCode: rmCode, sourceId: packId, transactionType: 'BOM_ISSUANCE', outQty: deduct, balance: newBal, reference: `Indent ${indentId}` } })
