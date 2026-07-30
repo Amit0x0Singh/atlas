@@ -21,6 +21,15 @@ export const validateGateInward = preprocess({
   },
 })
 
+export const validateManualGateInward = preprocess({
+  excludeFromConversion: ['invoice_no'],
+  schema: {
+    supplier_name: { required: true, minLength: 2, maxLength: 150 },
+    invoice_no:    { required: true, maxLength: 50 },
+    received_date: { required: true },
+  },
+})
+
 export const validateGateOutward = preprocess({
   excludeFromConversion: ['invoice_no', 'vehicle_no'],
   schema: {

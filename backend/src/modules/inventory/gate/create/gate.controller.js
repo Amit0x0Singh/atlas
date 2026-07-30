@@ -36,6 +36,44 @@ const createGateInward = async (req, res) => {
   }
 }
 
+// -------------------   Gate Inward create (manual — Print Master flow)
+
+// Store person creates a Print Master record without a Gate Inward already
+// on file (goods received before Security logged them, or logged elsewhere).
+// This backs that record with a real GateInward row so every PrintMaster row
+// still has a gate_inward_id and both creation paths behave identically
+// downstream — company is always this site's default, never asked for.
+const MANUAL_ENTRY_COMPANY = 'SOM Phytopharma'
+
+const createManualGateInward = async (req, res) => {
+  try {
+    const { supplier_name, invoice_no, received_date } = req.body || {}
+
+    if (!supplier_name?.trim())
+      return res.status(400).json({ success: false, error: 'supplier_name is required', code: 'VALIDATION_ERROR' })
+
+    const receivedDate = received_date ? new Date(received_date) : null
+    if (!receivedDate || Number.isNaN(receivedDate.getTime()))
+      return res.status(400).json({ success: false, error: 'received_date is required and must be a valid date', code: 'VALIDATION_ERROR' })
+
+    const row = await prisma.gateInward.create({
+      data: {
+        supplierName: supplier_name.trim(),
+        invoiceNo:    invoice_no?.trim() || null,
+        vehicleNo:    null,
+        companyName:  MANUAL_ENTRY_COMPANY,
+        status:       'pending',
+        createdBy:    req.user?.user_id || null,
+        entryTime:    receivedDate,
+      },
+    })
+    return res.status(201).json({ success: true, data: row })
+  } catch (err) {
+    console.error('createManualGateInward error:', err.message)
+    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+  }
+}
+
 /// -------------------   Gate Outward Create
 
 const createGateOutward = async (req, res) => {
@@ -64,4 +102,4 @@ const createGateOutward = async (req, res) => {
   }
 }
 
-export { createGateInward, createGateOutward, VALID_COMPANIES }
+export { createGateInward, createGateOutward, createManualGateInward, VALID_COMPANIES }
