@@ -22,7 +22,7 @@ model ErpNotification {
   actionedBy   String?   @map("actioned_by") @db.Uuid
   createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz()
 
-  targetUser   User?                    @relation(fields: [targetUserId], references: [userId])
+  targetUser   User?                     @relation(fields: [targetUserId], references: [userId])
   escalations  NotificationEscalation[]
   deliveryLogs NotificationDeliveryLog[]
 
@@ -30,11 +30,11 @@ model ErpNotification {
 }
 
 model NotificationEscalation {
-  id          BigInt    @id @default(autoincrement())
-  notifId     String?   @map("notif_id") @db.Uuid
+  id          BigInt   @id @default(autoincrement())
+  notifId     String?  @map("notif_id") @db.Uuid
   level       Int
-  escalatedTo String?   @map("escalated_to") @db.Uuid
-  escalatedAt DateTime  @default(now()) @map("escalated_at") @db.Timestamptz()
+  escalatedTo String?  @map("escalated_to") @db.Uuid
+  escalatedAt DateTime @default(now()) @map("escalated_at") @db.Timestamptz()
   notes       String?
 
   notification ErpNotification? @relation(fields: [notifId], references: [notifId])
@@ -43,13 +43,13 @@ model NotificationEscalation {
 }
 
 model NotificationDeliveryLog {
-  id           BigInt    @id @default(autoincrement())
-  notifId      String?   @map("notif_id") @db.Uuid
-  channel      String    @db.VarChar(30)
-  status       String    @default("sent") @db.VarChar(20)
-  externalId   String?   @map("external_id") @db.VarChar(200)
-  sentAt       DateTime  @default(now()) @map("sent_at") @db.Timestamptz()
-  errorMessage String?   @map("error_message")
+  id           BigInt   @id @default(autoincrement())
+  notifId      String?  @map("notif_id") @db.Uuid
+  channel      String   @db.VarChar(30)
+  status       String   @default("sent") @db.VarChar(20)
+  externalId   String?  @map("external_id") @db.VarChar(200)
+  sentAt       DateTime @default(now()) @map("sent_at") @db.Timestamptz()
+  errorMessage String?  @map("error_message")
 
   notification ErpNotification? @relation(fields: [notifId], references: [notifId])
 

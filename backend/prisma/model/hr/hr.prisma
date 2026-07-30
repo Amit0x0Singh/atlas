@@ -10,7 +10,7 @@
 
 model CompanyMaster {
   id        String   @id @default(cuid())
-  code      String   @unique                 // DVS | SOM | AL-IPL | AL-PTE
+  code      String   @unique // DVS | SOM | AL-IPL | AL-PTE
   name      String
   isActive  Boolean  @default(true) @map("is_active")
   createdAt DateTime @default(now()) @map("created_at")

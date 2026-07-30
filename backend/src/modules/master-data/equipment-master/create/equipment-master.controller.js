@@ -1,4 +1,5 @@
 import prisma from '../../../../db.js'
+import { getMaxEquipCodeNum, formatEquipCode } from '../../../../utils/equip-code.js'
 
 export const createEquipment = async (req, res) => {
   try {
@@ -6,9 +7,11 @@ export const createEquipment = async (req, res) => {
     if (!equipName) return res.status(400).json({ success: false, error: 'equipName is required', code: 'VALIDATION_ERROR' })
     const existing = await prisma.equipmentMaster.findUnique({ where: { equipName } })
     if (existing) return res.status(409).json({ success: false, error: 'Equipment already exists', code: 'CONFLICT' })
+    const nextNum = await getMaxEquipCodeNum(prisma)
     const item = await prisma.equipmentMaster.create({
-      // equipCode is never accepted here — the DB assigns it (sequence default).
+      // equipCode is never accepted here — the backend assigns it.
       data: {
+        equipCode: formatEquipCode(nextNum + 1),
         equipName,
         plant: plant || '',
         workingVolume: workingVolume ? parseFloat(workingVolume) : 0,

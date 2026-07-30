@@ -12,13 +12,13 @@
 
 model SalesOrder {
   id                    String           @id @default(cuid())
-  soId                  String           @unique @map("so_id")         // auto: SO-2026-0001
-  company               String                                          // DVS | SOM | AL-IPL | AL-PTE
+  soId                  String           @unique @map("so_id") // auto: SO-2026-0001
+  company               String // DVS | SOM | AL-IPL | AL-PTE
   diNo                  String           @map("di_no")
   customerName          String           @map("customer_name")
-  orderType             String           @map("order_type")            // DOMESTIC | EXPORT | SAMPLE
+  orderType             String           @map("order_type") // DOMESTIC | EXPORT | SAMPLE
   orderReceivedDate     DateTime         @map("order_received_date")
-  priority              String           @default("MODERATE")          // URGENT | VERY_URGENT | MODERATE
+  priority              String           @default("MODERATE") // URGENT | VERY_URGENT | MODERATE
   estimatedDispatchDate DateTime         @map("estimated_dispatch_date")
   invoiceNo             String?          @map("invoice_no")
   invoiceDate           DateTime?        @map("invoice_date")
@@ -37,7 +37,7 @@ model SalesOrderItem {
   id                  String     @id @default(cuid())
   salesOrderId        String     @map("sales_order_id")
   salesOrder          SalesOrder @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
-  lineNo              Int        @map("line_no")                        // 1, 2, 3…
+  lineNo              Int        @map("line_no") // 1, 2, 3…
   customerProductName String     @map("customer_product_name")
   inhouseProductName  String     @map("inhouse_product_name")
   inhouseProductCode  String?    @map("inhouse_product_code")
@@ -45,15 +45,15 @@ model SalesOrderItem {
   activeIngredient    String?    @map("active_ingredient")
   carrier             String?
   batchNo             String?    @map("batch_no")
-  sectionName         String?    @map("section_name")                   // NANO|BOTANICAL|LIQUID|POWDER|GRANULES
+  sectionName         String?    @map("section_name") // NANO|BOTANICAL|LIQUID|POWDER|GRANULES
   totalQty            Float      @map("total_qty")
   totalUom            String     @default("KG") @map("total_uom")
   unitQty             Float?     @map("unit_qty")
   unitUom             String?    @map("unit_uom")
-  unitPackType        String?    @map("unit_pack_type")                 // Primary packing: Pouch, Bottle, Sachet
-  packingType         String?    @map("packing_type")                   // Secondary packing: Cartons | OMB30 | OMB50
-  totalCS             Int?       @map("total_cs")                       // Total no. of final packs
-  labelType           String?    @map("label_type")                     // CUSTOMER | PACKING_SLIP | COMPUTER_LABELS
+  unitPackType        String?    @map("unit_pack_type") // Primary packing: Pouch, Bottle, Sachet
+  packingType         String?    @map("packing_type") // Secondary packing: Cartons | OMB30 | OMB50
+  totalCS             Int?       @map("total_cs") // Total no. of final packs
+  labelType           String?    @map("label_type") // CUSTOMER | PACKING_SLIP | COMPUTER_LABELS
   mrp                 Float?
   mfgDate             DateTime?  @map("mfg_date")
   expDate             DateTime?  @map("exp_date")
@@ -90,33 +90,33 @@ model CustomerProfile {
 // Stores all line-level defaults that can be recalled when a repeat order is entered.
 
 model CustomerProductProfile {
-  id            String   @id @default(cuid())
-  customerName  String   @map("customer_name")
-  productName   String   @map("product_name")          // customer-facing product name
-  productCode   String?  @map("product_code")          // inhouse product code (optional)
-  inhouseName   String?  @map("inhouse_name")          // inhouse product name (optional)
+  id           String  @id @default(cuid())
+  customerName String  @map("customer_name")
+  productName  String  @map("product_name") // customer-facing product name
+  productCode  String? @map("product_code") // inhouse product code (optional)
+  inhouseName  String? @map("inhouse_name") // inhouse product name (optional)
 
   // Specs & process
-  activeSpecs   String?  @map("active_specs")
-  carrier       String?
-  sectionName   String?  @map("section_name")
+  activeSpecs String? @map("active_specs")
+  carrier     String?
+  sectionName String? @map("section_name")
 
   // Packing — unit level
-  unitQty       Float?   @map("unit_qty")              // e.g. 1.0 (from "1KG", "0.5L")
-  unitUom       String?  @map("unit_uom")              // KG / LTR / GM / ML
-  unitPackType  String?  @map("unit_pack_type")        // free-text description
-  primaryPack   String?  @map("primary_pack")          // LD Pouch / AL Pouch / Bottle etc.
-  secondaryPack String?  @map("secondary_pack")        // B-CBB / W-CBB / Drum etc.
-  unitsPerCS    Int?     @map("units_per_cs")           // primary packs per secondary pack
-  totalUom      String?  @default("KG") @map("total_uom")
+  unitQty       Float?  @map("unit_qty") // e.g. 1.0 (from "1KG", "0.5L")
+  unitUom       String? @map("unit_uom") // KG / LTR / GM / ML
+  unitPackType  String? @map("unit_pack_type") // free-text description
+  primaryPack   String? @map("primary_pack") // LD Pouch / AL Pouch / Bottle etc.
+  secondaryPack String? @map("secondary_pack") // B-CBB / W-CBB / Drum etc.
+  unitsPerCS    Int?    @map("units_per_cs") // primary packs per secondary pack
+  totalUom      String? @default("KG") @map("total_uom")
 
   // Label
-  labelType     String?  @map("label_type")
-  mrp           Float?
+  labelType String? @map("label_type")
+  mrp       Float?
 
   // Batch memory — last batch no + inferred shelf life
-  lastBatchNo   String?  @map("last_batch_no")
-  shelfLifeDays Int?     @map("shelf_life_days")       // EXP minus MFG in days (learned)
+  lastBatchNo   String? @map("last_batch_no")
+  shelfLifeDays Int?    @map("shelf_life_days") // EXP minus MFG in days (learned)
 
   // Confidence counters
   orderCount    Int      @default(1) @map("order_count")
@@ -164,8 +164,8 @@ model ErpSalesOrder {
   createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
 
-  dispatches       OrderDispatch[]
-  productionPlans  ErpProductionPlan[]
+  dispatches      OrderDispatch[]
+  productionPlans ErpProductionPlan[]
 
   @@map("sales_orders")
 }

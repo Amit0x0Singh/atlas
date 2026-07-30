@@ -17,33 +17,33 @@
 // ─── RAW MATERIAL MASTER ─────────────────────────────────────────────────────
 
 model RmMaster {
-  itemCode     String   @id @map("item_code")
-  itemName     String   @unique @map("item_name")
-  uom          String
+  itemCode           String   @id @map("item_code")
+  itemName           String   @unique @map("item_name")
+  uom                String
   // Unit this item is actually consumed/issued in on the shop floor when it
   // differs from the stock unit (uom) — e.g. stocked in KG but dosed in L.
   // Left null when operations use the same unit as stock.
-  operationUom String?  @map("operation_uom")
-  trackingType String   @default("PACK") @map("tracking_type") // PACK | BULK
-  category     String?  @map("category")
-  subCategory  String?  @map("sub_category")
-  state        String?  @map("physical_state") // SOLID | LIQUID | GAS
+  operationUom       String?  @map("operation_uom")
+  trackingType       String   @default("PACK") @map("tracking_type") // PACK | BULK
+  category           String?  @map("category")
+  subCategory        String?  @map("sub_category")
+  state              String?  @map("physical_state") // SOLID | LIQUID | GAS
   // kg per liter — lets a liquid item be purchased in KG and issued in L (or
   // vice versa) by converting through mass = density × volume. Only
   // meaningful for state = LIQUID; left null for solids/gases. This is what
   // the RM import sheet calls "Conversion Factor" — same value, same purpose.
-  density      Float?   @map("density")
+  density            Float?   @map("density")
   // Whether uom -> operationUom needs density applied as a conversion factor
   // before issuance — flagged explicitly rather than just inferred from
   // uom !== operationUom, since a store operator sets this by hand.
-  conversionRequired Boolean @default(false) @map("conversion_required")
+  conversionRequired Boolean  @default(false) @map("conversion_required")
   // Reorder thresholds (in uom) — lowStockLevel flags when stock needs
   // replenishing, highStockLevel flags excess/overstock. Both optional;
   // left null when this item isn't tracked against reorder levels.
-  lowStockLevel  Float?   @map("low_stock_level")
-  highStockLevel Float?   @map("high_stock_level")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  lowStockLevel      Float?   @map("low_stock_level")
+  highStockLevel     Float?   @map("high_stock_level")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
 
   @@map("rm_master")
 }
@@ -51,7 +51,7 @@ model RmMaster {
 // ─── BULK TRACKING ───────────────────────────────────────────────────────────
 
 model BulkLocation {
-  locationId   String         @id @map("location_id")   // e.g. LOC-001, LOC-SHELF-A2
+  locationId   String         @id @map("location_id") // e.g. LOC-001, LOC-SHELF-A2
   locationName String         @map("location_name")
   itemCode     String         @map("item_code")
   itemName     String         @map("item_name")
@@ -67,14 +67,14 @@ model BulkLotEntry {
   locationId   String       @map("location_id")
   itemCode     String       @map("item_code")
   itemName     String       @map("item_name")
-  lotNo        String       @map("lot_no")           // e.g. BULK-151464-2026-001
+  lotNo        String       @map("lot_no") // e.g. BULK-151464-2026-001
   supplier     String?
   invoiceNo    String?      @map("invoice_no")
   receivedDate DateTime?    @map("received_date")
   receivedQty  Float        @map("received_qty")
   remainingQty Float        @map("remaining_qty")
   uom          String       @default("KG")
-  status       String       @default("ACTIVE")       // ACTIVE | EXHAUSTED
+  status       String       @default("ACTIVE") // ACTIVE | EXHAUSTED
   createdAt    DateTime     @default(now()) @map("created_at")
   updatedAt    DateTime     @updatedAt @map("updated_at")
   location     BulkLocation @relation(fields: [locationId], references: [locationId])
@@ -227,7 +227,6 @@ model BomIssueSession {
 //   DecantingLog      — Decanting operations (pack → container)
 //
 // ─────────────────────────────────────────────────────────────────────────────
- 
 
 model ErpPack {
   packId             String    @id @default(dbgenerated("gen_random_uuid()")) @map("pack_id") @db.Uuid
@@ -254,8 +253,8 @@ model ErpPack {
   createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
 
-  inward           GateInward?        @relation(fields: [inwardId], references: [inwardId])
-  item             ErpItem?           @relation(fields: [itemCode], references: [itemCode])
+  inward           GateInward?         @relation(fields: [inwardId], references: [inwardId])
+  item             ErpItem?            @relation(fields: [itemCode], references: [itemCode])
   stockAdjustments StockAdjustment[]
   transfers        WarehouseTransfer[]
   decantings       DecantingLog[]
@@ -265,7 +264,6 @@ model ErpPack {
   @@map("erp_packs")
 }
 
- 
 model StockAdjustment {
   adjustmentId String    @id @default(dbgenerated("gen_random_uuid()")) @map("adjustment_id") @db.Uuid
   packId       String?   @map("pack_id") @db.Uuid
@@ -287,19 +285,19 @@ model StockAdjustment {
 }
 
 model WarehouseTransfer {
-  transferId    String    @id @default(dbgenerated("gen_random_uuid()")) @map("transfer_id") @db.Uuid
-  packId        String?   @map("pack_id") @db.Uuid
-  transferType  String    @map("transfer_type") @db.VarChar(30)
-  fromLocation  String?   @map("from_location") @db.VarChar(200)
-  toLocation    String?   @map("to_location") @db.VarChar(200)
-  fromPlantId   String?   @map("from_plant_id") @db.Uuid
-  toPlantId     String?   @map("to_plant_id") @db.Uuid
-  initiatedBy   String?   @map("initiated_by") @db.Uuid
-  receivedBy    String?   @map("received_by") @db.Uuid
-  status        String    @default("pending") @db.VarChar(30)
-  initiatedAt   DateTime  @default(now()) @map("initiated_at") @db.Timestamptz()
-  receivedAt    DateTime? @map("received_at") @db.Timestamptz()
-  notes         String?
+  transferId   String    @id @default(dbgenerated("gen_random_uuid()")) @map("transfer_id") @db.Uuid
+  packId       String?   @map("pack_id") @db.Uuid
+  transferType String    @map("transfer_type") @db.VarChar(30)
+  fromLocation String?   @map("from_location") @db.VarChar(200)
+  toLocation   String?   @map("to_location") @db.VarChar(200)
+  fromPlantId  String?   @map("from_plant_id") @db.Uuid
+  toPlantId    String?   @map("to_plant_id") @db.Uuid
+  initiatedBy  String?   @map("initiated_by") @db.Uuid
+  receivedBy   String?   @map("received_by") @db.Uuid
+  status       String    @default("pending") @db.VarChar(30)
+  initiatedAt  DateTime  @default(now()) @map("initiated_at") @db.Timestamptz()
+  receivedAt   DateTime? @map("received_at") @db.Timestamptz()
+  notes        String?
 
   pack ErpPack? @relation(fields: [packId], references: [packId])
 
@@ -321,18 +319,18 @@ model FifoOverrideLog {
 }
 
 model ErpContainer {
-  containerId        String    @id @map("container_id") @db.VarChar(100)
-  containerQr        String?   @unique @map("container_qr") @db.VarChar(200)
-  itemCode           String?   @map("item_code") @db.VarChar(50)
-  location           String?   @db.VarChar(200)
-  maxCapacity        Decimal   @map("max_capacity") @db.Decimal(12, 3)
-  currentQty         Decimal   @default(0) @map("current_qty") @db.Decimal(12, 3)
-  uom                String?   @db.VarChar(20)
-  lowStockThreshold  Decimal   @default(0) @map("low_stock_threshold") @db.Decimal(12, 3)
-  lastReplenishedAt  DateTime? @map("last_replenished_at") @db.Timestamptz()
-  isActive           Boolean   @default(true) @map("is_active")
-  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz()
-  updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+  containerId       String    @id @map("container_id") @db.VarChar(100)
+  containerQr       String?   @unique @map("container_qr") @db.VarChar(200)
+  itemCode          String?   @map("item_code") @db.VarChar(50)
+  location          String?   @db.VarChar(200)
+  maxCapacity       Decimal   @map("max_capacity") @db.Decimal(12, 3)
+  currentQty        Decimal   @default(0) @map("current_qty") @db.Decimal(12, 3)
+  uom               String?   @db.VarChar(20)
+  lowStockThreshold Decimal   @default(0) @map("low_stock_threshold") @db.Decimal(12, 3)
+  lastReplenishedAt DateTime? @map("last_replenished_at") @db.Timestamptz()
+  isActive          Boolean   @default(true) @map("is_active")
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
 
   item       ErpItem?       @relation(fields: [itemCode], references: [itemCode])
   decantings DecantingLog[]
@@ -355,7 +353,7 @@ model DecantingLog {
   status          String    @default("completed") @db.VarChar(30)
   createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz()
 
-  sourcePack ErpPack?     @relation(fields: [sourcePackId], references: [packId])
+  sourcePack ErpPack?      @relation(fields: [sourcePackId], references: [packId])
   container  ErpContainer? @relation(fields: [targetContainer], references: [containerId])
 
   @@map("decanting_log")

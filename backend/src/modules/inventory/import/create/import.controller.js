@@ -4,6 +4,8 @@ import { normalizePlant } from '../../../../utils/plant.js'
 import { syncTotalRecipe } from '../../../production/recipe/recipe-utils.js'
 import { normalizeUom, CANONICAL_UNITS } from '../../../../utils/uom.js'
 import { getMaxMicrobeCodeNum, formatMicrobeCode } from '../../../../utils/microbe-code.js'
+import { getMaxProductCodeNum, formatProductCode } from '../../../../utils/product-code.js'
+import { getMaxEquipCodeNum, formatEquipCode } from '../../../../utils/equip-code.js'
 
 function col(row, ...keys) {
   for (const key of keys) {
@@ -200,6 +202,13 @@ export const executeImport = async (req, res) => {
       errors: []
     }
 
+    // Shared running counters for backend-assigned codes — product creates
+    // happen in two separate loops below (direct Product sheet + recipe
+    // auto-create), so the counter is tracked once here rather than re-read
+    // per loop (which would hand out the same code twice within one import).
+    let nextProductNum = await getMaxProductCodeNum(prisma)
+    let nextEquipNum = await getMaxEquipCodeNum(prisma)
+
     // ── SUPPLIER MASTER ────────────────────────────────────────────────────
     // Sheet-name match first; falls back to column-signature detection (a
     // "Supplier Name"/"Vendor Name" header) for files where the tab was
@@ -311,9 +320,10 @@ export const executeImport = async (req, res) => {
               update: { productName, plant }
             })
           } else {
-            // No code in the sheet — let the DB assign one (PR00001-style
-            // sequence), same convention as the Add New Product UI.
-            await prisma.productMaster.create({ data: { productName, plant } })
+            // No code in the sheet — backend assigns one (PR00001-style),
+            // same convention as the Add New Product UI.
+            nextProductNum++
+            await prisma.productMaster.create({ data: { productCode: formatProductCode(nextProductNum), productName, plant } })
           }
           results.productMaster++
         } catch (e) { results.errors.push(`Product row: ${e.message}`) }
@@ -351,11 +361,20 @@ export const executeImport = async (req, res) => {
           const operation = col(row, 'operation', 'operations', 'process', 'type', 'activity') || ''
           const designatedProduct = col(row, 'designatedproduct', 'designated product', 'designated_product') || null
           if (!equipName) continue
-          await prisma.equipmentMaster.upsert({
-            where: { equipName },
-            create: { equipName, plant, workingVolume, workingUnit, operation, designatedProduct },
-            update: { plant, workingVolume, workingUnit, operation, designatedProduct }
-          })
+          const existingEquip = await prisma.equipmentMaster.findUnique({ where: { equipName } })
+          if (existingEquip) {
+            await prisma.equipmentMaster.update({
+              where: { equipName },
+              data: { plant, workingVolume, workingUnit, operation, designatedProduct }
+            })
+          } else {
+            // equip_code is never read from the sheet — backend assigns it
+            // (EP00001-style), same convention as the Add Equipment UI.
+            nextEquipNum++
+            await prisma.equipmentMaster.create({
+              data: { equipCode: formatEquipCode(nextEquipNum), equipName, plant, workingVolume, workingUnit, operation, designatedProduct }
+            })
+          }
           results.equipmentMaster++
         } catch (e) { results.errors.push(`Equipment row: ${e.message}`) }
       }
@@ -578,9 +597,10 @@ export const executeImport = async (req, res) => {
           let product = productsByName[productName.toLowerCase()]
           if (!product) {
             // No code to honor here — recipe sheets never carry one, so the
-            // DB assigns a PR00001-style code the same way the direct Product
-            // Master import path does above.
-            product = await prisma.productMaster.create({ data: { productName, plant: normalizePlant(section), uom: canonicalProductUom } })
+            // backend assigns a PR00001-style code the same way the direct
+            // Product Master import path does above.
+            nextProductNum++
+            product = await prisma.productMaster.create({ data: { productCode: formatProductCode(nextProductNum), productName, plant: normalizePlant(section), uom: canonicalProductUom } })
             productsByName[productName.toLowerCase()] = product
             results.productMaster++
           } else {

@@ -13,17 +13,17 @@
 model BackupJob {
   id             String    @id @default(cuid())
   name           String    @db.VarChar(200)
-  type           String    @db.VarChar(20)                    // FULL | MODULE | SELECTED
-  scope          String    @default("FULL") @db.VarChar(10)   // FULL (whole table) | PARTIAL (row-filtered)
+  type           String    @db.VarChar(20) // FULL | MODULE | SELECTED
+  scope          String    @default("FULL") @db.VarChar(10) // FULL (whole table) | PARTIAL (row-filtered)
   status         String    @default("RUNNING") @db.VarChar(20) // RUNNING | COMPLETED | FAILED
-  tables         String[]  @default([])                       // Prisma accessor names included
-  modules        String[]  @default([])                       // group keys (type = MODULE only)
+  tables         String[]  @default([]) // Prisma accessor names included
+  modules        String[]  @default([]) // group keys (type = MODULE only)
   tableCount     Int       @default(0) @map("table_count")
   recordCount    Int       @default(0) @map("record_count")
   tablesTotal    Int       @default(0) @map("tables_total")
   tablesDone     Int       @default(0) @map("tables_done")
   currentTable   String?   @map("current_table")
-  tableBreakdown Json?     @map("table_breakdown")             // { tableName: rowCount }
+  tableBreakdown Json?     @map("table_breakdown") // { tableName: rowCount }
   fileSizeBytes  BigInt?   @map("file_size_bytes")
   filePath       String?   @map("file_path") @db.VarChar(500)
   fileName       String?   @map("file_name") @db.VarChar(300)
@@ -43,7 +43,7 @@ model RestoreJob {
   id             String     @id @default(cuid())
   backupJobId    String?    @map("backup_job_id")
   backupJob      BackupJob? @relation(fields: [backupJobId], references: [id], onDelete: SetNull)
-  sourceType     String     @db.VarChar(20)                     // HISTORY | UPLOAD
+  sourceType     String     @db.VarChar(20) // HISTORY | UPLOAD
   sourceFileName String?    @map("source_file_name") @db.VarChar(300)
   status         String     @default("PENDING") @db.VarChar(20)
   // PENDING | VALIDATING | RESTORING | COMPLETED | FAILED

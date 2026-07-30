@@ -22,11 +22,14 @@
 // ─── PRODUCT & EQUIPMENT MASTERS ─────────────────────────────────────────────
 
 model ProductMaster {
-  // Backend-generated (Postgres sequence default) — never accepted from the
-  // client, same convention as EquipmentMaster.equipCode below. Existing rows
-  // (PROD-XXX, RHZ-001, ...) keep their historical codes; only products
-  // created from now on get this PR00001-style code.
-  productCode String   @id @default(dbgenerated("('PR' || lpad((nextval('product_master_pr_code_seq'::regclass))::text, 5, '0'))")) @map("product_code")
+  // App-generated (MAX(existing code)+1, see utils/product-code.js) — never
+  // accepted from the client, same convention as EquipmentMaster.equipCode
+  // below. A DB sequence default was tried first but the hosted DB's app role
+  // was never granted USAGE on it ("permission denied for sequence
+  // product_master_pr_code_seq"); computing it in app code avoids depending
+  // on DB-level grants. Existing rows (PROD-XXX, RHZ-001, ...) keep their
+  // historical codes; only products created from now on get this PR00001-style code.
+  productCode String   @id @map("product_code")
   productName String   @unique @map("product_name")
   uom         String?
   state       String?  @map("physical_state") // SOLID | LIQUID | GAS
@@ -44,11 +47,14 @@ model ProductMaster {
 
 model EquipmentMaster {
   equipId           String   @id @default(cuid()) @map("equip_id")
-  // Backend-generated (Postgres sequence default) — never accepted from the
-  // client. Format changed 2026-07-20 from "EQ-0001" to the 7-char, no-hyphen
-  // "EP00001" standard — existing EQ-xxxx rows are untouched, only new
-  // equipment gets the new format.
-  equipCode         String   @unique @default(dbgenerated("('EP' || lpad((nextval('equipment_master_ep_code_seq'::regclass))::text, 5, '0'))")) @map("equip_code")
+  // App-generated (MAX(existing code)+1, see utils/equip-code.js) — never
+  // accepted from the client. A DB sequence default was tried first but the
+  // hosted DB's app role was never granted USAGE on it ("permission denied
+  // for sequence equipment_master_ep_code_seq"); computing it in app code
+  // avoids depending on DB-level grants. Format changed 2026-07-20 from
+  // "EQ-0001" to the 7-char, no-hyphen "EP00001" standard — existing EQ-xxxx
+  // rows are untouched, only new equipment gets the new format.
+  equipCode         String   @unique @map("equip_code")
   equipName         String   @unique @map("equip_name")
   designatedProduct String?  @map("designated_product")
   workingVolume     Float    @default(0) @map("working_volume")
@@ -64,57 +70,57 @@ model EquipmentMaster {
 // ─── PRODUCTION TASK (plant scheduling) ─────────────────────────────────────
 
 model ProductionTask {
-  id            String    @id @default(cuid())
-  taskId        String    @unique @map("task_id") @db.VarChar(40)
-  plant         String    @db.VarChar(50)
-  date          String    @db.VarChar(10)    // YYYY-MM-DD
-  diNo          String?   @map("di_no")       @db.VarChar(50)
-  shift         String    @default("General") @db.VarChar(20)
-  productName   String    @map("product_name") @db.VarChar(300)
-  batchCode     String?   @map("batch_code")  @db.VarChar(100)
-  batchKey      String?   @map("batch_key")   @db.VarChar(200)
-  qty           Float     @default(0)
-  qtyUom        String?   @map("qty_uom")     @db.VarChar(20)
-  process       String    @default("")        @db.VarChar(100)
-  incharge      String    @default("")        @db.VarChar(100)
-  equipment     String?   @db.VarChar(100)
-  location      String?   @db.VarChar(100)
-  carrier       String?   @db.VarChar(100)
-  specs         String?   @db.VarChar(200)
-  status        String    @default("Not Started") @db.VarChar(50)
-  remarks       String?   @db.VarChar(500)
+  id                    String    @id @default(cuid())
+  taskId                String    @unique @map("task_id") @db.VarChar(40)
+  plant                 String    @db.VarChar(50)
+  date                  String    @db.VarChar(10) // YYYY-MM-DD
+  diNo                  String?   @map("di_no") @db.VarChar(50)
+  shift                 String    @default("General") @db.VarChar(20)
+  productName           String    @map("product_name") @db.VarChar(300)
+  batchCode             String?   @map("batch_code") @db.VarChar(100)
+  batchKey              String?   @map("batch_key") @db.VarChar(200)
+  qty                   Float     @default(0)
+  qtyUom                String?   @map("qty_uom") @db.VarChar(20)
+  process               String    @default("") @db.VarChar(100)
+  incharge              String    @default("") @db.VarChar(100)
+  equipment             String?   @db.VarChar(100)
+  location              String?   @db.VarChar(100)
+  carrier               String?   @db.VarChar(100)
+  specs                 String?   @db.VarChar(200)
+  status                String    @default("Not Started") @db.VarChar(50)
+  remarks               String?   @db.VarChar(500)
   // Packing fields
-  primaryPack   String?   @map("primary_pack")      @db.VarChar(100)
-  inners        String?   @db.VarChar(100)
-  secondaryPack String?   @map("secondary_pack")    @db.VarChar(100)
-  unitPackQty   Float?    @map("unit_pack_qty")
-  noUnits       Float?    @map("no_units")
-  unitsPerSecPack Float?  @map("units_per_sec_pack")
-  totalSecPacks Float?    @map("total_sec_packs")
-  labels        String?   @db.VarChar(100)
-  packAfter     String?   @map("pack_after")         @db.VarChar(10)
-  sfgSourceId   String?   @map("sfg_source_id")      @db.VarChar(50)
+  primaryPack           String?   @map("primary_pack") @db.VarChar(100)
+  inners                String?   @db.VarChar(100)
+  secondaryPack         String?   @map("secondary_pack") @db.VarChar(100)
+  unitPackQty           Float?    @map("unit_pack_qty")
+  noUnits               Float?    @map("no_units")
+  unitsPerSecPack       Float?    @map("units_per_sec_pack")
+  totalSecPacks         Float?    @map("total_sec_packs")
+  labels                String?   @db.VarChar(100)
+  packAfter             String?   @map("pack_after") @db.VarChar(10)
+  sfgSourceId           String?   @map("sfg_source_id") @db.VarChar(50)
   // Workflow flags
-  sent          Boolean   @default(false)
-  timerStart    DateTime? @map("timer_start")  @db.Timestamptz()
-  timerEnd      DateTime? @map("timer_end")    @db.Timestamptz()
-  bmrSubmitted  Boolean   @default(false) @map("bmr_submitted")
-  bmrSubmittedAt DateTime? @map("bmr_submitted_at") @db.Timestamptz()
-  sentToQc      Boolean   @default(false) @map("sent_to_qc")
-  sentToQcAt    DateTime? @map("sent_to_qc_at") @db.Timestamptz()
+  sent                  Boolean   @default(false)
+  timerStart            DateTime? @map("timer_start") @db.Timestamptz()
+  timerEnd              DateTime? @map("timer_end") @db.Timestamptz()
+  bmrSubmitted          Boolean   @default(false) @map("bmr_submitted")
+  bmrSubmittedAt        DateTime? @map("bmr_submitted_at") @db.Timestamptz()
+  sentToQc              Boolean   @default(false) @map("sent_to_qc")
+  sentToQcAt            DateTime? @map("sent_to_qc_at") @db.Timestamptz()
   // Set once a store operator has opened this task for BOM material issuance
   // (Material Issue by BOM page) — persisted server-side so the task drops
   // out of the pending picker on every device, not just the browser that
   // started it.
-  bomIssueStarted   Boolean   @default(false) @map("bom_issue_started")
-  bomIssueStartedAt DateTime? @map("bom_issue_started_at") @db.Timestamptz()
+  bomIssueStarted       Boolean   @default(false) @map("bom_issue_started")
+  bomIssueStartedAt     DateTime? @map("bom_issue_started_at") @db.Timestamptz()
   // Same idea as bomIssueStarted, tracked independently — RM issuance (store)
   // and microbe issuance (SFG store) are separate people/pages drawing on the
   // same task, so one starting shouldn't hide the task from the other.
   microbeIssueStarted   Boolean   @default(false) @map("microbe_issue_started")
   microbeIssueStartedAt DateTime? @map("microbe_issue_started_at") @db.Timestamptz()
-  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz()
-  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt             DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
 
   @@index([plant, date])
   @@index([date, sent])
@@ -150,21 +156,21 @@ model RecipeDb {
 // ─── INDENT (WORK ORDER) ─────────────────────────────────────────────────────
 
 model IndentMaster {
-  indentId        String          @id @default(cuid()) @map("indent_id")
-  productCode     String          @map("product_code")
-  productName     String          @map("product_name")
-  batchSize       Float           @map("batch_size")
-  batchNo         String          @map("batch_no")
-  diNo            String          @map("di_no")
-  plant           String          @default("")
-  equipment       String          @default("")
-  cycleBatchSize  Float?          @map("cycle_batch_size")   // per-cycle qty when multi-cycle
-  cycleNo         Int?            @map("cycle_no")            // which cycle this indent is (1-based)
-  totalCycles     Int?            @map("total_cycles")        // total cycles for this DI
-  status          String          @default("OPEN")
-  poSentAt        DateTime?       @map("po_sent_at")
-  createdAt       DateTime        @default(now()) @map("created_at")
-  details         IndentDetails[]
+  indentId          String            @id @default(cuid()) @map("indent_id")
+  productCode       String            @map("product_code")
+  productName       String            @map("product_name")
+  batchSize         Float             @map("batch_size")
+  batchNo           String            @map("batch_no")
+  diNo              String            @map("di_no")
+  plant             String            @default("")
+  equipment         String            @default("")
+  cycleBatchSize    Float?            @map("cycle_batch_size") // per-cycle qty when multi-cycle
+  cycleNo           Int?              @map("cycle_no") // which cycle this indent is (1-based)
+  totalCycles       Int?              @map("total_cycles") // total cycles for this DI
+  status            String            @default("OPEN")
+  poSentAt          DateTime?         @map("po_sent_at")
+  createdAt         DateTime          @default(now()) @map("created_at")
+  details           IndentDetails[]
   productionBatches ProductionBatch[]
 
   @@map("indent_master")
@@ -205,29 +211,29 @@ model SfgMaster {
 // ─── PRODUCTION BATCH & STAGE LOGS ───────────────────────────────────────────
 
 model ProductionBatch {
-  id              String    @id @default(cuid())
-  indentId        String    @map("indent_id")
-  productCode     String    @map("product_code")
-  productName     String    @map("product_name")
-  diNo            String    @map("di_no")
-  batchCode       String    @map("batch_code")
-  orderQty        Float     @map("order_qty")
-  category        String    @default("POWDER")
-  currentStage    String    @default("BIOMASS") @map("current_stage")
-  status          String    @default("DRAFT")
+  id              String   @id @default(cuid())
+  indentId        String   @map("indent_id")
+  productCode     String   @map("product_code")
+  productName     String   @map("product_name")
+  diNo            String   @map("di_no")
+  batchCode       String   @map("batch_code")
+  orderQty        Float    @map("order_qty")
+  category        String   @default("POWDER")
+  currentStage    String   @default("BIOMASS") @map("current_stage")
+  status          String   @default("DRAFT")
   temperature     Float?
   humidity        Float?
-  cfuTarget       String?   @map("cfu_target")
-  biomassFlag     Boolean   @default(false) @map("biomass_flag")
-  technicalFlag   Boolean   @default(false) @map("technical_flag")
-  formulationFlag Boolean   @default(false) @map("formulation_flag")
-  sievingFlag     Boolean   @default(false) @map("sieving_flag")
-  packingFlag     Boolean   @default(false) @map("packing_flag")
-  qcFlag          Boolean   @default(false) @map("qc_flag")
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
+  cfuTarget       String?  @map("cfu_target")
+  biomassFlag     Boolean  @default(false) @map("biomass_flag")
+  technicalFlag   Boolean  @default(false) @map("technical_flag")
+  formulationFlag Boolean  @default(false) @map("formulation_flag")
+  sievingFlag     Boolean  @default(false) @map("sieving_flag")
+  packingFlag     Boolean  @default(false) @map("packing_flag")
+  qcFlag          Boolean  @default(false) @map("qc_flag")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
-  indent            IndentMaster      @relation(fields: [indentId], references: [indentId])
+  indent            IndentMaster       @relation(fields: [indentId], references: [indentId])
   biomassInputs     BiomassInput[]
   technicalDetail   TechnicalDetail?
   formulationCycles FormulationCycle[]
@@ -393,57 +399,57 @@ model InventoryHandover {
 // ─────────────────────────────────────────────────────────────────────────────
 
 model ErpProductionPlan {
-  planId              String    @id @default(dbgenerated("gen_random_uuid()")) @map("plan_id") @db.Uuid
-  diNumber            String?   @map("di_number") @db.VarChar(100)
-  productCode         String?   @map("product_code") @db.VarChar(50)
-  bomId               String?   @map("bom_id") @db.Uuid
-  bomVersion          String?   @map("bom_version") @db.VarChar(20)
-  plannedQty          Decimal   @map("planned_qty") @db.Decimal(14, 3)
-  equipmentId         String?   @map("equipment_id") @db.Uuid
-  batchCount          Int       @default(1) @map("batch_count")
-  plannedStartDate    DateTime? @map("planned_start_date") @db.Date
-  plannedEndDate      DateTime? @map("planned_end_date") @db.Date
-  status              String    @default("draft") @db.VarChar(30)
-  isUrgent            Boolean   @default(false) @map("is_urgent")
-  urgentReason        String?   @map("urgent_reason")
-  consolidationGroup  String?   @map("consolidation_group") @db.VarChar(100)
-  fgStockUsed         Decimal   @default(0) @map("fg_stock_used") @db.Decimal(14, 3)
-  createdBy           String?   @map("created_by") @db.Uuid
-  submittedBy         String?   @map("submitted_by") @db.Uuid
-  approvedBy          String?   @map("approved_by") @db.Uuid
-  publishedBy         String?   @map("published_by") @db.Uuid
-  submittedAt         DateTime? @map("submitted_at") @db.Timestamptz()
-  approvedAt          DateTime? @map("approved_at") @db.Timestamptz()
-  publishedAt         DateTime? @map("published_at") @db.Timestamptz()
-  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz()
-  updatedAt           DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+  planId             String    @id @default(dbgenerated("gen_random_uuid()")) @map("plan_id") @db.Uuid
+  diNumber           String?   @map("di_number") @db.VarChar(100)
+  productCode        String?   @map("product_code") @db.VarChar(50)
+  bomId              String?   @map("bom_id") @db.Uuid
+  bomVersion         String?   @map("bom_version") @db.VarChar(20)
+  plannedQty         Decimal   @map("planned_qty") @db.Decimal(14, 3)
+  equipmentId        String?   @map("equipment_id") @db.Uuid
+  batchCount         Int       @default(1) @map("batch_count")
+  plannedStartDate   DateTime? @map("planned_start_date") @db.Date
+  plannedEndDate     DateTime? @map("planned_end_date") @db.Date
+  status             String    @default("draft") @db.VarChar(30)
+  isUrgent           Boolean   @default(false) @map("is_urgent")
+  urgentReason       String?   @map("urgent_reason")
+  consolidationGroup String?   @map("consolidation_group") @db.VarChar(100)
+  fgStockUsed        Decimal   @default(0) @map("fg_stock_used") @db.Decimal(14, 3)
+  createdBy          String?   @map("created_by") @db.Uuid
+  submittedBy        String?   @map("submitted_by") @db.Uuid
+  approvedBy         String?   @map("approved_by") @db.Uuid
+  publishedBy        String?   @map("published_by") @db.Uuid
+  submittedAt        DateTime? @map("submitted_at") @db.Timestamptz()
+  approvedAt         DateTime? @map("approved_at") @db.Timestamptz()
+  publishedAt        DateTime? @map("published_at") @db.Timestamptz()
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
 
   jobs       ErpProductionJob[]
-  salesOrder ErpSalesOrder? @relation(fields: [diNumber], references: [diNumber])
+  salesOrder ErpSalesOrder?     @relation(fields: [diNumber], references: [diNumber])
 
   @@map("production_plans")
 }
 
 model ErpProductionJob {
-  jobId              String    @id @default(dbgenerated("gen_random_uuid()")) @map("job_id") @db.Uuid
-  planId             String?   @map("plan_id") @db.Uuid
-  batchNo            Int       @map("batch_no")
-  batchCode          String?   @map("batch_code") @db.VarChar(100)
-  productCode        String?   @map("product_code") @db.VarChar(50)
-  equipmentId        String?   @map("equipment_id") @db.Uuid
-  batchQty           Decimal   @map("batch_qty") @db.Decimal(14, 3)
-  expectedStartTime  DateTime? @map("expected_start_time") @db.Timestamptz()
-  expectedEndTime    DateTime? @map("expected_end_time") @db.Timestamptz()
-  actualStartTime    DateTime? @map("actual_start_time") @db.Timestamptz()
-  actualEndTime      DateTime? @map("actual_end_time") @db.Timestamptz()
-  status             String    @default("pending") @db.VarChar(30)
-  delayReasonCode    String?   @map("delay_reason_code") @db.VarChar(50)
-  delayNotes         String?   @map("delay_notes")
-  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz()
-  updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+  jobId             String    @id @default(dbgenerated("gen_random_uuid()")) @map("job_id") @db.Uuid
+  planId            String?   @map("plan_id") @db.Uuid
+  batchNo           Int       @map("batch_no")
+  batchCode         String?   @map("batch_code") @db.VarChar(100)
+  productCode       String?   @map("product_code") @db.VarChar(50)
+  equipmentId       String?   @map("equipment_id") @db.Uuid
+  batchQty          Decimal   @map("batch_qty") @db.Decimal(14, 3)
+  expectedStartTime DateTime? @map("expected_start_time") @db.Timestamptz()
+  expectedEndTime   DateTime? @map("expected_end_time") @db.Timestamptz()
+  actualStartTime   DateTime? @map("actual_start_time") @db.Timestamptz()
+  actualEndTime     DateTime? @map("actual_end_time") @db.Timestamptz()
+  status            String    @default("pending") @db.VarChar(30)
+  delayReasonCode   String?   @map("delay_reason_code") @db.VarChar(50)
+  delayNotes        String?   @map("delay_notes")
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
 
-  plan                 ErpProductionPlan?      @relation(fields: [planId], references: [planId])
-  equipment            ErpEquipment?           @relation(fields: [equipmentId], references: [equipmentId])
+  plan                 ErpProductionPlan?       @relation(fields: [planId], references: [planId])
+  equipment            ErpEquipment?            @relation(fields: [equipmentId], references: [equipmentId])
   equipmentAssignments JobEquipmentAssignment[]
   issuances            ErpBomIssuance[]
   qcRecords            BatchQcRecord[]
@@ -465,15 +471,15 @@ model JobEquipmentAssignment {
 }
 
 model ErpBomIssuance {
-  issuanceId   String    @id @default(dbgenerated("gen_random_uuid()")) @map("issuance_id") @db.Uuid
-  jobId        String?   @map("job_id") @db.Uuid
-  itemCode     String?   @map("item_code") @db.VarChar(50)
-  packId       String?   @map("pack_id") @db.Uuid
-  requiredQty  Decimal   @map("required_qty") @db.Decimal(12, 6)
-  issuedQty    Decimal   @map("issued_qty") @db.Decimal(12, 6)
-  issuedBy     String?   @map("issued_by") @db.Uuid
-  issuedAt     DateTime  @default(now()) @map("issued_at") @db.Timestamptz()
-  fifoOverride Boolean   @default(false) @map("fifo_override")
+  issuanceId   String   @id @default(dbgenerated("gen_random_uuid()")) @map("issuance_id") @db.Uuid
+  jobId        String?  @map("job_id") @db.Uuid
+  itemCode     String?  @map("item_code") @db.VarChar(50)
+  packId       String?  @map("pack_id") @db.Uuid
+  requiredQty  Decimal  @map("required_qty") @db.Decimal(12, 6)
+  issuedQty    Decimal  @map("issued_qty") @db.Decimal(12, 6)
+  issuedBy     String?  @map("issued_by") @db.Uuid
+  issuedAt     DateTime @default(now()) @map("issued_at") @db.Timestamptz()
+  fifoOverride Boolean  @default(false) @map("fifo_override")
   notes        String?
 
   job  ErpProductionJob? @relation(fields: [jobId], references: [jobId])
@@ -483,16 +489,16 @@ model ErpBomIssuance {
 }
 
 model BatchQcRecord {
-  qcId        String    @id @default(dbgenerated("gen_random_uuid()")) @map("qc_id") @db.Uuid
-  jobId       String?   @map("job_id") @db.Uuid
-  qcPersonId  String?   @map("qc_person_id") @db.Uuid
-  result      String    @db.VarChar(20)
-  cfuCount    Decimal?  @map("cfu_count") @db.Decimal(15, 2)
-  moisturePct Decimal?  @map("moisture_pct") @db.Decimal(5, 2)
-  phValue     Decimal?  @map("ph_value") @db.Decimal(5, 2)
+  qcId        String   @id @default(dbgenerated("gen_random_uuid()")) @map("qc_id") @db.Uuid
+  jobId       String?  @map("job_id") @db.Uuid
+  qcPersonId  String?  @map("qc_person_id") @db.Uuid
+  result      String   @db.VarChar(20)
+  cfuCount    Decimal? @map("cfu_count") @db.Decimal(15, 2)
+  moisturePct Decimal? @map("moisture_pct") @db.Decimal(5, 2)
+  phValue     Decimal? @map("ph_value") @db.Decimal(5, 2)
   notes       String?
-  actionTaken String?   @map("action_taken") @db.VarChar(30)
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  actionTaken String?  @map("action_taken") @db.VarChar(30)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
 
   job ErpProductionJob? @relation(fields: [jobId], references: [jobId])
 

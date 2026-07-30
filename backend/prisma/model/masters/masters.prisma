@@ -43,18 +43,18 @@ model ErpSupplier {
 }
 
 model ErpPlant {
-  plantId    String   @id @default(dbgenerated("gen_random_uuid()")) @map("plant_id") @db.Uuid
-  plantName  String   @map("plant_name") @db.VarChar(200)
-  plantCode  String   @unique @map("plant_code") @db.VarChar(20)
-  location   String?  @db.VarChar(200)
-  plantType  String   @map("plant_type") @db.VarChar(50)
+  plantId   String   @id @default(dbgenerated("gen_random_uuid()")) @map("plant_id") @db.Uuid
+  plantName String   @map("plant_name") @db.VarChar(200)
+  plantCode String   @unique @map("plant_code") @db.VarChar(20)
+  location  String?  @db.VarChar(200)
+  plantType String   @map("plant_type") @db.VarChar(50)
   // formulation / packing / both
-  isActive   Boolean  @default(true) @map("is_active")
-  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
 
-  equipment    ErpEquipment[]
-  products     ErpProduct[]
-  altProducts  ErpProduct[]   @relation("AltPlant")
+  equipment   ErpEquipment[]
+  products    ErpProduct[]
+  altProducts ErpProduct[]   @relation("AltPlant")
 
   @@map("erp_plants")
 }
@@ -73,7 +73,7 @@ model ErpEquipment {
   createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt             DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
 
-  plant ErpPlant?       @relation(fields: [plantId], references: [plantId])
+  plant ErpPlant?          @relation(fields: [plantId], references: [plantId])
   jobs  ErpProductionJob[]
 
   @@map("erp_equipment")
@@ -134,8 +134,8 @@ model ErpProduct {
   createdAt                DateTime @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt                DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
 
-  plant           ErpPlant?       @relation(fields: [plantId], references: [plantId])
-  alternatePlant  ErpPlant?       @relation("AltPlant", fields: [alternatePlantId], references: [plantId])
+  plant           ErpPlant?        @relation(fields: [plantId], references: [plantId])
+  alternatePlant  ErpPlant?        @relation("AltPlant", fields: [alternatePlantId], references: [plantId])
   microbialStrain MicrobialStrain? @relation(fields: [microbialStrainId], references: [strainId])
   bomHeaders      ErpBomHeader[]
 
@@ -143,15 +143,15 @@ model ErpProduct {
 }
 
 model ErpBomHeader {
-  bomId         String    @id @default(dbgenerated("gen_random_uuid()")) @map("bom_id") @db.Uuid
-  productCode   String?   @map("product_code") @db.VarChar(50)
-  bomVersion    String    @map("bom_version") @db.VarChar(20)
-  effectiveDate DateTime  @map("effective_date") @db.Date
-  approvedBy    String?   @map("approved_by") @db.Uuid
-  status        String    @default("active") @db.VarChar(20)
-  yieldPct      Decimal   @default(98.00) @map("yield_pct") @db.Decimal(5, 2)
+  bomId         String   @id @default(dbgenerated("gen_random_uuid()")) @map("bom_id") @db.Uuid
+  productCode   String?  @map("product_code") @db.VarChar(50)
+  bomVersion    String   @map("bom_version") @db.VarChar(20)
+  effectiveDate DateTime @map("effective_date") @db.Date
+  approvedBy    String?  @map("approved_by") @db.Uuid
+  status        String   @default("active") @db.VarChar(20)
+  yieldPct      Decimal  @default(98.00) @map("yield_pct") @db.Decimal(5, 2)
   notes         String?
-  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz()
 
   product        ErpProduct?             @relation(fields: [productCode], references: [productCode])
   approvedByUser User?                   @relation(fields: [approvedBy], references: [userId])
@@ -163,13 +163,13 @@ model ErpBomHeader {
 }
 
 model ErpBomLineFormulation {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  bomId      String   @map("bom_id") @db.Uuid
-  itemCode   String?  @map("item_code") @db.VarChar(50)
-  qtyPerUnit Decimal  @map("qty_per_unit") @db.Decimal(14, 6)
-  unit       String   @db.VarChar(20)
-  isCritical Boolean  @default(false) @map("is_critical")
-  seqNo      Int      @default(1) @map("seq_no")
+  id         String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  bomId      String  @map("bom_id") @db.Uuid
+  itemCode   String? @map("item_code") @db.VarChar(50)
+  qtyPerUnit Decimal @map("qty_per_unit") @db.Decimal(14, 6)
+  unit       String  @db.VarChar(20)
+  isCritical Boolean @default(false) @map("is_critical")
+  seqNo      Int     @default(1) @map("seq_no")
 
   bom  ErpBomHeader @relation(fields: [bomId], references: [bomId], onDelete: Cascade)
   item ErpItem?     @relation(fields: [itemCode], references: [itemCode])
@@ -178,12 +178,12 @@ model ErpBomLineFormulation {
 }
 
 model ErpBomLinePacking {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  bomId      String   @map("bom_id") @db.Uuid
-  itemCode   String?  @map("item_code") @db.VarChar(50)
-  qtyPerUnit Decimal  @map("qty_per_unit") @db.Decimal(14, 6)
-  unit       String   @db.VarChar(20)
-  seqNo      Int      @default(1) @map("seq_no")
+  id         String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  bomId      String  @map("bom_id") @db.Uuid
+  itemCode   String? @map("item_code") @db.VarChar(50)
+  qtyPerUnit Decimal @map("qty_per_unit") @db.Decimal(14, 6)
+  unit       String  @db.VarChar(20)
+  seqNo      Int     @default(1) @map("seq_no")
 
   bom  ErpBomHeader @relation(fields: [bomId], references: [bomId], onDelete: Cascade)
   item ErpItem?     @relation(fields: [itemCode], references: [itemCode])

@@ -1,6 +1,7 @@
 import prisma from '../../../../db.js'
 import { normalizePlant } from '../../../../utils/plant.js'
 import { normalizeUom, CANONICAL_UNITS } from '../../../../utils/uom.js'
+import { getMaxProductCodeNum, formatProductCode } from '../../../../utils/product-code.js'
 
 export const createProduct = async (req, res) => {
   try {
@@ -15,9 +16,10 @@ export const createProduct = async (req, res) => {
     }
     const existing = await prisma.productMaster.findUnique({ where: { productName } })
     if (existing) return res.status(409).json({ success: false, error: 'Product name already exists', code: 'CONFLICT' })
-    // productCode is never accepted here — the DB assigns it (sequence default).
+    // productCode is never accepted here — the backend assigns it.
+    const nextNum = await getMaxProductCodeNum(prisma)
     const item = await prisma.productMaster.create({
-      data: { productName, plant: normalizePlant(plant), uom: canonicalUom, state: state || null }
+      data: { productCode: formatProductCode(nextNum + 1), productName, plant: normalizePlant(plant), uom: canonicalUom, state: state || null }
     })
     return res.status(201).json({ success: true, data: item })
   } catch (err) {
