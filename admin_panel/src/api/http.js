@@ -3,7 +3,7 @@ import axios from 'axios';
 const baseURL = import.meta.env.VITE_API_BASE_URL;
 
 // The backend mounts login at /api/auth/login, a sibling of this instance's
-// /api/admin baseURL — not something joinUrl (which always resolves under
+// /api/admin baseURL — outside what the `http` axios instance (scoped to
 // baseURL) can reach, so it needs its own origin derived from the same base.
 export const authOrigin = baseURL.replace(/\/admin\/?$/, '');
 
@@ -37,18 +37,16 @@ http.interceptors.response.use(
   }
 );
 
-function joinUrl(base, path) {
-  if (!path) return base;
-  if (/^https?:\/\//i.test(path)) return path;
-  return `${base.replace(/\/$/, '')}/${path.replace(/^\//, '')}`;
-}
-
-// Returns the endpoint URL for a resource.
-// Uses VITE env override first, then defaultEndpoint, then resource.path.
+// Returns the endpoint path for a resource, relative to `http`'s own
+// baseURL — every caller passes this straight to an `http.*` method, and
+// that axios instance already prepends baseURL itself. Joining baseURL in
+// here too used to double it up (http://host/api/admin/api/admin/...)
+// whenever baseURL wasn't an absolute http(s) URL axios could recognize and
+// leave alone. Uses VITE env override first, then defaultEndpoint, then
+// resource.path.
 export function getResourceUrl(resource) {
   const override = resource.envKey ? import.meta.env[resource.envKey] : undefined;
-  const endpoint = override || resource.defaultEndpoint || resource.path;
-  return joinUrl(baseURL, endpoint);
+  return override || resource.defaultEndpoint || resource.path;
 }
 
 export function getRecordId(record, resource) {
