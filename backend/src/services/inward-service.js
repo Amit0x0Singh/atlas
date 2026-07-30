@@ -16,8 +16,20 @@ async function findHeader(itemCode, lotNo) {
 export async function getLotsInProgress() {
   const bags = await prisma.packDetail.findMany({
     where: { status: 'SCANNED' },
-    select: { itemCode: true, warehouse: true, printMaster: { select: { lotNo: true, itemName: true, numberOfBags: true } } },
+    select: { itemCode: true, warehouse: true, printMasterId: true, printMaster: { select: { lotNo: true, itemName: true } } },
   })
+  if (bags.length === 0) return []
+
+  // expectedBags must only cover bags still in play for this lot (scanned +
+  // still-awaiting), same fix as getLotProgress — bags already INWARDED from
+  // an earlier partial submit shouldn't inflate the total.
+  const printMasterIds = [...new Set(bags.map(b => b.printMasterId))]
+  const pendingCounts = await prisma.packDetail.groupBy({
+    by: ['printMasterId'],
+    where: { printMasterId: { in: printMasterIds }, status: 'AWAITING_INWARD' },
+    _count: { _all: true },
+  })
+  const pendingByPrintMasterId = new Map(pendingCounts.map(p => [p.printMasterId, p._count._all]))
 
   const groups = new Map()
   for (const b of bags) {
@@ -25,12 +37,16 @@ export async function getLotsInProgress() {
     if (!groups.has(key))
       groups.set(key, {
         itemCode: b.itemCode, lotNo: b.printMaster.lotNo, itemName: b.printMaster.itemName,
-        warehouse: b.warehouse, expectedBags: b.printMaster.numberOfBags,
+        warehouse: b.warehouse, printMasterId: b.printMasterId,
         scannedCount: 0,
       })
     groups.get(key).scannedCount++
   }
-  return [...groups.values()]
+  return [...groups.values()].map(g => ({
+    ...g,
+    expectedBags: g.scannedCount + (pendingByPrintMasterId.get(g.printMasterId) || 0),
+    printMasterId: undefined,
+  }))
 }
 
 export async function getLotProgress(itemCode, lotNo) {
@@ -46,7 +62,11 @@ export async function getLotProgress(itemCode, lotNo) {
   const bags = header.bags.map(b => ({ ...b, printMaster: header }))
   const pendingPackIds = bags.filter(b => b.status === 'AWAITING_INWARD').map(b => b.packId)
   const scannedPackIds = bags.filter(b => b.status === 'SCANNED').map(b => b.packId)
-  return { ...header, bags, pendingPackIds, scannedPackIds, expectedBags: header.numberOfBags }
+  // Bags already INWARDED from an earlier partial submit don't need scanning
+  // again — expectedBags is the denominator this session's progress bar
+  // divides by, so it must only cover bags still in play (pending + scanned
+  // this session), not header.numberOfBags (every bag ever printed for the lot).
+  return { ...header, bags, pendingPackIds, scannedPackIds, expectedBags: pendingPackIds.length + scannedPackIds.length }
 }
 
 export async function scanPack(itemCode, lotNo, packId, warehouse) {
