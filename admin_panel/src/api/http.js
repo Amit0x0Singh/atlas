@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api/admin';
+const baseURL = import.meta.env.VITE_API_BASE_URL;
 
 // The backend mounts login at /api/auth/login, a sibling of this instance's
 // /api/admin baseURL — not something joinUrl (which always resolves under

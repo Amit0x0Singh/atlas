@@ -20,10 +20,6 @@ function isProperlyCategorized(pm) {
   return (SUB_TYPES[pm.category] || []).some(s => s.value === pm.subType);
 }
 
-// This ERP instance always receives goods on behalf of one company — shown
-// as context on every generated pack label, never editable per-entry.
-const COMPANY_NAME = "SOM Phytopharma";
-
 const BLANK_ITEM = {
   selectedItem: null,   // { itemCode, itemName, uom, _type: 'rm'|'pm', _pmData?: {...} }
   numberOfBags: "",
@@ -63,14 +59,17 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed, onUnlin
     setError("");
   }, [prefill]);
 
-  const addItem    = ()         => setItems(its => [...its, { ...BLANK_ITEM }]);
-  const removeItem = (i)        => setItems(its => its.filter((_, idx) => idx !== i));
-  const updateItem = (i, next)  => setItems(its => its.map((it, idx) => idx === i ? next : it));
+  const addItem     = ()         => setItems(its => [...its, { ...BLANK_ITEM }]);
+  const removeItem  = (i)        => setItems(its => its.filter((_, idx) => idx !== i));
+  const updateItem  = (i, next)  => setItems(its => its.map((it, idx) => idx === i ? next : it));
+  const updateHdr   = (field, value) => setHdr(h => ({ ...h, [field]: value }));
+
+  const isManual = !linkedEntry;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!linkedEntry?.inwardId) {
-      setError("Select a Gate Inward entry before generating pack labels");
+    if (isManual && (!hdr.supplier.trim() || !hdr.invoiceNo.trim() || !hdr.receivedDate)) {
+      setError("Supplier, Invoice No. and Received Date are required — fill them in, or select a gate entry on the right");
       return;
     }
     for (let i = 0; i < items.length; i++) {
@@ -92,13 +91,26 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed, onUnlin
     setLoading(true);
     setError("");
     try {
+      // Manual entry: mint the backing Gate Inward first (company assigned
+      // server-side), then proceed exactly like the linked-entry path below
+      // so both routes produce identical PrintMaster/PackDetail rows.
+      let gateInwardId = linkedEntry?.inwardId;
+      if (isManual) {
+        const giRes = await gateApi.createManualInward({
+          supplier_name: hdr.supplier.trim(),
+          invoice_no:    hdr.invoiceNo.trim(),
+          received_date: hdr.receivedDate,
+        });
+        gateInwardId = giRes.data.inwardId;
+      }
+
       const allResults = [];
       for (const it of items) {
         const res = await packsApi.generate({
           itemCode:          it.selectedItem.itemCode,
           itemName:          it.selectedItem.itemName,
           uom:               it.selectedItem.uom,
-          gateInwardId:      linkedEntry.inwardId,
+          gateInwardId,
           numberOfBags:      parseInt(it.numberOfBags),
           packQty:           parseFloat(it.packQty),
           customerBatchCode: it.customerBatchCode || undefined,
@@ -108,9 +120,7 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed, onUnlin
       }
       setItems([{ ...BLANK_ITEM }]);
       setHdr(BLANK_HDR);
-      if (linkedEntry?.inwardId) {
-        try { await gateApi.updateInward(linkedEntry.inwardId, { status: "approved" }) } catch { /* ignore */ }
-      }
+      try { await gateApi.updateInward(gateInwardId, { status: "approved" }) } catch { /* ignore */ }
       setLinkedEntry(null);
       const totalPacks = allResults.reduce((n, r) => n + (r?.packs?.length || 0), 0);
       onGenerated?.({ results: allResults, totalPacks });
@@ -131,18 +141,24 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed, onUnlin
         Fill invoice details, add items, then generate QR labels
       </p>
 
-      {/* Linked gate entry banner */}
-      {linkedEntry && (
+      {/* Mode banner — makes it unambiguous which of the two workflows is
+          currently active, and how to switch between them. */}
+      {linkedEntry ? (
         <div style={{ marginBottom: "14px", padding: "10px 14px", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "8px", fontSize: "12px", color: "#15803d", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
           <div>
-            <span style={{ fontWeight: 700 }}>📎 Gate entry linked:</span>
+            <span style={{ fontWeight: 700 }}>📎 Using Gate Inward:</span>
             {" "}{linkedEntry.supplierName}
             {linkedEntry.invoiceNo && ` — ${linkedEntry.invoiceNo}`}
             {linkedEntry.vehicleNo && ` — Vehicle: ${linkedEntry.vehicleNo}`}
           </div>
-          <IconButton icon={X} variant="ghost" size="sm" tooltip="Unlink gate entry"
+          <IconButton icon={X} variant="ghost" size="sm" tooltip="Unlink and switch to manual entry"
             onClick={() => { setLinkedEntry(null); setHdr(BLANK_HDR); onUnlink?.(); }}
           />
+        </div>
+      ) : (
+        <div style={{ marginBottom: "14px", padding: "10px 14px", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: "8px", fontSize: "12px", color: "#92400e" }}>
+          <span style={{ fontWeight: 700 }}>✍️ Manual Entry:</span>{" "}
+          fill in Supplier, Invoice No. and Received Date below — or select a gate entry on the right to auto-fill instead.
         </div>
       )}
 
@@ -154,42 +170,53 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed, onUnlin
       )}
 
       <form onSubmit={handleSubmit}>
-        {/* ── Invoice header — filled only by selecting an incoming gate
-            entry on the right, never typed directly, so it can never drift
-            from what the gate actually recorded. ─────────────────────── */}
+        {/* ── Invoice header — either auto-filled + locked from a selected
+            Gate Inward entry, or typed directly for a manual entry. Company
+            is never shown here — it's the gate entry's own company when
+            linked, or assigned automatically server-side when manual. ──── */}
         <div style={{ marginBottom: "18px" }}>
           <p style={{ margin: "0 0 8px", fontSize: "11px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em" }}>
             Invoice Details
           </p>
           <div className="gf-hdr-grid">
             <div style={{ minWidth: 0 }}>
-              <label style={lbl}>Company</label>
-              <input value={COMPANY_NAME} readOnly style={{ ...inp, background: "#f8fafc", color: "#0f172a", cursor: "not-allowed" }} />
-            </div>
-            <div style={{ minWidth: 0 }}>
               <label style={lbl}>Supplier *</label>
-              <input value={hdr.supplier} readOnly placeholder="Select a gate entry →" style={{ ...inp, background: "#f8fafc", color: "#0f172a", cursor: "not-allowed" }} required />
+              <input
+                value={hdr.supplier}
+                onChange={e => updateHdr("supplier", e.target.value)}
+                readOnly={!isManual}
+                placeholder={isManual ? "Enter supplier name" : undefined}
+                style={isManual ? inp : { ...inp, background: "#f8fafc", color: "#0f172a", cursor: "not-allowed" }}
+                required
+              />
             </div>
             <div style={{ minWidth: 0 }}>
               <label style={lbl}>Invoice No *</label>
-              <input value={hdr.invoiceNo} readOnly placeholder="Select a gate entry →" style={{ ...inp, background: "#f8fafc", color: "#0f172a", cursor: "not-allowed" }} required />
+              <input
+                value={hdr.invoiceNo}
+                onChange={e => updateHdr("invoiceNo", e.target.value)}
+                readOnly={!isManual}
+                placeholder={isManual ? "e.g. INV-2026-001" : undefined}
+                style={isManual ? inp : { ...inp, background: "#f8fafc", color: "#0f172a", cursor: "not-allowed" }}
+                required
+              />
             </div>
             <div style={{ minWidth: 0 }}>
               <label style={lbl}>Received Date *</label>
-              <input type="date" value={hdr.receivedDate} readOnly style={{ ...inp, background: "#f8fafc", color: "#0f172a", cursor: "not-allowed" }} required />
+              <input
+                type="date"
+                value={hdr.receivedDate}
+                onChange={e => updateHdr("receivedDate", e.target.value)}
+                readOnly={!isManual}
+                style={isManual ? inp : { ...inp, background: "#f8fafc", color: "#0f172a", cursor: "not-allowed" }}
+                required
+              />
             </div>
           </div>
-          {!linkedEntry && (
-            <p style={{ margin: "8px 0 0", fontSize: "12px", color: "#94a3b8" }}>
-              👉 Select an incoming gate entry on the right to fill these in.
-            </p>
-          )}
         </div>
 
-        {/* ── Item lines — always available; Supplier/Invoice No/Received
-            Date being required (and only fillable via a gate entry) already
-            blocks submission until one's selected, so there's no need to
-            hide this section too. ─────────────────────────────────────── */}
+        {/* ── Item lines — always available regardless of which header mode
+            is active; validated in handleSubmit alongside the header. ──── */}
         <div style={{ marginBottom: "12px" }}>
           <p style={{ margin: "0 0 8px", fontSize: "11px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em" }}>
             Items ({items.length})
