@@ -108,7 +108,7 @@ export default function ComponentsTable({ rows, onChange, rmList = [], products 
     // real mc00... code should ever be offered for a microbe, never the
     // legacy RM stand-in (see matchFor above).
     const rmHits = rmList.filter(rm => (rm.itemName || '').toLowerCase().includes(q) && !microbeByNameLower.has((rm.itemName || '').trim().toLowerCase()))
-      .map(rm => ({ kind: 'rm', code: rm.itemCode, name: rm.itemName, uom: rm.uom }))
+      .map(rm => ({ kind: 'rm', code: rm.itemCode, name: rm.itemName, uom: rm.inventoryUom }))
     const microbeHits = microbes.filter(m => (m.microbeName || '').toLowerCase().includes(q))
       .map(m => ({ kind: 'microbe', code: m.microbeCode, name: m.microbeName, uom: m.uom }))
     const productHits = products.filter(p => (p.productName || '').toLowerCase().includes(q))

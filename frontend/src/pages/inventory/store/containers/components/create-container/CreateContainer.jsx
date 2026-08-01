@@ -45,7 +45,7 @@ export default function CreateContainer({ onCreated }) {
         itemCode: selectedRm.itemCode,
         itemName: selectedRm.itemName,
         capacity: parseFloat(capacity),
-        uom: selectedRm.uom || 'KG',
+        uom: selectedRm.inventoryUom || 'KG',
       })
       setCreated(r.data)
       onCreated?.()
@@ -112,7 +112,7 @@ export default function CreateContainer({ onCreated }) {
                   className="w-full text-left px-4 py-2.5 hover:bg-orange-50 transition border-b border-gray-50 last:border-0"
                 >
                   <div className="text-sm font-medium text-gray-900">{rm.itemName}</div>
-                  <div className="text-xs text-gray-400 font-mono">{rm.itemCode} · {rm.uom}</div>
+                  <div className="text-xs text-gray-400 font-mono">{rm.itemCode} · {rm.inventoryUom}</div>
                 </button>
               ))}
             </div>
@@ -120,7 +120,7 @@ export default function CreateContainer({ onCreated }) {
           {selectedRm && (
             <div className="mt-2 flex gap-3 text-xs text-gray-500 bg-orange-50 border border-orange-100 rounded-lg px-3 py-2">
               <span>Code: <strong className="font-mono text-orange-700">{selectedRm.itemCode}</strong></span>
-              <span>UOM: <strong>{selectedRm.uom}</strong></span>
+              <span>UOM: <strong>{selectedRm.inventoryUom}</strong></span>
               <span className="text-gray-400">ID will be: <strong className="font-mono">CONT-{selectedRm.itemName.replace(/[^a-zA-Z0-9]/g,'').slice(0,4).toUpperCase()}-{selectedRm.itemCode}</strong></span>
             </div>
           )}
@@ -129,7 +129,7 @@ export default function CreateContainer({ onCreated }) {
         {/* Capacity */}
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-1">
-            Capacity ({selectedRm?.uom || 'KG'}) *
+            Capacity ({selectedRm?.inventoryUom || 'KG'}) *
           </label>
           <input
             type="number" min="0.1" step="0.1"

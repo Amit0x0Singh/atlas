@@ -53,7 +53,7 @@ export default function BomRowEditModal({
   const hits = [
     ...rmList
       .filter((r) => !q || r.itemName.toLowerCase().includes(q) || r.itemCode.toLowerCase().includes(q))
-      .map((r) => ({ kind: 'rm', code: r.itemCode, name: r.itemName, uom: r.uom, raw: r })),
+      .map((r) => ({ kind: 'rm', code: r.itemCode, name: r.itemName, uom: r.inventoryUom, raw: r })),
     ...productList
       .filter((p) => !q || p.productName.toLowerCase().includes(q) || p.productCode.toLowerCase().includes(q))
       .map((p) => ({ kind: 'product', code: p.productCode, name: p.productName, raw: p })),

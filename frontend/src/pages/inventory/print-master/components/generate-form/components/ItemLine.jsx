@@ -14,7 +14,7 @@ export default function ItemLine({ idx, item, rmList, pmList, receivedDate, onCh
 
   // Combine RM and PM into one searchable list
   const combined = [
-    ...rmList.map(r => ({ ...r, _type: "rm" })),
+    ...rmList.map(r => ({ ...r, _type: "rm", uom: r.inventoryUom || "Nos" })),
     ...pmList.map(p => ({ ...p, _type: "pm", uom: p.uom || "Nos" })),
   ];
 

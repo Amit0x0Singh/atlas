@@ -40,7 +40,7 @@ export default function ReturnMaterial() {
   ).slice(0, 30)
 
   function pickRm(rm) {
-    setSelectedRm({ itemCode: rm.itemCode, itemName: rm.itemName, uom: rm.uom })
+    setSelectedRm({ itemCode: rm.itemCode, itemName: rm.itemName, uom: rm.inventoryUom })
     setRmSearch(rm.itemName)
     setShowDrop(false)
   }

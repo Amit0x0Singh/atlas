@@ -26,7 +26,7 @@ export function useRmSearch() {
     setSelectedRm({
       itemCode: rm.itemCode,
       itemName: rm.itemName,
-      uom: rm.uom,
+      uom: rm.inventoryUom,
     });
     setRmSearch(rm.itemName);
     setShowRmDrop(false);

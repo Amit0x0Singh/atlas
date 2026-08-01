@@ -63,7 +63,7 @@ export default function RecipeDB() {
     setBomRows(prev => prev.map((r, i) => i === idx ? { ...r, [field]: value, _dirty: true } : r))
   }
 
-  // `picked` is an RM Master row ({ itemCode, itemName, uom }), a Product
+  // `picked` is an RM Master row ({ itemCode, itemName, inventoryUom }), a Product
   // Master row ({ productCode, productName }) — a recipe component can
   // legitimately be an SFG (semi-finished good) used as an ingredient, in
   // which case its code lives in Product Master, not RM Master — or a
@@ -80,7 +80,7 @@ export default function RecipeDB() {
       // microbe leaves it no longer actually microbe-linked — clear the
       // stale flags instead of letting them keep pointing at the old microbe.
       return {
-        ...r, rmCode: code, rmName: name, uom: kind === 'product' ? r.uom : picked.uom,
+        ...r, rmCode: code, rmName: name, uom: kind === 'product' ? r.uom : picked.inventoryUom,
         roleType: r.roleType === 'MICROBE' ? 'INGREDIENT' : r.roleType,
         isMicrobe: false, microbeCode: null, _dirty: true,
       }
