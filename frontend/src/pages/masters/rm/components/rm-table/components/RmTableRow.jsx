@@ -1,5 +1,6 @@
 import { Pencil, Trash2, Eye } from 'lucide-react'
 import { IconButton } from '../../../../../../components/ui'
+import TruncatedText from './TruncatedText.jsx'
 
 const TRACKING_BADGE = {
   PACK: 'bg-blue-100 text-blue-700',
@@ -18,10 +19,10 @@ export default function RmTableRow({ item, onEdit, onDelete, onViewPacking, onRo
       className={`group hover:bg-blue-50/60 transition-colors ${!isPacking ? 'cursor-pointer' : ''}`}
       onClick={!isPacking ? () => onRowClick(item) : undefined}
     >
-      <td className="px-4 py-3">
-        <div className="flex flex-col">
+      <td className="px-4 py-3 max-w-0">
+        <div className="flex flex-col min-w-0">
           <span className="font-mono text-blue-700 font-medium text-xs">{item.itemCode}</span>
-          <span className="text-gray-800">{item.itemName}</span>
+          <TruncatedText text={item.itemName} className="text-gray-800 capitalize" />
         </div>
       </td>
       <td className="px-4 py-3">
@@ -43,8 +44,19 @@ export default function RmTableRow({ item, onEdit, onDelete, onViewPacking, onRo
           </span>
         )}
       </td>
-      <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
-        {isPacking ? <span className="text-gray-300">—</span> : (item.category ? [item.category, item.subCategory].filter(Boolean).join(' / ') : '—')}
+      <td className="px-4 py-3 max-w-0">
+        {isPacking ? (
+          <span className="text-gray-300">—</span>
+        ) : item.category ? (
+          <div className="flex flex-col min-w-0">
+            <TruncatedText text={item.category} className="text-blue-600 font-medium text-xs" />
+            {item.subCategory && (
+              <TruncatedText text={item.subCategory} className="text-rose-500 text-xs mt-0.5" />
+            )}
+          </div>
+        ) : (
+          <span className="text-gray-300">—</span>
+        )}
       </td>
       <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
         {isPacking ? <span className="text-gray-300">—</span> : (item.state || '—')}

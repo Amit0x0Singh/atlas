@@ -22,20 +22,20 @@ export default function RmTable({
       {/* Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm table-fixed min-w-[980px]">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-700 whitespace-nowrap">Item</th>
-                <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-700 whitespace-nowrap">Inv. UOM</th>
-                <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-700 whitespace-nowrap">Opr. UOM</th>
-                <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-700 whitespace-nowrap">Pack Type</th>
-                <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-700 whitespace-nowrap">Category</th>
-                <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-700 whitespace-nowrap">State</th>
-                <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-700 whitespace-nowrap">Con. Required</th>
-                <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-700 whitespace-nowrap">Con. Factor</th>
-                <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-700 whitespace-nowrap">Re-order Level</th>
-                <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-700 whitespace-nowrap">Added On</th>
-                <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-700 whitespace-nowrap">Actions</th>
+                <th className="w-52 text-left px-4 py-2.5 text-xs font-semibold text-gray-700 whitespace-nowrap">Item</th>
+                <th className="w-20 text-left px-4 py-2.5 text-xs font-semibold text-gray-700 whitespace-nowrap">Inv. UOM</th>
+                <th className="w-20 text-left px-4 py-2.5 text-xs font-semibold text-gray-700 whitespace-nowrap">Opr. UOM</th>
+                <th className="w-24 text-left px-4 py-2.5 text-xs font-semibold text-gray-700 whitespace-nowrap">Pack Type</th>
+                <th className="w-48 text-left px-4 py-2.5 text-xs font-semibold text-gray-700 whitespace-nowrap">Category</th>
+                <th className="w-20 text-left px-4 py-2.5 text-xs font-semibold text-gray-700 whitespace-nowrap">State</th>
+                <th className="w-24 text-left px-4 py-2.5 text-xs font-semibold text-gray-700 whitespace-nowrap">Con. Required</th>
+                <th className="w-20 text-left px-4 py-2.5 text-xs font-semibold text-gray-700 whitespace-nowrap">Con. Factor</th>
+                <th className="w-28 text-left px-4 py-2.5 text-xs font-semibold text-gray-700 whitespace-nowrap">Re-order Level</th>
+                <th className="w-24 text-left px-4 py-2.5 text-xs font-semibold text-gray-700 whitespace-nowrap">Added On</th>
+                <th className="w-20 text-left px-4 py-2.5 text-xs font-semibold text-gray-700 whitespace-nowrap">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">

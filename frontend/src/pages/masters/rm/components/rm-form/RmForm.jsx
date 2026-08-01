@@ -19,6 +19,13 @@ function SectionHeading({ icon: Icon, tone, children }) {
 }
 
 export default function RmForm({ editing, form, onChange, saving, msg, onSave, onClose }) {
+  // Mirrors the backend guard exactly (rm-master.controller.js) — density is
+  // only actually required once the two UOMs genuinely differ, regardless of
+  // physical State (that field is just classification, not what drives the
+  // conversion requirement).
+  const needsDensity = !!form.operationalUom && form.operationalUom !== form.inventoryUom
+  const densityMissing = needsDensity && (form.density === '' || form.density == null)
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col">
@@ -114,21 +121,28 @@ export default function RmForm({ editing, form, onChange, saving, msg, onSave, o
                   <option value="BULK">BULK — Location QR</option>
                 </select>
               </div>
-              <div>
-                <label className={LABEL}>Conversion Required *</label>
-                <select
-                  value={form.conversionRequired ? 'YES' : 'NO'}
-                  onChange={e => onChange('conversionRequired', e.target.value === 'YES')}
-                  className={FIELD}
-                >
-                  <option value="NO">No</option>
-                  <option value="YES">Yes</option>
-                </select>
-              </div>
+              {/* Conversion Required isn't a separate manual input — it's
+                  purely derived from whether the two UOMs differ (see
+                  RmMaster.jsx's save()), so this slot shows Density instead,
+                  only once it's actually needed. */}
+              {needsDensity && (
+                <div>
+                  <label className={`${LABEL} ${densityMissing ? 'text-red-600' : ''}`}>
+                    Density (kg/L) *
+                  </label>
+                  <input
+                    type="number" step="any"
+                    value={form.density ?? ''}
+                    onChange={e => onChange('density', e.target.value)}
+                    placeholder="e.g. 0.91"
+                    className={`${FIELD} ${densityMissing ? 'border-red-300 focus:border-red-500 focus:ring-red-500/30' : ''}`}
+                  />
+                </div>
+              )}
             </div>
-            {form.conversionRequired && (
-              <p className={`${HINT} mt-2`}>
-                A conversion factor (Density, below) is applied between UOM and Operation UOM when issuing this item.
+            {needsDensity && (
+              <p className={`mt-2 text-[11px] ${densityMissing ? 'text-red-500 font-medium' : 'text-gray-400'}`}>
+                Density converts between Inventory UOM ({form.inventoryUom}) and Operational UOM ({form.operationalUom}) when this item is issued.
               </p>
             )}
             {form.trackingType === 'BULK' && (
@@ -172,22 +186,7 @@ export default function RmForm({ editing, form, onChange, saving, msg, onSave, o
                   <option value="GAS">Gas</option>
                 </select>
               </div>
-              <div>
-                <label className={LABEL}>Density (kg/L)</label>
-                <input
-                  type="number" step="any"
-                  value={form.density ?? ''}
-                  onChange={e => onChange('density', e.target.value)}
-                  placeholder="e.g. 0.91"
-                  className={FIELD}
-                />
-              </div>
             </div>
-            {form.state === 'LIQUID' && (
-              <p className={`${HINT} mt-2`}>
-                Used to convert this item between KG and L when purchased in one unit and issued in the other.
-              </p>
-            )}
           </div>
 
           <div className="rounded-xl border border-gray-200 bg-white p-4">

@@ -55,11 +55,17 @@ export default function RmMaster() {
   const save = async () => {
     if (!form.itemCode || !form.itemName || !form.inventoryUom) { setMsg('All fields required'); return }
     setMsg('')
+    // Conversion is driven entirely by whether the two UOMs differ — not a
+    // separate manual choice — so both it and Density are derived here
+    // rather than trusted from form state (RmForm keeps its own live badge/
+    // field visibility in sync with the same rule, but this is the value
+    // that actually gets saved).
+    const needsConversion = !!form.operationalUom && form.operationalUom !== form.inventoryUom
     const data = {
       itemName: form.itemName, inventoryUom: form.inventoryUom, operationalUom: form.operationalUom || '', trackingType: form.trackingType,
       category: form.category, subCategory: form.subCategory, state: form.state,
-      density: form.state === 'LIQUID' ? form.density : '',
-      conversionRequired: form.conversionRequired,
+      density: needsConversion ? form.density : '',
+      conversionRequired: needsConversion,
       lowStockLevel: form.lowStockLevel, highStockLevel: form.highStockLevel,
     }
     try {
