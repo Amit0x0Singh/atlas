@@ -3,10 +3,20 @@ import { productApi } from '../../api/masters.js'
 import { queryKeys } from '../../lib/queryKeys.js'
 import { CACHE } from '../../lib/queryClient.js'
 
+// Filtering + pagination happen server-side — queryFn returns the current
+// page's rows alongside the server-reported total match count.
 export function useProducts(filters) {
   return useQuery({
     queryKey: queryKeys.products.all(filters),
-    queryFn: () => productApi.list(filters).then(r => r.data),
+    queryFn: () => productApi.list(filters).then(r => ({ items: r.data, total: r.total })),
+    ...CACHE.MASTER,
+  })
+}
+
+export function useProductFilterMeta() {
+  return useQuery({
+    queryKey: queryKeys.products.meta(),
+    queryFn: () => productApi.meta().then(r => r.data),
     ...CACHE.MASTER,
   })
 }

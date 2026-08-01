@@ -19,7 +19,8 @@ const FIELDS = [
 
 export default function InwardForm({ onSubmit, onCancel }) {
   const [form, setForm] = useState(EMPTY);
-  const { data: suppliers = [] } = useSuppliers();
+  const { data: suppliersResult } = useSuppliers();
+  const suppliers = suppliersResult?.items ?? [];
 
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
 

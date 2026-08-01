@@ -1,6 +1,7 @@
 import express from 'express'
 import { authenticate, authorize } from '../../../middleware/auth.js'
-import { listProducts, getProduct } from './get/product-master.controller.js'
+import { listProducts, listProductFilterMeta, getProduct } from './get/product-master.controller.js'
+import { validateProductListQuery } from './get/product-master.middleware.js'
 import { createProduct } from './create/product-master.controller.js'
 import { validateCreateProduct } from './create/product-master.middleware.js'
 import { updateProduct } from './update/product-master.controller.js'
@@ -11,7 +12,10 @@ import { validateProductCodeParam as validateDeleteProductCodeParam } from './de
 const ProductMasterRouter = express.Router()
 const adminOnly = authorize(['admin'])
 
-ProductMasterRouter.get('/products', authenticate, listProducts)
+// Must come before the /:productCode route below, or Express would match
+// "meta" as a product code.
+ProductMasterRouter.get('/products/meta/plants', authenticate, listProductFilterMeta)
+ProductMasterRouter.get('/products', authenticate, validateProductListQuery, listProducts)
 ProductMasterRouter.get('/products/:productCode', authenticate, getProduct)
 ProductMasterRouter.post('/products', authenticate, adminOnly, validateCreateProduct, createProduct)
 ProductMasterRouter.put('/products/:productCode', authenticate, adminOnly, validateUpdateProductCodeParam, validateUpdateProduct, updateProduct)

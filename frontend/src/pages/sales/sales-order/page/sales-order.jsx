@@ -41,7 +41,8 @@ const SalesOrder = () => {
   const loading = ordersQuery.isLoading;
   const err = ordersQuery.error?.message ?? "";
 
-  const { data: products = [] } = useProducts();
+  const { data: productsResult } = useProducts();
+  const products = productsResult?.items ?? [];
   const { data: allPackingMaterials = [] } = usePackingMaterials();
   const packingMaterials = useMemo(() => ({
     primary:   allPackingMaterials.filter(m => ['BOTTLES_TINS', 'POUCHES_BAGS'].includes(m.category)),

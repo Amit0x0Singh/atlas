@@ -5,8 +5,8 @@ import './RmTable.css'
 import Pagination from '../../../../../../components/pagination/Pagination.jsx'
 
 export default function RmTable({
-  visibleItems, loading, error, page, limit, filters, uomOptions, filterType,
-  onFilterChange, onClearFilters, onFilterType, onEdit, onDelete, onViewPacking, onRowClick, onPageChange, onLimitChange,
+  visibleItems, loading, error, page, limit, filters,
+  onFilterChange, onClearFilters, onEdit, onDelete, onViewPacking, onRowClick, onPageChange, onLimitChange,
 }) {
   const paginated = visibleItems.slice((page - 1) * limit, page * limit)
 
@@ -14,11 +14,8 @@ export default function RmTable({
     <div className="space-y-4">
       <RmTableFilters
         filters={filters}
-        uomOptions={uomOptions}
-        filterType={filterType}
         resultCount={visibleItems.length}
         onFilterChange={onFilterChange}
-        onFilterType={onFilterType}
         onClearFilters={onClearFilters}
       />
 
@@ -36,7 +33,7 @@ export default function RmTable({
                 <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-700 whitespace-nowrap">State</th>
                 <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-700 whitespace-nowrap">Con. Required</th>
                 <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-700 whitespace-nowrap">Con. Factor</th>
-                <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-700 whitespace-nowrap">Low / High Stock</th>
+                <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-700 whitespace-nowrap">Re-order Level</th>
                 <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-700 whitespace-nowrap">Added On</th>
                 <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-700 whitespace-nowrap">Actions</th>
               </tr>

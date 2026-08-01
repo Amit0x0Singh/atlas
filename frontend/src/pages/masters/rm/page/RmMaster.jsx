@@ -5,17 +5,14 @@ import { useRmMaster, useCreateRm, useUpdateRm, useDeleteRm } from '../../../../
 import { usePackingMaterials } from '../../../../hooks/masters/usePackingMaterials.js'
 import './RmMaster.css'
 import { Button, BackButton, PageHeader } from '../../../../components/ui'
-import { getChips } from '../../packing/components/packing-constants/packingConstants.jsx'
 import RmTable from '../components/rm-table/page/RmTable.jsx'
-import RmStatCards from '../components/rm-table/components/RmStatCards.jsx'
 import RmForm  from '../components/rm-form/RmForm.jsx'
 import RmDetailModal from '../components/rm-detail-modal/RmDetailModal.jsx'
 
 export default function RmMaster() {
   const navigate = useNavigate()
 
-  const [filters, setFilters]   = useState({ itemCode: '', itemName: '', uom: '', packingSpec: '' })
-  const [filterType, setFilterType] = useState('ALL')
+  const [filters, setFilters]   = useState({ itemCode: '', itemName: '', conversionRequired: '' })
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing]   = useState(null)
   const [viewing, setViewing]   = useState(null)
@@ -25,7 +22,7 @@ export default function RmMaster() {
   const [limit, setLimit]       = useState(15)
 
   // Both lists load in full, cached for 30 min (CACHE.MASTER) — every filter
-  // (code, name, UOM, type, packing spec) is then applied client-side below.
+  // (code, name, conversion required) is then applied client-side below.
   // Packing materials live in their own table (packing_materials) — fetched
   // here purely so they can be *displayed* alongside RM items in one unified
   // overview table. Nothing about the two schemas merges; editing a packing
@@ -80,54 +77,34 @@ export default function RmMaster() {
   const goToPacking = () => navigate('/packing-master')
 
   const matchesText = (val, q) => !q || (val || '').toLowerCase().includes(q)
-  const specTextFor = (p) => [p.subType, p.category, ...getChips(p).map(c => c.label)].filter(Boolean).join(' ').toLowerCase()
 
-  // Packing rows only surface in "ALL" or the dedicated "PACKING" view —
-  // PACK/BULK is an RM-only tracking-type distinction that doesn't apply to
-  // them, and a Packing Spec filter (a field only packing items have) never
-  // matches an RM row, so it naturally excludes them below.
+  // Conversion Required is an RM-only concept — packing rows have no such
+  // attribute, so they drop out of the list whenever that filter is active.
   const visiblePacking = useMemo(() => {
-    if (filterType !== 'ALL' && filterType !== 'PACKING') return []
+    if (filters.conversionRequired) return []
     const code = filters.itemCode.trim().toLowerCase()
     const name = filters.itemName.trim().toLowerCase()
-    const spec = filters.packingSpec.trim().toLowerCase()
     return packingItems
-      .filter(p =>
-        matchesText(p.itemCode, code) &&
-        matchesText(p.itemName, name) &&
-        (!filters.uom || p.uom === filters.uom) &&
-        (!spec || specTextFor(p).includes(spec))
-      )
+      .filter(p => matchesText(p.itemCode, code) && matchesText(p.itemName, name))
       .map(p => ({ ...p, kind: 'packing' }))
-  }, [packingItems, filterType, filters])
+  }, [packingItems, filters])
 
   const visibleRm = useMemo(() => {
-    if (filterType === 'PACKING' || filters.packingSpec.trim()) return []
     const code = filters.itemCode.trim().toLowerCase()
     const name = filters.itemName.trim().toLowerCase()
     return items
       .filter(i =>
-        (filterType === 'ALL' || (i.trackingType || 'PACK') === filterType) &&
         matchesText(i.itemCode, code) &&
         matchesText(i.itemName, name) &&
-        (!filters.uom || i.inventoryUom === filters.uom)
+        (!filters.conversionRequired || !!i.conversionRequired === (filters.conversionRequired === 'YES'))
       )
       .map(i => ({ ...i, kind: 'rm' }))
-  }, [items, filterType, filters])
+  }, [items, filters])
 
   const visibleItems = [...visibleRm, ...visiblePacking]
-  const packCount = items.filter(i => (i.trackingType || 'PACK') === 'PACK').length
-  const bulkCount = items.filter(i => i.trackingType === 'BULK').length
-
-  const uomOptions = useMemo(() => {
-    const set = new Set()
-    items.forEach(i => i.inventoryUom && set.add(i.inventoryUom))
-    packingItems.forEach(p => p.uom && set.add(p.uom))
-    return [...set].sort()
-  }, [items, packingItems])
 
   const setFilter = (field, value) => { setFilters(f => ({ ...f, [field]: value })); setPage(1) }
-  const clearFilters = () => { setFilters({ itemCode: '', itemName: '', uom: '', packingSpec: '' }); setFilterType('ALL'); setPage(1) }
+  const clearFilters = () => { setFilters({ itemCode: '', itemName: '', conversionRequired: '' }); setPage(1) }
 
   return (
     <div className="flex flex-col h-full">
@@ -143,15 +120,7 @@ export default function RmMaster() {
         </>}
       />
 
-      <div className="p-6 space-y-5">
-        <RmStatCards
-          rmTotal={items.length}
-          packCount={packCount}
-          bulkCount={bulkCount}
-          packingTotal={packingItems.length}
-          loading={loading || loadingPacking}
-        />
-
+      <div className="p-6">
         <RmTable
           visibleItems={visibleItems}
           loading={loading || loadingPacking}
@@ -159,11 +128,8 @@ export default function RmMaster() {
           page={page}
           limit={limit}
           filters={filters}
-          uomOptions={uomOptions}
-          filterType={filterType}
           onFilterChange={setFilter}
           onClearFilters={clearFilters}
-          onFilterType={t => { setFilterType(t); setPage(1) }}
           onEdit={openEdit}
           onDelete={del}
           onViewPacking={goToPacking}
@@ -171,21 +137,26 @@ export default function RmMaster() {
           onPageChange={setPage}
           onLimitChange={l => { setLimit(l); setPage(1) }}
         />
-
-        {showForm && (
-          <RmForm
-            editing={editing}
-            form={form}
-            onChange={(field, val) => setForm(f => ({ ...f, [field]: val }))}
-            saving={saving}
-            msg={msg}
-            onSave={save}
-            onClose={() => setShowForm(false)}
-          />
-        )}
-
-        <RmDetailModal item={viewing} onClose={() => setViewing(null)} />
       </div>
+
+      {/* Modals render outside the padded content column — they're
+          fixed-position overlays, not part of the page's content flow, so
+          they must never sit inside a `space-y-*` sibling-margin container
+          (that margin still applies to `position: fixed` elements and was
+          pushing the backdrop down, leaving a gap at the top of the screen). */}
+      {showForm && (
+        <RmForm
+          editing={editing}
+          form={form}
+          onChange={(field, val) => setForm(f => ({ ...f, [field]: val }))}
+          saving={saving}
+          msg={msg}
+          onSave={save}
+          onClose={() => setShowForm(false)}
+        />
+      )}
+
+      <RmDetailModal item={viewing} onClose={() => setViewing(null)} />
     </div>
   )
 }

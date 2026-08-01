@@ -3,6 +3,7 @@ import { api } from '../context/context.jsx'
 
 export const productApi = {
   list:   (params)     => api.get('/products', { params }),
+  meta:   ()           => api.get('/products/meta/plants'),
   get:    (code)       => api.get(`/products/${encodeURIComponent(code)}`),
   create: (data)       => api.post('/products', data),
   update: (code, data) => api.put(`/products/${encodeURIComponent(code)}`, data),
@@ -10,7 +11,8 @@ export const productApi = {
 }
 
 export const equipmentApi = {
-  list:   ()           => api.get('/equipment'),
+  list:   (params)     => api.get('/equipment', { params }),
+  meta:   ()           => api.get('/equipment/meta/filters'),
   create: (data)       => api.post('/equipment', data),
   update: (id, data)   => api.put(`/equipment/${id}`, data),
   delete: (id)         => api.delete(`/equipment/${id}`),
@@ -42,7 +44,7 @@ export const erpItemsApi = {
 }
 
 export const erpSuppliersApi = {
-  list:   ()           => api.get('/masters/suppliers'),
+  list:   (params)     => api.get('/masters/suppliers', { params }),
   create: (data)       => api.post('/masters/suppliers', data),
   update: (id, data)   => api.put(`/masters/suppliers/${id}`, data),
 }

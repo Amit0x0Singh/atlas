@@ -3,10 +3,12 @@ import { erpSuppliersApi } from '../../api/masters.js'
 import { queryKeys } from '../../lib/queryKeys.js'
 import { CACHE } from '../../lib/queryClient.js'
 
-export function useSuppliers() {
+// Filtering + pagination happen server-side — queryFn returns the current
+// page's rows alongside the server-reported total match count.
+export function useSuppliers(filters) {
   return useQuery({
-    queryKey: queryKeys.suppliers.all(),
-    queryFn: () => erpSuppliersApi.list().then(r => r.data),
+    queryKey: queryKeys.suppliers.all(filters),
+    queryFn: () => erpSuppliersApi.list(filters).then(r => ({ items: r.data, total: r.total })),
     ...CACHE.MASTER,
   })
 }

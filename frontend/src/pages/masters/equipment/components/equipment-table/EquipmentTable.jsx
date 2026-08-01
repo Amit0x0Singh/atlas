@@ -1,10 +1,11 @@
-﻿import { Pencil, Trash2 } from 'lucide-react'
+import { Pencil, Trash2 } from 'lucide-react'
 import { IconButton } from '../../../../../components/ui'
 import Pagination from '../../../../../components/pagination/Pagination.jsx'
 
-export default function EquipmentTable({ items, page, limit, onEdit, onDelete, onRowClick, onPageChange, onLimitChange }) {
-  const paginated = items.slice((page - 1) * limit, page * limit)
-
+// `items` is already the current page's rows (filtering + pagination happen
+// server-side) — `total` is the server-reported match count, used only by
+// Pagination to compute page count, not to slice anything here.
+export default function EquipmentTable({ items, total, page, limit, onEdit, onDelete, onRowClick, onPageChange, onLimitChange }) {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
       <div className="overflow-x-auto">
@@ -23,10 +24,10 @@ export default function EquipmentTable({ items, page, limit, onEdit, onDelete, o
             {items.length === 0 ? (
               <tr>
                 <td colSpan={6} className="text-center py-10 text-gray-400">
-                  No equipment added yet. Click "Add Equipment" to start.
+                  No equipment found.
                 </td>
               </tr>
-            ) : paginated.map(item => (
+            ) : items.map(item => (
               <tr key={item.equipId} className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer" onClick={() => onRowClick(item)}>
                 <td className="px-4 py-3 font-mono text-gray-500 whitespace-nowrap">{item.equipCode}</td>
                 <td className="px-4 py-3 font-medium whitespace-nowrap">{item.equipName}</td>
@@ -43,7 +44,7 @@ export default function EquipmentTable({ items, page, limit, onEdit, onDelete, o
         </table>
       </div>
       <div className="px-4 pb-3">
-        <Pagination page={page} total={items.length} limit={limit} onChange={onPageChange} onLimitChange={onLimitChange} />
+        <Pagination page={page} total={total} limit={limit} onChange={onPageChange} onLimitChange={onLimitChange} />
       </div>
     </div>
   )

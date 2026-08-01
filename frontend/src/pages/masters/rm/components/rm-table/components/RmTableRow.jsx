@@ -63,11 +63,7 @@ export default function RmTableRow({ item, onEdit, onDelete, onViewPacking, onRo
       </td>
       <td className="px-4 py-3 whitespace-nowrap">
         {isPacking ? <span className="text-gray-300">—</span> : (
-          <span className="font-semibold">
-            <span className="text-red-600">{item.lowStockLevel ?? 0}</span>
-            <span className="text-gray-400 mx-1">/</span>
-            <span className="text-blue-600">{item.highStockLevel ?? 0}</span>
-          </span>
+          <span className="font-semibold text-red-600">{item.lowStockLevel ?? 0}</span>
         )}
       </td>
       <td className="px-4 py-3 text-gray-500 whitespace-nowrap">

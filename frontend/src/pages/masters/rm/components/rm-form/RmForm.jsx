@@ -1,5 +1,5 @@
 ﻿import { Save, X, Package, Hash, Beaker, Layers, Gauge } from 'lucide-react'
-import { Button, IconButton } from '../../../../../components/ui'
+import { Button, IconButton, InfoTooltip } from '../../../../../components/ui'
 import { CANONICAL_UNITS } from '../../../../../utils/uom.js'
 import './RmForm.css'
 
@@ -98,7 +98,13 @@ export default function RmForm({ editing, form, onChange, saving, msg, onSave, o
                 </select>
               </div>
               <div>
-                <label className={LABEL}>Tracking Type *</label>
+                <label className="flex items-center gap-1 text-xs font-medium text-gray-700 mb-1">
+                  Tracking Type *
+                  <InfoTooltip title="Tracking Type">
+                    <p><strong className="text-white">Pack:</strong> Generates a unique QR code for each individual package or bag.</p>
+                    <p className="mt-1"><strong className="text-white">Bulk:</strong> Generates a QR code for the storage location, applicable to bulk materials such as cartons, bags, labels and consumables.</p>
+                  </InfoTooltip>
+                </label>
                 <select
                   value={form.trackingType}
                   onChange={e => onChange('trackingType', e.target.value)}

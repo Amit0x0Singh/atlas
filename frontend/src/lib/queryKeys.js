@@ -25,9 +25,11 @@ export const queryKeys = {
   products: {
     all:    (filters) => filters ? ['products', filters] : ['products'],
     detail: (code)     => ['product', code],
+    meta:   () => ['products', 'meta'],
   },
   equipment: {
-    all: () => ['equipment'],
+    all:  (filters) => filters ? ['equipment', filters] : ['equipment'],
+    meta: () => ['equipment', 'meta'],
   },
   packingMaterials: {
     all:    (filters) => filters ? ['packing-materials', filters] : ['packing-materials'],
@@ -73,7 +75,7 @@ export const queryKeys = {
     all: () => ['locations'],
   },
   suppliers: {
-    all: () => ['suppliers'],
+    all: (filters) => filters ? ['suppliers', filters] : ['suppliers'],
   },
 
   // ── Inventory ───────────────────────────────────────────────────────────

@@ -1,21 +1,30 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Plus, Building } from 'lucide-react'
-import { Button, BackButton, PageHeader } from '../../../../components/ui'
+import { Button, BackButton, PageHeader, MasterFilters } from '../../../../components/ui'
 import SupplierTable from '../components/supplier-table/SupplierTable.jsx'
 import SupplierForm from '../components/supplier-form/SupplierForm.jsx'
 import { useSuppliers, useCreateSupplier, useUpdateSupplier } from '../../../../hooks/masters/useSuppliers.js'
+import { useDebouncedValue } from '../../../../hooks/useDebouncedValue.js'
 
 const EMPTY = { supplier_name: '', phone: '', email: '', gstin: '', address: '' }
+const BLANK_FILTERS = { supplier_name: '', phone: '', email: '', gstin: '', address: '' }
 
 export default function SupplierMaster() {
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing]  = useState(null)
   const [form, setForm]        = useState(EMPTY)
   const [msg, setMsg]          = useState('')
+  const [filters, setFilters]  = useState(BLANK_FILTERS)
   const [page, setPage]        = useState(1)
   const [limit, setLimit]      = useState(15)
 
-  const { data: items = [], isLoading: loading } = useSuppliers()
+  const debouncedFilters = useDebouncedValue(filters, 300)
+  useEffect(() => { setPage(1) }, [debouncedFilters])
+
+  const { data: result, isLoading: loading } = useSuppliers({ ...debouncedFilters, page, limit })
+  const items = result?.items ?? []
+  const total = result?.total ?? 0
+
   const createSupplier = useCreateSupplier()
   const updateSupplier = useUpdateSupplier()
 
@@ -44,6 +53,9 @@ export default function SupplierMaster() {
     try { await updateSupplier.mutateAsync({ id, data: { is_active: false } }) } catch (e) { alert(e.message) }
   }
 
+  const setFilter = (key, value) => setFilters(f => ({ ...f, [key]: value }))
+  const clearFilters = () => setFilters(BLANK_FILTERS)
+
   return (
     <div className="flex flex-col h-full">
       <PageHeader
@@ -57,9 +69,24 @@ export default function SupplierMaster() {
       />
 
       <div className="p-6">
+      <MasterFilters
+        fields={[
+          { key: 'supplier_name', label: 'Supplier Name', type: 'text', placeholder: 'Search name…' },
+          { key: 'phone',         label: 'Phone',          type: 'text', placeholder: 'Search phone…' },
+          { key: 'email',         label: 'Email',          type: 'text', placeholder: 'Search email…' },
+          { key: 'gstin',         label: 'GSTIN',          type: 'text', placeholder: 'Search GSTIN…' },
+          { key: 'address',       label: 'Address',        type: 'text', placeholder: 'Search address…' },
+        ]}
+        values={filters}
+        resultCount={total}
+        onChange={setFilter}
+        onClear={clearFilters}
+      />
+
       {loading ? <p className="text-gray-500">Loading...</p> : (
         <SupplierTable
           items={items}
+          total={total}
           page={page}
           limit={limit}
           onEdit={openEdit}

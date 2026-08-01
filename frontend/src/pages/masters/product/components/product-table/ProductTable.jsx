@@ -2,9 +2,9 @@ import { Pencil, Trash2, Loader2, PackageX } from 'lucide-react'
 import { IconButton } from '../../../../../components/ui'
 import Pagination from '../../../../../components/pagination/Pagination.jsx'
 
-export default function ProductTable({ items, loading, page, limit, onEdit, onDelete, onRowClick, onPageChange, onLimitChange }) {
-  const paginated = items.slice((page - 1) * limit, page * limit)
-
+// `items` is already the current page's rows (filtering + pagination happen
+// server-side) — `total` is the server-reported match count.
+export default function ProductTable({ items, total, loading, page, limit, onEdit, onDelete, onRowClick, onPageChange, onLimitChange }) {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
       <div className="overflow-x-auto">
@@ -30,10 +30,10 @@ export default function ProductTable({ items, loading, page, limit, onEdit, onDe
               <tr>
                 <td colSpan={5} className="py-14 text-center text-gray-400">
                   <PackageX size={26} className="mx-auto mb-2 text-gray-300" />
-                  No products yet. Click "Add New Product" to start.
+                  No products found.
                 </td>
               </tr>
-            ) : paginated.map(item => (
+            ) : items.map(item => (
               <tr key={item.productCode} className="group hover:bg-green-50/60 transition-colors cursor-pointer" onClick={() => onRowClick(item)}>
                 <td className="px-4 py-3 font-mono text-green-700 font-medium whitespace-nowrap">{item.productCode}</td>
                 <td className="px-4 py-3 text-gray-800">{item.productName}</td>
@@ -53,11 +53,11 @@ export default function ProductTable({ items, loading, page, limit, onEdit, onDe
 
       {!loading && (
         <div className="px-4 py-2.5 bg-gray-50 border-t border-gray-200 text-xs text-gray-400">
-          {items.length} product{items.length !== 1 ? 's' : ''}
+          {total} product{total !== 1 ? 's' : ''}
         </div>
       )}
       <div className="px-4 pb-3">
-        <Pagination page={page} total={items.length} limit={limit} onChange={onPageChange} onLimitChange={onLimitChange} />
+        <Pagination page={page} total={total} limit={limit} onChange={onPageChange} onLimitChange={onLimitChange} />
       </div>
     </div>
   )

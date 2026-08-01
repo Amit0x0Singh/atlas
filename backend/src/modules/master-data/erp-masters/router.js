@@ -13,6 +13,7 @@ import {
   validateCreateItem, validateCreateSupplier, validateCreatePlant, validateCreateErpEquipment,
   validateCreateErpProduct, validateCreateBom, validateCreateStrain, validateCreateCustomer, validateCreateErpContainer,
 } from './create/erp-masters.middleware.js'
+import { validateSupplierListQuery } from './get/erp-masters.middleware.js'
 import { updateItem, updateSupplier, patchErpEquipment } from './update/erp-masters.controller.js'
 import { validateUpdateItem, validateUpdateSupplier, validateUpdateErpEquipment } from './update/erp-masters.middleware.js'
 
@@ -28,7 +29,7 @@ ErpMastersRouter.post('/masters/items', authenticate, storeManager, validateCrea
 ErpMastersRouter.put('/masters/items/:code', authenticate, storeManager, validateUpdateItem, updateItem)
 
 // ── ERP Suppliers ─────────────────────────────────────────────────────────────
-ErpMastersRouter.get('/masters/suppliers', authenticate, listSuppliers)
+ErpMastersRouter.get('/masters/suppliers', authenticate, validateSupplierListQuery, listSuppliers)
 ErpMastersRouter.post('/masters/suppliers', authenticate, storeManager, validateCreateSupplier, createSupplier)
 ErpMastersRouter.put('/masters/suppliers/:id', authenticate, storeManager, validateUpdateSupplier, updateSupplier)
 

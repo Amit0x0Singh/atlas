@@ -1,10 +1,13 @@
-﻿import { useState, useEffect } from 'react'
-import { Plus, Tags, Search } from 'lucide-react'
-import { Button, BackButton, PageHeader } from '../../../../components/ui'
+import { useState, useEffect } from 'react'
+import { Plus, Tags } from 'lucide-react'
+import { Button, BackButton, PageHeader, MasterFilters } from '../../../../components/ui'
 import ProductTable from '../components/product-table/ProductTable.jsx'
 import ProductForm from '../components/product-form/ProductForm.jsx'
 import ProductDetailModal from '../components/product-detail-modal/ProductDetailModal.jsx'
-import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct } from '../../../../hooks/masters/useProducts.js'
+import { useProducts, useProductFilterMeta, useCreateProduct, useUpdateProduct, useDeleteProduct } from '../../../../hooks/masters/useProducts.js'
+import { useDebouncedValue } from '../../../../hooks/useDebouncedValue.js'
+
+const BLANK_FILTERS = { productCode: '', productName: '', plant: '' }
 
 export default function ProductMaster() {
   const [showForm, setShowForm] = useState(false)
@@ -12,20 +15,22 @@ export default function ProductMaster() {
   const [viewing, setViewing]  = useState(null)
   const [form, setForm]        = useState({ productCode: '', productName: '', uom: '', state: '', plant: '' })
   const [msg, setMsg]          = useState('')
-  const [search, setSearch]    = useState('')
-  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [filters, setFilters]  = useState(BLANK_FILTERS)
   const [page, setPage]        = useState(1)
   const [limit, setLimit]      = useState(15)
 
-  // Debounce search input before it hits the query key, so we don't
-  // refetch on every keystroke.
-  useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(search), 300)
-    return () => clearTimeout(t)
-  }, [search])
-  useEffect(() => { setPage(1) }, [debouncedSearch])
+  // Debounce filters before they hit the query key, so we don't refetch on
+  // every keystroke.
+  const debouncedFilters = useDebouncedValue(filters, 300)
+  useEffect(() => { setPage(1) }, [debouncedFilters])
 
-  const { data: items = [], isLoading: loading } = useProducts({ search: debouncedSearch })
+  const { data: result, isLoading: loading } = useProducts({ ...debouncedFilters, page, limit })
+  const items = result?.items ?? []
+  const total = result?.total ?? 0
+
+  const { data: meta } = useProductFilterMeta()
+  const plantOptions = (meta?.plants || []).map(p => ({ value: p, label: p }))
+
   const createProduct = useCreateProduct()
   const updateProduct = useUpdateProduct()
   const deleteProduct = useDeleteProduct()
@@ -56,6 +61,9 @@ export default function ProductMaster() {
     try { await deleteProduct.mutateAsync(code) } catch (e) { alert(e.message) }
   }
 
+  const setFilter = (key, value) => setFilters(f => ({ ...f, [key]: value }))
+  const clearFilters = () => setFilters(BLANK_FILTERS)
+
   return (
     <div className="flex flex-col h-full">
       <PageHeader
@@ -69,21 +77,21 @@ export default function ProductMaster() {
       />
 
       <div className="p-6">
-      <div className="mb-4">
-        <div className="relative w-80">
-          <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-          <input
-            type="text"
-            placeholder="Search products..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg pl-9 pr-4 py-2 text-sm outline-none focus:ring-2 focus:ring-green-500"
-          />
-        </div>
-      </div>
+      <MasterFilters
+        fields={[
+          { key: 'productCode', label: 'Product Code', type: 'text', placeholder: 'Search code…' },
+          { key: 'productName', label: 'Product Name', type: 'text', placeholder: 'Search name…' },
+          { key: 'plant',       label: 'Plant',         type: 'select', options: plantOptions, allLabel: 'All Plants' },
+        ]}
+        values={filters}
+        resultCount={total}
+        onChange={setFilter}
+        onClear={clearFilters}
+      />
 
       <ProductTable
         items={items}
+        total={total}
         loading={loading}
         page={page}
         limit={limit}

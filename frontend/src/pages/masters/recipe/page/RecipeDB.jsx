@@ -30,7 +30,8 @@ export default function RecipeDB() {
   const [loadId, setLoadId] = useState(0)
 
   const qc = useQueryClient()
-  const { data: productList = [], isLoading: productsLoading } = useProducts()
+  const { data: productResult, isLoading: productsLoading } = useProducts()
+  const productList = productResult?.items ?? []
   const { data: rmList = [] } = useRmMaster()
   const { data: microbeList = [] } = useMicrobes()
   const loading = productsLoading
