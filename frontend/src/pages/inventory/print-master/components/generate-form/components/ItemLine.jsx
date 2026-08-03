@@ -3,9 +3,18 @@ import { X } from "lucide-react";
 import { packsApi } from "../../../../../../api/inventory.js";
 import { IconButton } from "../../../../../../components/ui";
 import { getChips } from "../../../../../masters/packing/components/packing-constants/packingConstants.jsx";
-import { calcExpiryDate, fmtDateLabel } from "../utils/expiryDate.js";
 import { inp, lbl } from "../utils/formStyles.js";
 import PmChips from "./PmChips.jsx";
+import BatchGroupRow from "./BatchGroupRow.jsx";
+
+export const BLANK_BATCH = () => ({
+  numberOfBags: "",
+  customerBatchCode: "",
+  expiryMode: "YEAR",
+  expiryDateValue: "",
+  remainingMonths: "",
+  remainingYears: "",
+});
 
 export default function ItemLine({ idx, item, rmList, pmList, receivedDate, onChange, onRemove, canRemove }) {
   const [search, setSearch]     = useState(item.selectedItem?.itemName || "");
@@ -55,12 +64,14 @@ export default function ItemLine({ idx, item, rmList, pmList, receivedDate, onCh
   };
 
   const isPm = item.selectedItem?._type === "pm";
+  const totalBags = item.batches.reduce((n, b) => n + (parseInt(b.numberOfBags) || 0), 0);
+  const addBatch = () => onChange({ ...item, batches: [...item.batches, BLANK_BATCH()] });
 
   return (
     <div style={{ border: "1px solid #e2e8f0", borderRadius: "10px", padding: "14px 16px", background: "#f8fafc" }}>
       {/* Item header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-        <span style={{ fontSize: "11px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+        <span style={{ fontSize: "13px", fontWeight: 700, color: "#2563eb", textTransform: "uppercase", letterSpacing: "0.06em" }}>
           Item {idx + 1}
         </span>
         {canRemove && (
@@ -68,8 +79,10 @@ export default function ItemLine({ idx, item, rmList, pmList, receivedDate, onCh
         )}
       </div>
 
-      {/* Search input */}
-      <div style={{ position: "relative", marginBottom: "10px" }}>
+      {/* Top row — item search, qty per pack, and the running bag total all
+          share one row so the card doesn't burn a full row per field. */}
+      <div className="gf-item-top-grid" style={{ marginBottom: "10px" }}>
+      <div style={{ position: "relative" }}>
         <label style={lbl}>Item *</label>
         <input
           value={search}
@@ -155,6 +168,22 @@ export default function ItemLine({ idx, item, rmList, pmList, receivedDate, onCh
         )}
       </div>
 
+      <div>
+        <label style={lbl}>Qty per Pack ({item.selectedItem?.uom || "KG"}) *</label>
+        <input type="number" step="0.01" min="0.01"
+          value={item.packQty}
+          onChange={e => onChange({ ...item, packQty: e.target.value })}
+          placeholder="e.g. 25" style={inp}
+        />
+      </div>
+      <div>
+        <label style={lbl}>Total Bags</label>
+        <div style={{ ...inp, background: "#f1f5f9", fontWeight: 700, color: "#0f172a", display: "flex", alignItems: "center" }}>
+          {totalBags}
+        </div>
+      </div>
+      </div>
+
       {/* Selected item badge */}
       {item.selectedItem && (
         <div style={{
@@ -178,77 +207,34 @@ export default function ItemLine({ idx, item, rmList, pmList, receivedDate, onCh
         </div>
       )}
 
-      {/* Qty fields */}
-      <div className="gf-qty-grid" style={{ marginBottom: "10px" }}>
-        <div>
-          <label style={lbl}>Number of packs *</label>
-          <input type="number" min="1"
-            value={item.numberOfBags}
-            onChange={e => onChange({ ...item, numberOfBags: e.target.value })}
-            placeholder="e.g. 20" style={inp}
-          />
-        </div>
-        <div>
-          <label style={lbl}>Qty per Pack ({item.selectedItem?.uom || "KG"}) *</label>
-          <input type="number" step="0.01" min="0.01"
-            value={item.packQty}
-            onChange={e => onChange({ ...item, packQty: e.target.value })}
-            placeholder="e.g. 25" style={inp}
-          />
-        </div>
-      </div>
-
-      {/* Customer batch code (optional) */}
+      {/* Batch groups — one or more bag ranges within this lot, each with
+          its own bag count, optional supplier batch code, and (for raw
+          materials) its own expiry. */}
       <div>
-        <label style={{ ...lbl, color: "#6b7280" }}>
-          Supplier Batch Code
-          <span style={{ fontWeight: 400, fontSize: "11px", marginLeft: "4px", color: "#9ca3af" }}>(optional)</span>
-        </label>
-        <input
-          value={item.customerBatchCode}
-          onChange={e => onChange({ ...item, customerBatchCode: e.target.value })}
-          placeholder="e.g. BATCH-2026-001"
-          style={{ ...inp, background: "#fafafa" }}
-        />
+        <label style={lbl}>Batch Groups</label>
+        <div className="gf-batch-grid">
+          {item.batches.map((batch, i) => (
+            <BatchGroupRow
+              key={i}
+              idx={i}
+              batch={batch}
+              receivedDate={receivedDate}
+              isPm={isPm}
+              onChange={next => onChange({ ...item, batches: item.batches.map((b, bi) => bi === i ? next : b) })}
+              onRemove={() => onChange({ ...item, batches: item.batches.filter((_, bi) => bi !== i) })}
+              canRemove={item.batches.length > 1}
+            />
+          ))}
+        </div>
+        <button type="button" onClick={addBatch}
+          style={{
+            width: "100%", marginTop: "8px", padding: "8px", fontSize: "12px", fontWeight: 600,
+            border: "1px dashed #cbd5e1", borderRadius: "8px", background: "none", color: "#64748b", cursor: "pointer",
+          }}
+        >
+          + Add Batch Group
+        </button>
       </div>
-
-      {/* Shelf life remaining — only for Raw Materials. Most RMs are labelled
-          with a total shelf life from their manufacturing date rather than a
-          printed expiry date, so the operator enters however much of that
-          shelf life is left (years + months) and the expiry date is derived
-          from the received date automatically instead of being hand-calculated. */}
-      {!isPm && (() => {
-        const expiryDate = calcExpiryDate(receivedDate, item.remainingYears, item.remainingMonths);
-        return (
-          <div style={{ marginTop: "10px" }}>
-            <label style={{ ...lbl, color: "#6b7280" }}>
-              Shelf Life Remaining
-              <span style={{ fontWeight: 400, fontSize: "11px", marginLeft: "4px", color: "#9ca3af" }}>(optional)</span>
-            </label>
-            <div className="gf-qty-grid">
-              <div>
-                <input type="number" min="0" step="1"
-                  value={item.remainingYears}
-                  onChange={e => onChange({ ...item, remainingYears: e.target.value })}
-                  placeholder="Years" style={{ ...inp, background: "#fafafa" }}
-                />
-              </div>
-              <div>
-                <input type="number" min="0" max="11" step="1"
-                  value={item.remainingMonths}
-                  onChange={e => onChange({ ...item, remainingMonths: e.target.value })}
-                  placeholder="Months" style={{ ...inp, background: "#fafafa" }}
-                />
-              </div>
-            </div>
-            {expiryDate && (
-              <p style={{ margin: "6px 0 0", fontSize: "12px", color: "#15803d", fontWeight: 600 }}>
-                → Expiry Date: {fmtDateLabel(expiryDate)}
-              </p>
-            )}
-          </div>
-        );
-      })()}
     </div>
   );
 }

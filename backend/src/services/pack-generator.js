@@ -12,31 +12,38 @@ export function buildPackId(lbl, itemCode, year, lotNo, bagNo) {
   return `${lbl}-${itemCode}-${year}-${lotSeq}-${bagStr}`
 }
 
-export async function generatePackBatch({ gateInwardId, itemCode, itemName, numberOfBags, packQty, uom, customerBatchCode, expiryDate }) {
+// `batches` — one or more { numberOfBags, customerBatchCode?, expiryDate? }
+// groups within the same lot. Bag numbering runs continuously across all
+// groups (group 1 gets bags 1..N, group 2 continues at N+1, etc.) — the lot
+// itself doesn't care about the split, only which physical bags carry which
+// supplier batch code / expiry.
+export async function generatePackBatch({ gateInwardId, itemCode, itemName, batches, packQty, uom }) {
   const year = new Date().getFullYear()
   const lotNo = await generateLotNo(itemCode, year)
   const lbl = extractLbl(itemName)
+  const numberOfBags = batches.reduce((n, b) => n + b.numberOfBags, 0)
 
   const printMaster = await prisma.printMaster.create({
-    data: {
-      gateInwardId, itemCode, itemName, lotNo, packQty, uom,
-      numberOfBags,
-      customerBatchCode: customerBatchCode || null,
-      expiryDate: expiryDate ? new Date(expiryDate) : null,
-    },
+    data: { gateInwardId, itemCode, itemName, lotNo, packQty, uom, numberOfBags },
   })
 
   const bags = []
-  for (let i = 1; i <= numberOfBags; i++) {
-    bags.push({
-      packId: buildPackId(lbl, itemCode, year, lotNo, i),
-      printMasterId: printMaster.id,
-      itemCode,
-      bagNo: i,
-      totalQty: packQty,
-      remainingQty: packQty,
-      status: 'AWAITING_INWARD',
-    })
+  let bagNo = 1
+  for (const batch of batches) {
+    for (let i = 0; i < batch.numberOfBags; i++) {
+      bags.push({
+        packId: buildPackId(lbl, itemCode, year, lotNo, bagNo),
+        printMasterId: printMaster.id,
+        itemCode,
+        bagNo,
+        totalQty: packQty,
+        remainingQty: packQty,
+        status: 'AWAITING_INWARD',
+        customerBatchCode: batch.customerBatchCode || null,
+        expiryDate: batch.expiryDate ? new Date(batch.expiryDate) : null,
+      })
+      bagNo++
+    }
   }
   await prisma.packDetail.createMany({ data: bags, skipDuplicates: true })
 

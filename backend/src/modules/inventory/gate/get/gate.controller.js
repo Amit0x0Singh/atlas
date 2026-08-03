@@ -9,7 +9,16 @@ const listGateInward = async (req, res) => {
     const off = Number(offset) || 0
 
     const where = {}
-    if (search?.trim())     where.supplierName = { contains: search.trim(), mode: 'insensitive' }
+    // Single quick-search box matches either field — a dedicated invoice_no
+    // filter still exists below for callers that want to search that one
+    // field precisely instead.
+    if (search?.trim()) {
+      const q = search.trim()
+      where.OR = [
+        { supplierName: { contains: q, mode: 'insensitive' } },
+        { invoiceNo:    { contains: q, mode: 'insensitive' } },
+      ]
+    }
     if (invoice_no?.trim()) where.invoiceNo    = { contains: invoice_no.trim(), mode: 'insensitive' }
     if (status?.trim())     where.status       = status.trim()
     if (company?.trim())    where.companyName  = company.trim()

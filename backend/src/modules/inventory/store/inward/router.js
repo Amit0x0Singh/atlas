@@ -8,7 +8,6 @@ import {
 import { scanPack, batchScanPack, submitLot } from './create/inward.controller.js'
 import { validateLotParams, validateScanPack, validateBatchScanPack } from './create/inward.middleware.js'
 import { removeScan } from './delete/inward.controller.js'
-import { plantReturn } from '../print-master/plant-return/plant-return.controller.js'
 
 const InwardRouter = express.Router()
 const storeOrAbove = authorize(['store'])
@@ -21,7 +20,6 @@ InwardRouter.get('/packs/labels/lot/:itemCode/:lotNo', getBatchLabels)
 InwardRouter.get('/packs/:packId', authenticate, getPackById)
 InwardRouter.get('/packs', authenticate, listPacks)
 InwardRouter.post('/packs/generate', authenticate, storeOrAbove, generatePacks)
-InwardRouter.post('/packs/plant-return', authenticate, storeOrAbove, plantReturn)
 
 // ── Inward records ─────────────────────────────────────────────────────────────
 // Scan/submit are scoped by (itemCode, lotNo) — i.e. one Print Master header

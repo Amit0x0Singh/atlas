@@ -120,10 +120,28 @@
   margin-bottom: 12px;
 }
 
-.gf-items-list {
+/* Item cards stack one per row, full width — each card already lays its
+   own fields out in a row internally, so putting cards side by side just
+   squeezes those internal rows illegibly (same issue batch groups had). */
+.gf-items-grid {
   display: flex;
   flex-direction: column;
+  gap: 12px;
+}
+
+/* ItemLine top row — item search, qty per pack, total bags in one row.
+   Item gets more space since it's a search field; collapses to one column
+   once there isn't room for three fields to stay usable. */
+.gf-item-top-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
   gap: 10px;
+}
+
+@media (max-width: 640px) {
+  .gf-item-top-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ItemLine */
@@ -249,6 +267,41 @@
 @media (max-width: 400px) {
   .gf-qty-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Batch group cards stack one per row, full width — each card lays its own
+   fields out in a row internally (see BatchGroupRow), so cramming several
+   narrow cards side by side just squeezes those rows illegibly. */
+.gf-batch-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Fields inside one batch group card — 4 across for raw materials (bags,
+   batch code, expiry type, expiry value), 2 for packing materials (no
+   expiry). Cards are full width now, so this has real room on desktop;
+   still collapses for tablet/mobile. */
+.gf-batch-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 10px;
+}
+
+.gf-batch-row-2 {
+  grid-template-columns: 1fr 1fr;
+}
+
+@media (max-width: 900px) {
+  .gf-batch-row:not(.gf-batch-row-2) {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .gf-batch-row {
+    grid-template-columns: 1fr !important;
   }
 }
 

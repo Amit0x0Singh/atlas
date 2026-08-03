@@ -144,10 +144,25 @@ const getBatchLabels = async (req, res) => {
 }
 
 const generatePacks = async (req, res) => {
-  const { gateInwardId, itemCode, itemName, numberOfBags, packQty, uom, customerBatchCode, expiryDate } = req.body;
+  // `batches` — one or more { numberOfBags, customerBatchCode?, expiryDate? }
+  // groups, so different bag ranges within the same lot can carry different
+  // supplier batch codes / expiry dates. packQty/uom stay lot-level — every
+  // bag in a lot is still the same physical pack size.
+  const { gateInwardId, itemCode, itemName, batches, packQty, uom } = req.body;
   try {
-    if (!itemCode || !itemName || !numberOfBags || !packQty || !uom)
-      return res.status(400).json({ success: false, error: "itemCode, itemName, numberOfBags, packQty, uom are required", code: 'VALIDATION_ERROR' });
+    if (!itemCode || !itemName || !packQty || !uom)
+      return res.status(400).json({ success: false, error: "itemCode, itemName, packQty, uom are required", code: 'VALIDATION_ERROR' });
+
+    if (!Array.isArray(batches) || batches.length === 0)
+      return res.status(400).json({ success: false, error: "At least one batch group with numberOfBags is required", code: 'VALIDATION_ERROR' });
+
+    const parsedBatches = [];
+    for (const b of batches) {
+      const n = parseInt(b.numberOfBags);
+      if (!n || n < 1)
+        return res.status(400).json({ success: false, error: "Each batch group needs a valid number of bags", code: 'VALIDATION_ERROR' });
+      parsedBatches.push({ numberOfBags: n, customerBatchCode: b.customerBatchCode || null, expiryDate: b.expiryDate || null });
+    }
 
     // Every pack must be linked to the Gate Inward entry it physically
     // arrived on — supplier/invoice/received-date are read through this FK
@@ -167,8 +182,8 @@ const generatePacks = async (req, res) => {
     }
 
     const result = await generatePackBatch({
-      gateInwardId, itemCode, itemName, numberOfBags: parseInt(numberOfBags),
-      packQty: canonical.qty, uom: canonical.uom, customerBatchCode, expiryDate,
+      gateInwardId, itemCode, itemName, batches: parsedBatches,
+      packQty: canonical.qty, uom: canonical.uom,
     });
     return res.status(201).json({ success: true, data: result });
 

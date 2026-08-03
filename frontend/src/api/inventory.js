@@ -12,7 +12,6 @@ export const rmApi = {
 
 export const packsApi = {
   generate:       (data)            => api.post('/packs/generate', data),
-  plantReturn:    (data)            => api.post('/packs/plant-return', data),
   list:           (params)          => api.get('/packs', { params }),
   get:            (packId)          => api.get(`/packs/${encodeURIComponent(packId)}`),
   nextLot:        (itemCode)        => api.get(`/packs/next-lot/${itemCode}`),

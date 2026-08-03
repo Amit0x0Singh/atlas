@@ -117,8 +117,6 @@ model PrintMaster {
   packQty           Float     @map("pack_qty")
   numberOfBags      Int       @map("number_of_bags")
   uom               String
-  customerBatchCode String?   @map("customer_batch_code")
-  expiryDate        DateTime? @map("expiry_date")
   createdAt         DateTime  @default(now()) @map("created_at")
 
   gateInward GateInward   @relation(fields: [gateInwardId], references: [inwardId])
@@ -145,6 +143,13 @@ model PackDetail {
   remainingQty  Float     @map("remaining_qty")
   status        String    @default("AWAITING_INWARD")
   warehouse     String?
+  // Per-bag, not per-lot — different bag ranges within the same lot can
+  // arrive under different supplier batch codes / expiry dates (e.g. bags
+  // 1-10 of LOT-001 are Batch-A expiring Dec 2027, 11-18 are Batch-B
+  // expiring Jun 2028). Set once at generation time, one value per
+  // "batch group" of bags within a lot.
+  customerBatchCode String?   @map("customer_batch_code")
+  expiryDate        DateTime? @map("expiry_date")
   scannedAt     DateTime? @map("scanned_at")
   inwardedAt    DateTime? @map("inwarded_at")
 

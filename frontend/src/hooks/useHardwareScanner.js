@@ -28,9 +28,15 @@ export function useHardwareScanner({ onScan, active = true } = {}) {
   useEffect(() => () => { if (idleTimerRef.current) clearTimeout(idleTimerRef.current) }, [])
 
   // Keeps the capture input focused after anything steals it away (e.g. the
-  // operator tapping elsewhere on the screen) — call from that input's onBlur.
-  const refocus = useCallback(() => {
+  // operator tapping a blank area of the screen) — call from that input's
+  // onBlur. Skipped when focus is deliberately moving to another real form
+  // control (a <select>, another <input>, etc.) — otherwise this was
+  // yanking focus back 100ms after the operator opened e.g. a <select>,
+  // which reads as the dropdown flickering shut on its own.
+  const refocus = useCallback((e) => {
     if (!active) return
+    const next = e?.relatedTarget
+    if (next && next !== inputRef.current && /^(INPUT|SELECT|TEXTAREA|BUTTON)$/.test(next.tagName)) return
     setTimeout(() => inputRef.current?.focus(), 100)
   }, [active])
 

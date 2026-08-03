@@ -9,12 +9,13 @@ function cleanParams(filters) {
   return params
 }
 
-export function useGateInward(filters, enabled = true) {
+export function useGateInward(filters, enabled = true, options = {}) {
   return useQuery({
     queryKey: queryKeys.gate.inward(filters),
     queryFn: () => gateApi.inwardList(cleanParams(filters)).then(r => ({ rows: r.data || [], total: r.total ?? (r.data?.length ?? 0) })),
     ...CACHE.OPERATIONAL,
     enabled,
+    ...options,
   })
 }
 
@@ -40,6 +41,17 @@ export function useCreateGateOutward() {
   return useMutation({
     mutationFn: (data) => gateApi.createOutward(data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['gate-outward'] }),
+  })
+}
+
+export function useUpdateGateInwardStatus() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, data }) => gateApi.updateInward(id, data),
+    // Broad prefix invalidation — catches the pending-count badge query and
+    // any open Gate Inward picker's list query in one go, whatever filters
+    // each happens to be using.
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['gate-inward'] }),
   })
 }
 

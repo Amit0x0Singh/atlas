@@ -37,8 +37,10 @@ export function flattenPack(bag) {
     receivedDate: gi?.entryTime ?? null,
     companyName: gi?.companyName ?? null,
     vehicleNo: gi?.vehicleNo ?? null,
-    customerBatchCode: pm?.customerBatchCode ?? null,
-    expiryDate: pm?.expiryDate ?? null,
+    // Per-bag, not per-lot — different bag ranges within the same lot can
+    // carry different supplier batch codes / expiry dates.
+    customerBatchCode: bag.customerBatchCode ?? null,
+    expiryDate: bag.expiryDate ?? null,
     status: displayStatus(bag),
     warehouse: bag.warehouse ?? null,
     scannedAt: bag.scannedAt ?? null,

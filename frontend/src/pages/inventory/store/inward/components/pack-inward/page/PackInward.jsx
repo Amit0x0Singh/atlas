@@ -136,8 +136,16 @@ export default function PackInward() {
     }
   }, [step, scanMode, isMobile])
 
-  const refocusHardwareInput = () => {
+  // Skipped when focus is deliberately moving to another real form control
+  // (the warehouse <select>, etc.) — otherwise this was yanking focus back
+  // 100ms after the operator opened it, reading as the dropdown flickering
+  // shut on its own. Called from both onBlur (a real FocusEvent, so
+  // relatedTarget is meaningful) and onClick on the scan area (no
+  // relatedTarget, so this check is a no-op there and it always refocuses).
+  const refocusHardwareInput = (e) => {
     if (scanMode !== 'hardware' || showResumedInfo) return
+    const next = e?.relatedTarget
+    if (next && next !== hardwareInputRef.current && /^(INPUT|SELECT|TEXTAREA|BUTTON)$/.test(next.tagName)) return
     setTimeout(() => hardwareInputRef.current?.focus(), 100)
   }
 

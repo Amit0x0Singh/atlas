@@ -31,3 +31,14 @@ export function fmtDateLabel(iso) {
   if (!iso) return "";
   return new Date(iso + "T00:00:00").toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
 }
+
+// Resolves a batch group's expiry date from whichever calculation mode is
+// active — DATE is picked directly; MONTH/YEAR derive it from the received
+// date (calcExpiryDate already handles month values > 11 via Date's own
+// month rollover, so "18 months" etc. just works).
+export function resolveExpiryDate(receivedDate, mode, { dateValue, months, years } = {}) {
+  if (mode === "DATE") return dateValue || "";
+  if (mode === "MONTH") return calcExpiryDate(receivedDate, 0, months);
+  if (mode === "YEAR") return calcExpiryDate(receivedDate, years, 0);
+  return "";
+}
