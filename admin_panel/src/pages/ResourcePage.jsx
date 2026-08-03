@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { Plus, Database } from 'lucide-react';
+import { Plus, Database, Type } from 'lucide-react';
 import PageHeader from '../components/layout/PageHeader.jsx';
 import Button from '../components/common/Button.jsx';
 import Card from '../components/common/Card.jsx';
@@ -14,6 +14,7 @@ import Pagination from '../components/table/Pagination.jsx';
 import RowDetailDrawer from '../components/table/RowDetailDrawer.jsx';
 import SchemaModal from '../components/table/SchemaModal.jsx';
 import StartDeleteModal from '../components/data-management/StartDeleteModal.jsx';
+import BulkTransformModal from '../components/table/BulkTransformModal.jsx';
 import { exportToCsv } from '../components/table/csv.js';
 import DataFormModal from '../components/form/DataFormModal.jsx';
 import ImportDialog from '../components/form/ImportDialog.jsx';
@@ -73,6 +74,9 @@ export default function ResourcePage({ resource }) {
   // 'RECORD', ids}), both of which now go through the same backup-first,
   // audited, password-gated pipeline instead of the old direct-delete calls.
   const [deleteFlow, setDeleteFlow] = useState(null);
+  // Bulk text transform, pre-scoped to the currently checked rows — same
+  // "selected records → pass ids down" pattern as deleteFlow above.
+  const [transformFlow, setTransformFlow] = useState(null);
 
   const searchRef = useRef(null);
 
@@ -148,6 +152,11 @@ export default function ResourcePage({ resource }) {
     reload();
   }
 
+  function handleTransformFlowDone() {
+    setSelectedIds(new Set());
+    reload();
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -197,9 +206,19 @@ export default function ResourcePage({ resource }) {
             <span className="font-medium">{selectedIds.size} selected</span>
             <button type="button" onClick={() => setSelectedIds(new Set())} className="text-blue-500 hover:underline">Clear</button>
             <Button
+              variant="secondary"
+              size="sm"
+              icon={Type}
+              className="ml-auto"
+              onClick={() => setTransformFlow({
+                ids: recordIdsFor(resource, records.filter((rec) => selectedIds.has(getLocalId(resource, rec)))),
+              })}
+            >
+              Transform text
+            </Button>
+            <Button
               variant="danger"
               size="sm"
-              className="ml-auto"
               onClick={() => setDeleteFlow({
                 deleteType: 'RECORD',
                 table: modelAccessorFor(resource),
@@ -304,6 +323,16 @@ export default function ResourcePage({ resource }) {
         onClose={() => setDeleteFlow(null)}
         onDone={handleDeleteFlowDone}
       />
+
+      {transformFlow && (
+        <BulkTransformModal
+          open={!!transformFlow}
+          resource={resource}
+          ids={transformFlow.ids}
+          onClose={() => setTransformFlow(null)}
+          onDone={handleTransformFlowDone}
+        />
+      )}
     </div>
   );
 }

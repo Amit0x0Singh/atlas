@@ -21,6 +21,9 @@ import BackupRouter from "../modules/backup/router.js";
 // Data Management (Delete) Router
 import DataManagementRouter from "../modules/data-management/router.js";
 
+// Admin Panel — Bulk Text Transformation Router
+import BulkTransformRouter from "../modules/admin_panel/bulk-transform/router.js";
+
 // Import controller
 import {
   previewImport,
@@ -111,6 +114,10 @@ router.use("/admin/data-management", adminOnly, DataManagementRouter);
 // Must be registered before AdminPanelRouter — its own /:resource catch-all
 // would otherwise 404 "backup" before this router is ever reached.
 router.use("/admin/backup", adminOnly, BackupRouter);
+
+// ---- bulk text transformation routes ─────────────────────────────────────────
+// Same reason as data-management/backup above — must precede AdminPanelRouter.
+router.use("/admin/bulk-transform", adminOnly, BulkTransformRouter);
 
 // ---- admin planel routes (not prefixed with /api) ───────────────────────────────────────────
 // Full raw CRUD (incl. delete-all-rows per resource) across every model —
