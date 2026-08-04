@@ -306,7 +306,7 @@ export const executeImport = async (req, res) => {
           // quantity value into this product's plant field (e.g. plant "0.14").
           const plant = normalizePlant(col(row, 'plant', 'location'))
           if (!productName) continue
-          const existing = await prisma.productMaster.findFirst({ where: { productName } })
+          const existing = await prisma.productMaster.findFirst({ where: { productName: { equals: productName, mode: 'insensitive' } } })
           if (existing) {
             await prisma.productMaster.update({ where: { productCode: existing.productCode }, data: { plant } })
             results.productMaster++
@@ -361,10 +361,10 @@ export const executeImport = async (req, res) => {
           const operation = col(row, 'operation', 'operations', 'process', 'type', 'activity') || ''
           const designatedProduct = col(row, 'designatedproduct', 'designated product', 'designated_product') || null
           if (!equipName) continue
-          const existingEquip = await prisma.equipmentMaster.findUnique({ where: { equipName } })
+          const existingEquip = await prisma.equipmentMaster.findFirst({ where: { equipName: { equals: equipName, mode: 'insensitive' } } })
           if (existingEquip) {
             await prisma.equipmentMaster.update({
-              where: { equipName },
+              where: { equipName: existingEquip.equipName },
               data: { plant, workingVolume, workingUnit, operation, designatedProduct }
             })
           } else {
@@ -844,25 +844,26 @@ export const executeImport = async (req, res) => {
       for (const row of rows) {
         const name = col(row, 'customer name', 'customername', 'customer', 'name')
         if (!name) continue
-        const key = name.trim().toUpperCase()
+        const displayName = name.trim() // stored/looked-up value — case preserved, business name never case-changed
+        const key = displayName.toUpperCase() // grouping key only, never stored
         const co  = col(row, 'company', 'co', 'firm') || ''
         const ot  = col(row, 'order type', 'ordertype', 'type') || 'DOMESTIC'
-        if (!profileMap[key]) profileMap[key] = { co: {}, ot: {} }
+        if (!profileMap[key]) profileMap[key] = { displayName, co: {}, ot: {} }
         profileMap[key].co[co] = (profileMap[key].co[co] || 0) + 1
         profileMap[key].ot[ot] = (profileMap[key].ot[ot] || 0) + 1
       }
-      for (const [name, counts] of Object.entries(profileMap)) {
+      for (const { displayName, co, ot } of Object.values(profileMap)) {
         try {
-          const company   = Object.entries(counts.co).sort((a, b) => b[1] - a[1])[0]?.[0] || ''
-          const orderType = Object.entries(counts.ot).sort((a, b) => b[1] - a[1])[0]?.[0] || 'DOMESTIC'
-          const orderCount = Object.values(counts.co).reduce((a, b) => a + b, 0)
-          const existing = await prisma.customerProfile.findUnique({ where: { customerName: name } })
+          const company   = Object.entries(co).sort((a, b) => b[1] - a[1])[0]?.[0] || ''
+          const orderType = Object.entries(ot).sort((a, b) => b[1] - a[1])[0]?.[0] || 'DOMESTIC'
+          const orderCount = Object.values(co).reduce((a, b) => a + b, 0)
+          const existing = await prisma.customerProfile.findFirst({ where: { customerName: { equals: displayName, mode: 'insensitive' } } })
           if (existing) {
             if (orderCount > existing.orderCount) {
-              await prisma.customerProfile.update({ where: { customerName: name }, data: { company, orderType, orderCount } })
+              await prisma.customerProfile.update({ where: { customerName: existing.customerName }, data: { company, orderType, orderCount } })
             }
           } else {
-            await prisma.customerProfile.create({ data: { customerName: name, company, orderType, orderCount } })
+            await prisma.customerProfile.create({ data: { customerName: displayName, company, orderType, orderCount } })
             results.customerProfiles = (results.customerProfiles || 0) + 1
           }
         } catch (e) { results.errors.push(`CustomerProfile: ${e.message}`) }

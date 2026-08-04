@@ -1,13 +1,12 @@
 // auto-seed.js
 // Seeds reference tables on first startup if they are empty.
 // Safe to run repeatedly — checks count before doing anything.
-import { PrismaClient } from '@prisma/client'
+import prisma from '../../config/db.js'
 import { readFileSync } from 'fs'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
-const prisma = new PrismaClient()
 
 const COMPANIES = [
   { code: 'SOM',    name: 'SOM Phytopharma Pvt Ltd' },
@@ -66,7 +65,7 @@ export async function runAutoSeed(log) {
       if (profiles.length > 0) {
         let n = 0
         for (const p of profiles) {
-          const name  = (p.customerName || '').trim().toUpperCase()
+          const name  = (p.customerName || '').trim()
           const pname = (p.productName  || '').trim()
           if (!name || !pname) continue
           try {
@@ -96,7 +95,7 @@ export async function runAutoSeed(log) {
   } catch (err) {
     // Non-fatal — log but don't crash startup
     console.error('Auto-seed warning:', err.message)
-  } finally {
-    await prisma.$disconnect()
   }
+  // No $disconnect here — `prisma` is the shared client (see config/db.js),
+  // still needed by every request for the rest of the process lifetime.
 }

@@ -19,7 +19,7 @@ const getCpProfiles = async (req, res) => {
     if (!customer) return res.json({ success: true, data: [] });
 
     const profiles = await prisma.customerProductProfile.findMany({
-      where: { customerName: customer.trim().toUpperCase() },
+      where: { customerName: { equals: customer.trim(), mode: "insensitive" } },
       orderBy: { orderCount: "desc" },
     });
     return res.json({ success: true, data: profiles });
