@@ -1,7 +1,8 @@
 import prisma from '../../../../db.js'
-import { buildBulkWhere, idDisplay, validateBulkTransformRequest } from '../bulk-transform.util.js'
+import { buildBulkWhere, getUniqueColumns, idDisplay, validateBulkTransformRequest } from '../bulk-transform.util.js'
 
 const PREVIEW_SAMPLE_LIMIT = 50
+const CONFLICT_SAMPLE_LIMIT = 20
 
 // Only ever reads — computes what WOULD change without writing anything, so
 // the admin can review before committing to /bulk-transform (create/apply).
@@ -18,6 +19,17 @@ export const previewTransform = async (req, res) => {
     let skippedCount = 0
     let recordsToUpdate = 0
 
+    // For any selected column backed by a single-field @unique constraint,
+    // track what every selected row's value will end up as (post-transform
+    // if it changes, as-is if it doesn't) so we can catch two rows landing
+    // on the same value BEFORE starting a job that's guaranteed to fail
+    // partway through and roll back.
+    const uniqueColumns = getUniqueColumns(meta)
+    const finalValuesByColumn = {}
+    for (const col of columns) {
+      if (uniqueColumns.has(col)) finalValuesByColumn[col] = new Map()
+    }
+
     for (const row of rows) {
       let rowChanged = false
       for (const col of columns) {
@@ -28,14 +40,31 @@ export const previewTransform = async (req, res) => {
         // naturally excludes numbers/booleans/Dates/arrays/null.
         if (typeof value !== 'string') { skippedCount++; continue }
         const newValue = transform.apply(value, params)
-        if (newValue === value) continue
-        changedCount++
-        rowChanged = true
-        if (sample.length < PREVIEW_SAMPLE_LIMIT) {
-          sample.push({ id: idDisplay(meta, row), column: col, oldValue: value, newValue })
+        const changed = newValue !== value
+        if (changed) {
+          changedCount++
+          rowChanged = true
+          if (sample.length < PREVIEW_SAMPLE_LIMIT) {
+            sample.push({ id: idDisplay(meta, row), column: col, oldValue: value, newValue })
+          }
+        }
+        const bucket = finalValuesByColumn[col]
+        if (bucket) {
+          const finalValue = changed ? newValue : value
+          if (!bucket.has(finalValue)) bucket.set(finalValue, [])
+          bucket.get(finalValue).push(idDisplay(meta, row))
         }
       }
       if (rowChanged) recordsToUpdate++
+    }
+
+    const uniqueConflicts = []
+    for (const [column, bucket] of Object.entries(finalValuesByColumn)) {
+      for (const [value, rowIds] of bucket) {
+        if (rowIds.length > 1) uniqueConflicts.push({ column, value, count: rowIds.length, ids: rowIds.slice(0, 10) })
+        if (uniqueConflicts.length >= CONFLICT_SAMPLE_LIMIT) break
+      }
+      if (uniqueConflicts.length >= CONFLICT_SAMPLE_LIMIT) break
     }
 
     return res.json({
@@ -50,6 +79,11 @@ export const previewTransform = async (req, res) => {
         skippedCount,
         sample,
         sampleCapped: changedCount > sample.length,
+        // Rows within THIS selection that would end up sharing a value on a
+        // unique column — applying is guaranteed to fail and roll back until
+        // this is resolved. Doesn't catch collisions against an unselected
+        // existing row; the apply-time error message is the backstop there.
+        uniqueConflicts,
       },
     })
   } catch (err) {

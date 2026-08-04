@@ -5,7 +5,7 @@ import {
   getSortedRowModel,
   flexRender,
 } from '@tanstack/react-table';
-import { ChevronUp, ChevronDown, ChevronsUpDown, Columns3 } from 'lucide-react';
+import { ChevronUp, ChevronDown, ChevronsUpDown, Columns3, Loader2 } from 'lucide-react';
 import StatusBadge, { BoolBadge } from '../common/StatusBadge.jsx';
 import EmptyState from '../common/EmptyState.jsx';
 import { TableSkeleton } from '../common/PageSkeleton.jsx';
@@ -49,6 +49,11 @@ export default function DataTable({
   resource, records, loading,
   onRowClick, onEdit, onDelete, onDuplicate,
   selectedIds, onSelectionChange,
+  // Header checkbox state/handler are controlled by the parent — "select
+  // all" needs to reach every record matching the current filters across
+  // the whole resource, not just the rows loaded on this page, so the
+  // parent (which owns pagination + filters) decides what "all" means.
+  allSelected, someSelected, onToggleAll, selectingAll,
 }) {
   const [sorting, setSorting] = useState([]);
   const [columnVisibility, setColumnVisibility] = useState(() => {
@@ -83,14 +88,6 @@ export default function DataTable({
   }
   if (!records.length) {
     return <EmptyState title="No records found" description="Try adjusting your search or filters." />;
-  }
-
-  const allSelected = records.length > 0 && records.every((r, i) => selectedIds.has(getRowKey(r, resource, i)));
-  const someSelected = !allSelected && records.some((r, i) => selectedIds.has(getRowKey(r, resource, i)));
-
-  function toggleAll() {
-    if (allSelected) onSelectionChange(new Set());
-    else onSelectionChange(new Set(records.map((r, i) => getRowKey(r, resource, i))));
   }
 
   function toggleRow(id) {
@@ -137,13 +134,17 @@ export default function DataTable({
             {table.getHeaderGroups().map((hg) => (
               <tr key={hg.id}>
                 <th className="sticky left-0 z-20 bg-slate-50/95 dark:bg-slate-900/90 w-10 px-3 py-2.5 border-b border-slate-200 dark:border-slate-800">
-                  <input
-                    type="checkbox"
-                    checked={allSelected}
-                    ref={(el) => { if (el) el.indeterminate = someSelected; }}
-                    onChange={toggleAll}
-                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                  />
+                  {selectingAll ? (
+                    <Loader2 size={14} className="animate-spin text-slate-400" />
+                  ) : (
+                    <input
+                      type="checkbox"
+                      checked={allSelected}
+                      ref={(el) => { if (el) el.indeterminate = someSelected; }}
+                      onChange={onToggleAll}
+                      className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    />
+                  )}
                 </th>
                 {hg.headers.map((header, idx) => (
                   <th

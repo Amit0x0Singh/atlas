@@ -1,5 +1,27 @@
+import { Prisma } from '@prisma/client'
 import { getMeta } from '../get/admin_panel.controller.js'
 import { getTransform } from '../../../utils/text-transforms.js'
+
+// Prisma always derives a model's Client accessor by lowercasing the first
+// letter of the model name (the same fact ResourcePage.jsx's
+// modelAccessorFor already relies on in reverse) — so capitalizing it back
+// reliably recovers the DMMF model name for any resource in MODELS.
+function dmmfModelName(modelAccessor) {
+  return modelAccessor.charAt(0).toUpperCase() + modelAccessor.slice(1)
+}
+
+// Single-field @unique (and @id, though that's already excluded from
+// `columns` by isProtectedColumn) columns for a resource — read straight
+// from the generated client's DMMF instead of a hand-maintained list, so it
+// can never drift from the real schema. Used to warn about (and block) a
+// transform that would collide two selected rows' values before ever
+// starting the job. Composite @@unique indexes aren't covered — the
+// transaction's own constraint violation remains the backstop for those.
+export function getUniqueColumns(meta) {
+  const model = Prisma.dmmf.datamodel.models.find((m) => m.name === dmmfModelName(meta.model))
+  if (!model) return new Set()
+  return new Set(model.fields.filter((f) => f.isUnique).map((f) => f.name))
+}
 
 // `ids` are PK-value objects — [{ itemCode: 'X' }] for a simple key, or
 // [{ itemCode: 'X', year: 2026 }] for a composite one — the exact same

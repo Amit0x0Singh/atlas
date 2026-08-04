@@ -22,6 +22,8 @@ import { useResourceRecords } from '../hooks/useResourceRecords.js';
 import { useRecentPages } from '../hooks/useRecentPages.js';
 import { usePinnedRecords } from '../hooks/usePinnedRecords.js';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts.js';
+import { useToast } from '../components/common/Toast.jsx';
+import { listRecords } from '../api/http.js';
 
 function isStatusLikeField(field) {
   return field.type === 'select' && field.options?.length;
@@ -50,6 +52,31 @@ function recordIdsFor(resource, records) {
   );
 }
 
+// Same query/status/date narrowing the Toolbar applies to the loaded page —
+// factored out so "select all" can apply it to a freshly-fetched full
+// dataset too, instead of only ever seeing whatever page is on screen.
+function applyClientFilters(resource, list, { query, statusValue, statusField, dateField, dateRange }) {
+  let out = list;
+  const kw = query.trim().toLowerCase();
+  if (kw) {
+    out = out.filter((rec) => resource.fields.some((f) => String(rec[f.name] ?? '').toLowerCase().includes(kw)));
+  }
+  if (statusValue && statusField) {
+    out = out.filter((rec) => String(rec[statusField.name]) === statusValue);
+  }
+  if (dateField && (dateRange.from || dateRange.to)) {
+    out = out.filter((rec) => {
+      const raw = rec[dateField.name];
+      if (!raw) return false;
+      const d = new Date(raw);
+      if (dateRange.from && d < new Date(dateRange.from)) return false;
+      if (dateRange.to && d > new Date(`${dateRange.to}T23:59:59`)) return false;
+      return true;
+    });
+  }
+  return out;
+}
+
 export default function ResourcePage({ resource }) {
   const { quickCreateRequestId } = useOutletContext();
   const {
@@ -59,6 +86,7 @@ export default function ResourcePage({ resource }) {
 
   const { visit } = useRecentPages();
   const { pinned, isPinned, togglePin } = usePinnedRecords(resource.key);
+  const showToast = useToast();
 
   const [query, setQuery] = useState('');
   const [statusValue, setStatusValue] = useState('');
@@ -69,6 +97,7 @@ export default function ResourcePage({ resource }) {
   const [importOpen, setImportOpen] = useState(false);
   const [schemaOpen, setSchemaOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
+  const [selectingAll, setSelectingAll] = useState(false);
   // Pre-scoped Data Management delete flow — set by either "Delete all
   // records" ({deleteType:'TABLE'}) or "Delete selected" ({deleteType:
   // 'RECORD', ids}), both of which now go through the same backup-first,
@@ -94,27 +123,45 @@ export default function ResourcePage({ resource }) {
 
   const stats = useMemo(() => computeStats(resource, records, total), [resource, records, total]);
 
-  const filtered = useMemo(() => {
-    let list = records;
-    const kw = query.trim().toLowerCase();
-    if (kw) {
-      list = list.filter((rec) => resource.fields.some((f) => String(rec[f.name] ?? '').toLowerCase().includes(kw)));
+  const filtered = useMemo(
+    () => applyClientFilters(resource, records, { query, statusValue, statusField, dateField, dateRange }),
+    [resource, records, query, statusValue, statusField, dateField, dateRange],
+  );
+
+  const allPageSelected = filtered.length > 0 && filtered.every((rec) => selectedIds.has(getLocalId(resource, rec)));
+  const somePageSelected = !allPageSelected && filtered.some((rec) => selectedIds.has(getLocalId(resource, rec)));
+
+  // The header checkbox means "everything matching the current filters",
+  // not just this page — records is server-paginated (default 100/page,
+  // and the backend caps a single request at 500 regardless), so for any
+  // table bigger than one page this has to page through the rest rather
+  // than only ever select what happens to be loaded on screen.
+  async function handleToggleAll() {
+    if (allPageSelected) {
+      setSelectedIds(new Set());
+      return;
     }
-    if (statusValue && statusField) {
-      list = list.filter((rec) => String(rec[statusField.name]) === statusValue);
+    if (records.length >= total) {
+      setSelectedIds(new Set(filtered.map((rec) => getLocalId(resource, rec))));
+      return;
     }
-    if (dateField && (dateRange.from || dateRange.to)) {
-      list = list.filter((rec) => {
-        const raw = rec[dateField.name];
-        if (!raw) return false;
-        const d = new Date(raw);
-        if (dateRange.from && d < new Date(dateRange.from)) return false;
-        if (dateRange.to && d > new Date(`${dateRange.to}T23:59:59`)) return false;
-        return true;
-      });
+    setSelectingAll(true);
+    try {
+      const PAGE_SIZE = 500; // backend's hard cap per request
+      const all = [];
+      for (let page = 1; ; page++) {
+        const { data } = await listRecords(resource, { page, limit: PAGE_SIZE });
+        all.push(...data);
+        if (data.length < PAGE_SIZE || all.length >= total) break;
+      }
+      const matched = applyClientFilters(resource, all, { query, statusValue, statusField, dateField, dateRange });
+      setSelectedIds(new Set(matched.map((rec) => getLocalId(resource, rec))));
+    } catch (err) {
+      showToast(err?.response?.data?.error || 'Unable to select all records.', 'danger');
+    } finally {
+      setSelectingAll(false);
     }
-    return list;
-  }, [records, query, statusValue, statusField, dateField, dateRange]);
+  }
 
   const pinnedRecords = useMemo(() => {
     if (!pinned.length) return [];
@@ -265,6 +312,10 @@ export default function ResourcePage({ resource }) {
           onDelete={setDeleteTarget}
           selectedIds={selectedIds}
           onSelectionChange={setSelectedIds}
+          allSelected={allPageSelected}
+          someSelected={somePageSelected}
+          onToggleAll={handleToggleAll}
+          selectingAll={selectingAll}
         />
 
         {!loading && filtered.length > 0 && (

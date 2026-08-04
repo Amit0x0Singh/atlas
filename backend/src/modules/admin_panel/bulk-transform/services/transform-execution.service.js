@@ -68,17 +68,24 @@ export async function runBulkTransform(jobId, { meta, resource, ids, columns, tr
     })
   } catch (err) {
     // Transaction already rolled back automatically — nothing partially
-    // written.
+    // written. P2002 (unique constraint) is the one failure mode expected
+    // to actually happen in practice — the preview step already warns about
+    // collisions within the selected batch, so a P2002 here almost always
+    // means the new value collides with a record that wasn't selected;
+    // translate it instead of surfacing Prisma's raw invocation dump.
+    const message = err.code === 'P2002'
+      ? `This would create a duplicate value in a unique field (${(err.meta?.target || []).join(', ') || 'unknown field'}). At least one new value already exists on another record. Nothing was changed — adjust your selection or transformation and try again.`
+      : err.message
     await prisma.transformJob.update({
       where: { id: jobId },
-      data: { status: 'FAILED', errorMessage: err.message },
+      data: { status: 'FAILED', errorMessage: message },
     })
     await writeAudit({
       ...auditCtx,
       action: 'BULK_TRANSFORM',
       tableName: meta.model,
       recordId: jobId,
-      notes: `Bulk transform FAILED: ${err.message}`,
+      notes: `Bulk transform FAILED: ${message}`,
     })
   }
 }
