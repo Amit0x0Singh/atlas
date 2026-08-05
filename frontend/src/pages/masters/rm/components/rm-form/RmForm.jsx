@@ -145,11 +145,6 @@ export default function RmForm({ editing, form, onChange, saving, msg, onSave, o
                 Density converts between Inventory UOM ({form.inventoryUom}) and Operational UOM ({form.operationalUom}) when this item is issued.
               </p>
             )}
-            {form.trackingType === 'BULK' && (
-              <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2 text-[11px] text-green-800 mt-3">
-                After saving, go to <strong>Location Master</strong> to create a shelf/rack location for this item.
-              </div>
-            )}
           </div>
 
           <div className="rounded-xl border border-gray-200 bg-white p-4">

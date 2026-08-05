@@ -12,7 +12,6 @@ model GateInward {
   // not a real UUID, so this column can't be @db.Uuid.
   createdBy    String?   @map("created_by") @db.VarChar(255)
   entryTime    DateTime? @map("entry_time") @db.Timestamptz()
-  numPacks     Int?      @map("num_packs")
 
   requestDelete Boolean @default(false) @map("request_delete")
 

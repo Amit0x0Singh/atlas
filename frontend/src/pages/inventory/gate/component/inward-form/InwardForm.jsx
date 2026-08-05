@@ -13,8 +13,8 @@ const EMPTY = { supplier_name: "", invoice_no: "", vehicle_no: "", company: "" }
 const FIELDS = [
   { key: "company", label: "Company *", type: "select", options: COMPANIES, placeholder: "Select company" },
   { key: "supplier_name", label: "Supplier Name *", type: "supplier", placeholder: "Type to search supplier..." },
-  { key: "invoice_no", label: "Invoice No.", placeholder: "e.g. INV-2024-001" },
-  { key: "vehicle_no", label: "Vehicle No.", placeholder: "e.g. MH-12-AB-1234" },
+  { key: "invoice_no", label: "Invoice No.", placeholder: "e.g. INV-2024-001", uppercase: true },
+  { key: "vehicle_no", label: "Vehicle No.", placeholder: "e.g. MH-12-AB-1234", uppercase: true },
 ];
 
 export default function InwardForm({ onSubmit, onCancel }) {
@@ -22,7 +22,10 @@ export default function InwardForm({ onSubmit, onCancel }) {
   const { data: suppliersResult } = useSuppliers();
   const suppliers = suppliersResult?.items ?? [];
 
-  const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
+  // Both are business codes the backend always stores uppercase — matching
+  // it live avoids the "typed lowercase, saved uppercase" surprise.
+  const set = (key, uppercase) => (e) =>
+    setForm((f) => ({ ...f, [key]: uppercase ? e.target.value.toUpperCase() : e.target.value }));
 
   const handleSubmit = async () => {
     if (!form.supplier_name.trim()) return alert("Supplier name is required");
@@ -39,7 +42,7 @@ export default function InwardForm({ onSubmit, onCancel }) {
       </div>
 
       <div className="if-grid">
-        {FIELDS.map(({ key, label, placeholder, type, options }) => (
+        {FIELDS.map(({ key, label, placeholder, type, options, uppercase }) => (
           <div key={key}>
             <label className="if-label">{label}</label>
             {type === "select" ? (
@@ -59,7 +62,7 @@ export default function InwardForm({ onSubmit, onCancel }) {
             ) : (
               <input
                 value={form[key]}
-                onChange={set(key)}
+                onChange={set(key, uppercase)}
                 placeholder={placeholder}
                 className="if-input"
               />

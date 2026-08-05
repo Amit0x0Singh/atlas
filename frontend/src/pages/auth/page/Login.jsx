@@ -4,6 +4,7 @@
 import { useState } from 'react'
 import { useAuth } from '../../../components/auth/AuthContext.jsx'
 import { Button } from '../../../components/ui/index.js'
+import { normalizeEmailInput } from '../../../utils/textNormalize.js'
 import './Login.css'
 
 export default function Login({ onLogin }) {
@@ -16,7 +17,7 @@ export default function Login({ onLogin }) {
     if (!form.email || !form.password) { setError('Email and password required'); return }
     setError('')
     try {
-      const user = await login(form.email, form.password)
+      const user = await login(normalizeEmailInput(form.email), form.password)
       onLogin?.(user)
     } catch (e) {
       setError(e.message || 'Login failed')

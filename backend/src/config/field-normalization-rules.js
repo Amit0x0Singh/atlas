@@ -42,7 +42,7 @@ export const FIELD_RULES = {
   },
   GateInward: {
     supplierName: RULES.NONE, // business name/free text — never case-changed
-    invoiceNo: RULES.NONE, // REVIEW: no confident naming signal — safe default
+    invoiceNo: RULES.UPPER, // business code/identifier — same treatment as vehicleNo
     vehicleNo: RULES.UPPER, // business code/identifier
     companyName: RULES.NONE, // business name/free text — never case-changed
     status: RULES.NONE, // fixed-vocabulary/enum-like — no case change
@@ -50,7 +50,7 @@ export const FIELD_RULES = {
   },
   GateOutward: {
     receiverName: RULES.NONE, // business name/free text — never case-changed
-    invoiceNo: RULES.NONE, // REVIEW: no confident naming signal — safe default
+    invoiceNo: RULES.UPPER, // business code/identifier — same treatment as vehicleNo
     vehicleNo: RULES.UPPER, // business code/identifier
     companyName: RULES.NONE, // business name/free text — never case-changed
     status: RULES.NONE, // fixed-vocabulary/enum-like — no case change
@@ -65,25 +65,6 @@ export const FIELD_RULES = {
     category: RULES.NONE, // fixed-vocabulary/enum-like — no case change
     subCategory: RULES.NONE, // fixed-vocabulary/enum-like — no case change
     state: RULES.NONE, // fixed-vocabulary/enum-like — no case change
-  },
-  BulkLocation: {
-    locationId: RULES.NONE, // REVIEW: no confident naming signal — safe default [PK]
-    locationName: RULES.NONE, // business name/free text — never case-changed
-    itemCode: RULES.UPPER, // business code/identifier
-    itemName: RULES.NONE, // business name/free text — never case-changed
-    uom: RULES.NONE, // REVIEW: no confident naming signal — safe default
-  },
-  BulkLotEntry: {
-    itemCode: RULES.UPPER, // business code/identifier
-    itemName: RULES.NONE, // business name/free text — never case-changed
-    lotNo: RULES.UPPER, // business code/identifier
-    supplier: RULES.NONE, // REVIEW: no confident naming signal — safe default
-    invoiceNo: RULES.NONE, // REVIEW: no confident naming signal — safe default
-    uom: RULES.NONE, // REVIEW: no confident naming signal — safe default
-    status: RULES.NONE, // fixed-vocabulary/enum-like — no case change
-  },
-  BulkLotSequence: {
-    itemCode: RULES.UPPER, // business code/identifier
   },
   LotSequence: {
     itemCode: RULES.UPPER, // business code/identifier
@@ -133,7 +114,7 @@ export const FIELD_RULES = {
   ErpPack: {
     lotNumber: RULES.NONE, // REVIEW: no confident naming signal — safe default
     supplierName: RULES.NONE, // business name/free text — never case-changed
-    invoiceNumber: RULES.NONE, // REVIEW: no confident naming signal — safe default
+    invoiceNumber: RULES.UPPER, // business code/identifier — same treatment as vehicleNo
     unit: RULES.NONE, // REVIEW: no confident naming signal — safe default
     qrConfirmedBy: RULES.NONE, // REVIEW: no confident naming signal — safe default
     verifiedBy: RULES.NONE, // REVIEW: no confident naming signal — safe default
@@ -239,20 +220,6 @@ export const FIELD_RULES = {
   },
   GateLotSequence: {
     itemCode: RULES.UPPER, // business code/identifier
-  },
-  PackingMaterial: {
-    itemCode: RULES.UPPER, // business code/identifier [UNIQUE]
-    itemName: RULES.NONE, // business name/free text — never case-changed
-    category: RULES.NONE, // fixed-vocabulary/enum-like — no case change
-    subType: RULES.NONE, // fixed-vocabulary/enum-like — no case change
-    material: RULES.NONE, // REVIEW: no confident naming signal — safe default
-    capacityUnit: RULES.NONE, // REVIEW: no confident naming signal — safe default
-    shape: RULES.NONE, // REVIEW: no confident naming signal — safe default
-    color: RULES.NONE, // REVIEW: no confident naming signal — safe default
-    laminate: RULES.NONE, // REVIEW: no confident naming signal — safe default
-    contentsSpec: RULES.NONE, // REVIEW: no confident naming signal — safe default
-    uom: RULES.NONE, // REVIEW: no confident naming signal — safe default
-    notes: RULES.NONE, // business name/free text — never case-changed
   },
   MicrobialStrain: {
     strainName: RULES.NONE, // business name/free text — never case-changed
@@ -590,7 +557,7 @@ export const FIELD_RULES = {
     customerName: RULES.NONE, // business name/free text — never case-changed
     orderType: RULES.NONE, // fixed-vocabulary/enum-like — no case change
     priority: RULES.NONE, // fixed-vocabulary/enum-like — no case change
-    invoiceNo: RULES.NONE, // REVIEW: no confident naming signal — safe default
+    invoiceNo: RULES.UPPER, // business code/identifier — same treatment as vehicleNo
     transportName: RULES.NONE, // business name/free text — never case-changed
     salesStaff: RULES.NONE, // REVIEW: no confident naming signal — safe default
     dispatchedBy: RULES.NONE, // REVIEW: no confident naming signal — safe default
@@ -653,7 +620,7 @@ export const FIELD_RULES = {
     notes: RULES.NONE, // business name/free text — never case-changed
   },
   OrderDispatch: {
-    invoiceNumber: RULES.NONE, // REVIEW: no confident naming signal — safe default
+    invoiceNumber: RULES.UPPER, // business code/identifier — same treatment as vehicleNo
     transportName: RULES.NONE, // business name/free text — never case-changed
     dispatchedBy: RULES.NONE, // REVIEW: no confident naming signal — safe default
     dispatchNotes: RULES.NONE, // business name/free text — never case-changed

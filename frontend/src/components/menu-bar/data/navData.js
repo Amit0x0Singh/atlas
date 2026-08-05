@@ -47,7 +47,6 @@ export const APP_NAV = [
       { to: '/ledger',          label: 'Ledger', Icon: BarChart2 },
       { to: '/grn',             label: 'GRN',              Icon: ClipboardList },
       { to: '/microbe-transaction', label: 'Microbial', Icon: Snowflake },
-      // { to: '/location-master', label: 'Location Master',  Icon: MapPin },
       // { to: '/indent',          label: 'Indent Management', Icon: ListChecks },
     ],
   },

@@ -11,10 +11,6 @@ import prisma from '../../../db.js';
 export const MODELS = {
   // ── Inventory ──────────────────────────────────────────────────────────────
   'rm-master': { model: 'rmMaster', group: 'masters', title: 'Raw Material Master',              idField: 'itemCode',                orderBy: { createdAt: 'desc' } },
-  'packing-material': { model: 'packingMaterial', group: 'masters', title: 'Packing Material',        idField: 'id',                      orderBy: { createdAt: 'desc' } },
-  'bulk-location': { model: 'bulkLocation', group: 'masters', title: 'Bulk Locations',           idField: 'locationId',              orderBy: { createdAt: 'desc' } },
-  'bulk-lot-entry': { model: 'bulkLotEntry', group: 'inventory', title: 'Bulk Lot Entries',           idField: 'id',                      orderBy: { createdAt: 'desc' } },
-  'bulk-lot-sequence': { model: 'bulkLotSequence', group: 'inventory', title: 'Bulk Lot Sequence',        idField: ['itemCode', 'year'],       orderBy: { year: 'desc' } },
   'lot-sequence': { model: 'lotSequence', group: 'inventory', title: 'Lot Sequence',            idField: ['itemCode', 'year'],       orderBy: { year: 'desc' } },
   'print-master': { model: 'printMaster', group: 'inventory', title: 'Print Master',            idField: 'id',                       orderBy: { createdAt: 'desc' } },
   'pack-detail': { model: 'packDetail', group: 'inventory', title: 'Pack Detail',             idField: 'packId'                                                  },

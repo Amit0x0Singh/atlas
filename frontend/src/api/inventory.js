@@ -102,18 +102,6 @@ export const grnApi = {
   detail: (gateInwardId)         => api.get('/grn/detail', { params: { gateInwardId } }),
 }
 
-export const bulkApi = {
-  listLocations:    (params)     => api.get('/bulk/locations', { params }),
-  getLocation:      (locationId) => api.get(`/bulk/locations/${encodeURIComponent(locationId)}`),
-  createLocation:   (data)       => api.post('/bulk/locations', data),
-  deleteLocation:   (locationId) => api.delete(`/bulk/locations/${encodeURIComponent(locationId)}`),
-  locationLabelUrl: (locationId) => `/api/bulk/locations/${encodeURIComponent(locationId)}/label`,
-  bulkInward:       (data)       => api.post('/bulk/inward', data),
-  bulkOutward:      (data)       => api.post('/bulk/outward', data),
-  stockSummary:     ()           => api.get('/bulk/summary'),
-}
-
-
 export const gateApi = {
 
   // Inward

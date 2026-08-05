@@ -8,7 +8,6 @@ import GrnRouter from "./grn/router.js";
 import InwardRouter from "./store/inward/router.js";
 import OutwardRouter from "./store/outward/router.js";
 import ContainersRouter from "./store/containers/router.js";
-import BulkLocationRouter from "./bulk-location/router.js";
 import ImportRouter from "./import/router.js";
 
 const InventoryRouter = express.Router();
@@ -33,9 +32,6 @@ InventoryRouter.use("/outward", OutwardRouter);
 
 // ── Containers ────────────────────────────────────────────────────────────────
 InventoryRouter.use("/containers", ContainersRouter);
-
-// ── Bulk Location ─────────────────────────────────────────────────────────────
-InventoryRouter.use("/bulk", BulkLocationRouter);
 
 // ── Import ────────────────────────────────────────────────────────────────────
 InventoryRouter.use("/import", ImportRouter);  

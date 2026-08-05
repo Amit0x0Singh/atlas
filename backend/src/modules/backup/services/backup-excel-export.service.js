@@ -126,6 +126,7 @@ export async function streamBackupAsExcel(res, backupJob) {
   const infoRows = [
     ['Backup Name', backupJob.name],
     ['Backup Type', backupJob.type],
+    ['Backup Scope', backupJob.scope || 'FULL'],
     ['Created By', backupJob.createdByName || backupJob.createdBy || '—'],
     ['Created Date & Time', backupJob.createdAt],
     ['Application Version', backendPkg.version],

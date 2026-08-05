@@ -31,10 +31,6 @@ export const queryKeys = {
     all:  (filters) => filters ? ['equipment', filters] : ['equipment'],
     meta: () => ['equipment', 'meta'],
   },
-  packingMaterials: {
-    all:    (filters) => filters ? ['packing-materials', filters] : ['packing-materials'],
-    detail: (id)       => ['packing-material', id],
-  },
   recipes: {
     all:    (productCode) => ['recipes', productCode ?? null],
     products: () => ['recipes', 'products'],
@@ -70,9 +66,6 @@ export const queryKeys = {
   microbialSfgStockSummary: {
     microbeWise:     () => ['microbial-sfg-stock-summary', 'microbe-wise'],
     containerLedger: () => ['microbial-sfg-stock-summary', 'container-ledger'],
-  },
-  locations: {
-    all: () => ['locations'],
   },
   suppliers: {
     all: (filters) => filters ? ['suppliers', filters] : ['suppliers'],

@@ -21,7 +21,10 @@ const restoreUpload = multer({
     filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`),
   }),
   limits: { fileSize: 500 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => cb(null, /\.(json\.gz|gz)$/i.test(file.originalname)),
+  // .gz — the original backup format (preferred, exact); .xlsx — a
+  // previously-exported "Export to Excel" file, reconstructed best-effort
+  // (see backup-excel-import.service.js).
+  fileFilter: (req, file, cb) => cb(null, /\.(json\.gz|gz|xlsx)$/i.test(file.originalname)),
 });
 
 const router = express.Router();

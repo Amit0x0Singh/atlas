@@ -1,28 +1,15 @@
 import { useState, useEffect } from "react";
 import { DoorOpen, X } from "lucide-react";
 import { packsApi, rmApi, gateApi } from "../../../../../../api/inventory.js";
-import { packingMaterialApi } from "../../../../../../api/masters.js";
 import { Button, IconButton } from "../../../../../../components/ui";
-import { SUB_TYPES } from "../../../../../masters/packing/components/packing-constants/packingConstants.jsx";
 import { useGateInward, useUpdateGateInwardStatus } from "../../../../../../hooks/inventory/useGate.js";
 import { todayStr, resolveExpiryDate } from "../utils/expiryDate.js";
 import { inp, lbl } from "../utils/formStyles.js";
 import ItemLine, { BLANK_BATCH } from "../components/ItemLine.jsx";
 import "./GenerateForm.css";
 
-// Packing Material Master's own browsing UI (CategoryList/SubTypeGrid) only
-// renders this fixed category → sub-type structure — a row whose subType
-// doesn't match one of these is invisible there (can't be seen, edited, or
-// deleted from Packing Material Master at all). Applying the same check here keeps
-// this item search limited to packing materials the user can actually find
-// and manage in Packing Material Master, instead of surfacing orphaned rows
-// that read as "materials I never created."
-function isProperlyCategorized(pm) {
-  return (SUB_TYPES[pm.category] || []).some(s => s.value === pm.subType);
-}
-
 const BLANK_ITEM = () => ({
-  selectedItem: null,   // { itemCode, itemName, uom, _type: 'rm'|'pm', _pmData?: {...} }
+  selectedItem: null,   // { itemCode, itemName, uom }
   packQty: "",
   batches: [BLANK_BATCH()],
 });
@@ -30,7 +17,6 @@ const BLANK_HDR = { supplier: "", invoiceNo: "", receivedDate: todayStr() };
 
 export default function GenerateForm({ onGenerated, prefill, onGateUsed, onUnlink, onOpenGatePanel }) {
   const [rmList, setRmList]           = useState([]);
-  const [pmList, setPmList]           = useState([]);
   const [hdr, setHdr]                 = useState(BLANK_HDR);
   const [items, setItems]             = useState([BLANK_ITEM()]);
   const [loading, setLoading]         = useState(false);
@@ -45,10 +31,9 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed, onUnlin
   const pendingCount = pending?.total ?? 0;
   const updateGateStatus = useUpdateGateInwardStatus();
 
-  // Load RM list and packing materials once
+  // Load RM list once
   useEffect(() => {
     rmApi.list({}).then(r => setRmList(r.data || [])).catch(console.error);
-    packingMaterialApi.list().then(r => setPmList((r.data || []).filter(isProperlyCategorized))).catch(console.error);
   }, []);
 
   // Auto-fill header from gate inward selection
@@ -81,7 +66,7 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed, onUnlin
     for (let i = 0; i < items.length; i++) {
       const it = items[i];
       if (!it.selectedItem) {
-        setError(`Item ${i + 1}: please select a raw material or packing material`);
+        setError(`Item ${i + 1}: please select a raw material`);
         return;
       }
       if (!it.packQty || parseFloat(it.packQty) <= 0) {
@@ -244,7 +229,6 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed, onUnlin
                 idx={i}
                 item={it}
                 rmList={rmList}
-                pmList={pmList}
                 receivedDate={hdr.receivedDate}
                 onChange={next => updateItem(i, next)}
                 onRemove={() => removeItem(i)}

@@ -6,7 +6,7 @@ import Pagination from '../../../../../../components/pagination/Pagination.jsx'
 
 export default function RmTable({
   visibleItems, loading, error, page, limit, filters,
-  onFilterChange, onClearFilters, onEdit, onDelete, onViewPacking, onRowClick, onPageChange, onLimitChange,
+  onFilterChange, onClearFilters, onEdit, onDelete, onRowClick, onPageChange, onLimitChange,
 }) {
   const paginated = visibleItems.slice((page - 1) * limit, page * limit)
 
@@ -59,11 +59,10 @@ export default function RmTable({
                 </tr>
               ) : paginated.map(item => (
                 <RmTableRow
-                  key={item.kind === 'packing' ? `pm-${item.id}` : item.itemCode}
+                  key={item.itemCode}
                   item={item}
                   onEdit={onEdit}
                   onDelete={onDelete}
-                  onViewPacking={onViewPacking}
                   onRowClick={onRowClick}
                 />
               ))}

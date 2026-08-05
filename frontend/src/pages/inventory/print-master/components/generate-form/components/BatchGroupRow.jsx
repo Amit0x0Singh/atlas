@@ -10,18 +10,16 @@ const MODES = [
 ];
 
 // One bag-range within a lot — its own bag count, optional supplier batch
-// code, and (for raw materials) its own expiry calculation. Multiple of
-// these under one ItemLine let a single lot span several supplier batches,
-// e.g. bags 1-10 on Batch-A expiring Dec 2027, 11-18 on Batch-B expiring
-// Jun 2028, all still the same lot number.
-export default function BatchGroupRow({ idx, batch, receivedDate, isPm, onChange, onRemove, canRemove }) {
-  const expiryDate = !isPm
-    ? resolveExpiryDate(receivedDate, batch.expiryMode, {
-        dateValue: batch.expiryDateValue,
-        months: batch.remainingMonths,
-        years: batch.remainingYears,
-      })
-    : "";
+// code, and its own expiry calculation. Multiple of these under one
+// ItemLine let a single lot span several supplier batches, e.g. bags 1-10
+// on Batch-A expiring Dec 2027, 11-18 on Batch-B expiring Jun 2028, all
+// still the same lot number.
+export default function BatchGroupRow({ idx, batch, receivedDate, onChange, onRemove, canRemove }) {
+  const expiryDate = resolveExpiryDate(receivedDate, batch.expiryMode, {
+    dateValue: batch.expiryDateValue,
+    months: batch.remainingMonths,
+    years: batch.remainingYears,
+  })
 
   return (
     <div style={{ border: "1px solid #e5e7eb", borderRadius: "8px", padding: "12px", background: "#fff" }}>
@@ -34,7 +32,7 @@ export default function BatchGroupRow({ idx, batch, receivedDate, isPm, onChange
         )}
       </div>
 
-      <div className={`gf-batch-row ${isPm ? "gf-batch-row-2" : ""}`}>
+      <div className="gf-batch-row">
         <div>
           <label style={lbl}>Number of Bags *</label>
           <input type="number" min="1"
@@ -55,60 +53,56 @@ export default function BatchGroupRow({ idx, batch, receivedDate, isPm, onChange
           />
         </div>
 
-        {!isPm && (
-          <>
-            <div>
-              <label style={{ ...lbl, color: "#6b7280" }}>Expiry Calculation Type</label>
-              <div style={{ display: "flex", border: "1px solid #d1d5db", borderRadius: "8px", overflow: "hidden" }}>
-                {MODES.map(m => (
-                  <button key={m.value} type="button"
-                    onClick={() => onChange({ ...batch, expiryMode: m.value })}
-                    style={{
-                      flex: 1, padding: "6px 0", fontSize: "12px", fontWeight: 600, border: "none", cursor: "pointer",
-                      background: batch.expiryMode === m.value ? "#2563eb" : "#fff",
-                      color: batch.expiryMode === m.value ? "#fff" : "#6b7280",
-                    }}
-                  >
-                    {m.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+        <div>
+          <label style={{ ...lbl, color: "#6b7280" }}>Expiry Calculation Type</label>
+          <div style={{ display: "flex", border: "1px solid #d1d5db", borderRadius: "8px", overflow: "hidden" }}>
+            {MODES.map(m => (
+              <button key={m.value} type="button"
+                onClick={() => onChange({ ...batch, expiryMode: m.value })}
+                style={{
+                  flex: 1, padding: "6px 0", fontSize: "12px", fontWeight: 600, border: "none", cursor: "pointer",
+                  background: batch.expiryMode === m.value ? "#2563eb" : "#fff",
+                  color: batch.expiryMode === m.value ? "#fff" : "#6b7280",
+                }}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+        </div>
 
-            <div>
-              {batch.expiryMode === "DATE" && (
-                <>
-                  <label style={{ ...lbl, color: "#6b7280" }}>Date</label>
-                  <input type="date"
-                    value={batch.expiryDateValue}
-                    onChange={e => onChange({ ...batch, expiryDateValue: e.target.value })}
-                    style={{ ...inp, background: "#fafafa" }}
-                  />
-                </>
-              )}
-              {batch.expiryMode === "MONTH" && (
-                <>
-                  <label style={{ ...lbl, color: "#6b7280" }}>Remaining Months</label>
-                  <input type="number" min="1" step="1"
-                    value={batch.remainingMonths}
-                    onChange={e => onChange({ ...batch, remainingMonths: e.target.value })}
-                    placeholder="e.g. 18" style={{ ...inp, background: "#fafafa" }}
-                  />
-                </>
-              )}
-              {batch.expiryMode === "YEAR" && (
-                <>
-                  <label style={{ ...lbl, color: "#6b7280" }}>Remaining Years</label>
-                  <input type="number" min="1" step="1"
-                    value={batch.remainingYears}
-                    onChange={e => onChange({ ...batch, remainingYears: e.target.value })}
-                    placeholder="e.g. 2" style={{ ...inp, background: "#fafafa" }}
-                  />
-                </>
-              )}
-            </div>
-          </>
-        )}
+        <div>
+          {batch.expiryMode === "DATE" && (
+            <>
+              <label style={{ ...lbl, color: "#6b7280" }}>Date</label>
+              <input type="date"
+                value={batch.expiryDateValue}
+                onChange={e => onChange({ ...batch, expiryDateValue: e.target.value })}
+                style={{ ...inp, background: "#fafafa" }}
+              />
+            </>
+          )}
+          {batch.expiryMode === "MONTH" && (
+            <>
+              <label style={{ ...lbl, color: "#6b7280" }}>Remaining Months</label>
+              <input type="number" min="1" step="1"
+                value={batch.remainingMonths}
+                onChange={e => onChange({ ...batch, remainingMonths: e.target.value })}
+                placeholder="e.g. 18" style={{ ...inp, background: "#fafafa" }}
+              />
+            </>
+          )}
+          {batch.expiryMode === "YEAR" && (
+            <>
+              <label style={{ ...lbl, color: "#6b7280" }}>Remaining Years</label>
+              <input type="number" min="1" step="1"
+                value={batch.remainingYears}
+                onChange={e => onChange({ ...batch, remainingYears: e.target.value })}
+                placeholder="e.g. 2" style={{ ...inp, background: "#fafafa" }}
+              />
+            </>
+          )}
+        </div>
       </div>
 
       {expiryDate && (

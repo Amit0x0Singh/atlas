@@ -1,5 +1,6 @@
 import { Save, X } from 'lucide-react'
 import { Button } from '../../../../../components/ui'
+import { normalizeEmailInput, normalizePhoneInput } from '../../../../../utils/textNormalize.js'
 
 export default function SupplierForm({ editing, form, onChange, saving, msg, onSave, onClose }) {
   return (
@@ -25,6 +26,7 @@ export default function SupplierForm({ editing, form, onChange, saving, msg, onS
               <input
                 value={form.phone}
                 onChange={e => onChange('phone', e.target.value)}
+                onBlur={e => onChange('phone', normalizePhoneInput(e.target.value))}
                 placeholder="e.g. 9876543210"
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
               />
@@ -44,6 +46,7 @@ export default function SupplierForm({ editing, form, onChange, saving, msg, onS
             <input
               value={form.email}
               onChange={e => onChange('email', e.target.value)}
+              onBlur={e => onChange('email', normalizeEmailInput(e.target.value))}
               placeholder="e.g. contact@supplier.com"
               className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
             />

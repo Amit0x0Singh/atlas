@@ -731,7 +731,6 @@ export const exportGateInwardLog = async (req, res) => {
       'Supplier Name':    g.supplierName,
       'Invoice No':       g.invoiceNo,
       'Vehicle No':       g.vehicleNo,
-      'Num Packs':        g.numPacks,
       'Status':           g.status,
       'Created By':       userMap[g.createdBy] ?? null,
       'Created At':       fmtDate(g.createdAt),

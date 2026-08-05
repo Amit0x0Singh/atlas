@@ -6,6 +6,7 @@ import { writeAudit } from '../../../middleware/audit.js';
 import { RESTORED_UPLOADS_DIR, ensureStorageDirs } from '../utils/storage-paths.js';
 import { insertOrderFor, deleteOrderFor, expandForCascades, BIGINT_FIELDS } from '../utils/backup-order.js';
 import { MODELS } from '../../admin_panel/get/admin_panel.controller.js';
+import { parseExcelBackup } from './backup-excel-import.service.js';
 
 const KNOWN_MODELS = new Set(Object.values(MODELS).map((m) => m.model));
 const CHUNK_SIZE = 500; // stay well under Postgres's 65535-parameter-per-statement limit
@@ -13,27 +14,10 @@ const SUPPORTED_VERSION = 1;
 
 class ValidationError extends Error {}
 
-// Every check here runs BEFORE any prisma mutation is attempted — a failure
-// at any step means zero writes happened.
-export async function validateBackupFile(filePath) {
-  if (!fs.existsSync(filePath) || fs.statSync(filePath).size === 0) {
-    throw new ValidationError('Backup file is missing or empty.');
-  }
-
-  let raw;
-  try {
-    raw = zlib.gunzipSync(fs.readFileSync(filePath));
-  } catch {
-    throw new ValidationError('File is not a valid gzip archive — only .json.gz backups produced by this system are supported.');
-  }
-
-  let parsed;
-  try {
-    parsed = JSON.parse(raw.toString('utf8'));
-  } catch {
-    throw new ValidationError('Decompressed content is not valid JSON.');
-  }
-
+// Structural checks shared by both source formats — a .xlsx-derived
+// `parsed` object goes through the exact same gate as a .json.gz-derived
+// one before either is trusted with a restore.
+function validateParsedStructure(parsed) {
   if (typeof parsed !== 'object' || parsed === null) {
     throw new ValidationError('Backup file has no top-level JSON object.');
   }
@@ -64,9 +48,45 @@ export async function validateBackupFile(filePath) {
       throw new ValidationError(`Table "${table}" contains malformed row data.`);
     }
   }
+}
 
-  // Files predating this field have no "scope" key at all — default to FULL
-  // so every existing backup keeps restoring exactly as it always has.
+function parseGzipJsonBackup(filePath) {
+  let raw;
+  try {
+    raw = zlib.gunzipSync(fs.readFileSync(filePath));
+  } catch {
+    throw new ValidationError('File is not a valid gzip archive — only .json.gz or .xlsx backups produced by this system are supported.');
+  }
+  try {
+    return JSON.parse(raw.toString('utf8'));
+  } catch {
+    throw new ValidationError('Decompressed content is not valid JSON.');
+  }
+}
+
+// Every check here runs BEFORE any prisma mutation is attempted — a failure
+// at any step means zero writes happened. Dispatches on the uploaded/stored
+// file's extension: the original .json.gz format (exact, preferred), or a
+// .xlsx previously downloaded via "Export to Excel" (best-effort
+// reconstruction — see backup-excel-import.service.js for the fidelity
+// trade-offs).
+export async function validateBackupFile(filePath) {
+  if (!fs.existsSync(filePath) || fs.statSync(filePath).size === 0) {
+    throw new ValidationError('Backup file is missing or empty.');
+  }
+
+  if (/\.xlsx$/i.test(filePath)) {
+    const { parsed, tables, scope } = await parseExcelBackup(filePath).catch((err) => {
+      throw new ValidationError(err.message);
+    });
+    validateParsedStructure(parsed);
+    return { parsed, tables, scope };
+  }
+
+  const parsed = parseGzipJsonBackup(filePath);
+  validateParsedStructure(parsed);
+  // Files predating the "scope" field have no such key at all — default to
+  // FULL so every existing backup keeps restoring exactly as it always has.
   return { parsed, tables: parsed.tables, scope: parsed.scope ?? 'FULL' };
 }
 

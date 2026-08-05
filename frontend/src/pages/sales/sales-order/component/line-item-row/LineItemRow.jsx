@@ -19,17 +19,12 @@ export default function LineItemRow({
   idx,
   products,
   cpProfiles,
-  packingMaterials,   // { primary: [...], secondary: [...] }
   onChange,
   onRemove,
   onProductPicked,
   onCpProductPicked,
 }) {
   const set = (k, v) => onChange(idx, { ...item, [k]: v });
-
-  // Use API materials if available, else fall back to empty (user can type custom)
-  const primaryMaterials   = packingMaterials?.primary   || []
-  const secondaryMaterials = packingMaterials?.secondary || []
 
   return (
     <div
@@ -174,10 +169,7 @@ export default function LineItemRow({
         </div>
       </div>
 
-      <PackingSection
-        item={item} idx={idx} onChange={onChange} set={set}
-        primaryMaterials={primaryMaterials} secondaryMaterials={secondaryMaterials}
-      />
+      <PackingSection item={item} idx={idx} onChange={onChange} set={set} />
 
       <LabelDetailsSection item={item} set={set} />
     </div>

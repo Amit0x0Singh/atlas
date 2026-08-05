@@ -7,6 +7,7 @@ import {
 } from '../../../../hooks/hr/useEmployees.js'
 import { BackButton, Button, ConfirmModal } from '../../../../components/ui'
 import Pagination from '../../../../components/pagination/Pagination.jsx'
+import { normalizeEmailInput, normalizePhoneInput } from '../../../../utils/textNormalize.js'
 
 const ROLES = ['ADMIN', 'SALES', 'PRODUCTION', 'QC', 'DISPATCH', 'PLANNING', 'ACCOUNTS']
 const SECTIONS = ['NANO', 'BOTANICAL', 'LIQUID', 'POWDER', 'GRANULES']
@@ -58,12 +59,14 @@ function EmployeeForm({ initial, onSave, onCancel }) {
         <div>
           <label className="block text-xs font-semibold text-gray-500 mb-1">Email</label>
           <input type="email" value={form.email} onChange={e => set('email', e.target.value)}
+            onBlur={e => set('email', normalizeEmailInput(e.target.value))}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
             placeholder="optional" />
         </div>
         <div>
           <label className="block text-xs font-semibold text-gray-500 mb-1">Phone</label>
           <input value={form.phone} onChange={e => set('phone', e.target.value)}
+            onBlur={e => set('phone', normalizePhoneInput(e.target.value))}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
             placeholder="optional" />
         </div>

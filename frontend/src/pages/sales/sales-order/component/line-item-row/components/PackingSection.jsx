@@ -1,10 +1,9 @@
 import { calcTotalCS } from "../../../shared/utils.js";
-import PackSelect from "./PackSelect.jsx";
 
 const field = "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none";
 const label = "block text-xs font-semibold text-gray-500 mb-1";
 
-export default function PackingSection({ item, idx, onChange, set, primaryMaterials, secondaryMaterials }) {
+export default function PackingSection({ item, idx, onChange, set }) {
   return (
     <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: "12px" }}>
       <p style={{ fontSize: "11px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "10px" }}>
@@ -20,11 +19,11 @@ export default function PackingSection({ item, idx, onChange, set, primaryMateri
               (bottle / pouch / jar)
             </span>
           </label>
-          <PackSelect
+          <input
             value={item.unitPackType || ''}
-            onChange={v => set('unitPackType', v)}
-            materials={primaryMaterials}
-            placeholder="Select Primary"
+            onChange={e => set('unitPackType', e.target.value)}
+            className={field}
+            placeholder="e.g. 500ml Bottle"
           />
         </div>
 
@@ -36,11 +35,11 @@ export default function PackingSection({ item, idx, onChange, set, primaryMateri
               (box / drum / bag)
             </span>
           </label>
-          <PackSelect
+          <input
             value={item.packingType || ''}
-            onChange={v => set('packingType', v)}
-            materials={secondaryMaterials}
-            placeholder="Select Secondary"
+            onChange={e => set('packingType', e.target.value)}
+            className={field}
+            placeholder="e.g. Carton of 12"
           />
         </div>
 

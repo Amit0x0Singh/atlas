@@ -76,7 +76,7 @@ export function normalizeGeneral(value) {
     .trim();
 }
 
-// Business data (Company/Supplier/Customer/Product/RM/Packing-Material/
+// Business data (Company/Supplier/Customer/Product/RM/
 // Employee/Equipment/Plant/Warehouse Name, Address, Remarks, Notes,
 // Description) — general normalization only, case preserved exactly as
 // typed. Alias (not a reimplementation) so it can never drift from

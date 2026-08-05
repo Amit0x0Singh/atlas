@@ -1,8 +1,6 @@
 import { useState, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { Plus, Package } from 'lucide-react'
 import { useRmMaster, useCreateRm, useUpdateRm, useDeleteRm } from '../../../../hooks/inventory/useRmMaster.js'
-import { usePackingMaterials } from '../../../../hooks/masters/usePackingMaterials.js'
 import './RmMaster.css'
 import { Button, BackButton, PageHeader } from '../../../../components/ui'
 import RmTable from '../components/rm-table/page/RmTable.jsx'
@@ -10,8 +8,6 @@ import RmForm  from '../components/rm-form/RmForm.jsx'
 import RmDetailModal from '../components/rm-detail-modal/RmDetailModal.jsx'
 
 export default function RmMaster() {
-  const navigate = useNavigate()
-
   const [filters, setFilters]   = useState({ itemCode: '', itemName: '', conversionRequired: '' })
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing]   = useState(null)
@@ -21,14 +17,9 @@ export default function RmMaster() {
   const [page, setPage]         = useState(1)
   const [limit, setLimit]       = useState(15)
 
-  // Both lists load in full, cached for 30 min (CACHE.MASTER) — every filter
-  // (code, name, conversion required) is then applied client-side below.
-  // Packing materials live in their own table (packing_materials) — fetched
-  // here purely so they can be *displayed* alongside RM items in one unified
-  // overview table. Nothing about the two schemas merges; editing a packing
-  // item still only happens on the dedicated Packing Materials page.
+  // Loads in full, cached for 30 min (CACHE.MASTER) — every filter (code,
+  // name, conversion required) is then applied client-side below.
   const { data: items = [], isLoading: loading, error: rmError } = useRmMaster()
-  const { data: packingItems = [], isLoading: loadingPacking } = usePackingMaterials()
   const error = rmError?.message || ''
 
   const createRm = useCreateRm()
@@ -80,20 +71,7 @@ export default function RmMaster() {
     try { await deleteRm.mutateAsync(code) } catch (e) { alert(e.message) }
   }
 
-  const goToPacking = () => navigate('/packing-master')
-
   const matchesText = (val, q) => !q || (val || '').toLowerCase().includes(q)
-
-  // Conversion Required is an RM-only concept — packing rows have no such
-  // attribute, so they drop out of the list whenever that filter is active.
-  const visiblePacking = useMemo(() => {
-    if (filters.conversionRequired) return []
-    const code = filters.itemCode.trim().toLowerCase()
-    const name = filters.itemName.trim().toLowerCase()
-    return packingItems
-      .filter(p => matchesText(p.itemCode, code) && matchesText(p.itemName, name))
-      .map(p => ({ ...p, kind: 'packing' }))
-  }, [packingItems, filters])
 
   const visibleRm = useMemo(() => {
     const code = filters.itemCode.trim().toLowerCase()
@@ -107,7 +85,7 @@ export default function RmMaster() {
       .map(i => ({ ...i, kind: 'rm' }))
   }, [items, filters])
 
-  const visibleItems = [...visibleRm, ...visiblePacking]
+  const visibleItems = visibleRm
 
   const setFilter = (field, value) => { setFilters(f => ({ ...f, [field]: value })); setPage(1) }
   const clearFilters = () => { setFilters({ itemCode: '', itemName: '', conversionRequired: '' }); setPage(1) }
@@ -129,7 +107,7 @@ export default function RmMaster() {
       <div className="p-6">
         <RmTable
           visibleItems={visibleItems}
-          loading={loading || loadingPacking}
+          loading={loading}
           error={error}
           page={page}
           limit={limit}
@@ -138,7 +116,6 @@ export default function RmMaster() {
           onClearFilters={clearFilters}
           onEdit={openEdit}
           onDelete={del}
-          onViewPacking={goToPacking}
           onRowClick={setViewing}
           onPageChange={setPage}
           onLimitChange={l => { setLimit(l); setPage(1) }}

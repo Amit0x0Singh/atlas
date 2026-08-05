@@ -16,7 +16,7 @@ const SECRET_NAME_RE = /password|token|secret|apikey|api_key|refreshtoken|signat
 const EMAIL_NAME_RE = /email/i
 const USERNAME_NAME_RE = /^username$/i
 const PHONE_NAME_RE = /phone|mobile/i
-const CODE_NAME_RE = /code$|Code$|gstin|pan$|sku$|invoicePrefix|vehicleNo|lotNo|batchId|batchCode|batchNo|planId|soId|taskId|sendId|diNo|diNumber|itemCode|productCode/i
+const CODE_NAME_RE = /code$|Code$|gstin|pan$|sku$|invoicePrefix|invoiceNo|invoiceNumber|vehicleNo|lotNo|batchId|batchCode|batchNo|planId|soId|taskId|sendId|diNo|diNumber|itemCode|productCode/i
 const FREE_TEXT_NAME_RE = /name$|Name$|address|remarks|notes|description|desc$|instruction/i
 // Fixed-vocabulary/dropdown-driven fields this codebase compares against
 // UPPERCASE literals (=== 'PENDING', === 'PACK', etc.) — per explicit user

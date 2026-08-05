@@ -91,6 +91,8 @@ export default function RestoreBackupModal({ open, onClose, onDone, presetJob })
   // re-inserts the specific rows it contains; it never wipes the table
   // first, so the warning here is materially less scary than for a FULL
   // backup and should say so rather than implying the whole table is at risk.
+  const isExcelUpload = !selectedBackup && file && /\.xlsx$/i.test(file.name);
+
   const confirmMessage = selectedBackup
     ? selectedBackup.scope === 'PARTIAL'
       ? <>This will re-insert the previously removed row(s) from "{selectedBackup.name}" into <strong>{selectedBackup.tableCount} table(s)</strong>. It will not remove or alter any other current data in these tables.</>
@@ -114,8 +116,11 @@ export default function RestoreBackupModal({ open, onClose, onDone, presetJob })
             </button>
             <label className="flex flex-col items-center gap-2 p-5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-sm cursor-pointer">
               <Upload size={22} className="text-blue-600" />
-              Upload a file
-              <input type="file" accept=".gz" className="hidden" onChange={(e) => handleFileChosen(e.target.files?.[0])} />
+              <span className="text-center">
+                Upload a file
+                <span className="block text-[11px] font-normal text-slate-400 mt-0.5">.gz backup or .xlsx export</span>
+              </span>
+              <input type="file" accept=".gz,.xlsx" className="hidden" onChange={(e) => handleFileChosen(e.target.files?.[0])} />
             </label>
           </div>
         )}
@@ -143,6 +148,11 @@ export default function RestoreBackupModal({ open, onClose, onDone, presetJob })
               <AlertTriangle size={22} />
             </div>
             <div className="text-sm text-slate-500 dark:text-slate-400">{confirmMessage}</div>
+            {isExcelUpload && (
+              <div className="mt-3 text-left text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 rounded-lg px-3 py-2.5">
+                <strong>Restoring from an Excel export.</strong> Values were reformatted for readability when this file was created — decimal/quantity precision and JSON-type fields may come back slightly different from the original backup. Use the original .gz backup instead when exact fidelity matters.
+              </div>
+            )}
             {error && <p className="text-sm text-red-600 dark:text-red-400 mt-3">{error}</p>}
             <div className="flex gap-3 mt-6">
               <Button variant="secondary" fullWidth onClick={handleClose} disabled={submitting}>Cancel</Button>

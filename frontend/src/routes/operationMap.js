@@ -11,7 +11,6 @@ export const OPERATION_ROUTES = [
   { prefix: '/containers',      operation: 'store' },
   { prefix: '/ledger',          operation: 'store' },
   { prefix: '/grn',             operation: 'store' },
-  { prefix: '/location-master', operation: 'store' },
   { prefix: '/indent',          operation: 'store' },
   { prefix: '/print-master',    operation: 'store' },
 
@@ -40,7 +39,6 @@ export const OPERATION_ROUTES = [
   { prefix: '/rm-material',     operation: 'store' },
 
   // Master Data and Data Import stay admin-only — view and edit.
-  { prefix: '/packing-master',  operation: 'admin' },
   { prefix: '/rm-master',       operation: 'admin' },
   { prefix: '/product-master',  operation: 'admin' },
   { prefix: '/equipment-master', operation: 'admin' },

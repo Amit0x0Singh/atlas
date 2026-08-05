@@ -8,8 +8,8 @@
  * quantities in arithmetic.
  *
  * Every write path that accepts a user-typed unit (RM Master, Print Master /
- * pack generation, Container, Bulk Location, Recipe/BOM, Packing Material)
- * must run its (qty, unit) pair through `toCanonical()` before saving, so the
+ * pack generation, Container, Recipe/BOM) must run its (qty, unit) pair
+ * through `toCanonical()` before saving, so the
  * DB — and therefore every downstream calculation that sums or multiplies
  * quantities from different tables — only ever deals in KG/L/NOS.
  *

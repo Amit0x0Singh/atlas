@@ -2,7 +2,7 @@ import { IconButton } from "../../../../../components/ui";
 import { X } from "lucide-react";
 import CreateSalesOrder from "../create-sales-order/create-sales-order.jsx";
 
-export default function NewOrderModal({ editing, products, profiles, packingMaterials, onSave, onClose }) {
+export default function NewOrderModal({ editing, products, profiles, onSave, onClose }) {
   return (
     <div
       style={{
@@ -72,7 +72,6 @@ export default function NewOrderModal({ editing, products, profiles, packingMate
             initial={editing || undefined}
             products={products}
             profiles={profiles}
-            packingMaterials={packingMaterials}
             onSave={onSave}
             onCancel={onClose}
           />

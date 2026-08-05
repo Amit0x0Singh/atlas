@@ -5,6 +5,7 @@ import Button from '../common/Button.jsx';
 import Input from '../common/Input.jsx';
 import Select from '../common/Select.jsx';
 import FormSection from './FormSection.jsx';
+import { normalizeEmailInput, normalizePhoneInput, isPhoneFieldName } from '../../utils/textNormalize.js';
 
 function toInputValue(value, type) {
   if (value === null || value === undefined) return '';
@@ -23,13 +24,20 @@ function toInputValue(value, type) {
   return value ?? '';
 }
 
-function normalizeValue(value, type) {
+// Live-typing UX only — the backend's Client Extension is what actually
+// guarantees correct storage regardless of what gets sent, so this is a
+// safety net for the two field kinds normalized here (email/phone), not the
+// source of truth. Fixed-vocabulary/select fields are never touched, same
+// as the backend's own rule (see field-normalization-rules.js).
+function normalizeValue(value, type, fieldName) {
   if (value === '') return null;
   if (type === 'number') return Number(value);
   if (type === 'tags') return String(value).split(',').map((s) => s.trim()).filter(Boolean);
   if (type === 'json') return JSON.parse(value);
   if (type === 'datetime-local') return new Date(value).toISOString();
   if (type === 'date') return new Date(`${value}T00:00:00`).toISOString();
+  if (type === 'email') return normalizeEmailInput(value);
+  if (isPhoneFieldName(fieldName)) return normalizePhoneInput(value);
   return value;
 }
 
@@ -58,7 +66,7 @@ export default function DataFormModal({ mode, resource, record, onClose, onSubmi
     const payload = {};
     editableFields.forEach((field) => {
       if (field.readOnly) return;
-      payload[field.name] = normalizeValue(form[field.name], field.type);
+      payload[field.name] = normalizeValue(form[field.name], field.type, field.name);
     });
     onSubmit(payload);
   }
@@ -134,6 +142,10 @@ export default function DataFormModal({ mode, resource, record, onClose, onSubmi
                   placeholder={field.type === 'tags' ? 'Comma separated values' : undefined}
                   value={form[field.name] ?? ''}
                   onChange={(e) => updateField(field.name, e.target.value)}
+                  onBlur={(e) => {
+                    if (field.type === 'email') updateField(field.name, normalizeEmailInput(e.target.value));
+                    else if (isPhoneFieldName(field.name)) updateField(field.name, normalizePhoneInput(e.target.value));
+                  }}
                 />
               );
             })}

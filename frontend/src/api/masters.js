@@ -18,13 +18,6 @@ export const equipmentApi = {
   delete: (id)         => api.delete(`/equipment/${id}`),
 }
 
-export const packingMaterialApi = {
-  list:   ()           => api.get('/packing-materials'),
-  create: (data)       => api.post('/packing-materials', data),
-  update: (id, data)   => api.put(`/packing-materials/${id}`, data),
-  delete: (id)         => api.delete(`/packing-materials/${id}`),
-}
-
 export const recipeApi = {
   list:           (params)   => api.get('/recipe', { params }),
   products:       ()         => api.get('/recipe/products'),

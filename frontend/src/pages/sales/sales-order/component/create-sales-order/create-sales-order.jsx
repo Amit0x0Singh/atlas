@@ -27,7 +27,6 @@ export default function CreateSalesOrder({
   initial,
   products,
   profiles,
-  packingMaterials,
   onSave,
   onCancel,
 }) {
@@ -198,7 +197,6 @@ export default function CreateSalesOrder({
               idx={idx}
               products={products}
               cpProfiles={cpProfiles}
-              packingMaterials={packingMaterials}
               onChange={(i, u) =>
                 setItems((it) => it.map((x, j) => (j === i ? u : x)))
               }

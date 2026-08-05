@@ -2,9 +2,6 @@
 //
 // Models in this file:
 //   RmMaster         — Raw material catalogue (item code, name, UOM, tracking type)
-//   BulkLocation     — Physical storage locations for bulk (non-pack) raw materials
-//   BulkLotEntry     — Individual lot records within a bulk location
-//   BulkLotSequence  — Auto-increment sequence for bulk lot numbers (per item/year)
 //   PrintMaster      — Header: one row per item generated within a Gate Inward entry
 //   PackDetail       — One row per physical bag: scan/inward status + remaining qty
 //   ContainerMaster  — Reusable containers (drums, IBC, etc.) with current fill level
@@ -49,49 +46,6 @@ model RmMaster {
   updatedAt          DateTime @updatedAt @map("updated_at")
 
   @@map("rm_master")
-}
-
-// ─── BULK TRACKING ───────────────────────────────────────────────────────────
-
-model BulkLocation {
-  locationId   String         @id @map("location_id") // e.g. LOC-001, LOC-SHELF-A2
-  locationName String         @map("location_name")
-  itemCode     String         @map("item_code")
-  itemName     String         @map("item_name")
-  uom          String         @default("KG")
-  createdAt    DateTime       @default(now()) @map("created_at")
-  lotEntries   BulkLotEntry[]
-
-  @@map("bulk_location")
-}
-
-model BulkLotEntry {
-  id           String       @id @default(cuid())
-  locationId   String       @map("location_id")
-  itemCode     String       @map("item_code")
-  itemName     String       @map("item_name")
-  lotNo        String       @map("lot_no") // e.g. BULK-151464-2026-001
-  supplier     String?
-  invoiceNo    String?      @map("invoice_no")
-  receivedDate DateTime?    @map("received_date")
-  receivedQty  Float        @map("received_qty")
-  remainingQty Float        @map("remaining_qty")
-  uom          String       @default("KG")
-  status       String       @default("ACTIVE") // ACTIVE | EXHAUSTED
-  createdAt    DateTime     @default(now()) @map("created_at")
-  updatedAt    DateTime     @updatedAt @map("updated_at")
-  location     BulkLocation @relation(fields: [locationId], references: [locationId])
-
-  @@map("bulk_lot_entry")
-}
-
-model BulkLotSequence {
-  itemCode String @map("item_code")
-  year     Int
-  seq      Int    @default(0)
-
-  @@id([itemCode, year])
-  @@map("bulk_lot_sequence")
 }
 
 // ─── PACK TRACKING ───────────────────────────────────────────────────────────
