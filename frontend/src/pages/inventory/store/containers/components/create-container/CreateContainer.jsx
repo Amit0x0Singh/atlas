@@ -15,7 +15,12 @@ export default function CreateContainer({ onCreated }) {
   const inputRef = useRef(null)
 
   useEffect(() => {
-    rmApi.list().then(r => setAllRms(r.data || [])).catch(() => {})
+    // Containers are only created for raw materials — items tagged with the
+    // "Packing Material" category in RM Master shouldn't appear here.
+    rmApi.list().then(r => {
+      const rms = (r.data || []).filter(rm => (rm.category || '').trim().toLowerCase() !== 'packing material')
+      setAllRms(rms)
+    }).catch(() => {})
   }, [])
 
   const handleQueryChange = (val) => {
