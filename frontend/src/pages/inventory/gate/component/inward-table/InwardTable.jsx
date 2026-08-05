@@ -25,7 +25,7 @@ function DeleteRequestBadge() {
   return <span className="it-del-badge">Delete Requested</span>;
 }
 
-export default function InwardTable({ list, total, onOpenDetail, onRequestDelete }) {
+export default function InwardTable({ list, total, onRequestDelete }) {
   const [limit, setLimit] = useState(15);
   const [page, setPage] = useState(1);
   const paginated = list.slice((page - 1) * limit, page * limit);
@@ -86,14 +86,6 @@ export default function InwardTable({ list, total, onOpenDetail, onRequestDelete
                 </td>
                 <td className="it-td">
                   <div className="it-actions">
-                    <Button
-                      variant="outline"
-                      size="xs"
-                      onClick={() => onOpenDetail(item.inward_id || item.inwardId)}
-                    >
-                      Details
-                    </Button>
-
                     {item.request_delete ? (
                       <DeleteRequestBadge />
                     ) : (

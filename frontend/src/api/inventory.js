@@ -115,7 +115,6 @@ export const gateApi = {
   // existing Gate Inward selected) — company is assigned server-side.
   createManualInward:   (data)     => api.post('/gate/inward/manual', data),
   inwardList:           (params)   => api.get('/gate/inward', { params }),
-  inwardDetail:         (id)       => api.get(`/gate/inward/${id}`),
   updateInward:         (id, data) => api.patch(`/gate/inward/${id}/status`, data),
   requestDeleteInward:  (id)       => api.patch(`/gate/inward/${id}/request-delete`),
   deleteInward:         (id)       => api.delete(`/gate/inward/${id}`),
