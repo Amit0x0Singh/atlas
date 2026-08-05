@@ -1,11 +1,26 @@
 import { useState, useMemo } from 'react'
 import { Plus, Package } from 'lucide-react'
 import { useRmMaster, useCreateRm, useUpdateRm, useDeleteRm } from '../../../../hooks/inventory/useRmMaster.js'
+import { normalizeUom } from '../../../../utils/uom.js'
 import './RmMaster.css'
 import { Button, BackButton, PageHeader } from '../../../../components/ui'
 import RmTable from '../components/rm-table/page/RmTable.jsx'
 import RmForm  from '../components/rm-form/RmForm.jsx'
 import RmDetailModal from '../components/rm-detail-modal/RmDetailModal.jsx'
+
+// Case-insensitive de-dupe (matches the app's text-normalization standard —
+// trim + compare case-insensitively) that still preserves whichever casing
+// was actually typed for display, sorted alphabetically.
+function uniqueSortedValues(values) {
+  const seen = new Map() // lowercased -> first-seen original casing
+  for (const raw of values) {
+    const trimmed = (raw || '').trim()
+    if (!trimmed) continue
+    const key = trimmed.toLowerCase()
+    if (!seen.has(key)) seen.set(key, trimmed)
+  }
+  return [...seen.values()].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))
+}
 
 export default function RmMaster() {
   const [filters, setFilters]   = useState({ itemCode: '', itemName: '', conversionRequired: '' })
@@ -22,6 +37,12 @@ export default function RmMaster() {
   const { data: items = [], isLoading: loading, error: rmError } = useRmMaster()
   const error = rmError?.message || ''
 
+  // Category / Sub Category dropdown options — sourced entirely from
+  // existing RM Master data, never hardcoded, so the list always reflects
+  // whatever values are actually in use.
+  const categories    = useMemo(() => uniqueSortedValues(items.map(i => i.category)), [items])
+  const subCategories = useMemo(() => uniqueSortedValues(items.map(i => i.subCategory)), [items])
+
   const createRm = useCreateRm()
   const updateRm = useUpdateRm()
   const deleteRm = useDeleteRm()
@@ -35,7 +56,16 @@ export default function RmMaster() {
   const openEdit = (item) => {
     setEditing(item)
     setForm({
-      itemCode: item.itemCode, itemName: item.itemName, inventoryUom: item.inventoryUom, operationalUom: item.operationalUom || '', trackingType: item.trackingType || 'PACK',
+      // Both UOM selects only offer CANONICAL_UNITS ('KG'/'L'/'NOS') as
+      // options — re-running the stored value through normalizeUom() before
+      // populating the form guards against older/imported rows that saved a
+      // non-canonical casing/alias (e.g. "Kg"), which would otherwise match
+      // no <option> and silently fall back to the placeholder instead of
+      // showing the item's actual value.
+      itemCode: item.itemCode, itemName: item.itemName,
+      inventoryUom: normalizeUom(item.inventoryUom) || item.inventoryUom,
+      operationalUom: item.operationalUom ? (normalizeUom(item.operationalUom) || item.operationalUom) : '',
+      trackingType: item.trackingType || 'PACK',
       category: item.category || '', subCategory: item.subCategory || '', state: item.state || '', density: item.density ?? '',
       conversionRequired: !!item.conversionRequired,
       lowStockLevel: item.lowStockLevel ?? '', highStockLevel: item.highStockLevel ?? '',
@@ -136,6 +166,8 @@ export default function RmMaster() {
           msg={msg}
           onSave={save}
           onClose={() => setShowForm(false)}
+          categories={categories}
+          subCategories={subCategories}
         />
       )}
 

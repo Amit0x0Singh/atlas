@@ -1,6 +1,7 @@
 ﻿import { Save, X, Package, Hash, Beaker, Layers, Gauge } from 'lucide-react'
 import { Button, IconButton, InfoTooltip } from '../../../../../components/ui'
 import { CANONICAL_UNITS } from '../../../../../utils/uom.js'
+import RestrictedSearchSelect from './RestrictedSearchSelect.jsx'
 import './RmForm.css'
 
 const LABEL = 'block text-xs font-medium text-gray-700 mb-1'
@@ -18,7 +19,7 @@ function SectionHeading({ icon: Icon, tone, children }) {
   )
 }
 
-export default function RmForm({ editing, form, onChange, saving, msg, onSave, onClose }) {
+export default function RmForm({ editing, form, onChange, saving, msg, onSave, onClose, categories = [], subCategories = [] }) {
   // Mirrors the backend guard exactly (rm-master.controller.js) — density is
   // only actually required once the two UOMs genuinely differ, regardless of
   // physical State (that field is just classification, not what drives the
@@ -152,19 +153,21 @@ export default function RmForm({ editing, form, onChange, saving, msg, onSave, o
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div>
                 <label className={LABEL}>Category</label>
-                <input
+                <RestrictedSearchSelect
                   value={form.category || ''}
-                  onChange={e => onChange('category', e.target.value)}
-                  placeholder="e.g. Solvent"
+                  options={categories}
+                  onChange={v => onChange('category', v)}
+                  placeholder="Search category..."
                   className={FIELD}
                 />
               </div>
               <div>
                 <label className={LABEL}>Sub Category</label>
-                <input
+                <RestrictedSearchSelect
                   value={form.subCategory || ''}
-                  onChange={e => onChange('subCategory', e.target.value)}
-                  placeholder="e.g. Alcohol"
+                  options={subCategories}
+                  onChange={v => onChange('subCategory', v)}
+                  placeholder="Search sub category..."
                   className={FIELD}
                 />
               </div>
