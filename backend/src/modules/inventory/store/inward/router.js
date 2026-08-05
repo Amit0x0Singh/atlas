@@ -2,7 +2,7 @@ import express from 'express'
 import { authenticate, authorize } from '../../../../middleware/auth.js'
 import {
   getPendingInwardGroups, getNextLotNumber, listPacks, getPackById,
-  getPackLabel, getBatchLabels, generatePacks,
+  getPackLabel, getBatchLabels, getBatchLabelsMulti, generatePacks,
   listInward, listActiveSessions, getSession
 } from './get/inward.controller.js'
 import { scanPack, batchScanPack, submitLot } from './create/inward.controller.js'
@@ -17,6 +17,7 @@ InwardRouter.get('/packs/pending-inward', authenticate, getPendingInwardGroups)
 InwardRouter.get('/packs/next-lot/:itemCode', authenticate, getNextLotNumber)
 InwardRouter.get('/packs/label/:packId', getPackLabel)
 InwardRouter.get('/packs/labels/lot/:itemCode/:lotNo', getBatchLabels)
+InwardRouter.get('/packs/labels/batch', getBatchLabelsMulti)
 InwardRouter.get('/packs/:packId', authenticate, getPackById)
 InwardRouter.get('/packs', authenticate, listPacks)
 InwardRouter.post('/packs/generate', authenticate, storeOrAbove, generatePacks)

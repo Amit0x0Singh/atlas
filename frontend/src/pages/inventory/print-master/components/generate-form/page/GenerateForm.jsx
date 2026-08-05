@@ -22,6 +22,11 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed, onUnlin
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState("");
   const [linkedEntry, setLinkedEntry] = useState(null);
+  // Bumped on every reset so ItemLine (and its nested search/lot state) is
+  // remounted instead of reused — items.map(key={i}) alone keeps the same
+  // key across a reset, so the old search text/lot number would otherwise
+  // survive in the still-mounted component even after `items` is cleared.
+  const [formVersion, setFormVersion] = useState(0);
 
   // Pending-entry count for the "Incoming Gate Entries" button badge —
   // polls so it stays current even when another user (e.g. Security)
@@ -115,12 +120,23 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed, onUnlin
         });
         allResults.push(res.data);
       }
+
+      // Snapshot summary info before the form state below is cleared.
+      const totalPacks  = allResults.reduce((n, r) => n + (r?.packs?.length || 0), 0);
+      const itemNames   = items.map(it => it.selectedItem.itemName);
+      const lotNumbers  = allResults.map(r => r.lotNo);
+      const groups      = items.map((it, idx) => ({ itemCode: it.selectedItem.itemCode, lotNo: allResults[idx]?.lotNo }));
+      const invoiceNo   = hdr.invoiceNo;
+
+      // Full reset — clears header, items/batches, the linked gate entry,
+      // and remounts ItemLine (via formVersion) so no stale item search text
+      // or lot number lingers for the next entry.
       setItems([BLANK_ITEM()]);
       setHdr(BLANK_HDR);
+      setFormVersion(v => v + 1);
       try { await updateGateStatus.mutateAsync({ id: gateInwardId, data: { status: "approved" } }) } catch { /* ignore */ }
       setLinkedEntry(null);
-      const totalPacks = allResults.reduce((n, r) => n + (r?.packs?.length || 0), 0);
-      onGenerated?.({ results: allResults, totalPacks });
+      onGenerated?.({ results: allResults, totalPacks, itemNames, invoiceNo, lotNumbers, groups });
       onGateUsed?.();
     } catch (ex) {
       setError(ex.message);
@@ -225,7 +241,7 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed, onUnlin
           <div className="gf-items-grid">
             {items.map((it, i) => (
               <ItemLine
-                key={i}
+                key={`${formVersion}-${i}`}
                 idx={i}
                 item={it}
                 rmList={rmList}

@@ -143,6 +143,45 @@ const getBatchLabels = async (req, res) => {
   }
 }
 
+// Same as getBatchLabels but spans multiple (itemCode, lotNo) lots merged
+// into one PDF — used by Print Master's post-generation dialog when a single
+// submission produced several items/lots at once. `pairs` is a JSON-encoded
+// array of { itemCode, lotNo } so this stays a plain GET, openable directly
+// in a new tab like its single-lot sibling (no auth header required).
+const getBatchLabelsMulti = async (req, res) => {
+  const { pairs, download } = req.query;
+  try {
+    let groups;
+    try { groups = JSON.parse(pairs); } catch { groups = null; }
+    if (!Array.isArray(groups) || groups.length === 0)
+      return res.status(400).json({ success: false, error: "pairs must be a JSON array of {itemCode, lotNo}", code: 'VALIDATION_ERROR' });
+
+    const bags = await prisma.packDetail.findMany({
+      where: {
+        OR: groups.map((g) => ({
+          itemCode: String(g.itemCode),
+          printMaster: { lotNo: String(g.lotNo) },
+        })),
+      },
+      include: packDetailInclude,
+      orderBy: [{ printMaster: { createdAt: "asc" } }, { bagNo: "asc" }],
+    });
+
+    if (!bags.length)
+      return res.status(404).json({ success: false, error: "No packs found", code: 'NOT_FOUND' });
+
+    const flatPacks = bags.map(flattenPack);
+    const buf = await generateBatchLabelBuffer(flatPacks);
+    const filename = `qr-labels-${Date.now()}.pdf`;
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `${download ? "attachment" : "inline"}; filename="${filename}"`);
+    return res.send(buf);
+
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
+  }
+}
+
 const generatePacks = async (req, res) => {
   // `batches` — one or more { numberOfBags, customerBatchCode?, expiryDate? }
   // groups, so different bag ranges within the same lot can carry different
@@ -236,6 +275,7 @@ export {
   getPackById,
   getPackLabel,
   getBatchLabels,
+  getBatchLabelsMulti,
   generatePacks,
   listInward,
   listActiveSessions,

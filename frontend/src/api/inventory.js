@@ -18,6 +18,11 @@ export const packsApi = {
   pendingInward:  ()                => api.get('/packs/pending-inward'),
   labelUrl:       (packId)          => `/api/packs/label/${encodeURIComponent(packId)}`,
   batchLabelsUrl: (itemCode, lotNo) => `/api/packs/labels/lot/${itemCode}/${encodeURIComponent(lotNo)}`,
+  // `groups` — [{ itemCode, lotNo }] — merges labels from multiple lots
+  // (e.g. several items generated in one Print Master submission) into a
+  // single PDF; `download` forces a Content-Disposition attachment.
+  batchLabelsMultiUrl: (groups, { download = false } = {}) =>
+    `/api/packs/labels/batch?pairs=${encodeURIComponent(JSON.stringify(groups))}${download ? '&download=1' : ''}`,
 }
 
 // Scan/submit are scoped by (itemCode, lotNo) — one Print Master header —
