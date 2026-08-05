@@ -61,6 +61,17 @@
   border-color: #f97316;
 }
 
+.of-input--error {
+  border-color: #dc2626;
+}
+
+.of-field-error {
+  margin: 5px 0 0;
+  font-size: 11px;
+  color: #dc2626;
+  font-weight: 600;
+}
+
 .of-actions {
   display: flex;
   gap: 8px;

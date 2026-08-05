@@ -15,7 +15,13 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (res) => res.data,
   (err) => {
-    const message = err.response?.data?.error || err.message || 'Network error'
+    // Field-level validation failures (see middleware/preprocessing/validate.js)
+    // come back as { errors: [...] } rather than a single `error` string —
+    // join them so callers see exactly which fields failed instead of a
+    // generic "Request failed with status code 400".
+    const data = err.response?.data
+    const message = (Array.isArray(data?.errors) && data.errors.length ? data.errors.join('; ') : null)
+      || data?.error || err.message || 'Network error'
     if (err.response?.status === 401 && !err.config?.url?.includes('/auth/login')) {
       localStorage.removeItem('erp_token')
       localStorage.removeItem('erp_user')

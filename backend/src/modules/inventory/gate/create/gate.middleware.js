@@ -11,13 +11,15 @@ import { VALID_COMPANIES } from './gate.controller.js'
 // invoice_no / vehicle_no are already covered by the pipeline's default
 // identifier-pattern guard (they match `_no$`), listed here explicitly so
 // the intent is visible at the call site without having to know that.
+// All four fields are mandatory — mirrors validateGateOutward below so
+// Inward and Outward enforce the same completeness rules.
 export const validateGateInward = preprocess({
   excludeFromConversion: ['invoice_no', 'vehicle_no'],
   schema: {
     supplier_name: { required: true, minLength: 2, maxLength: 150 },
     company:       { required: true, enum: VALID_COMPANIES },
-    invoice_no:    { maxLength: 50 },
-    vehicle_no:    { maxLength: 20 },
+    invoice_no:    { required: true, maxLength: 50 },
+    vehicle_no:    { required: true, maxLength: 20 },
   },
 })
 
@@ -33,9 +35,9 @@ export const validateManualGateInward = preprocess({
 export const validateGateOutward = preprocess({
   excludeFromConversion: ['invoice_no', 'vehicle_no'],
   schema: {
-    receiver_name: { maxLength: 150 },
+    receiver_name: { required: true, minLength: 2, maxLength: 150 },
     company:       { required: true, enum: VALID_COMPANIES },
-    invoice_no:    { maxLength: 50 },
-    vehicle_no:    { maxLength: 20 },
+    invoice_no:    { required: true, maxLength: 50 },
+    vehicle_no:    { required: true, maxLength: 20 },
   },
 })

@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 // suggestion, or by typing one out exactly. Typing something that matches
 // no supplier leaves the committed value empty, even though the input still
 // shows whatever text was typed.
-export default function SupplierAutocomplete({ value, suppliers, onChange, placeholder }) {
+export default function SupplierAutocomplete({ value, suppliers, onChange, placeholder, hasError }) {
   const [query, setQuery] = useState(value || "");
   const [open, setOpen] = useState(false);
   const lastCommitted = useRef(value || "");
@@ -53,7 +53,7 @@ export default function SupplierAutocomplete({ value, suppliers, onChange, place
         onFocus={() => setOpen(true)}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
         placeholder={placeholder}
-        className="if-input"
+        className={`if-input${hasError ? " if-input--error" : ""}`}
         autoComplete="off"
         role="combobox"
         aria-expanded={open}
