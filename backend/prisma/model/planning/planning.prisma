@@ -60,6 +60,8 @@ model ProductionPlan {
   remarks        String?
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
+  createdBy      String?  @map("created_by") @db.VarChar(255)
+  updatedBy      String?  @map("updated_by") @db.VarChar(255)
 
   @@map("production_plan")
 }
@@ -105,6 +107,10 @@ model BomSend {
   sentAt      DateTime  @default(now()) @map("sent_at")
   pickedAt    DateTime? @map("picked_at")
   issuedAt    DateTime? @map("issued_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  createdBy   String?   @map("created_by") @db.VarChar(255)
+  updatedBy   String?   @map("updated_by") @db.VarChar(255)
 
   @@map("bom_send")
 }

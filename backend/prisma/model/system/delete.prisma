@@ -27,7 +27,10 @@ model DeleteJob {
   errorMessage   String?    @map("error_message")
   remarks        String?
   createdAt      DateTime   @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt      DateTime   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
   completedAt    DateTime?  @map("completed_at") @db.Timestamptz()
+  createdBy      String?    @map("created_by") @db.VarChar(200)
+  updatedBy      String?    @map("updated_by") @db.VarChar(200)
 
   @@map("delete_jobs")
 }

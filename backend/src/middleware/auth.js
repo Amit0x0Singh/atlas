@@ -6,6 +6,7 @@
  */
 import { createHmac } from "crypto";
 import { findAccount } from "../../access.js";
+import { runWithRequestContext } from "../utils/request-context.js";
 
 const JWT_SECRET =
   process.env.JWT_SECRET || "som-erp-super-secret-change-in-production-2026";
@@ -80,7 +81,10 @@ const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 export function authenticate(req, res, next) {
   if (BYPASS_AUTH) {
     req.user = DEV_USER;
-    return next();
+    // Rest of this request's middleware/controller chain runs inside this
+    // context — see request-context.js — so the audit-stamp Prisma
+    // extension can attribute any write it makes to this account.
+    return runWithRequestContext({ userEmail: req.user.email }, next);
   }
   try {
     const authHeader = req.headers.authorization;
@@ -104,7 +108,7 @@ export function authenticate(req, res, next) {
         error: "Read-only account — this operation requires an administrator account.",
       });
     }
-    next();
+    return runWithRequestContext({ userEmail: req.user.email }, next);
   } catch (err) {
     return res
       .status(401)

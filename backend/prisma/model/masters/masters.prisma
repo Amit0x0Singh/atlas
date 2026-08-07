@@ -199,4 +199,3 @@ model GateLotSequence {
   @@id([itemCode, year])
   @@map("gate_lot_sequences")
 }
-

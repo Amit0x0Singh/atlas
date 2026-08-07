@@ -44,6 +44,8 @@ model RmMaster {
   highStockLevel     Float?   @map("high_stock_level")
   createdAt          DateTime @default(now()) @map("created_at")
   updatedAt          DateTime @updatedAt @map("updated_at")
+  createdBy          String?  @map("created_by") @db.VarChar(255)
+  updatedBy          String?  @map("updated_by") @db.VarChar(255)
 
   @@map("rm_master")
 }
@@ -63,15 +65,18 @@ model LotSequence {
 // Supplier/invoice/received-date live on the linked GateInward and are not
 // duplicated here (see gateInward relation).
 model PrintMaster {
-  id                String    @id @default(cuid())
-  gateInwardId      String    @map("gate_inward_id") @db.Uuid
-  itemCode          String    @map("item_code")
-  itemName          String    @map("item_name")
-  lotNo             String    @map("lot_no")
-  packQty           Float     @map("pack_qty")
-  numberOfBags      Int       @map("number_of_bags")
-  uom               String
-  createdAt         DateTime  @default(now()) @map("created_at")
+  id           String   @id @default(cuid())
+  gateInwardId String   @map("gate_inward_id") @db.Uuid
+  itemCode     String   @map("item_code")
+  itemName     String   @map("item_name")
+  lotNo        String   @map("lot_no")
+  packQty      Float    @map("pack_qty")
+  numberOfBags Int      @map("number_of_bags")
+  uom          String
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  createdBy    String?  @map("created_by") @db.VarChar(255)
+  updatedBy    String?  @map("updated_by") @db.VarChar(255)
 
   gateInward GateInward   @relation(fields: [gateInwardId], references: [inwardId])
   bags       PackDetail[]
@@ -86,17 +91,17 @@ model PrintMaster {
 // PackBalance (remaining qty). `status` tracks the bag's lifecycle:
 // AWAITING_INWARD -> SCANNED -> INWARDED.
 model PackDetail {
-  packId        String    @id @map("pack_id")
-  printMasterId String    @map("print_master_id")
+  packId            String    @id @map("pack_id")
+  printMasterId     String    @map("print_master_id")
   // Denormalized from PrintMaster so stock queries can groupBy/aggregate by
   // item directly on this table (Prisma can't groupBy a related field) —
   // mirrors what PackBalance.itemCode already did.
-  itemCode      String    @map("item_code")
-  bagNo         Int       @map("bag_no")
-  totalQty      Float     @map("total_qty")
-  remainingQty  Float     @map("remaining_qty")
-  status        String    @default("AWAITING_INWARD")
-  warehouse     String?
+  itemCode          String    @map("item_code")
+  bagNo             Int       @map("bag_no")
+  totalQty          Float     @map("total_qty")
+  remainingQty      Float     @map("remaining_qty")
+  status            String    @default("AWAITING_INWARD")
+  warehouse         String?
   // Per-bag, not per-lot — different bag ranges within the same lot can
   // arrive under different supplier batch codes / expiry dates (e.g. bags
   // 1-10 of LOT-001 are Batch-A expiring Dec 2027, 11-18 are Batch-B
@@ -104,8 +109,12 @@ model PackDetail {
   // "batch group" of bags within a lot.
   customerBatchCode String?   @map("customer_batch_code")
   expiryDate        DateTime? @map("expiry_date")
-  scannedAt     DateTime? @map("scanned_at")
-  inwardedAt    DateTime? @map("inwarded_at")
+  scannedAt         DateTime? @map("scanned_at")
+  inwardedAt        DateTime? @map("inwarded_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+  createdBy         String?   @map("created_by") @db.VarChar(255)
+  updatedBy         String?   @map("updated_by") @db.VarChar(255)
 
   printMaster PrintMaster @relation(fields: [printMasterId], references: [id])
 
@@ -116,12 +125,16 @@ model PackDetail {
 }
 
 model ContainerMaster {
-  containerId String @id @map("container_id")
-  itemCode    String @unique @map("item_code")
-  itemName    String @map("item_name")
+  containerId String   @id @map("container_id")
+  itemCode    String   @unique @map("item_code")
+  itemName    String   @map("item_name")
   capacity    Float
-  currentQty  Float  @default(0) @map("current_qty")
+  currentQty  Float    @default(0) @map("current_qty")
   uom         String
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdBy   String?  @map("created_by") @db.VarChar(255)
+  updatedBy   String?  @map("updated_by") @db.VarChar(255)
 
   @@map("container_master")
 }
@@ -143,24 +156,28 @@ model StockLedger {
 }
 
 model Outward {
-  id         String   @id @default(cuid())
-  indentId   String?  @map("indent_id")
-  sourceId   String   @map("source_id")
-  sourceType String   @map("source_type")
-  rmCode     String   @map("rm_code")
+  id             String   @id @default(cuid())
+  indentId       String?  @map("indent_id")
+  sourceId       String   @map("source_id")
+  sourceType     String   @map("source_type")
+  rmCode         String   @map("rm_code")
   // Actual quantity deducted from inventory, in the item's Inventory UOM —
   // the ledger truth. Unchanged in meaning from before Operational UOM
   // conversion existed, so anything summing this field for reconciliation
   // keeps working.
-  qtyIssued  Float    @map("qty_issued")
+  qtyIssued      Float    @map("qty_issued")
   // Qty as entered/displayed in the item's Operational UOM at issue time —
   // equal to qtyIssued (and operationalUom equal to the item's inventoryUom)
   // when no conversion applied. Null on rows written before this field
   // existed; display code falls back to qtyIssued/the item's uom then.
   operationalQty Float?   @map("operational_qty")
   operationalUom String?  @map("operational_uom")
-  remarks    String?
-  timestamp  DateTime @default(now())
+  remarks        String?
+  timestamp      DateTime @default(now())
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  createdBy      String?  @map("created_by") @db.VarChar(255)
+  updatedBy      String?  @map("updated_by") @db.VarChar(255)
 
   @@map("outward")
 }
@@ -182,6 +199,9 @@ model BomIssueSession {
   bomLines    Json     @map("bom_lines")
   startedAt   DateTime @default(now()) @map("started_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  createdBy   String?  @map("created_by") @db.VarChar(255)
+  updatedBy   String?  @map("updated_by") @db.VarChar(255)
 
   @@map("bom_issue_session")
 }
