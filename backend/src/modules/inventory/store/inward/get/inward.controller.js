@@ -146,8 +146,10 @@ const getBatchLabels = async (req, res) => {
 // Same as getBatchLabels but spans multiple (itemCode, lotNo) lots merged
 // into one PDF — used by Print Master's post-generation dialog when a single
 // submission produced several items/lots at once. `pairs` is a JSON-encoded
-// array of { itemCode, lotNo } so this stays a plain GET, openable directly
-// in a new tab like its single-lot sibling (no auth header required).
+// array of { itemCode, lotNo }. This route requires auth like the rest of
+// the app; the frontend fetches it with the Bearer token and opens the
+// resulting blob (see frontend/src/utils/authedFile.js) since a plain
+// window.open/<a href> can't carry an Authorization header.
 const getBatchLabelsMulti = async (req, res) => {
   const { pairs, download } = req.query;
   try {

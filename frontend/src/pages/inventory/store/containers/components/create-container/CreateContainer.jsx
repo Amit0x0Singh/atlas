@@ -1,6 +1,7 @@
 ﻿import { useState, useEffect, useRef } from 'react'
 import './CreateContainer.css'
 import { containerApi, rmApi } from '../../../../../../api/inventory.js'
+import { openAuthedFile } from '../../../../../../utils/authedFile.js'
 import { Button } from '../../../../../../components/ui'
 
 export default function CreateContainer({ onCreated }) {
@@ -66,13 +67,13 @@ export default function CreateContainer({ onCreated }) {
         <p className="text-green-700 text-sm mb-0.5 font-mono font-bold">{created.containerId}</p>
         <p className="text-green-600 text-sm mb-4">{created.itemName} — Cap: {created.capacity} {created.uom}</p>
         <div className="flex gap-3 justify-center">
-          <a
-            href={containerApi.labelUrl(created.containerId)}
-            target="_blank" rel="noreferrer"
+          <button
+            type="button"
+            onClick={() => openAuthedFile(containerApi.labelUrl(created.containerId)).catch(e => alert(`Print failed: ${e.message}`))}
             className="bg-orange-500 text-white px-5 py-2.5 rounded-lg font-semibold text-sm hover:bg-orange-600"
           >
             Print QR Label
-          </a>
+          </button>
           <Button
             variant="outline-gray"
             onClick={() => { setCreated(null); setQuery(''); setSelRm(null); setCapacity('') }}

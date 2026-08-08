@@ -1,5 +1,6 @@
 import { Fragment } from 'react'
 import { packsApi } from '../../../../../../../api/inventory.js'
+import { openAuthedFile } from '../../../../../../../utils/authedFile.js'
 import { fmtDate } from '../utils/groupPacks.js'
 
 export default function HistoryRow({ group: g, isOpen, onToggle }) {
@@ -62,13 +63,12 @@ export default function HistoryRow({ group: g, isOpen, onToggle }) {
         </td>
 
         <td className="px-3 py-3" onClick={e => e.stopPropagation()}>
-          <a
-            href={packsApi.batchLabelsUrl(g.itemCode, g.lotNo)}
-            target="_blank"
-            rel="noreferrer"
+          <button
+            type="button"
+            onClick={() => openAuthedFile(packsApi.batchLabelsUrl(g.itemCode, g.lotNo)).catch(e => alert(`Print failed: ${e.message}`))}
             className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-lg transition whitespace-nowrap"
           >Print All ({g.bags.length})
-          </a>
+          </button>
         </td>
       </tr>
 
@@ -97,14 +97,13 @@ export default function HistoryRow({ group: g, isOpen, onToggle }) {
               ) : (
                 <span className="text-xs text-gray-300 w-36 text-center shrink-0">—</span>
               )}
-              <a
-                href={packsApi.labelUrl(b.packId)}
-                target="_blank"
-                rel="noreferrer"
+              <button
+                type="button"
+                onClick={() => openAuthedFile(packsApi.labelUrl(b.packId)).catch(e => alert(`Print failed: ${e.message}`))}
                 className="text-xs text-blue-600 hover:text-blue-800 font-medium ml-4 shrink-0 whitespace-nowrap"
               >
                Label
-              </a>
+              </button>
             </div>
           </td>
         </tr>

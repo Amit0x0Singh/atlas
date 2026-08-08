@@ -1,6 +1,7 @@
 ﻿import { useState } from "react";
 import './ContainerList.css';
 import { containerApi } from "../../../../../../api/inventory.js";
+import { openAuthedFile } from "../../../../../../utils/authedFile.js";
 import { useContainers } from "../../hooks/useContainers.js";
 import Pagination from "../../../../../../components/pagination/Pagination.jsx";
 import { Button, IconButton, Modal } from "../../../../../../components/ui";
@@ -141,14 +142,13 @@ export default function ContainerList() {
 
               {/* QR Label */}
               <div className="flex justify-center">
-                <a
-                  href={containerApi.labelUrl(c.containerId)}
-                  target="_blank"
-                  rel="noreferrer"
+                <button
+                  type="button"
+                  onClick={() => openAuthedFile(containerApi.labelUrl(c.containerId)).catch(e => alert(`Print failed: ${e.message}`))}
                   className="text-[10px] border border-orange-200 bg-orange-50 text-orange-700 px-2 py-1 rounded hover:bg-orange-100 whitespace-nowrap"
                 >
                   QR
-                </a>
+                </button>
               </div>
 
               {/* Edit capacity */}

@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { BackButton, Button, PageHeader, Modal } from "../../../../components/ui";
 import { CheckCircle, Printer, Download } from "lucide-react";
 import { packsApi } from "../../../../api/inventory.js";
+import { openAuthedFile, downloadAuthedFile } from "../../../../utils/authedFile.js";
 import GenerateForm from "../components/generate-form/page/GenerateForm.jsx";
 import GateInwardPanel from "../components/gate-inward-panel/GateInwardPanel.jsx";
 
@@ -21,19 +22,27 @@ export default function PrintMaster() {
   // Print opens the merged label PDF inline in a new tab — same pattern as
   // the per-lot "🖨️ Print All" links on Pack Records, just spanning every
   // item/lot produced by this one generation. Download forces the same PDF
-  // to save via a Content-Disposition attachment instead.
-  const printAllLabels = () => {
+  // to save via a Content-Disposition attachment instead. The label
+  // endpoints require auth, so a plain <a>/window.open can't reach them —
+  // fetch with the token and open/download the resulting blob instead.
+  const printAllLabels = async () => {
     if (!successInfo?.groups?.length) return;
-    window.open(packsApi.batchLabelsMultiUrl(successInfo.groups), "_blank", "noopener");
+    try {
+      await openAuthedFile(packsApi.batchLabelsMultiUrl(successInfo.groups));
+    } catch (e) {
+      alert(`Print failed: ${e.message}`);
+    }
   };
-  const downloadAllLabels = () => {
+  const downloadAllLabels = async () => {
     if (!successInfo?.groups?.length) return;
-    const a = document.createElement("a");
-    a.href = packsApi.batchLabelsMultiUrl(successInfo.groups, { download: true });
-    a.rel = "noopener";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
+    try {
+      await downloadAuthedFile(
+        packsApi.batchLabelsMultiUrl(successInfo.groups, { download: true }),
+        "qr-labels.pdf",
+      );
+    } catch (e) {
+      alert(`Download failed: ${e.message}`);
+    }
   };
 
   return (
