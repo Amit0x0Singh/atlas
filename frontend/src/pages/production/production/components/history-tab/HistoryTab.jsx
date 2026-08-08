@@ -6,6 +6,7 @@ import { Button } from '../../../../../components/ui'
 import StatusBadge from '../../../planning/components/ui/status-badge/StatusBadge.jsx'
 import PlantBadge from '../../../planning/components/ui/plant-badge/PlantBadge.jsx'
 
+import { toTitleCase } from '../../../../../utils/textDisplay.js'
 export default function HistoryTab({ tasks }) {
   const [search,   setSearch]   = useState('')
   const [plant,    setPlant]    = useState('')
@@ -87,7 +88,7 @@ export default function HistoryTab({ tasks }) {
                       <td className="px-3 py-2.5 font-mono text-[11px] font-bold text-indigo-700">{t.taskId}</td>
                       <td className="px-3 py-2.5 text-[11.5px] text-gray-600">{t.date}</td>
                       <td className="px-3 py-2.5"><PlantBadge plant={t.plant} /></td>
-                      <td className="px-3 py-2.5 font-semibold text-gray-800">{t.productName}</td>
+                      <td className="px-3 py-2.5 font-semibold text-gray-800">{toTitleCase(t.productName)}</td>
                       <td className="px-3 py-2.5 text-[11.5px] text-gray-500">{t.diNo || '—'}</td>
                       <td className="px-3 py-2.5 font-mono text-[11px] text-gray-600">{t.batchCode || '—'}</td>
                       <td className="px-3 py-2.5 font-semibold text-gray-700">{t.qty} <span className="text-[10px] text-gray-400 font-normal">{t.qtyUom || ''}</span></td>

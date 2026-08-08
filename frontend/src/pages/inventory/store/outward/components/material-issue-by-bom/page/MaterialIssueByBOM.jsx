@@ -8,6 +8,7 @@ import SelectStep from '../components/SelectStep.jsx'
 import BomChecklistStep from '../components/BomChecklistStep.jsx'
 import './MaterialIssueByBOM.css'
 
+import { toTitleCase } from '../../../../../../../utils/textDisplay.js'
 export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
   const isMobile = useIsMobile()
 
@@ -324,7 +325,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
         setFoundSource({ type: 'container', id: cont.containerId, availableQty: cont.currentQty, uom: cont.uom || line.uom, entryUom, maxEntryQty, itemName: cont.itemName })
         setIssueQty(String(maxEntryQty.toFixed(3)))
       } else {
-        setScanErr(`Container "${containerId}" has no stock for ${line.rmName}. Check the container or inward stock first.`)
+        setScanErr(`Container "${containerId}" has no stock for ${toTitleCase(line.rmName)}. Check the container or inward stock first.`)
       }
       return
     }
@@ -338,7 +339,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
       return
     }
 
-    setScanErr(`"${val}" not found for ${line.rmName}. Scan the correct pack or container QR code.`)
+    setScanErr(`"${val}" not found for ${toTitleCase(line.rmName)}. Scan the correct pack or container QR code.`)
   }, [bomLines, activeIdx, packs, containers, entryUomFor, toEntryQty])
 
   // ─── Submit issue ────────────────────────────────────────────────────────

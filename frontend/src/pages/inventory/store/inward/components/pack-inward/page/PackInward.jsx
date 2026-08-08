@@ -571,7 +571,15 @@ export default function PackInward() {
 
   const handleSelectGroup = (g, partialSession) => {
     setSelected(g)
-    if (partialSession) setWarehouse(partialSession.warehouse || WAREHOUSES[0])
+    if (partialSession) {
+      // warehouse is stored lowercase (RULES.LOWER) but the WAREHOUSES <select>
+      // options are the fixed UPPERCASE list above — match case-insensitively
+      // so resuming a session still pre-selects the right one instead of
+      // silently falling back to WAREHOUSES[0].
+      const stored = (partialSession.warehouse || '').trim().toUpperCase()
+      const matched = WAREHOUSES.find((w) => w === stored)
+      setWarehouse(matched || partialSession.warehouse || WAREHOUSES[0])
+    }
   }
 
   const progress   = session ? Math.round((scanned.length / session.expectedBags) * 100) : 0

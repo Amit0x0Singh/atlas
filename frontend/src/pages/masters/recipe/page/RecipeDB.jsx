@@ -10,6 +10,7 @@ import { useRmMaster } from '../../../../hooks/inventory/useRmMaster.js'
 import { useMicrobes } from '../../../../hooks/masters/useMicrobes.js'
 import { useRecipe, useBulkSaveRecipe, useDeleteRecipeRow } from '../../../../hooks/masters/useRecipes.js'
 import { queryKeys } from '../../../../lib/queryKeys.js'
+import { toTitleCase } from '../../../../utils/textDisplay.js'
 
 const EMPTY_ROW = () => ({ id: null, rmCode: '', rmName: '', qtyPerUnit: '', uom: 'KG', roleType: 'INGREDIENT', isMicrobe: false, microbeCode: null, requiredCfu: '', _dirty: true })
 
@@ -70,7 +71,7 @@ export default function RecipeDB() {
   // Microbe Master row ({ microbeCode, microbeName, uom }).
   const selectRm = (idx, picked, kind = 'rm') => {
     const code = kind === 'product' ? picked.productCode : kind === 'microbe' ? picked.microbeCode : picked.itemCode
-    const name = kind === 'product' ? picked.productName : kind === 'microbe' ? picked.microbeName : picked.itemName
+    const name = toTitleCase(kind === 'product' ? picked.productName : kind === 'microbe' ? picked.microbeName : picked.itemName)
     setBomRows(prev => prev.map((r, i) => {
       if (i !== idx) return r
       if (kind === 'microbe') {

@@ -48,7 +48,7 @@ const SalesOrder = () => {
     if (!fetchedProfiles.length) return STATIC_CUSTOMER_PROFILES;
     const merged = [...STATIC_CUSTOMER_PROFILES];
     for (const p of fetchedProfiles) {
-      if (!merged.find((x) => x.customerName === p.customerName)) merged.push(p);
+      if (!merged.find((x) => x.customerName?.toLowerCase() === p.customerName?.toLowerCase())) merged.push(p);
     }
     return merged.sort((a, b) => (b.orderCount || 0) - (a.orderCount || 0));
   }, [fetchedProfiles]);

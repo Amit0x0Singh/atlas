@@ -30,7 +30,7 @@ export default function OrderHeaderFields({ hdr, setH, profiles }) {
             }}
           />
           {hdr.customerName &&
-            profiles.find((p) => p.customerName === hdr.customerName.toUpperCase()) && (
+            profiles.find((p) => p.customerName?.toLowerCase() === hdr.customerName.toLowerCase()) && (
               <p className="mt-1 text-xs text-green-600">Auto-filled from memory</p>
             )}
         </div>
@@ -53,7 +53,9 @@ export default function OrderHeaderFields({ hdr, setH, profiles }) {
             onChange={(e) => setH("company", e.target.value)}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
           >
-            {COMPANIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            {/* company is stored lowercase (text-normalization standard) —
+                option value matches storage, label keeps the readable code */}
+            {COMPANIES.map((c) => <option key={c} value={c.toLowerCase()}>{c}</option>)}
           </select>
         </div>
 

@@ -1,5 +1,6 @@
 import prisma from '../../../../db.js'
 import { randomUUID } from 'crypto'
+import { normalizeLower } from '../../../../utils/text-normalize.js'
 
 const INCLUDE_ALL = {
   biomassInputs: true,
@@ -14,7 +15,10 @@ const INCLUDE_ALL = {
 
 export const createBatch = async (req, res) => {
   try {
-    const { indentId, category = 'POWDER', temperature, humidity, cfuTarget } = req.body
+    const { indentId, category: rawCategory = 'powder', temperature, humidity, cfuTarget } = req.body
+    // Normalized up front so the pre-create duplicate check below compares
+    // against the same lowercase form the Prisma extension will store.
+    const category = normalizeLower(rawCategory)
     if (!indentId) return res.status(400).json({ success: false, error: 'indentId required', code: 'VALIDATION_ERROR' })
     const indent = await prisma.indentMaster.findUnique({ where: { indentId }, include: { details: true } })
     if (!indent) return res.status(404).json({ success: false, error: 'Indent not found', code: 'NOT_FOUND' })

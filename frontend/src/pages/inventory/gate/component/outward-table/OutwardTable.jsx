@@ -2,6 +2,7 @@ import { useState } from "react";
 import Pagination from "../../../../../components/pagination/Pagination.jsx";
 import { Button } from "../../../../../components/ui";
 import "./OutwardTable.css";
+import { toTitleCase } from "../../../../../utils/textDisplay.js";
 
 function StatusBadge({ status }) {
   return (
@@ -55,10 +56,10 @@ export default function OutwardTable({ list, total, onRequestDelete }) {
                 className={`ot-row ${idx % 2 === 0 ? "ot-row--even" : "ot-row--odd"}`}
               >
                 <td className="ot-td ot-td-text">
-                  {item.company_name || item.companyName || "—"}
+                  {toTitleCase(item.company_name || item.companyName) || "—"}
                 </td>
                 <td className="ot-td ot-td-receiver">
-                  {item.receiver_name || item.receiverName || "—"}
+                  {toTitleCase(item.receiver_name || item.receiverName) || "—"}
                 </td>
                 <td className="ot-td ot-td-text">
                   {item.invoice_no || item.invoiceNo || "—"}

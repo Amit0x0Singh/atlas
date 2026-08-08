@@ -2,6 +2,7 @@ import { Field } from './FormFields.jsx'
 import AutocompleteInput from './AutocompleteInput.jsx'
 import { planTasksApi } from '../../../../../../api/production.js'
 
+import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 export default function DiPickerSection({
   diNo, onDiNoChange, onDiSelect,
   diItems, loadingDiItems, onPickDiItem,
@@ -24,8 +25,8 @@ export default function DiPickerSection({
                   {so.sectionName}
                 </span>
               )}
-              <span className="text-gray-600 text-[12px]">{so.productName}</span>
-              {so.customerName && <span className="text-gray-400 text-[11px]">— {so.customerName}</span>}
+              <span className="text-gray-600 text-[12px]">{toTitleCase(so.productName)}</span>
+              {so.customerName && <span className="text-gray-400 text-[11px]">— {toTitleCase(so.customerName)}</span>}
               {so.orderQty && <span className="text-gray-400 text-[11px]">({so.orderQty} {so.qtyUnit})</span>}
             </div>
           )}
@@ -45,7 +46,7 @@ export default function DiPickerSection({
                   onClick={() => onPickDiItem(item)}
                   className="w-full text-left px-3 py-2.5 bg-white border-[1.5px] border-gray-200 rounded-lg
                     hover:border-blue-500 hover:bg-blue-50 transition text-sm flex items-center justify-between group">
-                  <span className="font-medium text-gray-800 group-hover:text-blue-700">{item.productName}</span>
+                  <span className="font-medium text-gray-800 group-hover:text-blue-700">{toTitleCase(item.productName)}</span>
                   {item.orderQty != null && (
                     <span className="text-gray-400 text-[12px] shrink-0 ml-2">
                       {item.orderQty} {item.qtyUnit}

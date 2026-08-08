@@ -5,6 +5,7 @@ import { Button } from '../../../../../../components/ui'
 import { convertByDensity } from '../../../../../../utils/uom.js'
 import './WarehouseToPlant.css'
 
+import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 export default function WarehouseToPlant() {
   const [rmCode, setRmCode]         = useState('')
   const [packs, setPacks]           = useState([])
@@ -187,7 +188,7 @@ export default function WarehouseToPlant() {
                     : indents.map(i => (
                       <button key={i.indentId} onClick={() => { setIndent(i); setRm(null); setIndentRmInfo(null); setQty('') }}
                         className={`w-full text-left px-3 py-2 rounded-lg border text-sm ${selectedIndent?.indentId === i.indentId ? 'bg-blue-50 border-blue-400' : 'border-gray-100 hover:bg-gray-50'}`}>
-                        <div className="font-medium">{i.productName}</div>
+                        <div className="font-medium">{toTitleCase(i.productName)}</div>
                         <div className="text-xs text-gray-400">Batch: {i.batchNo} | {i.batchSize} kg</div>
                       </button>
                     ))}
@@ -201,7 +202,7 @@ export default function WarehouseToPlant() {
                     {(selectedIndent.details || []).filter(d => d.balanceQty > 0).map(d => (
                       <button key={d.id} onClick={() => selectIndentRm(d)}
                         className={`w-full text-left px-3 py-2 rounded-lg border text-xs ${selectedRm?.id === d.id ? 'bg-blue-50 border-blue-400' : 'border-gray-100 hover:bg-gray-50'}`}>
-                        <span className="font-medium">{d.rmName}</span>
+                        <span className="font-medium">{toTitleCase(d.rmName)}</span>
                         <span className="text-gray-400 ml-2">Balance: {d.balanceQty}</span>
                       </button>
                     ))}

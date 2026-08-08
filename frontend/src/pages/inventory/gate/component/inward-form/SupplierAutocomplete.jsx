@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
+import { toTitleCase } from '../../../../../utils/textDisplay.js'
 // Type-to-search supplier field: suggestions filter from Supplier Master as
 // you type, but the committed value (what onChange reports to the parent
 // form) only ever becomes a real supplier name — either by clicking a
@@ -68,7 +69,7 @@ export default function SupplierAutocomplete({ value, suppliers, onChange, place
               onMouseDown={() => pick(s.supplierName)}
               className="w-full text-left px-3 py-2 hover:bg-blue-50 text-sm border-b border-gray-50 last:border-0"
             >
-              {s.supplierName}
+              {toTitleCase(s.supplierName)}
             </button>
           ))}
         </div>

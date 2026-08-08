@@ -5,6 +5,7 @@ import ScannerPanel from '../../../../../../components/ScannerPanel/ScannerPanel
 import { X } from 'lucide-react'
 import './WarehouseToContainer.css'
 
+import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 export default function WarehouseToContainer() {
   const [selectedPack, setPack]      = useState(null)   // the scanned/chosen bag
   const [container,    setContainer] = useState(null)   // auto-detected container
@@ -120,7 +121,7 @@ export default function WarehouseToContainer() {
                 </div>
                 <div className="font-bold text-orange-900 font-mono">{container.containerId}</div>
                 <div className="text-sm text-orange-700 mt-0.5">
-                  {container.itemName}
+                  {toTitleCase(container.itemName)}
                   <span className="text-xs font-mono text-orange-400 ml-1.5">({container.itemCode})</span>
                 </div>
               </div>

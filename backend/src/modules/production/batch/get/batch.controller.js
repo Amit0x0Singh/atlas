@@ -13,8 +13,10 @@ const INCLUDE_ALL = {
 
 export const listBatches = async (req, res) => {
   try {
-    const { category = 'POWDER', status, page = 1, limit = 50 } = req.query
-    const where = { category }
+    const { category = 'powder', status, page = 1, limit = 50 } = req.query
+    // category is stored lowercase (RULES.LOWER) but callers may still pass
+    // any case, so match case-insensitively rather than assuming lowercase input.
+    const where = { category: { equals: category, mode: 'insensitive' } }
     if (status) where.status = status
     const [batches, total] = await Promise.all([
       prisma.productionBatch.findMany({

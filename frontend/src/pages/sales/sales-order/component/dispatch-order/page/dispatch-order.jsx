@@ -10,6 +10,7 @@ import { Button, IconButton } from "../../../../../../components/ui";
 import { X, Trash2, Truck } from "lucide-react";
 import DispatchLineCard from "../components/DispatchLineCard.jsx";
 import DispatchEntryFields from "../components/DispatchEntryFields.jsx";
+import { toTitleCase } from "../../../../../../utils/textDisplay.js";
 
 // Statuses that can be dispatched right now
 const DISPATCHABLE = ["IN_INVENTORY", "READY_TO_DISPATCH", "PACKED"];
@@ -19,7 +20,7 @@ export default function DispatchOrder({ order, onSave, onDelete, onClose }) {
 
   const [saving, setSaving] = useState(false);
   const [invoiceNo, setInvoiceNo] = useState(order.invoiceNo || "");
-  const [transportName, setTransportName] = useState(order.transportName || "");
+  const [transportName, setTransportName] = useState(toTitleCase(order.transportName) || "");
   const [dispatchedBy, setDispatchedBy] = useState(order.dispatchedBy || "");
   const [remarks, setRemarks] = useState(order.remarks || "");
   const [partialToggles, setPartialToggles] = useState({});
@@ -39,7 +40,7 @@ export default function DispatchOrder({ order, onSave, onDelete, onClose }) {
   // ── Normalise line data ───────────────────────────────────────────────────
   const lines = order.items.map((it) => ({
     id: it.id,
-    productName: it.inhouseProductName || it.customerProductName,
+    productName: toTitleCase(it.inhouseProductName || it.customerProductName),
     totalQty: it.totalQty,
     totalUom: it.totalUom || "KG",
     batchNo: it.batchNo || "—",
@@ -107,7 +108,7 @@ export default function DispatchOrder({ order, onSave, onDelete, onClose }) {
         >
           <div>
             <h2 className="font-bold text-sm tracking-wide">
-              {order.customerName} — {order.company}
+              {toTitleCase(order.customerName)} — {(order.company || '').toUpperCase()}
             </h2>
             <p className="text-xs text-white/70 mt-0.5">
               {order.items.length} product line

@@ -9,7 +9,13 @@ const upsertCustomerProfile = async (req, res) => {
         .status(400)
         .json({ success: false, error: "customerName required" });
 
-    const name = customerName.trim().toUpperCase();
+    // customerName is stored lowercase (RULES.LOWER, applied on create/update
+    // by the Prisma extension) — this manual findUnique lookup happens
+    // before that, so it must already match storage case itself, or an
+    // existing row's differently-cased duplicate would go undetected and
+    // this would attempt a second `create` that violates the unique
+    // constraint on every repeat order for the same customer.
+    const name = customerName.trim().toLowerCase();
     const existing = await prisma.customerProfile.findUnique({
       where: { customerName: name },
     });

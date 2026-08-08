@@ -7,6 +7,7 @@ import BomRow from '../components/BomRow.jsx'
 import BomRowEditModal from '../components/BomRowEditModal.jsx'
 import './BomEditor.css'
 
+import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 export default function BomEditor({ selectedProduct, bomRows, loadId, rmList, productList = [], microbeList = [], saving, msg, onAddRow, onSaveAll, onUpdateRow, onSelectRm, onRemoveRow }) {
   // Only one row is ever being edited at a time, via the modal — it owns all
   // of its own search/draft state, so this just needs to know which row.
@@ -49,7 +50,7 @@ export default function BomEditor({ selectedProduct, bomRows, loadId, rmList, pr
       {/* BOM header bar */}
       <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-bold text-gray-900">{selectedProduct.productName}</h1>
+          <h1 className="text-lg font-bold text-gray-900">{toTitleCase(selectedProduct.productName)}</h1>
           <div className="flex items-center gap-3 mt-0.5 flex-wrap">
             <p className="text-sm text-gray-500 font-mono">
               Code: <span className="text-blue-700 font-semibold">{selectedProduct.productCode}</span>

@@ -1,6 +1,7 @@
 import { Pencil, Trash2, Loader2, PackageX } from 'lucide-react'
 import { IconButton } from '../../../../../components/ui'
 import Pagination from '../../../../../components/pagination/Pagination.jsx'
+import { toTitleCase } from '../../../../../utils/textDisplay.js'
 
 // `items` is already the current page's rows (filtering + pagination happen
 // server-side) — `total` is the server-reported match count.
@@ -36,7 +37,7 @@ export default function ProductTable({ items, total, loading, page, limit, onEdi
             ) : items.map(item => (
               <tr key={item.productCode} className="group hover:bg-green-50/60 transition-colors cursor-pointer" onClick={() => onRowClick(item)}>
                 <td className="px-4 py-3 font-mono text-green-700 font-medium whitespace-nowrap">{item.productCode}</td>
-                <td className="px-4 py-3 text-gray-800">{item.productName}</td>
+                <td className="px-4 py-3 text-gray-800">{toTitleCase(item.productName)}</td>
                 <td className="px-4 py-3 text-gray-500">{item.plant?.length ? item.plant.join(', ') : '—'}</td>
                 <td className="px-4 py-3 text-gray-500">{item.totalRecipe ?? 0}</td>
                 <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>

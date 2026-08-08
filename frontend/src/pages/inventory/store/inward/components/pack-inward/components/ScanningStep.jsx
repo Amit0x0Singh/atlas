@@ -2,6 +2,7 @@ import { Info, Pause } from 'lucide-react'
 import { Button, Modal } from '../../../../../../../components/ui'
 import MobileScanView from './scanning/MobileScanView.jsx'
 import DesktopScanView from './scanning/DesktopScanView.jsx'
+import { toTitleCase } from '../../../../../../../utils/textDisplay.js'
 
 export default function ScanningStep({
   isMobile, selected, resumed, showResumedInfo, setShowResumedInfo, onPauseAndExit,
@@ -11,7 +12,7 @@ export default function ScanningStep({
     <div className="p-4">
       <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
         <div className="min-w-0">
-          <h2 className="text-xl font-bold text-gray-900 truncate">{selected?.itemName}</h2>
+          <h2 className="text-xl font-bold text-gray-900 truncate">{toTitleCase(selected?.itemName)}</h2>
           <p className="text-sm text-gray-500">Lot: {selected?.lotNo}</p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">

@@ -6,8 +6,13 @@ import Input from '../common/Input.jsx';
 import Select from '../common/Select.jsx';
 import FormSection from './FormSection.jsx';
 import { normalizeEmailInput, normalizePhoneInput, isPhoneFieldName } from '../../utils/textNormalize.js';
+import { toTitleCase } from '../../utils/textDisplay.js';
 
-function toInputValue(value, type) {
+// titleCase only affects the value shown when a field is first populated
+// (form open / record switch) — never applied on keystroke, so it doesn't
+// fight the user while typing. Whatever they leave in the field is sent
+// as-is; the backend's Prisma Client Extension normalizes storage casing.
+function toInputValue(value, type, titleCase) {
   if (value === null || value === undefined) return '';
   if (type === 'datetime-local') {
     const date = new Date(value);
@@ -21,6 +26,10 @@ function toInputValue(value, type) {
   }
   if (type === 'tags') return Array.isArray(value) ? value.join(', ') : value;
   if (type === 'json') return JSON.stringify(value, null, 2);
+  // select must keep the raw (lowercase) value so it matches an option's
+  // `value` exactly — titleCase there is display-only, handled by the
+  // option's separate `label` ({ value, label } option shape).
+  if (titleCase && type !== 'select') return toTitleCase(value ?? '');
   return value ?? '';
 }
 
@@ -51,7 +60,7 @@ export default function DataFormModal({ mode, resource, record, onClose, onSubmi
 
   useEffect(() => {
     const next = {};
-    editableFields.forEach((field) => { next[field.name] = toInputValue(record?.[field.name], field.type); });
+    editableFields.forEach((field) => { next[field.name] = toInputValue(record?.[field.name], field.type, field.titleCase); });
     setForm(next);
     setDirty(false);
   }, [editableFields, record]);

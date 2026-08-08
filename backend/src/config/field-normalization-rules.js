@@ -25,11 +25,11 @@ import { RULES } from '../utils/text-normalize.js'
 export const FIELD_RULES = {
   CompanyMaster: {
     code: RULES.UPPER, // business code/identifier [UNIQUE]
-    name: RULES.NONE, // business name/free text — never case-changed
+    name: RULES.LOWER, // business name — normalized lowercase, Title Case on display
   },
   EmployeeMaster: {
     empCode: RULES.UPPER, // business code/identifier [UNIQUE]
-    name: RULES.NONE, // business name/free text — never case-changed
+    name: RULES.LOWER, // business name — normalized lowercase, Title Case on display
     email: RULES.LOWER, // email [UNIQUE]
     phone: RULES.PHONE, // phone number
     role: RULES.NONE, // fixed-vocabulary/enum-like — no case change
@@ -41,52 +41,52 @@ export const FIELD_RULES = {
     pageLabel: RULES.NONE, // REVIEW: no confident naming signal — safe default
   },
   GateInward: {
-    supplierName: RULES.NONE, // business name/free text — never case-changed
+    supplierName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
     invoiceNo: RULES.UPPER, // business code/identifier — same treatment as vehicleNo
     vehicleNo: RULES.UPPER, // business code/identifier
-    companyName: RULES.NONE, // business name/free text — never case-changed
+    companyName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
     status: RULES.NONE, // fixed-vocabulary/enum-like — no case change
     createdBy: RULES.NONE, // REVIEW: no confident naming signal — safe default
   },
   GateOutward: {
-    receiverName: RULES.NONE, // business name/free text — never case-changed
+    receiverName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
     invoiceNo: RULES.UPPER, // business code/identifier — same treatment as vehicleNo
     vehicleNo: RULES.UPPER, // business code/identifier
-    companyName: RULES.NONE, // business name/free text — never case-changed
+    companyName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
     status: RULES.NONE, // fixed-vocabulary/enum-like — no case change
     createdBy: RULES.NONE, // REVIEW: no confident naming signal — safe default
   },
   RmMaster: {
     itemCode: RULES.UPPER, // business code/identifier [PK]
-    itemName: RULES.NONE, // business name/free text — never case-changed [UNIQUE]
-    inventoryUom: RULES.NONE, // REVIEW: no confident naming signal — safe default
-    operationalUom: RULES.NONE, // REVIEW: no confident naming signal — safe default
+    itemName: RULES.LOWER, // business name — normalized lowercase, Title Case on display [UNIQUE]
+    inventoryUom: RULES.LOWER, // canonical unit code — normalized lowercase, uppercase on display
+    operationalUom: RULES.LOWER, // canonical unit code — normalized lowercase, uppercase on display
     trackingType: RULES.NONE, // fixed-vocabulary/enum-like — no case change
-    category: RULES.NONE, // fixed-vocabulary/enum-like — no case change
-    subCategory: RULES.NONE, // fixed-vocabulary/enum-like — no case change
-    state: RULES.NONE, // fixed-vocabulary/enum-like — no case change
+    category: RULES.LOWER, // free-typed category — normalized lowercase, Title Case on display
+    subCategory: RULES.LOWER, // free-typed sub-category — normalized lowercase, Title Case on display
+    state: RULES.LOWER, // normalized lowercase, uppercase on display
   },
   LotSequence: {
     itemCode: RULES.UPPER, // business code/identifier
   },
   PrintMaster: {
     itemCode: RULES.UPPER, // business code/identifier
-    itemName: RULES.NONE, // business name/free text — never case-changed
+    itemName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
     lotNo: RULES.UPPER, // business code/identifier
-    uom: RULES.NONE, // REVIEW: no confident naming signal — safe default
+    uom: RULES.LOWER, // canonical unit code — normalized lowercase, uppercase on display
   },
   PackDetail: {
     packId: RULES.NONE, // REVIEW: no confident naming signal — safe default [PK]
     itemCode: RULES.UPPER, // business code/identifier
     status: RULES.NONE, // fixed-vocabulary/enum-like — no case change
-    warehouse: RULES.NONE, // REVIEW: no confident naming signal — safe default
+    warehouse: RULES.LOWER, // free-text warehouse descriptor — normalized lowercase, Title Case on display
     customerBatchCode: RULES.UPPER, // business code/identifier
   },
   ContainerMaster: {
     containerId: RULES.NONE, // REVIEW: no confident naming signal — safe default [PK]
     itemCode: RULES.UPPER, // business code/identifier [UNIQUE]
-    itemName: RULES.NONE, // business name/free text — never case-changed
-    uom: RULES.NONE, // REVIEW: no confident naming signal — safe default
+    itemName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
+    uom: RULES.LOWER, // canonical unit code — normalized lowercase, uppercase on display
   },
   StockLedger: {
     itemCode: RULES.UPPER, // business code/identifier
@@ -99,26 +99,26 @@ export const FIELD_RULES = {
     sourceId: RULES.NONE, // REVIEW: no confident naming signal — safe default
     sourceType: RULES.NONE, // fixed-vocabulary/enum-like — no case change
     rmCode: RULES.UPPER, // business code/identifier
-    operationalUom: RULES.NONE, // REVIEW: no confident naming signal — safe default
+    operationalUom: RULES.LOWER, // canonical unit code — normalized lowercase, uppercase on display
     remarks: RULES.NONE, // business name/free text — never case-changed
   },
   BomIssueSession: {
     id: RULES.NONE, // REVIEW: no confident naming signal — safe default [PK]
     planTaskId: RULES.UPPER, // business code/identifier
     productCode: RULES.UPPER, // business code/identifier
-    productName: RULES.NONE, // business name/free text — never case-changed
-    batchUom: RULES.NONE, // REVIEW: no confident naming signal — safe default
+    productName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
+    batchUom: RULES.LOWER, // canonical unit code — normalized lowercase, uppercase on display
     batchRef: RULES.NONE, // REVIEW: no confident naming signal — safe default
     diNo: RULES.UPPER, // business code/identifier
   },
   ErpPack: {
     lotNumber: RULES.NONE, // REVIEW: no confident naming signal — safe default
-    supplierName: RULES.NONE, // business name/free text — never case-changed
+    supplierName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
     invoiceNumber: RULES.UPPER, // business code/identifier — same treatment as vehicleNo
     unit: RULES.NONE, // REVIEW: no confident naming signal — safe default
     qrConfirmedBy: RULES.NONE, // REVIEW: no confident naming signal — safe default
     verifiedBy: RULES.NONE, // REVIEW: no confident naming signal — safe default
-    location: RULES.NONE, // REVIEW: no confident naming signal — safe default
+    location: RULES.LOWER, // free-text location descriptor — normalized lowercase, Title Case on display
     status: RULES.NONE, // fixed-vocabulary/enum-like — no case change
   },
   StockAdjustment: {
@@ -131,8 +131,8 @@ export const FIELD_RULES = {
   },
   WarehouseTransfer: {
     transferType: RULES.NONE, // fixed-vocabulary/enum-like — no case change
-    fromLocation: RULES.NONE, // REVIEW: no confident naming signal — safe default
-    toLocation: RULES.NONE, // REVIEW: no confident naming signal — safe default
+    fromLocation: RULES.LOWER, // free-text location descriptor — normalized lowercase, Title Case on display
+    toLocation: RULES.LOWER, // free-text location descriptor — normalized lowercase, Title Case on display
     fromPlantId: RULES.NONE, // REVIEW: no confident naming signal — safe default
     toPlantId: RULES.NONE, // REVIEW: no confident naming signal — safe default
     initiatedBy: RULES.NONE, // REVIEW: no confident naming signal — safe default
@@ -151,8 +151,8 @@ export const FIELD_RULES = {
   ErpContainer: {
     containerId: RULES.NONE, // REVIEW: no confident naming signal — safe default [PK]
     containerQr: RULES.NONE, // REVIEW: no confident naming signal — safe default [UNIQUE]
-    location: RULES.NONE, // REVIEW: no confident naming signal — safe default
-    uom: RULES.NONE, // REVIEW: no confident naming signal — safe default
+    location: RULES.LOWER, // free-text location descriptor — normalized lowercase, Title Case on display
+    uom: RULES.LOWER, // canonical unit code — normalized lowercase, uppercase on display
   },
   DecantingLog: {
     approvedBy: RULES.NONE, // REVIEW: no confident naming signal — safe default
@@ -165,45 +165,45 @@ export const FIELD_RULES = {
     label: RULES.NONE, // REVIEW: no confident naming signal — safe default
   },
   ErpSupplier: {
-    supplierName: RULES.NONE, // business name/free text — never case-changed
+    supplierName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
     gstin: RULES.UPPER, // business code/identifier
     phone: RULES.PHONE, // phone number
     email: RULES.LOWER, // email
     address: RULES.NONE, // business name/free text — never case-changed
   },
   ErpPlant: {
-    plantName: RULES.NONE, // business name/free text — never case-changed
+    plantName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
     plantCode: RULES.UPPER, // business code/identifier [UNIQUE]
     location: RULES.NONE, // REVIEW: no confident naming signal — safe default
     plantType: RULES.NONE, // fixed-vocabulary/enum-like — no case change
   },
   ErpEquipment: {
-    equipmentName: RULES.NONE, // business name/free text — never case-changed
+    equipmentName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
     equipmentCode: RULES.UPPER, // business code/identifier [UNIQUE]
     equipmentType: RULES.NONE, // fixed-vocabulary/enum-like — no case change
-    workingVolumeUnit: RULES.NONE, // REVIEW: no confident naming signal — safe default
+    workingVolumeUnit: RULES.LOWER, // canonical unit code — normalized lowercase, uppercase on display
     status: RULES.NONE, // fixed-vocabulary/enum-like — no case change
   },
   ErpItem: {
     itemCode: RULES.UPPER, // business code/identifier [PK]
-    itemName: RULES.NONE, // business name/free text — never case-changed
-    itemCategory: RULES.NONE, // fixed-vocabulary/enum-like — no case change
-    uom: RULES.NONE, // REVIEW: no confident naming signal — safe default
-    warehouseZone: RULES.NONE, // REVIEW: no confident naming signal — safe default
+    itemName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
+    itemCategory: RULES.LOWER, // free-typed category — normalized lowercase, Title Case on display
+    uom: RULES.LOWER, // canonical unit code — normalized lowercase, uppercase on display
+    warehouseZone: RULES.LOWER, // free-text location descriptor — normalized lowercase, Title Case on display
   },
   Customer: {
-    customerName: RULES.NONE, // business name/free text — never case-changed
+    customerName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
     customerCode: RULES.UPPER, // business code/identifier [UNIQUE]
     gstin: RULES.UPPER, // business code/identifier
     address: RULES.NONE, // business name/free text — never case-changed
-    state: RULES.NONE, // fixed-vocabulary/enum-like — no case change
+    state: RULES.LOWER, // free-typed geographic state — normalized lowercase, Title Case on display
     phone: RULES.PHONE, // phone number
     email: RULES.LOWER, // email
   },
   ErpProduct: {
     productCode: RULES.UPPER, // business code/identifier [PK]
-    productName: RULES.NONE, // business name/free text — never case-changed
-    productCategory: RULES.NONE, // fixed-vocabulary/enum-like — no case change
+    productName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
+    productCategory: RULES.LOWER, // free-typed category — normalized lowercase, Title Case on display
     formulationType: RULES.NONE, // fixed-vocabulary/enum-like — no case change
     status: RULES.NONE, // fixed-vocabulary/enum-like — no case change
   },
@@ -222,25 +222,25 @@ export const FIELD_RULES = {
     itemCode: RULES.UPPER, // business code/identifier
   },
   MicrobialStrain: {
-    strainName: RULES.NONE, // business name/free text — never case-changed
+    strainName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
     notes: RULES.NONE, // business name/free text — never case-changed
   },
   MicrobialContainer: {
-    locationRoom: RULES.NONE, // REVIEW: no confident naming signal — safe default
-    locationPosition: RULES.NONE, // REVIEW: no confident naming signal — safe default
+    locationRoom: RULES.LOWER, // free-text location descriptor — normalized lowercase, Title Case on display
+    locationPosition: RULES.LOWER, // free-text location descriptor — normalized lowercase, Title Case on display
     status: RULES.NONE, // fixed-vocabulary/enum-like — no case change
     notes: RULES.NONE, // business name/free text — never case-changed
   },
   MicrobialTransaction: {
     jobId: RULES.NONE, // REVIEW: no confident naming signal — safe default
     dispatchedBy: RULES.NONE, // REVIEW: no confident naming signal — safe default
-    receiverName: RULES.NONE, // business name/free text — never case-changed
+    receiverName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
     receiptNotes: RULES.NONE, // business name/free text — never case-changed
   },
   MicrobeMaster: {
-    microbeName: RULES.NONE, // business name/free text — never case-changed
+    microbeName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
     microbeCode: RULES.UPPER, // business code/identifier [UNIQUE]
-    uom: RULES.NONE, // REVIEW: no confident naming signal — safe default
+    uom: RULES.LOWER, // canonical unit code — normalized lowercase, uppercase on display
   },
   MicrobialSfgContainerSeq: {
     microbeCode: RULES.UPPER, // business code/identifier
@@ -249,22 +249,22 @@ export const FIELD_RULES = {
   MicrobialSfgContainer: {
     containerCode: RULES.UPPER, // business code/identifier [UNIQUE]
     microbeCode: RULES.UPPER, // business code/identifier
-    microbeName: RULES.NONE, // business name/free text — never case-changed
+    microbeName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
     microbeType: RULES.NONE, // fixed-vocabulary/enum-like — no case change
     typeCode: RULES.UPPER, // business code/identifier
-    location: RULES.NONE, // REVIEW: no confident naming signal — safe default
+    location: RULES.LOWER, // free-text location descriptor — normalized lowercase, Title Case on display
     side: RULES.NONE, // REVIEW: no confident naming signal — safe default
     position: RULES.NONE, // REVIEW: no confident naming signal — safe default
     fillStatus: RULES.NONE, // fixed-vocabulary/enum-like — no case change
-    inactiveLocation: RULES.NONE, // REVIEW: no confident naming signal — safe default
+    inactiveLocation: RULES.LOWER, // free-text location descriptor — normalized lowercase, Title Case on display
   },
   MicrobialSfgInward: {
     containerCode: RULES.UPPER, // business code/identifier
     microbeCode: RULES.UPPER, // business code/identifier
-    microbeName: RULES.NONE, // business name/free text — never case-changed
+    microbeName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
     microbeType: RULES.NONE, // fixed-vocabulary/enum-like — no case change
     biomassBatchCode: RULES.UPPER, // business code/identifier
-    location: RULES.NONE, // REVIEW: no confident naming signal — safe default
+    location: RULES.LOWER, // free-text location descriptor — normalized lowercase, Title Case on display
     receivedBy: RULES.NONE, // REVIEW: no confident naming signal — safe default
     remarks: RULES.NONE, // business name/free text — never case-changed
     fillStatus: RULES.NONE, // fixed-vocabulary/enum-like — no case change
@@ -274,23 +274,23 @@ export const FIELD_RULES = {
     planId: RULES.UPPER, // business code/identifier
     containerCode: RULES.UPPER, // business code/identifier
     microbeCode: RULES.UPPER, // business code/identifier
-    microbeName: RULES.NONE, // business name/free text — never case-changed
+    microbeName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
     microbeType: RULES.NONE, // fixed-vocabulary/enum-like — no case change
     status: RULES.NONE, // fixed-vocabulary/enum-like — no case change
   },
   MicrobialSfgOutward: {
-    productName: RULES.NONE, // business name/free text — never case-changed
-    customerName: RULES.NONE, // business name/free text — never case-changed
+    productName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
+    customerName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
     diNumber: RULES.UPPER, // business code/identifier
     batchCode: RULES.UPPER, // business code/identifier
     section: RULES.NONE, // fixed-vocabulary/enum-like — no case change
-    issuerName: RULES.NONE, // business name/free text — never case-changed
-    receiverName: RULES.NONE, // business name/free text — never case-changed
+    issuerName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
+    receiverName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
   },
   MicrobialSfgOutwardLine: {
     microbeId: RULES.NONE, // REVIEW: no confident naming signal — safe default
     microbeCode: RULES.UPPER, // business code/identifier
-    microbeName: RULES.NONE, // business name/free text — never case-changed
+    microbeName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
     microbeType: RULES.NONE, // fixed-vocabulary/enum-like — no case change
     containerId: RULES.NONE, // REVIEW: no confident naming signal — safe default
     containerCode: RULES.UPPER, // business code/identifier
@@ -323,17 +323,17 @@ export const FIELD_RULES = {
     salesOrderId: RULES.NONE, // REVIEW: no confident naming signal — safe default
     salesOrderItemId: RULES.NONE, // REVIEW: no confident naming signal — safe default
     diNo: RULES.UPPER, // business code/identifier
-    customerName: RULES.NONE, // business name/free text — never case-changed
+    customerName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
     sectionType: RULES.NONE, // fixed-vocabulary/enum-like — no case change
     shift: RULES.NONE, // REVIEW: no confident naming signal — safe default
     batchIncharge: RULES.NONE, // REVIEW: no confident naming signal — safe default
     equipment: RULES.NONE, // REVIEW: no confident naming signal — safe default
-    location: RULES.NONE, // REVIEW: no confident naming signal — safe default
+    location: RULES.LOWER, // free-text location descriptor — normalized lowercase, Title Case on display
     productCode: RULES.UPPER, // business code/identifier
-    productName: RULES.NONE, // business name/free text — never case-changed
+    productName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
     batchCode: RULES.UPPER, // business code/identifier
-    uom: RULES.NONE, // REVIEW: no confident naming signal — safe default
-    carrier: RULES.NONE, // REVIEW: no confident naming signal — safe default
+    uom: RULES.LOWER, // canonical unit code — normalized lowercase, uppercase on display
+    carrier: RULES.LOWER, // business name — normalized lowercase, Title Case on display
     specs: RULES.NONE, // REVIEW: no confident naming signal — safe default
     process: RULES.NONE, // REVIEW: no confident naming signal — safe default
     stageInfo: RULES.NONE, // REVIEW: no confident naming signal — safe default
@@ -356,12 +356,12 @@ export const FIELD_RULES = {
     indentId: RULES.NONE, // REVIEW: no confident naming signal — safe default
     planId: RULES.UPPER, // business code/identifier
     productCode: RULES.UPPER, // business code/identifier
-    productName: RULES.NONE, // business name/free text — never case-changed
+    productName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
     batchNo: RULES.UPPER, // business code/identifier
     diNo: RULES.UPPER, // business code/identifier
     sectionType: RULES.NONE, // fixed-vocabulary/enum-like — no case change
     bomType: RULES.NONE, // fixed-vocabulary/enum-like — no case change
-    uom: RULES.NONE, // REVIEW: no confident naming signal — safe default
+    uom: RULES.LOWER, // canonical unit code — normalized lowercase, uppercase on display
     status: RULES.NONE, // fixed-vocabulary/enum-like — no case change
     remarks: RULES.NONE, // business name/free text — never case-changed
     sentBy: RULES.NONE, // REVIEW: no confident naming signal — safe default
@@ -371,16 +371,16 @@ export const FIELD_RULES = {
   },
   ProductMaster: {
     productCode: RULES.UPPER, // business code/identifier [PK]
-    productName: RULES.NONE, // business name/free text — never case-changed [UNIQUE]
-    uom: RULES.NONE, // REVIEW: no confident naming signal — safe default
-    state: RULES.NONE, // fixed-vocabulary/enum-like — no case change
+    productName: RULES.LOWER, // business name — normalized lowercase, Title Case on display [UNIQUE]
+    uom: RULES.LOWER, // canonical unit code — normalized lowercase, uppercase on display
+    state: RULES.LOWER, // normalized lowercase, uppercase on display
     plant: RULES.NONE, // REVIEW: no confident naming signal — safe default
   },
   EquipmentMaster: {
     equipCode: RULES.UPPER, // business code/identifier [UNIQUE]
-    equipName: RULES.NONE, // business name/free text — never case-changed [UNIQUE]
+    equipName: RULES.LOWER, // business name — normalized lowercase, Title Case on display [UNIQUE]
     designatedProduct: RULES.NONE, // REVIEW: no confident naming signal — safe default
-    workingUnit: RULES.NONE, // REVIEW: no confident naming signal — safe default
+    workingUnit: RULES.LOWER, // canonical unit code — normalized lowercase, uppercase on display
     operation: RULES.NONE, // REVIEW: no confident naming signal — safe default
     plant: RULES.NONE, // REVIEW: no confident naming signal — safe default
   },
@@ -390,15 +390,15 @@ export const FIELD_RULES = {
     date: RULES.NONE, // REVIEW: no confident naming signal — safe default
     diNo: RULES.UPPER, // business code/identifier
     shift: RULES.NONE, // REVIEW: no confident naming signal — safe default
-    productName: RULES.NONE, // business name/free text — never case-changed
+    productName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
     batchCode: RULES.UPPER, // business code/identifier
     batchKey: RULES.NONE, // REVIEW: no confident naming signal — safe default
-    qtyUom: RULES.NONE, // REVIEW: no confident naming signal — safe default
+    qtyUom: RULES.LOWER, // canonical unit code — normalized lowercase, uppercase on display
     process: RULES.NONE, // REVIEW: no confident naming signal — safe default
     incharge: RULES.NONE, // REVIEW: no confident naming signal — safe default
     equipment: RULES.NONE, // REVIEW: no confident naming signal — safe default
-    location: RULES.NONE, // REVIEW: no confident naming signal — safe default
-    carrier: RULES.NONE, // REVIEW: no confident naming signal — safe default
+    location: RULES.LOWER, // free-text location descriptor — normalized lowercase, Title Case on display
+    carrier: RULES.LOWER, // business name — normalized lowercase, Title Case on display
     specs: RULES.NONE, // REVIEW: no confident naming signal — safe default
     status: RULES.NONE, // fixed-vocabulary/enum-like — no case change
     remarks: RULES.NONE, // business name/free text — never case-changed
@@ -411,16 +411,16 @@ export const FIELD_RULES = {
   },
   RecipeDb: {
     productCode: RULES.UPPER, // business code/identifier
-    productName: RULES.NONE, // business name/free text — never case-changed
+    productName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
     rmCode: RULES.UPPER, // business code/identifier
-    rmName: RULES.NONE, // business name/free text — never case-changed
-    uom: RULES.NONE, // REVIEW: no confident naming signal — safe default
+    rmName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
+    uom: RULES.LOWER, // canonical unit code — normalized lowercase, uppercase on display
     roleType: RULES.NONE, // fixed-vocabulary/enum-like — no case change
     microbeCode: RULES.UPPER, // business code/identifier
   },
   IndentMaster: {
     productCode: RULES.UPPER, // business code/identifier
-    productName: RULES.NONE, // business name/free text — never case-changed
+    productName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
     batchNo: RULES.UPPER, // business code/identifier
     diNo: RULES.UPPER, // business code/identifier
     plant: RULES.NONE, // REVIEW: no confident naming signal — safe default
@@ -429,27 +429,27 @@ export const FIELD_RULES = {
   },
   IndentDetails: {
     rmCode: RULES.UPPER, // business code/identifier
-    rmName: RULES.NONE, // business name/free text — never case-changed
+    rmName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
   },
   SfgMaster: {
     indentId: RULES.NONE, // REVIEW: no confident naming signal — safe default
     productCode: RULES.UPPER, // business code/identifier
-    productName: RULES.NONE, // business name/free text — never case-changed
+    productName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
     status: RULES.NONE, // fixed-vocabulary/enum-like — no case change
     remarks: RULES.NONE, // business name/free text — never case-changed
   },
   ProductionBatch: {
     productCode: RULES.UPPER, // business code/identifier
-    productName: RULES.NONE, // business name/free text — never case-changed
+    productName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
     diNo: RULES.UPPER, // business code/identifier
     batchCode: RULES.UPPER, // business code/identifier
-    category: RULES.NONE, // fixed-vocabulary/enum-like — no case change
+    category: RULES.LOWER, // free-typed category — normalized lowercase, Title Case on display (schema default also lowercased, see production.prisma)
     currentStage: RULES.NONE, // fixed-vocabulary/enum-like — no case change
     status: RULES.NONE, // fixed-vocabulary/enum-like — no case change
     cfuTarget: RULES.NONE, // REVIEW: no confident naming signal — safe default
   },
   BiomassInput: {
-    cultureName: RULES.NONE, // business name/free text — never case-changed
+    cultureName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
     batchNo: RULES.UPPER, // business code/identifier
     doi: RULES.NONE, // REVIEW: no confident naming signal — safe default
     form: RULES.NONE, // REVIEW: no confident naming signal — safe default
@@ -469,18 +469,18 @@ export const FIELD_RULES = {
     sfgId: RULES.NONE, // REVIEW: no confident naming signal — safe default
     sfgDiNo: RULES.UPPER, // business code/identifier
     carrierType: RULES.NONE, // fixed-vocabulary/enum-like — no case change
-    inchargeName: RULES.NONE, // business name/free text — never case-changed
+    inchargeName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
   },
   UnloadingLog: {
     startTime: RULES.NONE, // REVIEW: no confident naming signal — safe default
     endTime: RULES.NONE, // REVIEW: no confident naming signal — safe default
-    inchargeName: RULES.NONE, // business name/free text — never case-changed
+    inchargeName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
   },
   SievingLog: {
     meshSize: RULES.NONE, // REVIEW: no confident naming signal — safe default
     startTime: RULES.NONE, // REVIEW: no confident naming signal — safe default
     endTime: RULES.NONE, // REVIEW: no confident naming signal — safe default
-    inchargeName: RULES.NONE, // business name/free text — never case-changed
+    inchargeName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
   },
   PackingLog: {
     packingType: RULES.NONE, // fixed-vocabulary/enum-like — no case change
@@ -490,7 +490,7 @@ export const FIELD_RULES = {
     labelingEnd: RULES.NONE, // REVIEW: no confident naming signal — safe default
     strappingStart: RULES.NONE, // REVIEW: no confident naming signal — safe default
     strappingEnd: RULES.NONE, // REVIEW: no confident naming signal — safe default
-    inchargeName: RULES.NONE, // business name/free text — never case-changed
+    inchargeName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
   },
   QcSample: {
     sampleId: RULES.NONE, // REVIEW: no confident naming signal — safe default
@@ -552,66 +552,66 @@ export const FIELD_RULES = {
   },
   SalesOrder: {
     soId: RULES.UPPER, // business code/identifier [UNIQUE]
-    company: RULES.NONE, // REVIEW: no confident naming signal — safe default
+    company: RULES.LOWER, // business name — normalized lowercase, Title Case on display (small closed list, see gate.controller.js VALID_COMPANIES — now compared case-insensitively)
     diNo: RULES.UPPER, // business code/identifier
-    customerName: RULES.NONE, // business name/free text — never case-changed
+    customerName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
     orderType: RULES.NONE, // fixed-vocabulary/enum-like — no case change
     priority: RULES.NONE, // fixed-vocabulary/enum-like — no case change
     invoiceNo: RULES.UPPER, // business code/identifier — same treatment as vehicleNo
-    transportName: RULES.NONE, // business name/free text — never case-changed
+    transportName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
     salesStaff: RULES.NONE, // REVIEW: no confident naming signal — safe default
     dispatchedBy: RULES.NONE, // REVIEW: no confident naming signal — safe default
     remarks: RULES.NONE, // business name/free text — never case-changed
   },
   SalesOrderItem: {
-    customerProductName: RULES.NONE, // business name/free text — never case-changed
-    inhouseProductName: RULES.NONE, // business name/free text — never case-changed
+    customerProductName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
+    inhouseProductName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
     inhouseProductCode: RULES.UPPER, // business code/identifier
     activeSpecs: RULES.NONE, // REVIEW: no confident naming signal — safe default
     activeIngredient: RULES.NONE, // REVIEW: no confident naming signal — safe default
-    carrier: RULES.NONE, // REVIEW: no confident naming signal — safe default
+    carrier: RULES.LOWER, // business name — normalized lowercase, Title Case on display
     batchNo: RULES.UPPER, // business code/identifier
-    sectionName: RULES.NONE, // business name/free text — never case-changed
-    totalUom: RULES.NONE, // REVIEW: no confident naming signal — safe default
-    unitUom: RULES.NONE, // REVIEW: no confident naming signal — safe default
+    sectionName: RULES.NONE, // fixed-vocabulary/enum-like (closed 5-value section list) — no case change
+    totalUom: RULES.LOWER, // canonical unit code — normalized lowercase, uppercase on display
+    unitUom: RULES.LOWER, // canonical unit code — normalized lowercase, uppercase on display
     unitPackType: RULES.NONE, // fixed-vocabulary/enum-like — no case change
     packingType: RULES.NONE, // fixed-vocabulary/enum-like — no case change
     labelType: RULES.NONE, // fixed-vocabulary/enum-like — no case change
     status: RULES.NONE, // fixed-vocabulary/enum-like — no case change
   },
   CustomerProfile: {
-    customerName: RULES.NONE, // business name/free text — never case-changed [UNIQUE]
-    company: RULES.NONE, // REVIEW: no confident naming signal — safe default
+    customerName: RULES.LOWER, // business name — normalized lowercase, Title Case on display [UNIQUE]
+    company: RULES.LOWER, // business name — normalized lowercase, Title Case on display (small closed list, see gate.controller.js VALID_COMPANIES — now compared case-insensitively)
     orderType: RULES.NONE, // fixed-vocabulary/enum-like — no case change
   },
   CustomerProductProfile: {
-    customerName: RULES.NONE, // business name/free text — never case-changed
-    productName: RULES.NONE, // business name/free text — never case-changed
+    customerName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
+    productName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
     productCode: RULES.UPPER, // business code/identifier
-    inhouseName: RULES.NONE, // business name/free text — never case-changed
+    inhouseName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
     activeSpecs: RULES.NONE, // REVIEW: no confident naming signal — safe default
-    carrier: RULES.NONE, // REVIEW: no confident naming signal — safe default
-    sectionName: RULES.NONE, // business name/free text — never case-changed
-    unitUom: RULES.NONE, // REVIEW: no confident naming signal — safe default
+    carrier: RULES.LOWER, // business name — normalized lowercase, Title Case on display
+    sectionName: RULES.NONE, // fixed-vocabulary/enum-like (closed 5-value section list) — no case change
+    unitUom: RULES.LOWER, // canonical unit code — normalized lowercase, uppercase on display
     unitPackType: RULES.NONE, // fixed-vocabulary/enum-like — no case change
     primaryPack: RULES.NONE, // REVIEW: no confident naming signal — safe default
     secondaryPack: RULES.NONE, // REVIEW: no confident naming signal — safe default
-    totalUom: RULES.NONE, // REVIEW: no confident naming signal — safe default
+    totalUom: RULES.LOWER, // canonical unit code — normalized lowercase, uppercase on display
     labelType: RULES.NONE, // fixed-vocabulary/enum-like — no case change
     lastBatchNo: RULES.UPPER, // business code/identifier
   },
   ErpSalesOrder: {
     diNumber: RULES.UPPER, // business code/identifier [PK]
-    company: RULES.NONE, // REVIEW: no confident naming signal — safe default
+    company: RULES.LOWER, // business name — normalized lowercase, Title Case on display (small closed list, see gate.controller.js VALID_COMPANIES — now compared case-insensitively)
     orderType: RULES.NONE, // fixed-vocabulary/enum-like — no case change
     status: RULES.NONE, // fixed-vocabulary/enum-like — no case change
-    customerName: RULES.NONE, // business name/free text — never case-changed
+    customerName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
     productCode: RULES.UPPER, // business code/identifier
-    productName: RULES.NONE, // business name/free text — never case-changed
+    productName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
     qtyUnit: RULES.NONE, // REVIEW: no confident naming signal — safe default
     activeIngredient: RULES.NONE, // REVIEW: no confident naming signal — safe default
     specifications: RULES.NONE, // REVIEW: no confident naming signal — safe default
-    carrier: RULES.NONE, // REVIEW: no confident naming signal — safe default
+    carrier: RULES.LOWER, // business name — normalized lowercase, Title Case on display
     primaryPackType: RULES.NONE, // fixed-vocabulary/enum-like — no case change
     secondaryPackType: RULES.NONE, // fixed-vocabulary/enum-like — no case change
     labelType: RULES.NONE, // fixed-vocabulary/enum-like — no case change
@@ -621,7 +621,7 @@ export const FIELD_RULES = {
   },
   OrderDispatch: {
     invoiceNumber: RULES.UPPER, // business code/identifier — same treatment as vehicleNo
-    transportName: RULES.NONE, // business name/free text — never case-changed
+    transportName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
     dispatchedBy: RULES.NONE, // REVIEW: no confident naming signal — safe default
     dispatchNotes: RULES.NONE, // business name/free text — never case-changed
   },
@@ -663,7 +663,7 @@ export const FIELD_RULES = {
   User: {
     username: RULES.LOWER, // username [UNIQUE]
     email: RULES.LOWER, // email [UNIQUE]
-    fullName: RULES.NONE, // business name/free text — never case-changed
+    fullName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
     phone: RULES.PHONE, // phone number
     pinHash: RULES.NONE, // REVIEW: no confident naming signal — safe default
     role: RULES.NONE, // fixed-vocabulary/enum-like — no case change

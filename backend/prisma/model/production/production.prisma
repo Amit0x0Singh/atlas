@@ -235,7 +235,7 @@ model ProductionBatch {
   diNo            String   @map("di_no")
   batchCode       String   @map("batch_code")
   orderQty        Float    @map("order_qty")
-  category        String   @default("POWDER")
+  category        String   @default("powder")
   currentStage    String   @default("BIOMASS") @map("current_stage")
   status          String   @default("DRAFT")
   temperature     Float?

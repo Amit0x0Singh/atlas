@@ -5,6 +5,7 @@ import { useQrScanner } from '../../../../../../hooks/useQrScanner.js'
 import { Button } from '../../../../../../components/ui'
 import './ContainerToPlant.css'
 
+import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 export default function ContainerToPlant({ preselected, onDone }) {
   const [container, setContainer]   = useState(preselected || null)
   const [manualId, setManualId]     = useState('')
@@ -126,7 +127,7 @@ export default function ContainerToPlant({ preselected, onDone }) {
             <div className="flex justify-between items-start mb-3">
               <div>
                 <div className="font-bold text-green-900 font-mono">{container.containerId}</div>
-                <div className="text-sm text-green-700">{container.itemName} <span className="text-xs font-mono">({container.itemCode})</span></div>
+                <div className="text-sm text-green-700">{toTitleCase(container.itemName)} <span className="text-xs font-mono">({container.itemCode})</span></div>
               </div>
               <Button onClick={() => { setContainer(null); setError(''); setSuccess('') }} variant="ghost" size="xs">Change</Button>
             </div>
@@ -177,7 +178,7 @@ export default function ContainerToPlant({ preselected, onDone }) {
                   <option value="">— No indent —</option>
                   {indents.map(i => (
                     <option key={i.indentId} value={i.indentId}>
-                      {i.productName} | {i.batchNo} | {i.batchSize} kg
+                      {toTitleCase(i.productName)} | {i.batchNo} | {i.batchSize} kg
                     </option>
                   ))}
                 </select>

@@ -12,6 +12,7 @@ import ArchiveTab from '../archive-tab/ArchiveTab.jsx'
 import StatusBanner from './components/StatusBanner.jsx'
 import BomIssuanceTabs from './components/BomIssuanceTabs.jsx'
 import { FileText, Archive } from 'lucide-react'
+import { toTitleCase } from '../../../../../utils/textDisplay.js'
 
 const TABS = [
   { id: 'issue',   label: 'Issue BOM', icon: FileText },
@@ -103,7 +104,7 @@ export default function BomIssuance() {
     try {
       const r = await recipeApi.list({ productCode })
       const perUnit = (r.data || []).map(l => ({
-        sno: '', component: l.rmName, qty: String(l.qtyPerUnit), uom: l.uom || '', remarks: l.roleType || '', isHeader: false,
+        sno: '', component: toTitleCase(l.rmName), qty: String(l.qtyPerUnit), uom: l.uom || '', remarks: l.roleType || '', isHeader: false,
         rmCode: l.rmCode,
       }))
       setActiveRecipe({ productCode, perUnit })
@@ -126,7 +127,7 @@ export default function BomIssuance() {
     if (!name || !recipeProducts.length) return
     const match = recipeProducts.find(p => p.productName?.trim().toLowerCase() === name)
     if (match && match.productCode !== form.productCode) {
-      onSelectProduct(match.productCode, match.productName)
+      onSelectProduct(match.productCode, toTitleCase(match.productName))
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.product, form.productCode, recipeProducts])

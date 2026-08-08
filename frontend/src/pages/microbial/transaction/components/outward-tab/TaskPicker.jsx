@@ -4,6 +4,7 @@ import { Button } from '../../../../../components/ui'
 import { PLANT_BADGE, statusBadgeCls } from '../../../../production/planning/data/plantConfig.js'
 import PendingIssuancesModal from './PendingIssuancesModal.jsx'
 
+import { toTitleCase } from '../../../../../utils/textDisplay.js'
 // Mirrors Material Issue by BOM's task picker (same production_tasks pool,
 // same "sent && not yet started" filter) — microbes are issued strictly
 // against a planned batch's recipe, same as Store issues raw materials
@@ -73,7 +74,7 @@ export default function TaskPicker({
                   </span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
-                      <div className="font-semibold text-gray-900 text-sm truncate">{task.productName}</div>
+                      <div className="font-semibold text-gray-900 text-sm truncate">{toTitleCase(task.productName)}</div>
                       <span className={`shrink-0 text-[10px] px-2 py-0.5 rounded-full font-bold ${statusBadgeCls(task.status)}`}>{task.status}</span>
                     </div>
                     <div className="flex items-center gap-3 mt-1 flex-wrap text-xs text-gray-400">

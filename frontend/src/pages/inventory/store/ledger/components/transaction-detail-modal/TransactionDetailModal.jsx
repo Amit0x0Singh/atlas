@@ -3,6 +3,7 @@ import { IconButton } from '../../../../../../components/ui'
 import { X } from 'lucide-react'
 import './TransactionDetailModal.css'
 
+import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 export default function TransactionDetailModal({ detail, onClose }) {
   if (!detail) return null
 
@@ -42,7 +43,7 @@ export default function TransactionDetailModal({ detail, onClose }) {
                 <DSection title="Pack / Bag Details">
                   <DGrid>
                     <DRow label="Pack ID"   value={detail.detail.pack.packId} mono />
-                    <DRow label="Item Name" value={detail.detail.pack.itemName} />
+                    <DRow label="Item Name" value={toTitleCase(detail.detail.pack.itemName)} />
                     <DRow label="Lot No"    value={detail.detail.pack.lotNo} />
                     <DRow label="Bag No"    value={`#${detail.detail.pack.bagNo}`} />
                     <DRow label="Pack Qty"  value={`${detail.detail.pack.packQty} ${detail.detail.pack.uom}`} />
@@ -55,7 +56,7 @@ export default function TransactionDetailModal({ detail, onClose }) {
               {detail.detail?.inward && (
                 <DSection title="Inward Details">
                   <DGrid>
-                    <DRow label="Warehouse"   value={detail.detail.inward.warehouse} />
+                    <DRow label="Warehouse"   value={toTitleCase(detail.detail.inward.warehouse)} />
                     <DRow label="Inward Time" value={new Date(detail.detail.inward.inwardTime).toLocaleString('en-IN')} />
                   </DGrid>
                 </DSection>
@@ -65,7 +66,7 @@ export default function TransactionDetailModal({ detail, onClose }) {
                 <DSection title="Production Indent">
                   <DGrid>
                     <DRow label="Indent ID" value={detail.detail.indent.indentId} mono />
-                    <DRow label="Product"   value={detail.detail.indent.productName} />
+                    <DRow label="Product"   value={toTitleCase(detail.detail.indent.productName)} />
                     <DRow label="DI No"     value={detail.detail.indent.diNo} />
                     <DRow label="Batch No"  value={detail.detail.indent.batchNo} />
                     <DRow label="Status"    value={detail.detail.indent.status} />

@@ -4,6 +4,7 @@ import MetaField from '../meta-field/MetaField.jsx'
 import { Button } from '../../../../../../components/ui'
 import { Printer } from 'lucide-react'
 
+import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 // The three co-located companies material can be gate-inwarded under (see
 // frontend/src/pages/inventory/gate/data/companies.js) — same facility/
 // address, different legal entity + logo on the printed GRN.
@@ -107,7 +108,7 @@ export default function GrnDetail({ selected, detail, loading }) {
                 {detail.items.map((item, i) => (
                   <tr key={item.itemCode} className={i % 2 === 1 ? 'gd-tr-even' : 'gd-tr-odd'}>
                     <td className="gd-td-index">{i + 1}</td>
-                    <td className="gd-td-name">{item.itemName}</td>
+                    <td className="gd-td-name">{toTitleCase(item.itemName)}</td>
                     <td className="gd-td-code">{item.itemCode}</td>
                     <td className="gd-td-mono">{item.lotNo}</td>
                     <td className="gd-td-bold">{item.totalBags}</td>

@@ -4,6 +4,7 @@ import {
 } from 'lucide-react'
 import ResultCard from '../result-card/ResultCard.jsx'
 
+import { toTitleCase } from '../../../../../utils/textDisplay.js'
 // Categories map 1:1 to the keys executeImport() actually returns — this is
 // real per-write-path data, not a pre-import validation report. warningKeys
 // are the specific counters that backend attributes to that import path
@@ -84,7 +85,7 @@ export default function ResultSummary({ result }) {
           </div>
           <div className="max-h-40 overflow-y-auto mt-2 ml-6 space-y-0.5">
             {result.duplicateRecipeLines.map((d, i) => (
-              <p key={i} className="text-fuchsia-700 text-xs">"{d.rmName}" in "{d.productName}" — appeared {d.occurrences}× in the sheet</p>
+              <p key={i} className="text-fuchsia-700 text-xs">"{toTitleCase(d.rmName)}" in "{toTitleCase(d.productName)}" — appeared {d.occurrences}× in the sheet</p>
             ))}
           </div>
           <p className="text-fuchsia-700 text-xs mt-2 ml-6">

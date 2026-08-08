@@ -2,6 +2,7 @@ import { useState } from "react";
 import Pagination from "../../../../../components/pagination/Pagination.jsx";
 import { Button } from "../../../../../components/ui";
 import "./InwardTable.css";
+import { toTitleCase } from "../../../../../utils/textDisplay.js";
 
 function StatusBadge({ status }) {
   return (
@@ -65,10 +66,10 @@ export default function InwardTable({ list, total, onRequestDelete }) {
                 className={`it-row ${idx % 2 === 0 ? "it-row--even" : "it-row--odd"}`}
               >
                 <td className="it-td it-td-text">
-                  {item.company_name || item.companyName || "—"}
+                  {toTitleCase(item.company_name || item.companyName) || "—"}
                 </td>
                 <td className="it-td it-td-supplier">
-                  {item.supplier_name || item.supplierName}
+                  {toTitleCase(item.supplier_name || item.supplierName)}
                 </td>
                 <td className="it-td it-td-text">
                   {item.invoice_no || item.invoiceNo || "—"}

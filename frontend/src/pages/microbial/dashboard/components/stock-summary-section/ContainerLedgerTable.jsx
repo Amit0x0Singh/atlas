@@ -5,6 +5,7 @@ import { stockStatusBadgeCls, fmtDate } from '../../../transaction/utils/format.
 import { exportCsv } from '../../utils/exportCsv.js'
 import { useReactivateContainer } from '../../../../../hooks/microbial/useMicrobialStorage.js'
 import { formatMeasurementString } from '../../../../../utils/measurement/formatMeasurement.js'
+import { toTitleCase } from '../../../../../utils/textDisplay.js'
 
 export default function ContainerLedgerTable({ rows, filterSeed }) {
   const [expanded, setExpanded] = useState(false)
@@ -38,9 +39,9 @@ export default function ContainerLedgerTable({ rows, filterSeed }) {
 
   const handleExport = () => exportCsv('container_ledger.csv', filtered, [
     { label: 'Container', value: (r) => r.container_code },
-    { label: 'Microbe', value: (r) => r.microbe_name },
+    { label: 'Microbe', value: (r) => toTitleCase(r.microbe_name) },
     { label: 'Type', value: (r) => r.microbe_type },
-    { label: 'Location', value: (r) => (r.inactive ? r.inactive_location : r.location) },
+    { label: 'Location', value: (r) => toTitleCase(r.inactive ? r.inactive_location : r.location) },
     { label: 'Batches', value: (r) => r.batch_count },
     { label: 'Balance', value: (r) => formatMeasurementString(r.balance_kg, 'KG') },
     { label: 'Total In', value: (r) => formatMeasurementString(r.total_in_kg, 'KG') },
@@ -99,9 +100,9 @@ export default function ContainerLedgerTable({ rows, filterSeed }) {
                         {r.container_code}
                         {r.inactive && <span className="ml-1.5 px-1.5 py-0.5 rounded bg-gray-200 text-gray-600 text-[9px] font-bold align-middle">⏸ INACTIVE</span>}
                       </td>
-                      <td className="px-3 py-2 text-gray-800">{r.microbe_name}</td>
+                      <td className="px-3 py-2 text-gray-800">{toTitleCase(r.microbe_name)}</td>
                       <td className="px-3 py-2"><span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 text-[10px] font-semibold">{r.microbe_type}</span></td>
-                      <td className="px-3 py-2 text-gray-500">{r.inactive ? `${r.inactive_location || '—'} (freed)` : (r.location || '—')}</td>
+                      <td className="px-3 py-2 text-gray-500">{r.inactive ? `${toTitleCase(r.inactive_location) || '—'} (freed)` : (toTitleCase(r.location) || '—')}</td>
                       <td className="px-3 py-2 text-center text-gray-700">{r.batch_count}</td>
                       <td className="px-3 py-2 font-bold text-gray-900">{formatMeasurementString(r.balance_kg, 'KG')}</td>
                       <td className="px-3 py-2 text-gray-700">{formatMeasurementString(r.total_in_kg, 'KG')}</td>

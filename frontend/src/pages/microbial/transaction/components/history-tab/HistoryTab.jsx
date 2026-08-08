@@ -4,6 +4,7 @@ import { useMicrobes } from '../../../../../hooks/masters/useMicrobes.js'
 import { useMicrobialHistory } from '../../../../../hooks/microbial/useMicrobialHistory.js'
 import { fmtCfu, fmtDateTime } from '../../utils/format.js'
 
+import { toTitleCase } from '../../../../../utils/textDisplay.js'
 export default function HistoryTab() {
   const [microbeCode, setMicrobeCode] = useState('')
   const [from, setFrom] = useState('')
@@ -22,7 +23,7 @@ export default function HistoryTab() {
       <div className="flex flex-wrap items-center gap-3 mb-5">
         <select className="border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 w-[220px]" value={microbeCode} onChange={(e) => setMicrobeCode(e.target.value)}>
           <option value="">All Microbes</option>
-          {microbes.map((m) => <option key={m.microbeId} value={m.microbeCode}>{m.microbeName} ({m.microbeCode})</option>)}
+          {microbes.map((m) => <option key={m.microbeId} value={m.microbeCode}>{toTitleCase(m.microbeName)} ({m.microbeCode})</option>)}
         </select>
         <div className="flex items-center gap-2">
           <label className="text-xs font-semibold text-gray-500">From</label>

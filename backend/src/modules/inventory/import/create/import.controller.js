@@ -59,8 +59,12 @@ async function findOrCreateImportGateInward(supplier, invoiceNo, receivedDate) {
     lt:  new Date(receivedDate.getFullYear(), receivedDate.getMonth(), receivedDate.getDate() + 1),
   } : undefined
 
+  // supplierName is stored lowercase (RULES.LOWER) but Excel import rows
+  // carry whatever casing the sheet happened to use — match case-
+  // insensitively so re-importing under a differently-cased supplier name
+  // still finds the existing gate entry instead of creating a duplicate.
   const existing = await prisma.gateInward.findFirst({
-    where: { supplierName, invoiceNo: invoiceNo || null, ...(dayRange ? { entryTime: dayRange } : {}) },
+    where: { supplierName: { equals: supplierName, mode: 'insensitive' }, invoiceNo: invoiceNo || null, ...(dayRange ? { entryTime: dayRange } : {}) },
     orderBy: { createdAt: 'desc' },
   })
   if (existing) return existing

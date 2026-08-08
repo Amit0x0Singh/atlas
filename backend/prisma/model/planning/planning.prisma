@@ -32,7 +32,7 @@ model ProductionPlan {
   productName      String   @map("product_name")
   batchCode        String?  @map("batch_code")
   totalQty         Float    @map("total_qty")
-  uom              String   @default("KG")
+  uom              String   @default("kg")
   carrier          String?
   specs            String?
   process          String?
@@ -100,7 +100,7 @@ model BomSend {
   sectionType String?   @map("section_type")
   bomType     String    @map("bom_type") // 'FORMULATION' | 'PACKING'
   totalQty    Float     @map("total_qty")
-  uom         String    @default("KG")
+  uom         String    @default("kg")
   status      String    @default("PENDING") // PENDING | PICKED | ISSUED | CANCELLED
   remarks     String?
   sentBy      String?   @map("sent_by")

@@ -3,6 +3,7 @@ import { packsApi } from '../../../../../../../api/inventory.js'
 import { openAuthedFile } from '../../../../../../../utils/authedFile.js'
 import { fmtDate } from '../utils/groupPacks.js'
 
+import { toTitleCase } from '../../../../../../../utils/textDisplay.js'
 export default function HistoryRow({ group: g, isOpen, onToggle }) {
   const totalQty        = g.bags.reduce((s, b) => s + (b.packQty || 0), 0)
   const groupWarehouses = [...new Set(g.bags.map(b => b.warehouse).filter(Boolean))]
@@ -20,7 +21,7 @@ export default function HistoryRow({ group: g, isOpen, onToggle }) {
         </td>
 
         <td className="px-3 py-3">
-          <div className="font-semibold text-gray-900">{g.itemName}</div>
+          <div className="font-semibold text-gray-900">{toTitleCase(g.itemName)}</div>
           <div className="text-xs text-gray-400 font-mono mt-0.5">{g.itemCode}</div>
         </td>
 
@@ -92,7 +93,7 @@ export default function HistoryRow({ group: g, isOpen, onToggle }) {
               </span>
               {b.warehouse ? (
                 <span className="text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded w-36 text-center shrink-0 truncate">
-                {b.warehouse}
+                {toTitleCase(b.warehouse)}
                 </span>
               ) : (
                 <span className="text-xs text-gray-300 w-36 text-center shrink-0">—</span>

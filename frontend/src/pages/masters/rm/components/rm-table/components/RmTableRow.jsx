@@ -1,6 +1,7 @@
 import { Pencil, Trash2 } from 'lucide-react'
 import { IconButton } from '../../../../../../components/ui'
 import TruncatedText from './TruncatedText.jsx'
+import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 
 const TRACKING_BADGE = {
   PACK: 'bg-blue-100 text-blue-700',
@@ -21,14 +22,14 @@ export default function RmTableRow({ item, onEdit, onDelete, onRowClick }) {
       <td className="px-4 py-3 max-w-0">
         <div className="flex flex-col min-w-0">
           <span className="font-mono text-blue-700 font-medium text-xs">{item.itemCode}</span>
-          <TruncatedText text={item.itemName} className="text-gray-800 capitalize" />
+          <TruncatedText text={toTitleCase(item.itemName)} className="text-gray-800" />
         </div>
       </td>
       <td className="px-4 py-3">
-        <span className="bg-gray-100 px-2 py-0.5 rounded text-gray-700 text-xs font-medium">{item.inventoryUom}</span>
+        <span className="bg-gray-100 px-2 py-0.5 rounded text-gray-700 text-xs font-medium">{item.inventoryUom?.toUpperCase()}</span>
       </td>
       <td className="px-4 py-3">
-        <span className="bg-gray-100 px-2 py-0.5 rounded text-gray-700 text-xs font-medium">{item.operationalUom || item.inventoryUom}</span>
+        <span className="bg-gray-100 px-2 py-0.5 rounded text-gray-700 text-xs font-medium">{(item.operationalUom || item.inventoryUom)?.toUpperCase()}</span>
       </td>
       <td className="px-4 py-3">
         <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${TRACKING_BADGE[item.trackingType || 'PACK']}`}>
@@ -38,9 +39,9 @@ export default function RmTableRow({ item, onEdit, onDelete, onRowClick }) {
       <td className="px-4 py-3 max-w-0">
         {item.category ? (
           <div className="flex flex-col min-w-0">
-            <TruncatedText text={item.category} className="text-blue-600 font-medium text-xs" />
+            <TruncatedText text={toTitleCase(item.category)} className="text-blue-600 font-medium text-xs" />
             {item.subCategory && (
-              <TruncatedText text={item.subCategory} className="text-rose-500 text-xs mt-0.5" />
+              <TruncatedText text={toTitleCase(item.subCategory)} className="text-rose-500 text-xs mt-0.5" />
             )}
           </div>
         ) : (
@@ -48,7 +49,7 @@ export default function RmTableRow({ item, onEdit, onDelete, onRowClick }) {
         )}
       </td>
       <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
-        {item.state || '—'}
+        {item.state?.toUpperCase() || '—'}
       </td>
       <td className="px-4 py-3">
         <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${CONVERSION_BADGE[!!item.conversionRequired]}`}>

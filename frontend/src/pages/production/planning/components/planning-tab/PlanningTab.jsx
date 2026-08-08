@@ -6,6 +6,7 @@ import { planTasksApi } from '../../../../../api/production.js'
 import StatusBadge from '../ui/status-badge/StatusBadge.jsx'
 import PlantBadge from '../ui/plant-badge/PlantBadge.jsx'
 
+import { toTitleCase } from '../../../../../utils/textDisplay.js'
 export default function PlanningTab({ tasks, onRefresh, onAdd, onEdit, onDelete, toastShow }) {
   const [planDate,   setPlanDate]   = useState(todayISO())
   const [dateOffset, setDateOffset] = useState(0)
@@ -87,7 +88,7 @@ export default function PlanningTab({ tasks, onRefresh, onAdd, onEdit, onDelete,
                   <tr key={t.id} className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${i % 2 ? 'bg-gray-50/30' : ''}`}>
                     <td className="px-3 py-2.5 font-mono text-[11.5px] font-bold text-indigo-700">{t.taskId}</td>
                     <td className="px-3 py-2.5"><PlantBadge plant={t.plant} /></td>
-                    <td className="px-3 py-2.5 font-semibold text-gray-800 max-w-[140px] truncate">{t.productName}</td>
+                    <td className="px-3 py-2.5 font-semibold text-gray-800 max-w-[140px] truncate">{toTitleCase(t.productName)}</td>
                     <td className="px-3 py-2.5 text-gray-500 text-[11.5px]">{t.diNo || '—'}</td>
                     <td className="px-3 py-2.5 font-mono text-[11px] text-gray-600 max-w-[150px] truncate">{t.batchCode || '—'}</td>
                     <td className="px-3 py-2.5 font-semibold text-gray-700">{t.qty} <span className="text-[10px] text-gray-400 font-normal">{t.qtyUom || ''}</span></td>

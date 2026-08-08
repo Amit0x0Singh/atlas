@@ -5,6 +5,7 @@ import { IconButton } from "../../../../../../components/ui";
 import { inp, lbl } from "../utils/formStyles.js";
 import BatchGroupRow from "./BatchGroupRow.jsx";
 
+import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 export const BLANK_BATCH = () => ({
   numberOfBags: "",
   customerBatchCode: "",
@@ -96,7 +97,7 @@ export default function ItemLine({ idx, item, rmList, receivedDate, onChange, on
               >
                 <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                   <span style={{ fontSize: "9px", fontWeight: 700, padding: "1px 5px", borderRadius: "4px", background: "#dbeafe", color: "#1e40af" }}>RM</span>
-                  <span style={{ fontWeight: 500 }}>{r.itemName}</span>
+                  <span style={{ fontWeight: 500 }}>{toTitleCase(r.itemName)}</span>
                 </div>
                 <span style={{ fontSize: "11px", color: "#94a3b8", fontFamily: "monospace" }}>{r.itemCode}</span>
               </button>
@@ -133,7 +134,7 @@ export default function ItemLine({ idx, item, rmList, receivedDate, onChange, on
             <span style={{ fontSize: "9px", fontWeight: 700, padding: "1px 5px", borderRadius: "4px", background: "#dbeafe", color: "#1e40af" }}>
               RM
             </span>
-            <span style={{ fontWeight: 600 }}>{item.selectedItem.itemName}</span>
+            <span style={{ fontWeight: 600 }}>{toTitleCase(item.selectedItem.itemName)}</span>
             <span style={{ fontFamily: "monospace", color: "#3b82f6" }}>{item.selectedItem.itemCode}</span>
             <span>UOM: <strong>{item.selectedItem.uom}</strong></span>
             {nextLot && <span style={{ marginLeft: "auto", fontWeight: 700 }}>Next Lot: {nextLot}</span>}

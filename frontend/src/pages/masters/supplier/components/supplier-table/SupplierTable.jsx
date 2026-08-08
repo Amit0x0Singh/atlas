@@ -1,6 +1,7 @@
 import { Pencil, Trash2 } from 'lucide-react'
 import { IconButton } from '../../../../../components/ui'
 import Pagination from '../../../../../components/pagination/Pagination.jsx'
+import { toTitleCase } from '../../../../../utils/textDisplay.js'
 
 // `items` is already the current page's rows (filtering + pagination happen
 // server-side) — `total` is the server-reported match count.
@@ -28,7 +29,7 @@ export default function SupplierTable({ items, total, page, limit, onEdit, onDea
               </tr>
             ) : items.map(item => (
               <tr key={item.supplierId} className="border-b border-gray-100 hover:bg-gray-50">
-                <td className="px-4 py-3 font-medium whitespace-nowrap">{item.supplierName}</td>
+                <td className="px-4 py-3 font-medium whitespace-nowrap">{toTitleCase(item.supplierName)}</td>
                 <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{item.phone || '—'}</td>
                 <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{item.email || '—'}</td>
                 <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{item.gstin || '—'}</td>

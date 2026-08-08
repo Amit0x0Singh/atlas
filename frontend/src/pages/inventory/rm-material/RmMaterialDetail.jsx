@@ -7,6 +7,7 @@ import RmDetailFilters   from './components/rm-detail-filters/RmDetailFilters.js
 import RmDetailTable     from './components/rm-detail-table/RmDetailTable.jsx'
 import { groupPacks, groupStatus } from './components/rmDetailHelpers.js'
 import { RefreshCw, History } from 'lucide-react'
+import { toTitleCase } from '../../../utils/textDisplay.js'
 
 function fmtQty(n) {
   if (n == null) return '—'
@@ -94,7 +95,7 @@ export default function RmMaterialDetail() {
     <div className="min-h-screen bg-gray-50">
       <PageHeader
         icon={History}
-        title={loading ? <span className="inline-block h-5 w-48 bg-gray-200 rounded animate-pulse align-middle" /> : (rm?.itemName ?? itemCode)}
+        title={loading ? <span className="inline-block h-5 w-48 bg-gray-200 rounded animate-pulse align-middle" /> : (toTitleCase(rm?.itemName) ?? itemCode)}
         description={!loading && `${rm?.itemCode} · ${rm?.inventoryUom} · Complete inward history`}
         actions={<>
           <IconButton icon={RefreshCw} onClick={load} tooltip="Refresh" variant="outline-gray" size="sm" />

@@ -1,5 +1,6 @@
 import { X, Wrench, Gauge, Settings2, MapPin, Package, Clock, Hash } from 'lucide-react'
 import { Modal } from '../../../../../components/ui'
+import { toTitleCase } from '../../../../../utils/textDisplay.js'
 
 const fmtDateTime = (d) => d
   ? new Date(d).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })
@@ -47,7 +48,7 @@ export default function EquipmentDetailModal({ item, onClose }) {
             <Wrench size={20} />
           </div>
           <div className="min-w-0">
-            <h2 className="text-lg font-bold text-gray-900 truncate">{item.equipName}</h2>
+            <h2 className="text-lg font-bold text-gray-900 truncate">{toTitleCase(item.equipName)}</h2>
             <div className="flex items-center gap-2 mt-1 flex-wrap">
               <span className="inline-flex items-center gap-1 font-mono text-xs font-semibold text-blue-700 bg-blue-50 ring-1 ring-inset ring-blue-200 px-2 py-0.5 rounded-md">
                 <Hash size={11} />{item.equipCode}

@@ -4,6 +4,7 @@ import Pagination from '../../../../../components/pagination/Pagination.jsx'
 import { Button } from '../../../../../components/ui'
 import { ChevronRight } from 'lucide-react'
 
+import { toTitleCase } from '../../../../../utils/textDisplay.js'
 function fmt(n, dec = 3) {
   if (n == null) return '—'
   const v = Number(n)
@@ -73,7 +74,7 @@ export default function RmTable({ loading, items, filtered, paginated, page, lim
                   <tr key={it.itemCode} className="border-t border-gray-100 hover:bg-gray-50 transition-colors group">
                     <td className="px-4 py-3 text-xs text-gray-400 tabular-nums">{idx + 1}</td>
                     <td className="px-4 py-3">
-                      <div className="font-semibold text-gray-900 group-hover:text-indigo-700 transition-colors">{it.itemName}</div>
+                      <div className="font-semibold text-gray-900 group-hover:text-indigo-700 transition-colors">{toTitleCase(it.itemName)}</div>
                       <div className="text-xs text-gray-400 font-mono mt-0.5">{it.itemCode}</div>
                     </td>
                     <td className="px-4 py-3 text-center">

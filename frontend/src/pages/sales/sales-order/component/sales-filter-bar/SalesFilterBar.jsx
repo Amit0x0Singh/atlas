@@ -29,9 +29,11 @@ const STATUS_OPTIONS = [
   ...STATUSES.map((s) => ({ value: s, label: STATUS_LABELS[s] })),
 ];
 
+// company is stored lowercase (text-normalization standard) — option value
+// matches storage so the filter actually matches, label keeps the code as-is.
 const COMPANY_OPTIONS = [
   { value: "", label: "All Companies" },
-  ...COMPANIES.map((c) => ({ value: c, label: c })),
+  ...COMPANIES.map((c) => ({ value: c.toLowerCase(), label: c })),
 ];
 
 function hasActive(f) {
@@ -192,7 +194,7 @@ export default function SalesFilterBar({ filters, onChange, onClear, total }) {
           )}
           {filters.company && (
             <Chip
-              label={`Company: ${filters.company}`}
+              label={`Company: ${filters.company.toUpperCase()}`}
               onRemove={() => onChange("company", "")}
             />
           )}

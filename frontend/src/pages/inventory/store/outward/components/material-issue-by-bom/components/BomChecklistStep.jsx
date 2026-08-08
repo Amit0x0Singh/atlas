@@ -1,6 +1,7 @@
 import { Button, BackButton } from '../../../../../../../components/ui'
 import IssuePanel from './IssuePanel.jsx'
 
+import { toTitleCase } from '../../../../../../../utils/textDisplay.js'
 export default function BomChecklistStep({
   selProduct, batchQty, batchUom, batchRef, diNo,
   bomLines, activeIdx, totalDone, totalRequired, progress,
@@ -18,7 +19,7 @@ export default function BomChecklistStep({
         <div className="flex items-start justify-between mb-4 flex-wrap gap-3">
           <div>
             <div className="flex items-center gap-3 flex-wrap">
-              <h2 className="text-lg font-bold text-gray-900">{selProduct?.productName}</h2>
+              <h2 className="text-lg font-bold text-gray-900">{toTitleCase(selProduct?.productName)}</h2>
               <span className="bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-1 rounded-lg">
                 {batchQty} {batchUom}
               </span>
@@ -107,7 +108,7 @@ export default function BomChecklistStep({
                   <span className="w-7 h-7 rounded-full bg-gray-300 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">!</span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-semibold text-gray-500 text-sm line-through">{line.rmName}</span>
+                      <span className="font-semibold text-gray-500 text-sm line-through">{toTitleCase(line.rmName)}</span>
                       <span className="text-xs font-mono text-gray-400">{line.rmCode}</span>
                       <span className="text-xs px-1.5 py-0.5 rounded font-medium bg-gray-200 text-gray-600">No longer in recipe</span>
                     </div>
@@ -143,7 +144,7 @@ export default function BomChecklistStep({
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-semibold text-gray-900 text-sm">{line.rmName}</span>
+                      <span className="font-semibold text-gray-900 text-sm">{toTitleCase(line.rmName)}</span>
                       <span className="text-xs font-mono text-gray-400">{line.rmCode}</span>
                       {line.roleType !== 'INGREDIENT' && (
                         <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
@@ -218,7 +219,7 @@ export default function BomChecklistStep({
             <p className="text-2xl mb-2">🎉</p>
             <p className="font-bold text-green-800 text-lg">All Materials Issued!</p>
             <p className="text-sm text-green-600 mt-1">
-              {selProduct?.productName} — {batchQty} {batchUom} batch ready for production
+              {toTitleCase(selProduct?.productName)} — {batchQty} {batchUom} batch ready for production
               {batchRef && ` (Ref: ${batchRef})`}
             </p>
             <Button

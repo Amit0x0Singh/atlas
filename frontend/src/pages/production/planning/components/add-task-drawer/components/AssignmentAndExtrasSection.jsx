@@ -1,5 +1,6 @@
 import { Field, Inp, Sel, SecLabel } from './FormFields.jsx'
 
+import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 export default function AssignmentAndExtrasSection({
   cfg,
   incharge, setIncharge,
@@ -90,7 +91,7 @@ export default function AssignmentAndExtrasSection({
                 <option value="">— Not from SFG —</option>
                 {availableSfg.map(s => (
                   <option key={s.id} value={s.id}>
-                    {s.productName} — {s.batchCode} — {s.qtyRemaining} {s.qtyUom} @ {s.location || '—'}
+                    {toTitleCase(s.productName)} — {s.batchCode} — {s.qtyRemaining} {s.qtyUom} @ {s.location || '—'}
                   </option>
                 ))}
               </Sel>

@@ -1,7 +1,14 @@
 ﻿import { useState, useEffect } from "react";
 import { cpProfileApi } from "../../../../../api/sales.js";
-import { BLANK_ITEM, COMPANIES } from "../../shared/constants.js";
+import { BLANK_ITEM, COMPANIES, UOMS } from "../../shared/constants.js";
 import { suggestNextBatch, addDays, calcTotalCS } from "../../shared/utils.js";
+import { toTitleCase } from "../../../../../utils/textDisplay.js";
+
+// totalUom/unitUom are stored lowercase (RULES.LOWER) but the UOMS <select>
+// options are a fixed mixed-case list (KG/LTR/GM/ML/Number, not uniformly
+// uppercase) — match case-insensitively to find the canonical option form
+// instead of assuming a blind .toUpperCase() would match ("number" -> "Number").
+const matchUom = (raw) => UOMS.find((u) => u.toLowerCase() === (raw || "").toLowerCase()) || raw || "KG";
 import OrderHeaderFields from "./components/OrderHeaderFields.jsx";
 import LineItemRow from "../line-item-row/LineItemRow.jsx";
 import { Button } from "../../../../../components/ui";
@@ -33,7 +40,7 @@ export default function CreateSalesOrder({
   const today = new Date().toISOString().split("T")[0];
 
   const [hdr, setHdr] = useState({
-    company: COMPANIES[0] || "SOM",
+    company: (COMPANIES[0] || "SOM").toLowerCase(),
     diNo: "",
     customerName: "",
     orderType: "DOMESTIC",
@@ -41,6 +48,14 @@ export default function CreateSalesOrder({
     orderReceivedDate: today,
     remarks: "",
     ...initial,
+    ...(initial && {
+      customerName: toTitleCase(initial.customerName),
+      // company is a small code/abbreviation list (SOM/DVS/AL-IPL/…), not a
+      // display name — lowercased to match the <select>'s lowercase option
+      // values (see OrderHeaderFields.jsx), not Title-Cased.
+      company: (initial.company || "").toLowerCase(),
+      transportName: toTitleCase(initial.transportName),
+    }),
   });
 
   const [items, setItems] = useState(
@@ -48,6 +63,11 @@ export default function CreateSalesOrder({
       ? initial.items.map((it) => ({
           ...BLANK_ITEM,
           ...it,
+          customerProductName: toTitleCase(it.customerProductName),
+          inhouseProductName: toTitleCase(it.inhouseProductName),
+          carrier: toTitleCase(it.carrier),
+          totalUom: matchUom(it.totalUom),
+          unitUom: matchUom(it.unitUom),
           mfgDate: it.mfgDate
             ? new Date(it.mfgDate).toISOString().split("T")[0]
             : "",
@@ -84,7 +104,7 @@ export default function CreateSalesOrder({
       its.map((it, i) => {
         if (i !== idx) return it;
         const newUnitQty = mem.unitQty ? String(mem.unitQty) : it.unitQty;
-        const newUnitUom = mem.unitUom || it.unitUom;
+        const newUnitUom = mem.unitUom ? matchUom(mem.unitUom) : it.unitUom;
         const newUnitsPerCS = mem.unitsPerCS
           ? String(mem.unitsPerCS)
           : it.unitsPerCS;
@@ -93,7 +113,7 @@ export default function CreateSalesOrder({
         return {
           ...it,
           activeSpecs: mem.activeSpecs || it.activeSpecs,
-          carrier: mem.carrier || it.carrier,
+          carrier: mem.carrier ? toTitleCase(mem.carrier) : it.carrier,
           sectionName: mem.sectionName || it.sectionName,
           unitQty: newUnitQty,
           unitUom: newUnitUom,
@@ -101,7 +121,7 @@ export default function CreateSalesOrder({
           packingType: mem.secondaryPack || it.packingType,
           unitsPerCS: newUnitsPerCS,
           totalCS: newTotalCS || it.totalCS,
-          totalUom: mem.totalUom || it.totalUom,
+          totalUom: mem.totalUom ? matchUom(mem.totalUom) : it.totalUom,
           labelType: mem.labelType || it.labelType,
           mrp: mem.mrp ? String(mem.mrp) : it.mrp,
           batchNo: suggested || it.batchNo,

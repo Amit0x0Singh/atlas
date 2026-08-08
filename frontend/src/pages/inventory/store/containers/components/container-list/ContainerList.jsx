@@ -7,6 +7,7 @@ import Pagination from "../../../../../../components/pagination/Pagination.jsx";
 import { Button, IconButton, Modal } from "../../../../../../components/ui";
 import { Pencil } from "lucide-react";
 
+import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 function fillPct(c) {
   if (!c.capacity) return 0;
   return Math.min(100, Math.round((c.currentQty / c.capacity) * 100));
@@ -166,7 +167,7 @@ export default function ContainerList() {
         {editing && (
           <div className="p-5">
             <h3 className="text-base font-bold text-gray-900 mb-1">Edit Container Size</h3>
-            <p className="text-xs text-gray-400 mb-4 font-mono">{editing.containerId} · {editing.itemName}</p>
+            <p className="text-xs text-gray-400 mb-4 font-mono">{editing.containerId} · {toTitleCase(editing.itemName)}</p>
 
             {editErr && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg mb-3 text-xs">{editErr}</div>

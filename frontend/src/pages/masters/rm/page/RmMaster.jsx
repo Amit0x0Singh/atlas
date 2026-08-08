@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { Plus, Package } from 'lucide-react'
 import { useRmMaster, useCreateRm, useUpdateRm, useDeleteRm } from '../../../../hooks/inventory/useRmMaster.js'
 import { normalizeUom } from '../../../../utils/uom.js'
+import { toTitleCase } from '../../../../utils/textDisplay.js'
 import './RmMaster.css'
 import { Button, BackButton, PageHeader } from '../../../../components/ui'
 import RmTable from '../components/rm-table/page/RmTable.jsx'
@@ -39,9 +40,12 @@ export default function RmMaster() {
 
   // Category / Sub Category dropdown options — sourced entirely from
   // existing RM Master data, never hardcoded, so the list always reflects
-  // whatever values are actually in use.
-  const categories    = useMemo(() => uniqueSortedValues(items.map(i => i.category)), [items])
-  const subCategories = useMemo(() => uniqueSortedValues(items.map(i => i.subCategory)), [items])
+  // whatever values are actually in use. Values are stored lowercase
+  // (text-normalization standard) but shown Title Case here — the form's
+  // initial value below is Title-Cased to match so the <select> can find it,
+  // and whatever the user picks is re-lowercased on save by the backend.
+  const categories    = useMemo(() => uniqueSortedValues(items.map(i => i.category)).map(toTitleCase), [items])
+  const subCategories = useMemo(() => uniqueSortedValues(items.map(i => i.subCategory)).map(toTitleCase), [items])
 
   const createRm = useCreateRm()
   const updateRm = useUpdateRm()
@@ -62,11 +66,11 @@ export default function RmMaster() {
       // non-canonical casing/alias (e.g. "Kg"), which would otherwise match
       // no <option> and silently fall back to the placeholder instead of
       // showing the item's actual value.
-      itemCode: item.itemCode, itemName: item.itemName,
+      itemCode: item.itemCode, itemName: toTitleCase(item.itemName),
       inventoryUom: normalizeUom(item.inventoryUom) || item.inventoryUom,
       operationalUom: item.operationalUom ? (normalizeUom(item.operationalUom) || item.operationalUom) : '',
       trackingType: item.trackingType || 'PACK',
-      category: item.category || '', subCategory: item.subCategory || '', state: item.state || '', density: item.density ?? '',
+      category: toTitleCase(item.category) || '', subCategory: toTitleCase(item.subCategory) || '', state: (item.state || '').toUpperCase(), density: item.density ?? '',
       conversionRequired: !!item.conversionRequired,
       lowStockLevel: item.lowStockLevel ?? '', highStockLevel: item.highStockLevel ?? '',
     })

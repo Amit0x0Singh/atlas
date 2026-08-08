@@ -6,6 +6,7 @@ import { X } from 'lucide-react'
 import './StockLossAdjustment.css'
 
 
+import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 const REASONS = [
   'Production spillage',
   'Damaged / broken bag',
@@ -112,7 +113,7 @@ export default function StockLossAdjustment() {
               <div className="min-w-0">
                 <div className="text-[10px] font-semibold text-red-400 uppercase tracking-widest mb-0.5">Selected Bag</div>
                 <div className="font-mono text-sm font-bold text-red-900 truncate">{pack.packId}</div>
-                <div className="text-sm text-red-700 mt-0.5 font-medium truncate">{pack.itemName}</div>
+                <div className="text-sm text-red-700 mt-0.5 font-medium truncate">{toTitleCase(pack.itemName)}</div>
                 <div className="text-xs text-red-500 mt-0.5">
                   Lot: {pack.lotNo} · Bag #{pack.bagNo} · Supplier: {pack.supplier || '—'}
                 </div>

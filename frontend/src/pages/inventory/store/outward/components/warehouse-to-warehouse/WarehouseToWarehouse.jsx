@@ -5,6 +5,7 @@ import ScannerPanel from '../../../../../../components/ScannerPanel/ScannerPanel
 import { WAREHOUSES } from '../../../inward/components/pack-inward/components/constants.js'
 import './WarehouseToWarehouse.css'
 
+import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 export default function WarehouseToWarehouse() {
   const [packId, setPackId]     = useState('')
   const [packInfo, setPackInfo] = useState(null)
@@ -28,7 +29,11 @@ export default function WarehouseToWarehouse() {
       const r = await outwardApi.getPack(id)
       const data = r.data
       setPackInfo(data)
-      setFrom(data.warehouse || '')
+      // warehouse is stored lowercase (RULES.LOWER) but this module's
+      // WAREHOUSES list (and its datalist suggestions) are the fixed
+      // UPPERCASE convention — match that instead of showing raw lowercase.
+      const stored = (data.warehouse || '').trim().toUpperCase()
+      setFrom(WAREHOUSES.find((w) => w === stored) || data.warehouse || '')
     } catch (e) {
       setError(e.response?.data?.error || e.message)
     } finally {
@@ -78,8 +83,8 @@ export default function WarehouseToWarehouse() {
           {packInfo && (
             <div className="mt-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-sm">
               <span className="font-mono font-semibold text-blue-900">{packId}</span>
-              <span className="text-blue-600 ml-2">· {packInfo.itemName} · Lot: {packInfo.lotNo} · Bag #{packInfo.bagNo} · {packInfo.remainingQty} {packInfo.uom} available</span>
-              {packInfo.warehouse && <span className="text-blue-600 ml-2">· Currently in: {packInfo.warehouse}</span>}
+              <span className="text-blue-600 ml-2">· {toTitleCase(packInfo.itemName)} · Lot: {packInfo.lotNo} · Bag #{packInfo.bagNo} · {packInfo.remainingQty} {packInfo.uom} available</span>
+              {packInfo.warehouse && <span className="text-blue-600 ml-2">· Currently in: {packInfo.warehouse.toUpperCase()}</span>}
             </div>
           )}
         </div>

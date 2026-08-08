@@ -3,6 +3,7 @@ import Pagination from '../../../../../components/pagination/Pagination.jsx'
 import { STATUS_STYLE, STATUS_LABELS } from '../../shared/constants.js'
 import { fmtDate, etdDays } from '../../shared/utils.js'
 import { Button } from '../../../../../components/ui'
+import { toTitleCase } from '../../../../../utils/textDisplay.js'
 
 function TypeBadge({ type }) {
   const isExport = type === 'EXPORT'
@@ -131,7 +132,7 @@ export default function OrderHistory({ orders, loading, onOpenDispatch }) {
 
                       {/* Customer */}
                       <td className="px-3 py-3.5 font-semibold text-gray-800">
-                        {order.customerName}
+                        {toTitleCase(order.customerName)}
                       </td>
 
                       {/* Type */}
@@ -178,11 +179,11 @@ export default function OrderHistory({ orders, loading, onOpenDispatch }) {
                             {/* Product name + sub-label */}
                             <div className="flex-1 min-w-0">
                               <span className="text-sm font-semibold text-gray-800">
-                                {it.inhouseProductName || it.customerProductName || '—'}
+                                {toTitleCase(it.inhouseProductName || it.customerProductName) || '—'}
                               </span>
                               {it.customerProductName && it.customerProductName !== it.inhouseProductName && (
                                 <span className="ml-2 text-[10px] text-gray-400 italic">
-                                  ({it.customerProductName})
+                                  ({toTitleCase(it.customerProductName)})
                                 </span>
                               )}
                             </div>

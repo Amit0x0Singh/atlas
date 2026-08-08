@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import { Link2 } from 'lucide-react'
+import { toTitleCase } from '../../../../../utils/textDisplay.js'
 
 const UOM_OPTIONS = ['kg', 'L', 'g', 'mg', 'mL', 'pcs', 'nos', 'bags', 'drums', '%w/w', '%v/v', 'MT']
 const COLS = ['sno', 'comp', 'qty', 'uom', 'rem']
@@ -150,7 +151,7 @@ export default function ComponentsTable({ rows, onChange, rmList = [], products 
   }
 
   const pickSuggestion = (idx, suggestion) => {
-    updateCell(idx, 'comp', suggestion.name)
+    updateCell(idx, 'comp', toTitleCase(suggestion.name))
     setSuggestIdx(null)
   }
 
@@ -253,7 +254,7 @@ export default function ComponentsTable({ rows, onChange, rmList = [], products 
                         {suggestions.map(s => (
                           <button key={`${s.kind}-${s.code}`} type="button" onMouseDown={() => pickSuggestion(idx, s)}
                             className="w-full text-left px-3 py-1.5 text-[12px] hover:bg-indigo-50 border-b border-gray-50 last:border-0 flex items-center justify-between gap-2">
-                            <span className="font-medium text-gray-800 truncate">{s.name}</span>
+                            <span className="font-medium text-gray-800 truncate">{toTitleCase(s.name)}</span>
                             <span className="flex items-center gap-1.5 flex-shrink-0">
                               {s.kind === 'product' && (
                                 <span className="text-[9px] font-bold text-blue-600 bg-blue-50 border border-blue-200 rounded px-1 py-0.5">SFG</span>

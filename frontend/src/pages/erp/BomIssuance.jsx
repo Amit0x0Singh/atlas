@@ -16,6 +16,7 @@ import Pagination from '../../components/pagination/Pagination.jsx'
 import { Button, IconButton } from '../../components/ui'
 import { X, RefreshCw } from 'lucide-react'
 
+import { toTitleCase } from '../../utils/textDisplay.js'
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function fmt(date) {
   if (!date) return '—'
@@ -132,7 +133,7 @@ function MaterialLine({ line, bomId, sendId, onIssued }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className={`text-sm font-semibold ${ROLE_COLOR[line.roleType] || 'text-gray-800'}`}>
-              {line.rmName}
+              {toTitleCase(line.rmName)}
             </span>
             <span className="text-xs text-gray-400 font-mono">({line.rmCode})</span>
             <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">{line.roleType}</span>
@@ -177,13 +178,13 @@ function MaterialLine({ line, bomId, sendId, onIssued }) {
             </p>
             <p className="text-xs text-red-600 mt-0.5">
               {noStock
-                ? `${line.rmName} (${line.rmCode}) has no stock. Raise a purchase indent.`
+                ? `${toTitleCase(line.rmName)} (${line.rmCode}) has no stock. Raise a purchase indent.`
                 : `Available ${fmtQty(line.totalAvail)} ${line.uom} · Need ${fmtQty(line.remainingQty)} ${line.uom} · Short ${fmtQty(line.remainingQty - line.totalAvail)} ${line.uom}`
               }
             </p>
           </div>
           <a
-            href={`mailto:procurement@somplant.com?subject=Purchase Indent Request — ${line.rmCode}&body=Material: ${line.rmName}%0ACode: ${line.rmCode}%0AShort Qty: ${fmtQty(line.remainingQty - line.totalAvail)} ${line.uom}%0ABOM: ${sendId}%0APlease raise purchase order.`}
+            href={`mailto:procurement@somplant.com?subject=Purchase Indent Request — ${line.rmCode}&body=Material: ${toTitleCase(line.rmName)}%0ACode: ${line.rmCode}%0AShort Qty: ${fmtQty(line.remainingQty - line.totalAvail)} ${line.uom}%0ABOM: ${sendId}%0APlease raise purchase order.`}
             className="shrink-0 text-xs font-bold bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700 transition whitespace-nowrap"
           >
             📧 Raise Purchase Indent
@@ -449,7 +450,7 @@ function BomDrawer({ bomId, onClose, onRefresh }) {
                       {bom.status}
                     </span>
                   </div>
-                  <h2 className="text-lg font-bold text-white truncate">{bom.productName}</h2>
+                  <h2 className="text-lg font-bold text-white truncate">{toTitleCase(bom.productName)}</h2>
                   <div className="flex flex-wrap gap-3 mt-1 text-xs text-white/60">
                     <span>DI: <strong className="text-white/90">{bom.diNo}</strong></span>
                     <span>Section: <strong className="text-white/90">{bom.sectionType || '—'}</strong></span>
@@ -675,7 +676,7 @@ export default function BomIssuance() {
                     <span className="font-mono text-xs font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded">{b.sendId}</span>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="font-semibold text-gray-900 max-w-[200px] truncate">{b.productName}</div>
+                    <div className="font-semibold text-gray-900 max-w-[200px] truncate">{toTitleCase(b.productName)}</div>
                     {b.batchNo && <div className="text-xs text-gray-400">Batch: {b.batchNo}</div>}
                   </td>
                   <td className="px-4 py-3">

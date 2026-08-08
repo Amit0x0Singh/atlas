@@ -11,6 +11,7 @@ import PurchaseOrderModal from '../components/purchase-order-modal/PurchaseOrder
 import StockShortfallModal from '../components/stock-shortfall-modal/StockShortfallModal.jsx'
 import CreateIndentModal from '../components/create-indent-modal/CreateIndentModal.jsx'
 
+import { toTitleCase } from '../../../../utils/textDisplay.js'
 const TABS = ['Production Indent', 'Purchase Indent', 'Pending Indents']
 
 export default function Indent() {
@@ -168,7 +169,7 @@ export default function Indent() {
     ]
     purchaseSummary.forEach((rm, i) => {
       const qty = orderQtys[rm.rmCode] || rm.suggestedOrderQty
-      lines.push(`${i + 1}. ${rm.rmName}  [${rm.rmCode}]`)
+      lines.push(`${i + 1}. ${toTitleCase(rm.rmName)}  [${rm.rmCode}]`)
       lines.push(`   Required : ${Number(rm.totalRequired).toFixed(3)}  |  Available: ${Number(rm.availableQty).toFixed(3)}  |  Shortfall: ${Number(rm.shortfall).toFixed(3)}`)
       lines.push(`   ORDER QTY: ${Number(qty).toFixed(3)}`)
       if (rm.indents?.length) lines.push(`   For indents: ${rm.indents.map(x => x.productName).join(', ')}`)

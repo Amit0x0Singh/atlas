@@ -6,6 +6,8 @@ import ProductForm from '../components/product-form/ProductForm.jsx'
 import ProductDetailModal from '../components/product-detail-modal/ProductDetailModal.jsx'
 import { useProducts, useProductFilterMeta, useCreateProduct, useUpdateProduct, useDeleteProduct } from '../../../../hooks/masters/useProducts.js'
 import { useDebouncedValue } from '../../../../hooks/useDebouncedValue.js'
+import { toTitleCase } from '../../../../utils/textDisplay.js'
+import { normalizeUom } from '../../../../utils/uom.js'
 
 const BLANK_FILTERS = { productCode: '', productName: '', plant: '' }
 
@@ -39,8 +41,8 @@ export default function ProductMaster() {
   const openEdit = (item) => {
     setEditing(item)
     setForm({
-      productCode: item.productCode, productName: item.productName,
-      uom: item.uom || '', state: item.state || '', plant: (item.plant || []).join(', '),
+      productCode: item.productCode, productName: toTitleCase(item.productName),
+      uom: normalizeUom(item.uom) || item.uom || '', state: (item.state || '').toUpperCase(), plant: (item.plant || []).join(', '),
     })
     setShowForm(true); setMsg('')
   }

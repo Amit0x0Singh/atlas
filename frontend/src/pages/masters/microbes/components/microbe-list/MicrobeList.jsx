@@ -2,6 +2,7 @@ import { Pencil, Trash2, Search } from 'lucide-react'
 import { IconButton } from '../../../../../components/ui'
 import Pagination from '../../../../../components/pagination/Pagination.jsx'
 
+import { toTitleCase } from '../../../../../utils/textDisplay.js'
 export default function MicrobeList({ paginated, total, loading, search, page, limit, hasStock, onSearch, onEdit, onDelete, onPageChange, onLimitChange }) {
   return (
     <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
@@ -44,7 +45,7 @@ export default function MicrobeList({ paginated, total, loading, search, page, l
                 return (
                   <tr key={m.microbeId} className="hover:bg-gray-50">
                     <td className="px-4 py-3 text-gray-400">{(page - 1) * limit + i + 1}</td>
-                    <td className="px-4 py-3 font-medium text-gray-900">{m.microbeName}</td>
+                    <td className="px-4 py-3 font-medium text-gray-900">{toTitleCase(m.microbeName)}</td>
                     <td className="px-4 py-3">
                       <span className="font-mono text-xs font-semibold text-blue-700 bg-blue-50 ring-1 ring-inset ring-blue-200 px-2 py-0.5 rounded-md">{m.microbeCode}</span>
                     </td>

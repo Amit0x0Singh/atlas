@@ -1,6 +1,7 @@
 import { Button } from '../../../../../components/ui'
 import { RefreshCw } from 'lucide-react'
 
+import { toTitleCase } from '../../../../../utils/textDisplay.js'
 export default function PurchaseIndentTab({
   showSentPOs, setShowSentPOs, onRefresh, onGeneratePO,
   purchaseLoading, purchaseSummary, orderQtys, setOrderQtys,
@@ -49,7 +50,7 @@ export default function PurchaseIndentTab({
                   <tr key={rm.rmCode} className="border-b border-gray-100 hover:bg-gray-50">
                     <td className="px-4 py-3 text-gray-400 text-xs">{i + 1}</td>
                     <td className="px-4 py-3">
-                      <div className="font-semibold">{rm.rmName}</div>
+                      <div className="font-semibold">{toTitleCase(rm.rmName)}</div>
                       <div className="text-xs text-gray-400 mt-0.5">Used in: {rm.indents.map(x => x.productName).join(', ')}</div>
                     </td>
                     <td className="px-4 py-3 font-mono text-xs text-blue-700">{rm.rmCode}</td>

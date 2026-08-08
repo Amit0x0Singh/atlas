@@ -5,6 +5,7 @@ import { fmtDateLabel } from '../../../planning/utils/date.js'
 import StatusBadge from '../../../planning/components/ui/status-badge/StatusBadge.jsx'
 import './TaskCard.css'
 
+import { toTitleCase } from '../../../../../utils/textDisplay.js'
 export default function TaskCard({ task, onEdit, onStatusUpdate, onBMR }) {
   const cfg   = PLANT_CONFIG[task.plant] || {}
   const color = cfg.color || '#64748b'
@@ -29,7 +30,7 @@ export default function TaskCard({ task, onEdit, onStatusUpdate, onBMR }) {
       <div className="px-4 py-3 flex items-start justify-between gap-2">
         <div>
           <div className="font-mono text-[11px] text-gray-400 mb-0.5">{task.taskId}</div>
-          <div className="font-bold text-[14px] text-gray-900 leading-snug">{task.productName}</div>
+          <div className="font-bold text-[14px] text-gray-900 leading-snug">{toTitleCase(task.productName)}</div>
         </div>
         <StatusBadge status={task.status || 'Not Started'} />
       </div>
@@ -43,7 +44,7 @@ export default function TaskCard({ task, onEdit, onStatusUpdate, onBMR }) {
         <span>Incharge: <b className="text-gray-800">{task.incharge || '—'}</b></span>
         <span>Shift: <b className="text-gray-800">{task.shift || 'G'}</b></span>
         {task.equipment   && <span>Equip: <b className="text-gray-800">{task.equipment}</b></span>}
-        {task.carrier     && <span>Carrier: <b className="text-gray-800">{task.carrier}</b></span>}
+        {task.carrier     && <span>Carrier: <b className="text-gray-800">{toTitleCase(task.carrier)}</b></span>}
         {task.specs       && <span>Specs: <b className="text-gray-800">{task.specs}</b></span>}
         {task.location    && <span>Location: <b className="text-gray-800">{task.location}</b></span>}
         {task.primaryPack && <span>Primary: <b className="text-gray-800">{task.primaryPack}</b></span>}

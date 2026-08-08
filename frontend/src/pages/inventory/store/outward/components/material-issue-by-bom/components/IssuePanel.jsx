@@ -1,6 +1,7 @@
 import ScannerPanel from '../../../../../../../components/ScannerPanel/ScannerPanel.jsx'
 import StockShortageBanner from './StockShortageBanner.jsx'
 
+import { toTitleCase } from '../../../../../../../utils/textDisplay.js'
 export default function IssuePanel({
   line, remaining, packs, containers, loadingRes,
   scanErr, setScanErr,
@@ -24,7 +25,7 @@ export default function IssuePanel({
           {noStock && (
             <StockShortageBanner
               theme="amber"
-              title={`No stock found for ${line.rmName}`}
+              title={`No stock found for ${toTitleCase(line.rmName)}`}
               message="No warehouse packs or containers have stock for this raw material."
             />
           )}
@@ -32,7 +33,7 @@ export default function IssuePanel({
           {insufficientStock && (
             <StockShortageBanner
               theme="orange"
-              title={`Stock insufficient for ${line.rmName}`}
+              title={`Stock insufficient for ${toTitleCase(line.rmName)}`}
               message={<>Only <strong>{totalAvailable.toFixed(3)} {line.uom}</strong> available but <strong>{remaining} {line.uom}</strong> still needed. You can issue what's available now.</>}
             />
           )}
@@ -98,7 +99,7 @@ export default function IssuePanel({
                   {foundSource.itemName && (
                     <div>
                       <span className="text-gray-400">Item: </span>
-                      <span>{foundSource.itemName}</span>
+                      <span>{toTitleCase(foundSource.itemName)}</span>
                     </div>
                   )}
                   <div>

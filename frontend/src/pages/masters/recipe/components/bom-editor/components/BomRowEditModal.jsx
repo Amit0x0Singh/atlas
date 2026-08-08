@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Modal, Button } from '../../../../../../components/ui'
 import { formatMeasurement } from '../../../../../../utils/measurement/formatMeasurement.js'
 import { ALL_DISPLAY_UNITS } from '../../../../../../utils/uom.js'
+import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 
 const ROLE_OPTIONS = [
   ['INGREDIENT', 'Ingredient'],
@@ -40,8 +41,8 @@ export default function BomRowEditModal({
   // (there aren't any today, but future-proof) can't clobber in-progress edits.
   useEffect(() => {
     if (open && row) {
-      setDraft({ rmCode: row.rmCode, rmName: row.rmName, uom: matchUomOption(row.uom), qtyPerUnit: row.qtyPerUnit, roleType: row.roleType, requiredCfu: row.requiredCfu ?? '' })
-      setSearch(row.rmName || '')
+      setDraft({ rmCode: row.rmCode, rmName: toTitleCase(row.rmName), uom: matchUomOption(row.uom), qtyPerUnit: row.qtyPerUnit, roleType: row.roleType, requiredCfu: row.requiredCfu ?? '' })
+      setSearch(toTitleCase(row.rmName) || '')
       setDropOpen(false)
       setPickedHit(null)
     }
@@ -53,13 +54,13 @@ export default function BomRowEditModal({
   const hits = [
     ...rmList
       .filter((r) => !q || r.itemName.toLowerCase().includes(q) || r.itemCode.toLowerCase().includes(q))
-      .map((r) => ({ kind: 'rm', code: r.itemCode, name: r.itemName, uom: r.inventoryUom, raw: r })),
+      .map((r) => ({ kind: 'rm', code: r.itemCode, name: toTitleCase(r.itemName), uom: r.inventoryUom, raw: r })),
     ...productList
       .filter((p) => !q || p.productName.toLowerCase().includes(q) || p.productCode.toLowerCase().includes(q))
-      .map((p) => ({ kind: 'product', code: p.productCode, name: p.productName, raw: p })),
+      .map((p) => ({ kind: 'product', code: p.productCode, name: toTitleCase(p.productName), raw: p })),
     ...microbeList
       .filter((m) => !q || m.microbeName.toLowerCase().includes(q) || m.microbeCode.toLowerCase().includes(q))
-      .map((m) => ({ kind: 'microbe', code: m.microbeCode, name: m.microbeName, uom: m.uom, raw: m })),
+      .map((m) => ({ kind: 'microbe', code: m.microbeCode, name: toTitleCase(m.microbeName), uom: m.uom, raw: m })),
   ]
 
   const handleSelectHit = (hit) => {

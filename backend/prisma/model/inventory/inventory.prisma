@@ -193,7 +193,7 @@ model BomIssueSession {
   productCode String?  @map("product_code")
   productName String   @map("product_name")
   batchQty    Float    @map("batch_qty")
-  batchUom    String   @default("KG") @map("batch_uom")
+  batchUom    String   @default("kg") @map("batch_uom")
   batchRef    String?  @map("batch_ref")
   diNo        String?  @map("di_no")
   bomLines    Json     @map("bom_lines")

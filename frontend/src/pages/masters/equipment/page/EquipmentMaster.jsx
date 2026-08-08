@@ -6,6 +6,7 @@ import EquipmentForm from '../components/equipment-form/EquipmentForm.jsx'
 import EquipmentDetailModal from '../components/equipment-detail-modal/EquipmentDetailModal.jsx'
 import { useEquipment, useEquipmentFilterMeta, useCreateEquipment, useUpdateEquipment, useDeleteEquipment } from '../../../../hooks/masters/useEquipment.js'
 import { useDebouncedValue } from '../../../../hooks/useDebouncedValue.js'
+import { toTitleCase } from '../../../../utils/textDisplay.js'
 
 const BLANK_FILTERS = { equipCode: '', equipName: '', operation: '', plant: '' }
 
@@ -35,7 +36,7 @@ export default function EquipmentMaster() {
   const deleteEquipment = useDeleteEquipment()
 
   const openAdd  = () => { setEditing(null); setForm({ equipName: '', plant: '' }); setShowForm(true); setMsg('') }
-  const openEdit = (item) => { setEditing(item); setForm({ equipName: item.equipName, plant: item.plant }); setShowForm(true); setMsg('') }
+  const openEdit = (item) => { setEditing(item); setForm({ equipName: toTitleCase(item.equipName), plant: item.plant }); setShowForm(true); setMsg('') }
 
   const save = async () => {
     if (!form.equipName) { setMsg('Equipment name is required'); return }
@@ -48,7 +49,7 @@ export default function EquipmentMaster() {
   }
 
   const del = async (id, name) => {
-    if (!confirm(`Delete equipment "${name}"?`)) return
+    if (!confirm(`Delete equipment "${toTitleCase(name)}"?`)) return
     try { await deleteEquipment.mutateAsync(id) } catch (e) { alert(e.message) }
   }
 

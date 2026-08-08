@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { fmtDate } from '../../utils/bomPrintTemplates.js'
 import { printBoms, bomTitle } from '../../utils/bomIssuancePrint.js'
 
+import { toTitleCase } from '../../../../../utils/textDisplay.js'
 export default function ArchiveTab({ boms, recipeCount, meta }) {
   const [prodFilter, setProdFilter] = useState('')
   const [search, setSearch]         = useState('')
@@ -96,7 +97,7 @@ export default function ArchiveTab({ boms, recipeCount, meta }) {
               {filtered.map(b => (
                 <tr key={b.id} className="border-t border-gray-100 hover:bg-gray-50">
                   <td className="px-3 py-2 font-semibold">{b.bomNo}</td>
-                  <td className="px-3 py-2 font-medium">{b.productName}</td>
+                  <td className="px-3 py-2 font-medium">{toTitleCase(b.productName)}</td>
                   <td className="px-3 py-2">{b.batchSize} {b.batchSizeUom}</td>
                   <td className="px-3 py-2">{b.batchNo}</td>
                   <td className="px-3 py-2 text-gray-500">{fmtDate(b.issuedAt || b.dateRequisition)}</td>

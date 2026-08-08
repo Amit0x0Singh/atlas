@@ -3,6 +3,7 @@ import './RmDetailTable.css'
 import Pagination from '../../../../../components/pagination/Pagination.jsx'
 import { fmtQty, fmtDate, statusMeta, groupStatus } from '../rmDetailHelpers.js'
 import { Button } from '../../../../../components/ui'
+import { toTitleCase } from '../../../../../utils/textDisplay.js'
 
 export default function RmDetailTable({ loading, filteredGroups, paginatedGroups, allGroups, hasFilters, expanded, onToggle, onExpandAll, onCollapseAll, totalBags, uom, page, limit, onPageChange, onLimitChange }) {
   return (
@@ -66,7 +67,7 @@ export default function RmDetailTable({ loading, filteredGroups, paginatedGroups
                         <div className="font-mono text-xs font-semibold text-gray-800">{g.lotNo || '—'}</div>
                         {g.invoiceNo && <div className="text-xs text-gray-400 mt-0.5">Inv: {g.invoiceNo}</div>}
                       </td>
-                      <td className="px-3 py-3 text-sm text-gray-600">{g.supplier || '—'}</td>
+                      <td className="px-3 py-3 text-sm text-gray-600">{toTitleCase(g.supplier) || '—'}</td>
                       <td className="px-3 py-3 text-center">
                         <span className="bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-0.5 rounded-full">{g.bags.length}</span>
                       </td>
@@ -108,7 +109,7 @@ export default function RmDetailTable({ loading, filteredGroups, paginatedGroups
                               </div>
                             </div>
                           </td>
-                          <td className="px-3 py-2.5 text-xs text-gray-400">{bag.supplier || '—'}</td>
+                          <td className="px-3 py-2.5 text-xs text-gray-400">{toTitleCase(bag.supplier) || '—'}</td>
                           <td className="px-3 py-2.5" />
                           <td className="px-3 py-2.5 text-right tabular-nums">
                             <span className="text-xs font-semibold text-gray-700">{fmtQty(bTotal)}</span>

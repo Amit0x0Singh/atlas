@@ -5,6 +5,7 @@ import { containerApi, rmApi } from '../../../../../../api/inventory.js'
 import { indentApi } from '../../../../../../api/production.js'
 import { Button } from '../../../../../../components/ui'
 
+import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 export default function IssueFromContainer({ preselected, onDone }) {
   const [container, setContainer]   = useState(preselected || null)
   const [scanInput, setScanInput]   = useState('')
@@ -177,7 +178,7 @@ export default function IssueFromContainer({ preselected, onDone }) {
             <div className="flex justify-between items-start">
               <div>
                 <div className="font-bold text-green-900 font-mono">{container.containerId}</div>
-                <div className="text-sm text-green-700">{container.itemName}
+                <div className="text-sm text-green-700">{toTitleCase(container.itemName)}
                   <span className="text-green-500 text-xs font-mono ml-1">({container.itemCode})</span>
                 </div>
               </div>
@@ -228,7 +229,7 @@ export default function IssueFromContainer({ preselected, onDone }) {
                   <option value="">— No indent (direct issue to plant) —</option>
                   {relevantIndents.map(i => (
                     <option key={i.indentId} value={i.indentId}>
-                      {i.productName} | {i.batchNo} | {i.batchSize} kg
+                      {toTitleCase(i.productName)} | {i.batchNo} | {i.batchSize} kg
                     </option>
                   ))}
                 </select>

@@ -8,6 +8,7 @@ import { inp, lbl } from "../utils/formStyles.js";
 import ItemLine, { BLANK_BATCH } from "../components/ItemLine.jsx";
 import "./GenerateForm.css";
 
+import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 const BLANK_ITEM = () => ({
   selectedItem: null,   // { itemCode, itemName, uom }
   packQty: "",
@@ -156,7 +157,7 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed, onUnlin
           {linkedEntry ? (
             <>
               <span style={{ color: "#15803d" }}>
-                📎 {linkedEntry.supplierName}{linkedEntry.invoiceNo && ` — ${linkedEntry.invoiceNo}`}
+                📎 {toTitleCase(linkedEntry.supplierName)}{linkedEntry.invoiceNo && ` — ${linkedEntry.invoiceNo}`}
               </span>
               <IconButton icon={X} variant="ghost" size="xs" tooltip="Unlink and switch to manual entry"
                 onClick={() => { setLinkedEntry(null); setHdr(BLANK_HDR); onUnlink?.(); }}

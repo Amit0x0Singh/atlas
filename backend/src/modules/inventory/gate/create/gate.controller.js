@@ -3,6 +3,10 @@ import prisma from '../../../../../config/db.js'
 // Multiple companies operate out of this same facility — every gate
 // movement must be tagged so stock can be segregated/reported per company.
 const VALID_COMPANIES = ['SOM Phytopharma', 'Agrilife', 'DVS']
+// companyName is normalized to lowercase on write (see
+// field-normalization-rules.js), so validation compares case-insensitively —
+// this lets "SOM Phytopharma", "som phytopharma", etc. all validate the same.
+const VALID_COMPANIES_LOWER = VALID_COMPANIES.map((c) => c.toLowerCase())
 
 // -------------------   Gate Inward create
 
@@ -13,7 +17,7 @@ const createGateInward = async (req, res) => {
     if (!supplier_name?.trim())
       return res.status(400).json({ success: false, error: 'supplier_name is required', code: 'VALIDATION_ERROR' })
 
-    if (!company?.trim() || !VALID_COMPANIES.includes(company.trim()))
+    if (!company?.trim() || !VALID_COMPANIES_LOWER.includes(company.trim().toLowerCase()))
       return res.status(400).json({ success: false, error: `company must be one of: ${VALID_COMPANIES.join(', ')}`, code: 'VALIDATION_ERROR' })
 
     const row = await prisma.gateInward.create({
@@ -82,7 +86,7 @@ const createGateOutward = async (req, res) => {
   try {
     const { receiver_name, invoice_no, vehicle_no, company } = req.body || {}
 
-    if (!company?.trim() || !VALID_COMPANIES.includes(company.trim()))
+    if (!company?.trim() || !VALID_COMPANIES_LOWER.includes(company.trim().toLowerCase()))
       return res.status(400).json({ success: false, error: `company must be one of: ${VALID_COMPANIES.join(', ')}`, code: 'VALIDATION_ERROR' })
 
     const row = await prisma.gateOutward.create({
@@ -104,4 +108,4 @@ const createGateOutward = async (req, res) => {
   }
 }
 
-export { createGateInward, createGateOutward, createManualGateInward, VALID_COMPANIES }
+export { createGateInward, createGateOutward, createManualGateInward, VALID_COMPANIES, VALID_COMPANIES_LOWER }

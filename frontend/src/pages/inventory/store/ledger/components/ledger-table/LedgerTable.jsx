@@ -1,4 +1,5 @@
 import './LedgerTable.css'
+import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 
 const TX_COLORS = {
   INWARD:            'bg-green-100 text-green-800',
@@ -41,7 +42,7 @@ export default function LedgerTable({ loading, rows, onOpenDetail }) {
                   <td className="px-4 py-2.5 text-gray-500 text-xs whitespace-nowrap">
                     {new Date(row.timestamp).toLocaleString('en-IN', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' })}
                   </td>
-                  <td className="px-4 py-2.5 text-sm font-medium text-gray-800">{row.itemName || row.itemCode}</td>
+                  <td className="px-4 py-2.5 text-sm font-medium text-gray-800">{toTitleCase(row.itemName) || row.itemCode}</td>
                   <td className="px-4 py-2.5">
                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${TX_COLORS[row.transactionType] || 'bg-gray-100 text-gray-600'}`}>
                       {row.transactionType.replace(/_/g, ' ')}

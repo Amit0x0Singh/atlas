@@ -66,7 +66,7 @@ model ErpEquipment {
   equipmentCode         String   @unique @map("equipment_code") @db.VarChar(50)
   equipmentType         String   @map("equipment_type") @db.VarChar(100)
   workingVolume         Decimal? @map("working_volume") @db.Decimal(12, 3)
-  workingVolumeUnit     String   @default("KG") @map("working_volume_unit") @db.VarChar(20)
+  workingVolumeUnit     String   @default("kg") @map("working_volume_unit") @db.VarChar(20)
   cleaningTimeHrs       Decimal  @default(0) @map("cleaning_time_hrs") @db.Decimal(5, 2)
   requiresSterilisation Boolean  @default(false) @map("requires_sterilisation")
   status                String   @default("active") @db.VarChar(30)

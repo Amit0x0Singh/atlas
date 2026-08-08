@@ -10,8 +10,9 @@ import StatusBadge, { BoolBadge } from '../common/StatusBadge.jsx';
 import EmptyState from '../common/EmptyState.jsx';
 import { TableSkeleton } from '../common/PageSkeleton.jsx';
 import ActionMenu from './ActionMenu.jsx';
+import { toTitleCase } from '../../utils/textDisplay.js';
 
-function CellValue({ value, fieldName, fieldType }) {
+function CellValue({ value, fieldName, fieldType, titleCase }) {
   if (value === null || value === undefined || value === '') {
     return <span className="text-slate-300 dark:text-slate-600">—</span>;
   }
@@ -31,7 +32,7 @@ function CellValue({ value, fieldName, fieldType }) {
       </span>
     );
   }
-  const str = String(value);
+  const str = titleCase ? toTitleCase(String(value)) : String(value);
   const truncated = str.length > 32 ? str.slice(0, 30) + '…' : str;
   return <span title={str.length > 32 ? str : undefined}>{truncated}</span>;
 }
@@ -68,7 +69,7 @@ export default function DataTable({
     accessorKey: f.name,
     header: f.label,
     size: 180,
-    cell: (info) => <CellValue value={info.getValue()} fieldName={f.name} fieldType={f.type} />,
+    cell: (info) => <CellValue value={info.getValue()} fieldName={f.name} fieldType={f.type} titleCase={f.titleCase} />,
   })), [resource]);
 
   const table = useReactTable({

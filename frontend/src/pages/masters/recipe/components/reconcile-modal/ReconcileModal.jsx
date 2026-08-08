@@ -4,6 +4,7 @@ import { recipeApi } from '../../../../../api/masters.js'
 import { Button, IconButton } from '../../../../../components/ui'
 import './ReconcileModal.css'
 
+import { toTitleCase } from '../../../../../utils/textDisplay.js'
 const CONFIDENCE_STYLES = {
   emerald: 'bg-emerald-100 text-emerald-700 border-emerald-200',
   green:   'bg-green-100 text-green-700 border-green-200',
@@ -113,7 +114,7 @@ export default function ReconcileModal({ onClose, onFixed }) {
                                 onChange={() => setPendingMappings(m => ({ ...m, [u.recipeRmCode]: { code: s.itemCode, kind: s.kind } }))}
                                 className="accent-indigo-600" />
                               <div className="flex-1 min-w-0">
-                                <span className="font-semibold text-sm text-gray-900">{s.itemName}</span>
+                                <span className="font-semibold text-sm text-gray-900">{toTitleCase(s.itemName)}</span>
                                 {s.kind === 'product' && (
                                   <span className="text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-200 rounded px-1.5 py-0.5 ml-2 align-middle">SFG · Product Master</span>
                                 )}

@@ -3,6 +3,7 @@ import { packsApi } from "../../../../../../api/inventory.js";
 import { openAuthedFile } from "../../../../../../utils/authedFile.js";
 import { groupStatus, statusColor } from "../utils/groupPacks.js";
 
+import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 export default function PackTableRow({ group: g, isOpen, onToggle }) {
   const totalQty = g.bags.reduce((s, b) => s + (b.packQty || 0), 0);
   const status   = groupStatus(g.bags);
@@ -23,7 +24,7 @@ export default function PackTableRow({ group: g, isOpen, onToggle }) {
         </td>
 
         <td className="px-3 py-3">
-          <div className="font-semibold text-gray-900">{g.itemName}</div>
+          <div className="font-semibold text-gray-900">{toTitleCase(g.itemName)}</div>
           <div className="text-xs text-gray-400 font-mono mt-0.5">{g.itemCode}</div>
         </td>
 

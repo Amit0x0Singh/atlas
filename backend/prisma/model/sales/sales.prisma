@@ -49,7 +49,7 @@ model SalesOrderItem {
   batchNo             String?    @map("batch_no")
   sectionName         String?    @map("section_name") // NANO|BOTANICAL|LIQUID|POWDER|GRANULES
   totalQty            Float      @map("total_qty")
-  totalUom            String     @default("KG") @map("total_uom")
+  totalUom            String     @default("kg") @map("total_uom")
   unitQty             Float?     @map("unit_qty")
   unitUom             String?    @map("unit_uom")
   unitPackType        String?    @map("unit_pack_type") // Primary packing: Pouch, Bottle, Sachet
@@ -112,7 +112,7 @@ model CustomerProductProfile {
   primaryPack   String? @map("primary_pack") // LD Pouch / AL Pouch / Bottle etc.
   secondaryPack String? @map("secondary_pack") // B-CBB / W-CBB / Drum etc.
   unitsPerCS    Int?    @map("units_per_cs") // primary packs per secondary pack
-  totalUom      String? @default("KG") @map("total_uom")
+  totalUom      String? @default("kg") @map("total_uom")
 
   // Label
   labelType String? @map("label_type")

@@ -8,6 +8,7 @@ import { useLedger } from '../../../../../hooks/inventory/useLedger.js'
 import { useRmMaster } from '../../../../../hooks/inventory/useRmMaster.js'
 import './Ledger.css'
 
+import { toTitleCase } from '../../../../../utils/textDisplay.js'
 export default function Ledger() {
   const [filterItem, setFilterItem] = useState('')
   const [page,       setPage]       = useState(1)
@@ -51,7 +52,7 @@ export default function Ledger() {
         <select value={filterItem} onChange={e => { setFilterItem(e.target.value); setPage(1) }}
           className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-500">
           <option value="">— All Items —</option>
-          {rmList.map(r => <option key={r.itemCode} value={r.itemCode}>{r.itemName} ({r.itemCode})</option>)}
+          {rmList.map(r => <option key={r.itemCode} value={r.itemCode}>{toTitleCase(r.itemName)} ({r.itemCode})</option>)}
         </select>
         {filterItem && (
           <Button onClick={() => { setFilterItem(''); setPage(1) }} variant="ghost" size="xs" icon={X}>Clear</Button>

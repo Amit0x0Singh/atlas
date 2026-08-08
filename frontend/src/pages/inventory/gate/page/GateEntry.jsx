@@ -16,6 +16,7 @@ import InwardTable from "../component/inward-table/InwardTable.jsx";
 import OutwardTable from "../component/outward-table/OutwardTable.jsx";
 import "./GateEntry.css";
 
+import { toTitleCase } from '../../../../utils/textDisplay.js'
 const EMPTY_FILTERS = { search: "", invoice_no: "", status: "", company: "", from_date: "", to_date: "" };
 
 // ── Main ──────────────────────────────────────────────────────────────────────
@@ -96,7 +97,7 @@ export default function GateEntry() {
     try {
       const res = await createInwardMutation.mutateAsync(form);
       const entry = res.data;
-      showSuccess(`Inward entry created${entry?.companyName ? ` for ${entry.companyName}` : ''}${entry?.supplierName ? ` · ${entry.supplierName}` : ''}${entry?.invoiceNo ? ` · ${entry.invoiceNo}` : ''}`);
+      showSuccess(`Inward entry created${entry?.companyName ? ` for ${toTitleCase(entry.companyName)}` : ''}${entry?.supplierName ? ` · ${toTitleCase(entry.supplierName)}` : ''}${entry?.invoiceNo ? ` · ${entry.invoiceNo}` : ''}`);
       setFormKey(k => k + 1);
     } catch (e) {
       setErrModal({ open: true, message: e.message });
@@ -107,7 +108,7 @@ export default function GateEntry() {
     try {
       const res = await createOutwardMutation.mutateAsync(form);
       const entry = res.data;
-      showSuccess(`Outward entry recorded${entry?.companyName ? ` for ${entry.companyName}` : ''}${entry?.receiverName ? ` · ${entry.receiverName}` : ''}${entry?.invoiceNo ? ` · ${entry.invoiceNo}` : ''}`);
+      showSuccess(`Outward entry recorded${entry?.companyName ? ` for ${toTitleCase(entry.companyName)}` : ''}${entry?.receiverName ? ` · ${toTitleCase(entry.receiverName)}` : ''}${entry?.invoiceNo ? ` · ${entry.invoiceNo}` : ''}`);
       setFormKey(k => k + 1);
     } catch (e) {
       setErrModal({ open: true, message: e.message });

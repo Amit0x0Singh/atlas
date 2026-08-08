@@ -4,6 +4,7 @@ import jsQR from 'jsqr'
 import { containerApi, outwardApi } from '../../../../../../api/inventory.js'
 import { Button } from '../../../../../../components/ui'
 
+import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 export default function FillContainer({ preselected, onDone }) {
   const [container, setContainer]   = useState(preselected || null)
   const [scanInput, setScanInput]   = useState('')
@@ -170,7 +171,7 @@ export default function FillContainer({ preselected, onDone }) {
           <div className="flex justify-between items-start">
             <div>
               <div className="font-bold text-orange-900 font-mono">{container.containerId}</div>
-              <div className="text-sm text-orange-700">{container.itemName} <span className="text-orange-500 text-xs font-mono">({container.itemCode})</span></div>
+              <div className="text-sm text-orange-700">{toTitleCase(container.itemName)} <span className="text-orange-500 text-xs font-mono">({container.itemCode})</span></div>
             </div>
             <Button
               variant="ghost"

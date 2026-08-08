@@ -6,7 +6,9 @@ export const listItems = async (req, res) => {
   try {
     const { category, search, active } = req.query
     const where = {}
-    if (category) where.itemCategory = category
+    // itemCategory is stored lowercase (RULES.LOWER) but callers may still
+    // pass Title Case (e.g. from a display dropdown), so match case-insensitively.
+    if (category) where.itemCategory = { equals: category, mode: 'insensitive' }
     if (search) where.OR = [
       { itemName: { contains: search, mode: 'insensitive' } },
       { itemCode: { contains: search, mode: 'insensitive' } },

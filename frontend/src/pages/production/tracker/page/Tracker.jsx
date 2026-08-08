@@ -5,6 +5,7 @@ import InfoChip from '../components/info-chip/InfoChip.jsx'
 import Stat from '../components/stat/Stat.jsx'
 import './Tracker.css'
 
+import { toTitleCase } from '../../../../utils/textDisplay.js'
 export default function Tracker() {
   const [diNo, setDiNo] = useState('')
   const [allIndents, setAllIndents] = useState([])
@@ -76,7 +77,7 @@ export default function Tracker() {
                 className={`w-full text-left px-4 py-3 transition hover:bg-indigo-50
                   ${selected?.indentId === indent.indentId ? 'bg-indigo-50 border-l-4 border-indigo-500' : 'border-l-4 border-transparent'}`}>
                 <div className="flex items-start justify-between gap-1">
-                  <p className="font-semibold text-gray-900 text-sm truncate flex-1">{indent.productName}</p>
+                  <p className="font-semibold text-gray-900 text-sm truncate flex-1">{toTitleCase(indent.productName)}</p>
                   <span className={`text-xs px-1.5 py-0.5 rounded font-medium flex-shrink-0 ${statusColor(indent.status)}`}>
                     {indent.status}
                   </span>
@@ -110,7 +111,7 @@ export default function Tracker() {
               <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div>
                   <p className="text-slate-400 text-xs uppercase tracking-wider mb-1">Product</p>
-                  <p className="text-xl font-bold">{detail.indent.productName}</p>
+                  <p className="text-xl font-bold">{toTitleCase(detail.indent.productName)}</p>
                   <p className="font-mono text-slate-400 text-sm mt-0.5">{detail.indent.productCode}</p>
                 </div>
                 <span className={`px-3 py-1 rounded text-sm font-semibold ${
@@ -172,7 +173,7 @@ export default function Tracker() {
                           className="px-5 py-3 flex items-center gap-4 cursor-pointer hover:bg-gray-50 transition">
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-semibold text-gray-900 text-sm">{rm.rmName}</span>
+                              <span className="font-semibold text-gray-900 text-sm">{toTitleCase(rm.rmName)}</span>
                               <span className="text-xs font-mono text-indigo-600">{rm.rmCode}</span>
                               {rm.fullyIssued && <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded font-medium">✓ Complete</span>}
                               {totalIssued === 0 && <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded font-medium">Pending</span>}
