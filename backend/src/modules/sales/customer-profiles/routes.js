@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { authenticate } from "../../../middleware/auth.js";
 import {
   getCustomerProfiles,
   getCpProfiles,
@@ -10,6 +11,7 @@ import {
 } from "./create/cp-profiles.controller.js";
 
 const router = Router();
+router.use(authenticate);
 
 router.get("/", getCustomerProfiles);
 router.get("/cp-profiles", getCpProfiles);

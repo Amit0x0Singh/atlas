@@ -11,7 +11,7 @@ const storeOrAbove = authorize(['store'])
 
 ContainersRouter.get('/', authenticate, listContainers)
 ContainersRouter.post('/', authenticate, storeOrAbove, validateCreateContainer, createContainer)
-ContainersRouter.get('/:containerId/label', getContainerLabel)
+ContainersRouter.get('/:containerId/label', authenticate, getContainerLabel)
 ContainersRouter.get('/:containerId', authenticate, getContainer)
 ContainersRouter.post('/:containerId/fill', authenticate, storeOrAbove, validateFillContainer, fillContainer)
 ContainersRouter.post('/:containerId/issue', authenticate, storeOrAbove, validateIssueFromContainer, issueFromContainer)

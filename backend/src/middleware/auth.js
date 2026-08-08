@@ -1,15 +1,19 @@
 /**
  * ERP Auth Middleware — JWT verify + operation/role guard
- * Backed by the flat-file accounts in backend/access.js (temporary — see that
- * file's header comment). Uses Node.js built-in crypto (no external JWT
- * library needed).
+ * Backed by the `User` table (bcrypt-hashed passwords) — migrated off the
+ * flat-file plaintext accounts formerly in backend/access.js. Uses Node.js
+ * built-in crypto for JWT signing (no external JWT library needed).
  */
 import { createHmac } from "crypto";
-import { findAccount } from "../../access.js";
+import prisma from "../db.js";
 import { runWithRequestContext } from "../utils/request-context.js";
 
-const JWT_SECRET =
-  process.env.JWT_SECRET || "som-erp-super-secret-change-in-production-2026";
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error(
+    "JWT_SECRET is not defined. Please set it in backend/.env or your environment variables.",
+  );
+}
 const JWT_EXPIRES_SEC = 8 * 60 * 60; // 8 hours
 
 // ─── JWT helpers ────────────────────────────────────────────────────────────
@@ -42,24 +46,38 @@ export function verifyJwt(token) {
   return payload;
 }
 
-// Shapes a matched access.js account into the req.user object the rest of the
-// app expects (many controllers read req.user?.user_id / .role as a plain
-// string to stamp createdBy/issuedBy/etc columns — email fills that role now).
-function toReqUser(account) {
+// Shapes a matched User row into the req.user object the rest of the app
+// expects (many controllers read req.user?.user_id / .role as a plain
+// string to stamp createdBy/issuedBy/etc columns — email fills that role,
+// exactly as it did under the old access.js-backed system, so nothing
+// downstream needed to change).
+function toReqUser(user) {
   return {
-    user_id: account.email,
-    email: account.email,
-    username: account.email,
-    full_name: account.fullName,
-    role: account.role,       // 'admin' (full access) | 'employee' (read-only)
-    operation: account.operation, // 'gate' | 'store' | 'production' | 'admin'
-    plant: account.plant,     // set for production accounts only
+    user_id: user.email,
+    email: user.email,
+    username: user.email,
+    full_name: user.fullName,
+    role: user.role,       // 'admin' (full access) | 'employee' (read-only)
+    operation: user.operation, // 'gate' | 'store' | 'production' | 'admin'
+    plant: user.plant,     // set for production accounts only
   };
+}
+
+// Case-insensitive lookup — relies on User.email's write-time lowercase
+// normalization (Prisma Client Extension, see config/db.js) plus the
+// ci_users_email_idx functional index; pre-lowercasing the input keeps this
+// a plain equality match.
+async function findActiveUserByEmail(email) {
+  const needle = String(email || "").trim().toLowerCase();
+  if (!needle) return null;
+  return prisma.user.findFirst({ where: { email: needle, isActive: true } });
 }
 
 // ─── Dev bypass ─────────────────────────────────────────────────────────────
 // Set BYPASS_AUTH=true in .env to skip token checks during development.
-// Never set this in production — the guard below prevents it.
+// Never set this in production — the guard below prevents it, but that
+// guard only holds if NODE_ENV is explicitly "production" in the deployed
+// environment; an unset NODE_ENV behaves like dev.
 const BYPASS_AUTH =
   process.env.BYPASS_AUTH === "true" &&
   process.env.NODE_ENV !== "production";
@@ -78,7 +96,7 @@ const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 // Verifies the token, sets req.user, and enforces the blanket "employees are
 // read-only" rule on every route this is applied to.
 
-export function authenticate(req, res, next) {
+export async function authenticate(req, res, next) {
   if (BYPASS_AUTH) {
     req.user = DEV_USER;
     // Rest of this request's middleware/controller chain runs inside this
@@ -96,11 +114,11 @@ export function authenticate(req, res, next) {
     }
     const token = authHeader.slice(7);
     const payload = verifyJwt(token);
-    const account = findAccount(payload.email);
-    if (!account) {
+    const user = await findActiveUserByEmail(payload.email);
+    if (!user) {
       return res.status(401).json({ success: false, error: "Account no longer exists" });
     }
-    req.user = toReqUser(account);
+    req.user = toReqUser(user);
 
     if (MUTATING_METHODS.has(req.method) && req.user.role !== "admin") {
       return res.status(403).json({

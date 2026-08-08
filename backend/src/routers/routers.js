@@ -1,5 +1,4 @@
 import express from "express";
-import multer from "multer";
 
 import UserRouter from "../modules/user/routes.js";
 import InventoryRouter from "../modules/inventory/routes.js";
@@ -24,17 +23,8 @@ import DataManagementRouter from "../modules/data-management/router.js";
 // Admin Panel — Bulk Text Transformation Router
 import BulkTransformRouter from "../modules/admin_panel/bulk-transform/router.js";
 
-// Import controller
-import {
-  previewImport,
-  executeImport,
-} from "../modules/inventory/import/create/import.controller.js";
-import { authenticate, authorize } from "../middleware/auth.js";
+import { authorize } from "../middleware/auth.js";
 
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 50 * 1024 * 1024 },
-});
 const adminOnly = authorize(["admin"]);
 
 const router = express.Router();
@@ -86,24 +76,6 @@ router.use("/", MicrobialRouter);
 // ── Export ────────────────────────────────────────────────────────────────────
 // Handles: /api/export/*
 // router.use("/", ExportRouter);
-
-// ── Import (Excel file upload → DB) ──────────────────────────────────────────
-router.post(
-  "/import/preview",
-  authenticate,
-  adminOnly,
-  upload.single("file"),
-  previewImport,
-);
-
-router.post(
-  "/import/execute",
-  authenticate,
-  adminOnly,
-  upload.single("file"),
-  executeImport,
-);
-
 
 // ---- data management (delete) routes ─────────────────────────────────────────
 // Must be registered before AdminPanelRouter for the same reason as

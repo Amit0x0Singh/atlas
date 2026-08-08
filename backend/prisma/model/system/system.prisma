@@ -15,8 +15,14 @@ model User {
   phone        String?  @db.VarChar(20)
   pinHash      String?  @map("pin_hash") @db.VarChar(255)
   role         String   @db.VarChar(50)
+  // Currently populated with the pragmatic 'admin' | 'employee' vocabulary
+  // carried over from backend/access.js (see migration
+  // 20260807000001_user_auth_columns) — NOT yet the richer vocabulary below,
+  // which is a separate future authorization feature:
   // gate_staff | store_person | store_manager | planner | planning_manager
   // plant_supervisor | qc_person | sales_team | admin
+  operation    String   @db.VarChar(20) // 'gate' | 'store' | 'production' | 'admin'
+  plant        String?  @db.VarChar(20) // set only when operation = 'production'
   isActive     Boolean  @default(true) @map("is_active")
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()

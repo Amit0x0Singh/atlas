@@ -1,10 +1,21 @@
 import prisma from '../../../db.js'
 import XLSX from 'xlsx'
+import { excelSafeCell } from '../../../utils/excel-safe-cell.js'
+
+// Every export function in this file funnels its rows through here before
+// XLSX.utils.json_to_sheet — the one choke point where a free-text business
+// value starting with =/+/-/@ (customer name, remarks, notes, etc.) needs
+// to be neutralized before it becomes a live formula in the recipient's
+// spreadsheet (CWE-1236).
+function sanitizeRows(data) {
+  return data.map((row) => Object.fromEntries(Object.entries(row).map(([k, v]) => [k, excelSafeCell(v)])))
+}
 
 function buildSheet(data) {
   if (!data.length) return XLSX.utils.aoa_to_sheet([['No data']])
-  const ws = XLSX.utils.json_to_sheet(data)
-  const cols = Object.keys(data[0]).map(k => ({ wch: Math.max(k.length, ...data.map(r => String(r[k] ?? '').length).slice(0, 50)) + 2 }))
+  const safeData = sanitizeRows(data)
+  const ws = XLSX.utils.json_to_sheet(safeData)
+  const cols = Object.keys(safeData[0]).map(k => ({ wch: Math.max(k.length, ...safeData.map(r => String(r[k] ?? '').length).slice(0, 50)) + 2 }))
   ws['!cols'] = cols
   return ws
 }

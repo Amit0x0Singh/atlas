@@ -1,27 +1,30 @@
-import { findAccount } from "../../../../access.js";
+import bcrypt from "bcryptjs";
+import prisma from "../../../db.js";
 import { signJwt } from "../../../middleware/auth.js";
 import { writeAudit } from "../../../middleware/audit.js";
 
-// Temporary flat-file login — checks credentials against backend/access.js
-// instead of a database-backed User table. See that file's header comment.
+// Dummy hash compared against when no account matches, so a nonexistent
+// email takes roughly the same time as a wrong-password attempt on a real
+// account — mitigates trivial email-enumeration via response timing.
+const DUMMY_HASH = "$2a$12$CwTycUXWue0Thq9StjUM0uJ8Q4dLB0MgIS4rMdXOZLUqfNlt5xB0S";
+
 export const login = async (req, res) => {
   const { email, password } = req.body;
-
-  const account = findAccount(email);
-  if (!account || account.password !== password) {
+  const needle = String(email || "").trim().toLowerCase();
+  const user = await prisma.user.findFirst({ where: { email: needle, isActive: true } });
+  const ok = await bcrypt.compare(password || "", user?.passwordHash ?? DUMMY_HASH);
+  if (!user || !ok) {
     return res.status(401).json({ success: false, error: "Invalid credentials", code: "UNAUTHORIZED" });
   }
 
-  const token = signJwt({ email: account.email });
+  const token = signJwt({ email: user.email });
 
-  // userId is a strict-UUID column — access.js accounts have no UUID, so it's
-  // left null here and the email goes in username instead (a plain string column).
   await writeAudit({
-    userId: null,
-    username: account.email,
+    userId: user.userId, // now a real UUID — access.js accounts never had one, so this was always null before
+    username: user.email,
     action: "LOGIN",
-    tableName: "access.js",
-    recordId: account.email,
+    tableName: "users",
+    recordId: user.email,
     ip: req.ip,
   });
 
@@ -29,12 +32,12 @@ export const login = async (req, res) => {
     success: true,
     token,
     user: {
-      user_id: account.email,
-      email: account.email,
-      full_name: account.fullName,
-      role: account.role,
-      operation: account.operation,
-      plant: account.plant,
+      user_id: user.email,
+      email: user.email,
+      full_name: user.fullName,
+      role: user.role,
+      operation: user.operation,
+      plant: user.plant,
     },
   });
 };

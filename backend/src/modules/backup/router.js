@@ -1,5 +1,6 @@
 import express from 'express';
 import multer from 'multer';
+import path from 'path';
 import { createBackup } from './create/backup.controller.js';
 import {
   listBackups, getBackupDetails, getBackupStatus, getRestoreStatus, listRestoresForBackup,
@@ -18,13 +19,29 @@ ensureStorageDirs();
 const restoreUpload = multer({
   storage: multer.diskStorage({
     destination: (req, file, cb) => cb(null, INCOMING_DIR),
-    filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`),
+    // path.basename strips any directory component — file.originalname is
+    // client-controlled, and multer's disk storage path.join()s this
+    // straight into the destination dir, so an unsanitized name like
+    // "../../../evil.gz" would otherwise write outside INCOMING_DIR.
+    filename: (req, file, cb) => cb(null, `${Date.now()}-${path.basename(file.originalname)}`),
   }),
   limits: { fileSize: 500 * 1024 * 1024 },
   // .gz — the original backup format (preferred, exact); .xlsx — a
   // previously-exported "Export to Excel" file, reconstructed best-effort
-  // (see backup-excel-import.service.js).
-  fileFilter: (req, file, cb) => cb(null, /\.(json\.gz|gz|xlsx)$/i.test(file.originalname)),
+  // (see backup-excel-import.service.js). Extension + MIME type together —
+  // both are client-supplied and spoofable, but raise the bar over
+  // extension alone; full magic-byte sniffing would be excessive for this
+  // authenticate+adminOnly-gated, non-public upload surface.
+  fileFilter: (req, file, cb) => {
+    const extOk = /\.(json\.gz|gz|xlsx)$/i.test(file.originalname);
+    const mimeOk = [
+      'application/gzip',
+      'application/x-gzip',
+      'application/octet-stream',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    ].includes(file.mimetype);
+    cb(null, extOk && mimeOk);
+  },
 });
 
 const router = express.Router();

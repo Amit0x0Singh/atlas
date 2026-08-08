@@ -1,4 +1,5 @@
 import prisma from '../../../db.js';
+import { redactSecretFields } from '../shared/field-guard.js';
 
 // ─── Model registry ───────────────────────────────────────────────────────────
 // idField:  string → simple PK field name
@@ -157,7 +158,7 @@ export const listRecords = async (req, res) => {
       prisma[meta.model].findMany(opts),
     ]);
 
-    return res.json({ success: true, data: records, total, page, limit });
+    return res.json({ success: true, data: redactSecretFields(meta, records), total, page, limit });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
   }
@@ -170,7 +171,7 @@ export const getRecord = async (req, res) => {
     const where  = buildWhere(meta, req.params);
     const record = await prisma[meta.model].findUnique({ where });
     if (!record) return res.status(404).json({ success: false, error: 'Record not found', code: 'NOT_FOUND' });
-    return res.json({ success: true, data: record });
+    return res.json({ success: true, data: redactSecretFields(meta, record) });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
   }

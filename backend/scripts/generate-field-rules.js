@@ -11,8 +11,8 @@
 // Usage: node backend/scripts/generate-field-rules.js > backend/scripts/field-rules.draft.js
 
 import { Prisma } from '@prisma/client'
+import { SECRET_FIELD_RE as SECRET_NAME_RE } from '../src/config/secret-field-patterns.js'
 
-const SECRET_NAME_RE = /password|token|secret|apikey|api_key|refreshtoken|signature|checksum|^hash$/i
 const EMAIL_NAME_RE = /email/i
 const USERNAME_NAME_RE = /^username$/i
 const PHONE_NAME_RE = /phone|mobile/i

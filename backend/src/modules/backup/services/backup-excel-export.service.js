@@ -5,6 +5,7 @@ import { Prisma } from '@prisma/client';
 import prisma from '../../../db.js';
 import backendPkg from '../../../../package.json' with { type: 'json' };
 import { MODELS } from '../../admin_panel/get/admin_panel.controller.js';
+import { excelSafeCell } from '../../../utils/excel-safe-cell.js';
 
 const MODELS_BY_ACCESSOR = new Map(Object.values(MODELS).map((m) => [m.model, m]));
 
@@ -68,7 +69,7 @@ function coerceCell(value) {
       const n = Number(value);
       if (Number.isFinite(n)) return { value: n };
     }
-    return { value };
+    return { value: excelSafeCell(value) };
   }
   if (Array.isArray(value) || (typeof value === 'object')) return { value: JSON.stringify(value) };
   return { value };

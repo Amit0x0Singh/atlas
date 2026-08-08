@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { authenticate } from "../../../middleware/auth.js";
 import { getBomSends, getBomSend } from "./get/bom-sends.controller.js";
 import {
   createBomSend,
@@ -10,6 +11,7 @@ import { deleteBomSend } from "./delete/sales.controller.js";
 //---------------------  Router ---------------------
 
 const router = Router();
+router.use(authenticate);
 
 router.get("/", getBomSends);
 router.get("/:id", getBomSend);

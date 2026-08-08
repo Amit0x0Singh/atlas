@@ -1,6 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
 import multer from "multer";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -9,10 +10,23 @@ import { startCronJobs } from "./services/cron-jobs.js";
 import { runAutoSeed } from "./services/auto-seed.js";
 import router from "./routers/routers.js";
 import { connectDb, disconnectDb } from "../config/db.js";
+import { globalApiLimiter } from "./middleware/rate-limit.js";
+import { toSafeErrorMessage } from "./utils/safe-error.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
+
+// If this app is ever deployed behind a reverse proxy (nginx/ALB/etc.),
+// `app.set('trust proxy', 1)` (or the correct hop count) must be added —
+// otherwise express-rate-limit and req.ip (used by audit logging) will see
+// the proxy's IP for every client. Left unset here deliberately: enabling
+// it incorrectly (e.g. blanket `true`) lets any client spoof its own IP via
+// X-Forwarded-For, which is worse than not having it. No reverse proxy is
+// in front of this app in the current deployment shape.
+
+// ── Security headers ────────────────────────────────────────────────────────────
+app.use(helmet());
 
 // ── Body parsing ───────────────────────────────────────────────────────────────
 // Replaces Fastify's built-in body parser + bodyLimit option
@@ -21,24 +35,29 @@ app.use(express.urlencoded({ extended: true, limit: "30mb" }));
 
 // ── CORS ───────────────────────────────────────────────────────────────────────
 const isDev = process.env.NODE_ENV !== "production";
-// app.use(
-//   cors({
-//     // Dev: allow any localhost port (main ERP 5173, admin panel 5175, etc.)
-//     origin: isDev
-//       ? (origin, cb) => {
-//           if (!origin || /^http:\/\/localhost(:\d+)?$/.test(origin)) cb(null, true);
-//           else cb(new Error("CORS: origin not allowed"));
-//         }
-//       : process.env.FRONTEND_URL || false,
-//     credentials: true,
-//   }),
-// );
-app.use(cors()); // Allow all origins for now (can be restricted later if needed)
+const allowedOrigins = (process.env.FRONTEND_URLS || "").split(",").map((s) => s.trim()).filter(Boolean);
+app.use(
+  cors({
+    // Dev: allow any localhost port (main ERP 5173, admin panel 5175, etc.)
+    // Prod: only origins explicitly listed in FRONTEND_URLS (comma-separated).
+    origin: isDev
+      ? (origin, cb) => {
+          if (!origin || /^http:\/\/localhost(:\d+)?$/.test(origin)) cb(null, true);
+          else cb(new Error("CORS: origin not allowed"));
+        }
+      : (origin, cb) => {
+          if (!origin || allowedOrigins.includes(origin)) cb(null, true);
+          else cb(new Error("CORS: origin not allowed"));
+        },
+    credentials: true,
+  }),
+);
 
 // ── File uploads ───────────────────────────────────────────────────────────────
 export const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB
+  fileFilter: (req, file, cb) => cb(null, /\.(xlsx|xls|csv|json|gz)$/i.test(file.originalname)),
 });
 
 // ── Health check ───────────────────────────────────────────────────────────────
@@ -50,6 +69,7 @@ app.get("/health", (req, res) => {
 // ── Register all API routes ────────────────────────────────────────────────────
 app.use(
   "/api",
+  globalApiLimiter,
   (req, res, next) => {
     console.log(`Incoming request: ${req.method} ${req.originalUrl}`);
     next();
@@ -82,7 +102,7 @@ app.use((err, req, res, next) => {
   const statusCode = err.statusCode || err.status || 500;
   res.status(statusCode).json({
     success: false,
-    error: err.message || "Internal Server Error",
+    error: toSafeErrorMessage(err),
     code: err.code || "INTERNAL_ERROR",
   });
 });

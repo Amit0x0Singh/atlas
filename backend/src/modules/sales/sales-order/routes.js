@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { authorize } from "../../../middleware/auth.js";
+import { validateCreateSalesOrder, validateUpdateSalesOrder } from "./create/sales-order.middleware.js";
 
 import {
   createSalesOrder,
@@ -36,7 +37,7 @@ router.use(authorize(["admin"]));
 
 // Static paths must come before /:id
 
-router.post("/", createSalesOrder);
+router.post("/", validateCreateSalesOrder, createSalesOrder);
 router.post("/companies", addCompany);
 
 router.get("/", getSalesOrders);
@@ -45,7 +46,7 @@ router.get("/sync-log", getSyncLogs);
 router.get("/companies", getCompanies);
 router.get("/:id", getSalesOrderById);
 
-router.put("/:id", updateSalesOrder);
+router.put("/:id", validateUpdateSalesOrder, updateSalesOrder);
 
 router.patch("/item/:itemId", updateSalesOrderItem);
 router.patch("/cancel/:id", cancelOrder);
