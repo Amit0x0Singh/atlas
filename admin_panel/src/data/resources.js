@@ -11,9 +11,10 @@ export const resources = [
     title: 'Gate Inward', model: 'GateInward', path: 'gate-inward',
     idField: 'inwardId',
     description: 'Inward gate entry records for incoming vehicles and suppliers.',
+    filters: ['supplierName', 'companyName', 'status', 'entryTime', 'createdBy'],
     fields: [
       field('inwardId',      'Inward ID',     'text', { readOnly: true }),
-      field('supplierName',  'Supplier Name'),
+      field('supplierName',  'Supplier Name', 'text', { titleCase: true }),
       field('invoiceNo',     'Invoice No'),
       field('vehicleNo',     'Vehicle No'),
       field('companyName',   'Company Name', 'text', { titleCase: true }),
@@ -30,6 +31,7 @@ export const resources = [
     title: 'Gate Outward', model: 'GateOutward', path: 'gate-outward',
     idField: 'outwardId',
     description: 'Outward gate entry records for dispatching vehicles.',
+    filters: ['receiverName', 'companyName', 'status', 'createdAt', 'createdBy'],
     fields: [
       field('outwardId',     'Outward ID',    'text', { readOnly: true }),
       field('receiverName',  'Receiver Name', 'text', { titleCase: true }),
@@ -51,6 +53,7 @@ export const resources = [
     title: 'Raw Material Master', model: 'RmMaster', path: 'rm-master',
     idField: 'itemCode',
     description: 'Raw material catalogue, unit, and tracking type.',
+    filters: ['category', 'subCategory', 'inventoryUom', 'trackingType', 'state'],
     fields: [
       field('itemCode', 'Item Code'),
       field('itemName', 'Item Name', 'text', { titleCase: true }),
@@ -103,6 +106,7 @@ export const resources = [
     title: 'Pack Detail', model: 'PackDetail', path: 'pack-detail',
     idField: 'packId',
     description: 'One row per physical bag — scan/inward status, warehouse and remaining qty. Replaces Inward Sessions, Inward and Pack Balance.',
+    filters: ['itemCode', 'customerBatchCode', 'warehouse', 'status', 'inwardedAt'],
     fields: [
       field('packId', 'Pack ID'),
       field('printMasterId', 'Print Master ID'),
@@ -192,6 +196,7 @@ export const resources = [
     title: 'Sales Orders', model: 'SalesOrder', path: 'sales-order',
     idField: 'id',
     description: 'Sales order headers (SO-YYYY-NNNN).',
+    filters: ['customerName', 'company', 'priority', 'orderType', 'orderReceivedDate'],
     fields: [
       field('id', 'ID', 'text', { readOnly: true }),
       field('soId', 'SO ID'),
@@ -219,6 +224,7 @@ export const resources = [
     title: 'Sales Order Items', model: 'SalesOrderItem', path: 'sales-order-item',
     idField: 'id',
     description: 'Line items within a sales order.',
+    filters: ['customerProductName', 'status', 'sectionName', 'labelType', 'mfgDate'],
     fields: [
       field('id', 'ID', 'text', { readOnly: true }),
       field('salesOrderId', 'Sales Order ID'),
@@ -322,6 +328,7 @@ export const resources = [
     title: 'Product Master', model: 'ProductMaster', path: 'product-master',
     idField: 'productCode',
     description: 'Finished-product catalogue.',
+    filters: ['uom', 'state'],
     fields: [
       field('productCode', 'Product Code', 'text', { readOnly: true }),
       field('productName', 'Product Name', 'text', { titleCase: true }),
@@ -340,6 +347,7 @@ export const resources = [
     title: 'Equipment Master', model: 'EquipmentMaster', path: 'equipment-master',
     idField: 'equipId',
     description: 'Equipment/reactor catalogue with volume & operation type.',
+    filters: ['operation', 'plant', 'workingUnit'],
     fields: [
       field('equipId', 'Equip ID', 'text', { readOnly: true }),
       field('equipCode', 'Equip Code', 'text', { readOnly: true }),
@@ -358,6 +366,7 @@ export const resources = [
     title: 'Production Tasks', model: 'ProductionTask', path: 'production-task',
     idField: 'id',
     description: 'Plant scheduling tasks from the Planning page — feeds the Material Issue by BOM task picker.',
+    filters: ['plant', 'equipment', 'productName', 'status', 'date'],
     fields: [
       field('id', 'ID', 'text', { readOnly: true }),
       field('taskId', 'Task ID', 'text', { readOnly: true }),
@@ -430,6 +439,7 @@ export const resources = [
     title: 'Indent Master', model: 'IndentMaster', path: 'indent-master',
     idField: 'indentId',
     description: 'Production indent (work order) header.',
+    filters: ['plant', 'equipment', 'productName', 'status', 'createdAt'],
     fields: [
       field('indentId', 'Indent ID', 'text', { readOnly: true }),
       field('productCode', 'Product Code'),
@@ -675,6 +685,7 @@ export const resources = [
     title: 'Production Plans', model: 'ProductionPlan', path: 'production-plan',
     idField: 'id',
     description: 'Planning records (PP-YYYY-NNNN) generated from open SO items.',
+    filters: ['sectionType', 'productName', 'equipment', 'status', 'plannedDate'],
     fields: [
       field('id', 'ID', 'text', { readOnly: true }),
       field('planId', 'Plan ID'),
@@ -1187,6 +1198,7 @@ export const resources = [
     title: 'ERP Equipment', model: 'ErpEquipment', path: 'erp-equipment',
     idField: 'equipmentId',
     description: 'Equipment catalogue with capacity and sterilisation flags (legacy erp_ schema).',
+    filters: ['plantId', 'equipmentType', 'status'],
     fields: [
       field('equipmentId', 'Equipment ID', 'text', { readOnly: true }),
       field('plantId', 'Plant ID'),
@@ -1230,6 +1242,7 @@ export const resources = [
     title: 'Customers', model: 'Customer', path: 'customers',
     idField: 'customerId',
     description: 'Customer master (legacy erp_ schema).',
+    filters: ['state', 'isActive'],
     fields: [
       field('customerId', 'Customer ID', 'text', { readOnly: true }),
       field('customerName', 'Customer Name', 'text', { titleCase: true }),
@@ -1248,6 +1261,7 @@ export const resources = [
     title: 'ERP Products', model: 'ErpProduct', path: 'erp-products',
     idField: 'productCode',
     description: 'Finished-product catalogue with BOM and plant linkage (legacy erp_ schema).',
+    filters: ['productCategory', 'plantId', 'formulationType', 'status'],
     fields: [
       field('productCode', 'Product Code', 'text', { readOnly: true }),
       field('productName', 'Product Name', 'text', { titleCase: true }),

@@ -6,7 +6,12 @@ import { useToast } from '../components/common/Toast.jsx';
 // used to own directly, and wires up the backend's page/limit/total contract
 // (previously called with no params, so tables over the backend's default
 // 200-row limit were silently truncated with no way to reach the rest).
-export function useResourceRecords(resource) {
+//
+// `search` (already-debounced string) and `filters` (plain object) are sent
+// straight through to the backend, which now does the actual searching/
+// filtering — `records`/`total` returned here are already narrowed, so the
+// caller never needs to filter client-side.
+export function useResourceRecords(resource, { search = '', filters = {} } = {}) {
   const showToast = useToast();
   const [records, setRecords] = useState([]);
   const [total, setTotal]     = useState(0);
@@ -16,11 +21,13 @@ export function useResourceRecords(resource) {
   const [saving, setSaving]   = useState(false);
   const [error, setError]     = useState('');
 
+  const filtersJson = JSON.stringify(filters);
+
   const loadData = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
-      const result = await listRecords(resource, { page, limit });
+      const result = await listRecords(resource, { page, limit, search, filters: filtersJson });
       setRecords(result.data ?? []);
       setTotal(result.total ?? 0);
     } catch (err) {
@@ -28,16 +35,25 @@ export function useResourceRecords(resource) {
     } finally {
       setLoading(false);
     }
-  }, [resource, page, limit]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resource, page, limit, search, filtersJson]);
 
   useEffect(() => {
     setPage(1);
   }, [resource.key]);
 
+  // A new search term or filter selection invalidates whatever page you
+  // were on — e.g. page 3 of the unfiltered set is almost never page 3 of
+  // the filtered set.
+  useEffect(() => {
+    setPage(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search, filtersJson]);
+
   useEffect(() => {
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [resource.key, page, limit]);
+  }, [resource.key, page, limit, search, filtersJson]);
 
   async function save(mode, record, payload) {
     setSaving(true);

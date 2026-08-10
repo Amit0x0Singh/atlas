@@ -10,15 +10,15 @@ const ACCENTS = {
 
 export default function StatsCard({ icon: Icon, label, value, caption, accent = 'blue' }) {
   return (
-    <Card hover className="flex items-start justify-between gap-3">
+    <Card hover className="flex items-start justify-between gap-2.5">
       <div className="min-w-0">
-        <p className="text-xs font-medium text-slate-500 dark:text-slate-400 truncate">{label}</p>
-        <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 mt-1">{value}</p>
-        {caption && <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">{caption}</p>}
+        <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">{label}</p>
+        <p className="text-lg font-bold text-slate-900 dark:text-slate-100 mt-0.5">{value}</p>
+        {caption && <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 truncate">{caption}</p>}
       </div>
       {Icon && (
-        <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${ACCENTS[accent] || ACCENTS.blue}`}>
-          <Icon size={18} />
+        <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${ACCENTS[accent] || ACCENTS.blue}`}>
+          <Icon size={15} />
         </div>
       )}
     </Card>

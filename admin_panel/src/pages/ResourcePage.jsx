@@ -22,14 +22,27 @@ import { useResourceRecords } from '../hooks/useResourceRecords.js';
 import { useRecentPages } from '../hooks/useRecentPages.js';
 import { usePinnedRecords } from '../hooks/usePinnedRecords.js';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts.js';
+import { useDebouncedValue } from '../hooks/useDebouncedValue.js';
 import { useToast } from '../components/common/Toast.jsx';
 import { listRecords } from '../api/http.js';
 
-function isStatusLikeField(field) {
+function isFilterableSelectField(field) {
   return field.type === 'select' && field.options?.length;
 }
-function isEditableDateField(field) {
+function isFilterableDateField(field) {
   return !field.readOnly && (field.type === 'date' || field.type === 'datetime-local');
+}
+// A resource's own `filters: ['fieldA', 'fieldB']` (field-name list) wins
+// when present; otherwise every select-with-options field plus every date
+// field is offered — a strict superset of the old "first select + first
+// date only" behavior, so every resource gets *some* real filter panel.
+function resolveFilterFields(resource) {
+  if (Array.isArray(resource.filters) && resource.filters.length) {
+    return resource.filters
+      .map((name) => resource.fields.find((f) => f.name === name))
+      .filter(Boolean);
+  }
+  return resource.fields.filter((f) => isFilterableSelectField(f) || isFilterableDateField(f));
 }
 function getLocalId(resource, record) {
   return Array.isArray(resource.idField)
@@ -52,45 +65,22 @@ function recordIdsFor(resource, records) {
   );
 }
 
-// Same query/status/date narrowing the Toolbar applies to the loaded page —
-// factored out so "select all" can apply it to a freshly-fetched full
-// dataset too, instead of only ever seeing whatever page is on screen.
-function applyClientFilters(resource, list, { query, statusValue, statusField, dateField, dateRange }) {
-  let out = list;
-  const kw = query.trim().toLowerCase();
-  if (kw) {
-    out = out.filter((rec) => resource.fields.some((f) => String(rec[f.name] ?? '').toLowerCase().includes(kw)));
-  }
-  if (statusValue && statusField) {
-    out = out.filter((rec) => String(rec[statusField.name]) === statusValue);
-  }
-  if (dateField && (dateRange.from || dateRange.to)) {
-    out = out.filter((rec) => {
-      const raw = rec[dateField.name];
-      if (!raw) return false;
-      const d = new Date(raw);
-      if (dateRange.from && d < new Date(dateRange.from)) return false;
-      if (dateRange.to && d > new Date(`${dateRange.to}T23:59:59`)) return false;
-      return true;
-    });
-  }
-  return out;
-}
-
 export default function ResourcePage({ resource }) {
   const { quickCreateRequestId } = useOutletContext();
+
+  const [query, setQuery] = useState('');
+  const debouncedQuery = useDebouncedValue(query, 350);
+  const [filterValues, setFilterValues] = useState({});
+
   const {
     records, total, page, limit, loading, saving, error,
     setPage, setLimit, reload, save, remove,
-  } = useResourceRecords(resource);
+  } = useResourceRecords(resource, { search: debouncedQuery, filters: filterValues });
 
   const { visit } = useRecentPages();
   const { pinned, isPinned, togglePin } = usePinnedRecords(resource.key);
   const showToast = useToast();
 
-  const [query, setQuery] = useState('');
-  const [statusValue, setStatusValue] = useState('');
-  const [dateRange, setDateRange] = useState({ from: '', to: '' });
   const [modalState, setModalState] = useState(null);
   const [drawerRecord, setDrawerRecord] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -116,25 +106,29 @@ export default function ResourcePage({ resource }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [quickCreateRequestId]);
 
+  // A search term or filter selection from a previously-viewed resource
+  // shouldn't silently carry over and narrow a totally different table.
+  useEffect(() => {
+    setQuery('');
+    setFilterValues({});
+  }, [resource.key]);
+
   useKeyboardShortcuts({ searchRef, onNew: () => setModalState({ mode: 'create' }) });
 
-  const statusField = resource.fields.find(isStatusLikeField);
-  const dateField = resource.fields.find(isEditableDateField);
+  const filterFields = useMemo(() => resolveFilterFields(resource), [resource]);
 
   const stats = useMemo(() => computeStats(resource, records, total), [resource, records, total]);
 
-  const filtered = useMemo(
-    () => applyClientFilters(resource, records, { query, statusValue, statusField, dateField, dateRange }),
-    [resource, records, query, statusValue, statusField, dateField, dateRange],
-  );
+  // records/total are already search+filter-narrowed by the backend (see
+  // useResourceRecords) — no client-side re-filtering needed here anymore.
+  const allPageSelected = records.length > 0 && records.every((rec) => selectedIds.has(getLocalId(resource, rec)));
+  const somePageSelected = !allPageSelected && records.some((rec) => selectedIds.has(getLocalId(resource, rec)));
 
-  const allPageSelected = filtered.length > 0 && filtered.every((rec) => selectedIds.has(getLocalId(resource, rec)));
-  const somePageSelected = !allPageSelected && filtered.some((rec) => selectedIds.has(getLocalId(resource, rec)));
-
-  // The header checkbox means "everything matching the current filters",
-  // not just this page — records is server-paginated (default 100/page,
-  // and the backend caps a single request at 500 regardless), so for any
-  // table bigger than one page this has to page through the rest rather
+  // The header checkbox means "everything matching the current search/
+  // filters", not just this page — records is server-paginated (default
+  // 100/page, backend caps a single request at 500 regardless), so for any
+  // result set bigger than one page this has to page through the rest
+  // (using the same search/filters, which the server now applies) rather
   // than only ever select what happens to be loaded on screen.
   async function handleToggleAll() {
     if (allPageSelected) {
@@ -142,20 +136,20 @@ export default function ResourcePage({ resource }) {
       return;
     }
     if (records.length >= total) {
-      setSelectedIds(new Set(filtered.map((rec) => getLocalId(resource, rec))));
+      setSelectedIds(new Set(records.map((rec) => getLocalId(resource, rec))));
       return;
     }
     setSelectingAll(true);
     try {
       const PAGE_SIZE = 500; // backend's hard cap per request
+      const filtersJson = JSON.stringify(filterValues);
       const all = [];
-      for (let page = 1; ; page++) {
-        const { data } = await listRecords(resource, { page, limit: PAGE_SIZE });
+      for (let p = 1; ; p++) {
+        const { data } = await listRecords(resource, { page: p, limit: PAGE_SIZE, search: debouncedQuery, filters: filtersJson });
         all.push(...data);
         if (data.length < PAGE_SIZE || all.length >= total) break;
       }
-      const matched = applyClientFilters(resource, all, { query, statusValue, statusField, dateField, dateRange });
-      setSelectedIds(new Set(matched.map((rec) => getLocalId(resource, rec))));
+      setSelectedIds(new Set(all.map((rec) => getLocalId(resource, rec))));
     } catch (err) {
       showToast(err?.response?.data?.error || 'Unable to select all records.', 'danger');
     } finally {
@@ -170,8 +164,7 @@ export default function ResourcePage({ resource }) {
 
   function resetFilters() {
     setQuery('');
-    setStatusValue('');
-    setDateRange({ from: '', to: '' });
+    setFilterValues({});
   }
 
   async function handleSave(payload) {
@@ -205,7 +198,7 @@ export default function ResourcePage({ resource }) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         eyebrow={resource.model}
         title={resource.title}
@@ -221,7 +214,7 @@ export default function ResourcePage({ resource }) {
       {loading ? (
         <StatsSkeleton count={4} />
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-3">
           {stats.map((s) => (
             <StatsCard key={s.key} label={s.label} value={s.value} icon={s.icon} accent={s.accent} caption={s.caption} />
           ))}
@@ -234,14 +227,10 @@ export default function ResourcePage({ resource }) {
             searchRef={searchRef}
             query={query}
             onQueryChange={setQuery}
-            statusField={statusField}
-            statusOptions={statusField?.options || []}
-            statusValue={statusValue}
-            onStatusChange={setStatusValue}
-            dateField={dateField}
-            dateRange={dateRange}
-            onDateRangeChange={setDateRange}
-            onExport={() => exportToCsv(resource, filtered)}
+            filterFields={filterFields}
+            filterValues={filterValues}
+            onFilterChange={(name, value) => setFilterValues((v) => ({ ...v, [name]: value }))}
+            onExport={() => exportToCsv(resource, records)}
             onImport={() => setImportOpen(true)}
             onRefresh={reload}
             onReset={resetFilters}
@@ -304,7 +293,7 @@ export default function ResourcePage({ resource }) {
 
         <DataTable
           resource={resource}
-          records={filtered}
+          records={records}
           loading={loading}
           onRowClick={setDrawerRecord}
           onEdit={(rec) => setModalState({ mode: 'edit', record: rec })}
@@ -318,7 +307,7 @@ export default function ResourcePage({ resource }) {
           selectingAll={selectingAll}
         />
 
-        {!loading && filtered.length > 0 && (
+        {!loading && records.length > 0 && (
           <div className="px-4 py-3 border-t border-slate-100 dark:border-slate-800">
             <Pagination page={page} limit={limit} total={total} onPageChange={setPage} onLimitChange={setLimit} />
           </div>

@@ -9,9 +9,9 @@ const VARIANTS = {
 };
 
 const SIZES = {
-  sm: { btn: 'px-2.5 py-1.5 text-xs gap-1.5', icon: 14 },
-  md: { btn: 'px-3.5 py-2 text-sm gap-2',     icon: 15 },
-  lg: { btn: 'px-5 py-2.5 text-sm gap-2',     icon: 16 },
+  sm: { btn: 'px-2.5 py-1 text-xs gap-1.5',   icon: 14 },
+  md: { btn: 'px-3 py-1.5 text-sm gap-1.5',   icon: 15 },
+  lg: { btn: 'px-4 py-2 text-sm gap-2',       icon: 16 },
 };
 
 export default function Button({

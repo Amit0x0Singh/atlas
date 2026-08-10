@@ -1,5 +1,5 @@
 import prisma from '../../../db.js';
-import { redactSecretFields } from '../shared/field-guard.js';
+import { redactSecretFields, getSearchableFields, scalarFieldType } from '../shared/field-guard.js';
 
 // ─── Model registry ───────────────────────────────────────────────────────────
 // idField:  string → simple PK field name
@@ -141,6 +141,63 @@ export function buildWhere(meta, params) {
   return { [meta.idField]: val };
 }
 
+// Builds the Prisma `where` for listRecords from the generic admin table's
+// search box + filter panel — used identically for both count() and
+// findMany() so the reported total always matches what's actually shown.
+//
+// `search` -> substring OR across every String scalar field (DMMF-derived,
+// secrets excluded — see getSearchableFields), trimmed and whitespace-
+// collapsed so stray double-spaces in the search box don't break matching.
+//
+// `filtersJson` -> a JSON-encoded `{ fieldName: value }` object from the
+// filter panel. Only keys that resolve to a real scalar column on this
+// model are honored (everything else is silently dropped, not errored —
+// defends against a stale/renamed field in a cached client and against
+// arbitrary-field or operator-shaped values being smuggled in as filters).
+// String fields match case-insensitively via `contains` — the same partial-
+// match semantics as the search box, since the frontend doesn't tell this
+// endpoint whether a given filter is a closed select (where an exact value
+// was picked) or a free-text box, and `contains` is correct for both: a
+// select's option value still only matches rows containing that exact
+// string, while a free-text filter gets real partial matching. A `{ from, to }`
+// value against a DateTime field becomes an inclusive date range.
+function buildSearchAndFilterWhere(meta, { search, filtersJson }) {
+  const and = [];
+
+  if (search && typeof search === 'string') {
+    const term = search.trim().replace(/\s+/g, ' ');
+    const searchable = getSearchableFields(meta);
+    if (term && searchable.length) {
+      and.push({ OR: searchable.map((f) => ({ [f]: { contains: term, mode: 'insensitive' } })) });
+    }
+  }
+
+  if (filtersJson) {
+    let filters;
+    try { filters = JSON.parse(filtersJson); } catch { filters = null; }
+    if (filters && typeof filters === 'object') {
+      for (const [field, value] of Object.entries(filters)) {
+        if (value === null || value === undefined || value === '') continue;
+        const type = scalarFieldType(meta, field);
+        if (!type) continue; // unknown/relation field — ignore rather than error
+        if (type === 'DateTime' && value && typeof value === 'object') {
+          const { from, to } = value;
+          const range = {};
+          if (from && typeof from === 'string') range.gte = new Date(from);
+          if (to && typeof to === 'string') range.lte = new Date(`${to}T23:59:59.999Z`);
+          if (Object.keys(range).length) and.push({ [field]: range });
+        } else if (type === 'String' && typeof value === 'string' && value.trim()) {
+          and.push({ [field]: { contains: value.trim(), mode: 'insensitive' } });
+        }
+        // Any other type/shape combination is ignored — not a filter this
+        // endpoint knows how to safely apply.
+      }
+    }
+  }
+
+  return and.length ? { AND: and } : {};
+}
+
 // ─── Route handlers ───────────────────────────────────────────────────────────
 
 export const listRecords = async (req, res) => {
@@ -151,10 +208,12 @@ export const listRecords = async (req, res) => {
     const limit = Math.min(500, parseInt(req.query.limit) || 200);
     const skip  = (page - 1) * limit;
 
-    const opts = { skip, take: limit };
+    const where = buildSearchAndFilterWhere(meta, { search: req.query.search, filtersJson: req.query.filters });
+
+    const opts = { skip, take: limit, where };
     if (meta.orderBy) opts.orderBy = meta.orderBy;
     const [total, records] = await Promise.all([
-      prisma[meta.model].count(),
+      prisma[meta.model].count({ where }),
       prisma[meta.model].findMany(opts),
     ]);
 

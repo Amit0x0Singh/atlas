@@ -91,7 +91,7 @@ export default function RmTable({ loading, items, filtered, paginated, page, lim
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums">
                       <div className={`text-base font-bold tabular-nums ${hasStock ? 'text-gray-900' : 'text-red-400'}`}>
-                        {fmt(it.totalStock)}
+                        {fmt(it.totalStock)}{it.uom && <span className="text-xs font-medium text-gray-400 ml-1">{it.uom}</span>}
                       </div>
                       {!hasStock && <div className="text-[10px] text-red-400 font-medium">OUT OF STOCK</div>}
                     </td>

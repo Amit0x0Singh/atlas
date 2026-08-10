@@ -96,27 +96,27 @@ export default function DeleteHistoryTable({ refreshSignal, onViewDetails }) {
           <table className="w-full text-sm">
             <thead className="bg-slate-50 dark:bg-slate-900 text-[11px] uppercase tracking-wide text-slate-400 border-b border-slate-100 dark:border-slate-800">
               <tr>
-                <th className="text-left font-semibold px-4 py-2.5">Type</th>
-                <th className="text-left font-semibold px-4 py-2.5">Affected Tables</th>
-                <th className="text-left font-semibold px-4 py-2.5">Deleted By</th>
-                <th className="text-left font-semibold px-4 py-2.5">Deleted At</th>
-                <th className="text-right font-semibold px-4 py-2.5">Records</th>
-                <th className="text-left font-semibold px-4 py-2.5">Status</th>
-                <th className="text-right font-semibold px-4 py-2.5">Actions</th>
+                <th className="text-left font-semibold px-3 py-1.5">Type</th>
+                <th className="text-left font-semibold px-3 py-1.5">Affected Tables</th>
+                <th className="text-left font-semibold px-3 py-1.5">Deleted By</th>
+                <th className="text-left font-semibold px-3 py-1.5">Deleted At</th>
+                <th className="text-right font-semibold px-3 py-1.5">Records</th>
+                <th className="text-left font-semibold px-3 py-1.5">Status</th>
+                <th className="text-right font-semibold px-3 py-1.5">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {records.map((job) => (
                 <tr key={job.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
-                  <td className="px-4 py-2.5 font-medium text-slate-800 dark:text-slate-200">{TYPE_LABEL[job.deleteType] ?? job.deleteType}</td>
-                  <td className="px-4 py-2.5 text-slate-500 dark:text-slate-400 max-w-xs truncate">{job.tables?.join(', ')}</td>
-                  <td className="px-4 py-2.5 text-slate-500 dark:text-slate-400">{job.deletedByName || job.deletedBy || '—'}</td>
-                  <td className="px-4 py-2.5 text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                  <td className="px-3 py-1.5 font-medium text-slate-800 dark:text-slate-200">{TYPE_LABEL[job.deleteType] ?? job.deleteType}</td>
+                  <td className="px-3 py-1.5 text-slate-500 dark:text-slate-400 max-w-xs truncate">{job.tables?.join(', ')}</td>
+                  <td className="px-3 py-1.5 text-slate-500 dark:text-slate-400">{job.deletedByName || job.deletedBy || '—'}</td>
+                  <td className="px-3 py-1.5 text-slate-500 dark:text-slate-400 whitespace-nowrap">
                     {new Date(job.createdAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                   </td>
-                  <td className="px-4 py-2.5 text-right text-slate-600 dark:text-slate-300">{job.recordCount.toLocaleString()}</td>
-                  <td className="px-4 py-2.5"><StatusBadge value={job.status} /></td>
-                  <td className="px-4 py-2.5">
+                  <td className="px-3 py-1.5 text-right text-slate-600 dark:text-slate-300">{job.recordCount.toLocaleString()}</td>
+                  <td className="px-3 py-1.5"><StatusBadge value={job.status} /></td>
+                  <td className="px-3 py-1.5">
                     <div className="flex items-center justify-end gap-1">
                       <button
                         type="button"

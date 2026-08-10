@@ -134,7 +134,7 @@ export default function DataTable({
           <thead className="sticky top-0 z-10 bg-slate-50/95 dark:bg-slate-900/90 backdrop-blur">
             {table.getHeaderGroups().map((hg) => (
               <tr key={hg.id}>
-                <th className="sticky left-0 z-20 bg-slate-50/95 dark:bg-slate-900/90 w-10 px-3 py-2.5 border-b border-slate-200 dark:border-slate-800">
+                <th className="sticky left-0 z-20 bg-slate-50/95 dark:bg-slate-900/90 w-10 px-2.5 py-1.5 border-b border-slate-200 dark:border-slate-800">
                   {selectingAll ? (
                     <Loader2 size={14} className="animate-spin text-slate-400" />
                   ) : (
@@ -152,7 +152,7 @@ export default function DataTable({
                     key={header.id}
                     style={{ width: header.getSize() }}
                     className={[
-                      'relative text-left font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide text-[11px] px-3 py-2.5 border-b border-slate-200 dark:border-slate-800 select-none',
+                      'relative text-left font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide text-[11px] px-2.5 py-1.5 border-b border-slate-200 dark:border-slate-800 select-none',
                       idx === 0 ? 'sticky left-10 z-20 bg-slate-50/95 dark:bg-slate-900/90' : '',
                     ].join(' ')}
                   >
@@ -172,7 +172,7 @@ export default function DataTable({
                     />
                   </th>
                 ))}
-                <th className="w-28 px-3 py-2.5 border-b border-slate-200 dark:border-slate-800" />
+                <th className="w-28 px-2.5 py-1.5 border-b border-slate-200 dark:border-slate-800" />
               </tr>
             ))}
           </thead>
@@ -192,7 +192,7 @@ export default function DataTable({
                     selected ? 'bg-blue-50/60 dark:bg-blue-950/30' : 'hover:bg-slate-50 dark:hover:bg-slate-800/40',
                   ].join(' ')}
                 >
-                  <td className={`sticky left-0 z-[5] px-3 py-2.5 ${stickyBg}`} onClick={(e) => e.stopPropagation()}>
+                  <td className={`sticky left-0 z-[5] px-2.5 py-1.5 ${stickyBg}`} onClick={(e) => e.stopPropagation()}>
                     <input
                       type="checkbox"
                       checked={selected}
@@ -205,14 +205,14 @@ export default function DataTable({
                       key={cell.id}
                       style={{ width: cell.column.getSize() }}
                       className={[
-                        'px-3 py-2.5 text-slate-700 dark:text-slate-300 truncate',
+                        'px-2.5 py-1.5 text-slate-700 dark:text-slate-300 truncate',
                         cIdx === 0 ? `sticky left-10 z-[5] ${stickyBg}` : '',
                       ].join(' ')}
                     >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
                   ))}
-                  <td className="px-3 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
+                  <td className="px-2.5 py-1.5 text-right" onClick={(e) => e.stopPropagation()}>
                     <ActionMenu
                       onView={() => onRowClick(row.original)}
                       onEdit={() => onEdit(row.original)}
