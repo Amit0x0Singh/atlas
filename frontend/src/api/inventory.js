@@ -130,17 +130,3 @@ export const gateApi = {
   
 }
 
-export const inventoryApi = {
-  createAdj:       (data)       => api.post('/inventory/adjustments', data),
-  approveAdj:      (id, data)   => api.patch(`/inventory/adjustments/${id}/approve`, data),
-  rejectAdj:       (id, data)   => api.patch(`/inventory/adjustments/${id}/reject`, data),
-  listAdj:         (params)     => api.get('/inventory/adjustments', { params }),
-  createTransfer:  (data)       => api.post('/inventory/transfers', data),
-  receiveTransfer: (id, data)   => api.patch(`/inventory/transfers/${id}/receive`, data),
-  listTransfers:   (params)     => api.get('/inventory/transfers', { params }),
-  decant:          (data)       => api.post('/inventory/decanting', data),
-  listDecanting:   (params)     => api.get('/inventory/decanting', { params }),
-  fifoCheck:       (data)       => api.post('/inventory/fifo-check', data),
-  fifoOverride:    (data)       => api.post('/inventory/fifo-override', data),
-  stockSummary:    ()           => api.get('/inventory/stock-summary'),
-}

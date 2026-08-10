@@ -1,6 +1,5 @@
 import express from "express";
 import GateRouter from "./gate/router.js";
-import adjustmentsRouter from "./adjustments/routes.js";
 import RmRouter from "./row-material-master/router.js";
 import StockRouter from "./stock/router.js";
 import LedgerRouter from "./ledger/router.js";
@@ -38,8 +37,5 @@ InventoryRouter.use("/import", ImportRouter);
 
 // ── Gate (Inward + Outward) ───────────────────────────────────────────────────
 InventoryRouter.use("/gate", GateRouter);    // review completed
-
-// ── Adjustments sub-router ────────────────────────────────────────────────────
-InventoryRouter.use("/inventory", adjustmentsRouter);
 
 export default InventoryRouter;

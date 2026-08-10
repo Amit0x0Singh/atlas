@@ -442,7 +442,6 @@ model InventoryHandover {
 //   ErpProductionPlan       — ERP production plans (separate from app-level ProductionPlan)
 //   ErpProductionJob        — Individual batch jobs within an ERP production plan
 //   JobEquipmentAssignment  — Equipment time blocks assigned to a job
-//   ErpBomIssuance          — Material issuances from store to production (per pack)
 //   BatchQcRecord           — QC results per production job
 //   ProductionLossLog       — Material loss entries during production
 //   TimeMotionLog           — Time-and-motion observations for capacity planning
@@ -502,7 +501,6 @@ model ErpProductionJob {
   plan                 ErpProductionPlan?       @relation(fields: [planId], references: [planId])
   equipment            ErpEquipment?            @relation(fields: [equipmentId], references: [equipmentId])
   equipmentAssignments JobEquipmentAssignment[]
-  issuances            ErpBomIssuance[]
   qcRecords            BatchQcRecord[]
   lossLogs             ProductionLossLog[]
 
@@ -519,24 +517,6 @@ model JobEquipmentAssignment {
   job ErpProductionJob? @relation(fields: [jobId], references: [jobId])
 
   @@map("job_equipment_assignments")
-}
-
-model ErpBomIssuance {
-  issuanceId   String   @id @default(dbgenerated("gen_random_uuid()")) @map("issuance_id") @db.Uuid
-  jobId        String?  @map("job_id") @db.Uuid
-  itemCode     String?  @map("item_code") @db.VarChar(50)
-  packId       String?  @map("pack_id") @db.Uuid
-  requiredQty  Decimal  @map("required_qty") @db.Decimal(12, 6)
-  issuedQty    Decimal  @map("issued_qty") @db.Decimal(12, 6)
-  issuedBy     String?  @map("issued_by") @db.Uuid
-  issuedAt     DateTime @default(now()) @map("issued_at") @db.Timestamptz()
-  fifoOverride Boolean  @default(false) @map("fifo_override")
-  notes        String?
-
-  job  ErpProductionJob? @relation(fields: [jobId], references: [jobId])
-  pack ErpPack?          @relation(fields: [packId], references: [packId])
-
-  @@map("bom_issuance")
 }
 
 model BatchQcRecord {

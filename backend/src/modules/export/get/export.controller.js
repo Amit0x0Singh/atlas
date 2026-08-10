@@ -42,19 +42,6 @@ async function fetchUserMap(userIds) {
   return Object.fromEntries(users.map(u => [u.userId, u.fullName]))
 }
 
-async function fetchBomLines(bomIds) {
-  const [form, pack] = await Promise.all([
-    prisma.erpBomLineFormulation.findMany({ where: { bomId: { in: bomIds } }, select: { bomId: true, itemCode: true, qtyPerUnit: true, unit: true } }),
-    prisma.erpBomLinePacking.findMany({     where: { bomId: { in: bomIds } }, select: { bomId: true, itemCode: true, qtyPerUnit: true, unit: true } }),
-  ])
-  const map = {}
-  for (const l of [...form, ...pack]) {
-    if (!map[l.bomId]) map[l.bomId] = []
-    map[l.bomId].push(l)
-  }
-  return map
-}
-
 // ── Sales ─────────────────────────────────────────────────────────────────────
 
 export const exportSalesOrders = async (req, res) => {
@@ -297,77 +284,6 @@ export const exportMicrobialTransactions = async (req, res) => {
 
 // ── Planning / Production ─────────────────────────────────────────────────────
 
-export const exportDemandStockGap = async (req, res) => {
-  try {
-    const orders = await prisma.erpSalesOrder.findMany({
-      where: { status: { in: ['confirmed', 'planned', 'in_production'] } },
-      include: { productionPlans: { where: { status: 'published' }, select: { planId: true } } },
-    })
-
-    // Find active BOM for each product
-    const productCodes = [...new Set(orders.map(o => o.productCode).filter(Boolean))]
-    const boms = productCodes.length ? await prisma.erpBomHeader.findMany({
-      where:   { productCode: { in: productCodes }, status: 'active' },
-      select:  { bomId: true, productCode: true, yieldPct: true },
-      orderBy: { effectiveDate: 'desc' },
-    }) : []
-    // Latest active BOM per product
-    const bomByProduct = {}
-    for (const b of boms) {
-      if (!bomByProduct[b.productCode]) bomByProduct[b.productCode] = b
-    }
-
-    const bomIds = [...new Set(Object.values(bomByProduct).map(b => b.bomId))]
-    const bomLineMap = bomIds.length ? await fetchBomLines(bomIds) : {}
-
-    // Accumulate demand per item
-    const gapMap = {}
-    for (const o of orders) {
-      const bom = bomByProduct[o.productCode]
-      if (!bom) continue
-      const requiredQty = Number(o.orderQty) / (Number(bom.yieldPct) / 100)
-      for (const line of (bomLineMap[bom.bomId] || [])) {
-        const needed = Number(line.qtyPerUnit) * requiredQty
-        if (!gapMap[line.itemCode]) gapMap[line.itemCode] = { total_demand: 0 }
-        gapMap[line.itemCode].total_demand += needed
-      }
-    }
-
-    // Stock
-    const [items, packs] = await Promise.all([
-      prisma.erpItem.findMany({ select: { itemCode: true, itemName: true, uom: true, reorderLevel: true } }),
-      prisma.erpPack.findMany({
-        where:  { qrConfirmed: true, status: { in: ['active', 'partial'] } },
-        select: { itemCode: true, qtyRemaining: true },
-      }),
-    ])
-    const stockTotals = {}
-    for (const p of packs) {
-      stockTotals[p.itemCode] = (stockTotals[p.itemCode] || 0) + Number(p.qtyRemaining)
-    }
-
-    const data = items.map(i => {
-      const demand = gapMap[i.itemCode]?.total_demand || 0
-      const stock  = stockTotals[i.itemCode] || 0
-      return {
-        'Item Code':    i.itemCode,
-        'Item Name':    i.itemName,
-        'UOM':          i.uom,
-        'Current Stock': Number(stock.toFixed(3)),
-        'Total Demand': Number(demand.toFixed(3)),
-        'Gap':          Number((demand - stock).toFixed(3)),
-        'Reorder Level': i.reorderLevel,
-        'Status':        demand > stock ? 'SHORT' : 'OK',
-      }
-    })
-    const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, buildSheet(data), 'Demand vs Stock Gap')
-    return sendXlsx(res, wb, 'DemandStockGap')
-  } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
-  }
-}
-
 export const exportProductionSchedule = async (req, res) => {
   try {
     const jobs = await prisma.erpProductionJob.findMany({
@@ -506,74 +422,6 @@ export const exportEquipmentUtilisation = async (req, res) => {
   }
 }
 
-export const exportRmForecast = async (req, res) => {
-  try {
-    const thirtyDaysOut = new Date(Date.now() + 30 * 86400000)
-
-    const orders = await prisma.erpSalesOrder.findMany({
-      where: { status: { notIn: ['dispatched', 'cancelled'] }, etd: { lte: thirtyDaysOut } },
-    })
-
-    const productCodes = [...new Set(orders.map(o => o.productCode).filter(Boolean))]
-    const boms = productCodes.length ? await prisma.erpBomHeader.findMany({
-      where:   { productCode: { in: productCodes }, status: 'active' },
-      select:  { bomId: true, productCode: true, yieldPct: true },
-      orderBy: { effectiveDate: 'desc' },
-    }) : []
-    const bomByProduct = {}
-    for (const b of boms) {
-      if (!bomByProduct[b.productCode]) bomByProduct[b.productCode] = b
-    }
-
-    const bomIds     = [...new Set(Object.values(bomByProduct).map(b => b.bomId))]
-    const bomLineMap = bomIds.length ? await fetchBomLines(bomIds) : {}
-
-    // Also fetch item names for all items in BOM lines
-    const allItemCodes = [...new Set(Object.values(bomLineMap).flat().map(l => l.itemCode))]
-    const items = allItemCodes.length ? await prisma.erpItem.findMany({
-      where:  { itemCode: { in: allItemCodes } },
-      select: { itemCode: true, itemName: true },
-    }) : []
-    const itemNameMap = Object.fromEntries(items.map(i => [i.itemCode, i.itemName]))
-
-    const forecastMap = {}
-    for (const o of orders) {
-      const bom = bomByProduct[o.productCode]
-      if (!bom) continue
-      const requiredQty = Number(o.orderQty) / (Number(bom.yieldPct) / 100)
-      for (const line of (bomLineMap[bom.bomId] || [])) {
-        if (!forecastMap[line.itemCode]) forecastMap[line.itemCode] = { item_name: itemNameMap[line.itemCode] ?? null, unit: line.unit, total_demand: 0 }
-        forecastMap[line.itemCode].total_demand += Number(line.qtyPerUnit) * requiredQty
-      }
-    }
-
-    const packs = await prisma.erpPack.findMany({
-      where:  { qrConfirmed: true, status: { in: ['active', 'partial'] } },
-      select: { itemCode: true, qtyRemaining: true },
-    })
-    const stockMap = {}
-    for (const p of packs) stockMap[p.itemCode] = (stockMap[p.itemCode] || 0) + Number(p.qtyRemaining)
-
-    const data = Object.entries(forecastMap)
-      .map(([code, v]) => ({
-        'Item Code':     code,
-        'Item Name':     v.item_name,
-        'Unit':          v.unit,
-        'Required (30d)': Number(v.total_demand.toFixed(3)),
-        'Current Stock': Number((stockMap[code] || 0).toFixed(3)),
-        'Gap':           Number(Math.max(0, v.total_demand - (stockMap[code] || 0)).toFixed(3)),
-        'Status':        v.total_demand > (stockMap[code] || 0) ? 'PROCURE' : 'OK',
-      }))
-      .sort((a, b) => b['Gap'] - a['Gap'])
-
-    const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, buildSheet(data), 'RM Forecast')
-    return sendXlsx(res, wb, 'RMForecast30Days')
-  } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
-  }
-}
-
 // ── Management Pack ───────────────────────────────────────────────────────────
 
 export const exportManagementPack = async (req, res) => {
@@ -633,19 +481,7 @@ export const exportManagementPack = async (req, res) => {
       equipment_name:     j.equipment?.equipmentName ?? null,
     })).sort((a, b) => (a.etd > b.etd ? 1 : -1))), '4_ProductionSchedule')
 
-    // 5 — Stock summary (JS aggregation — no GROUP BY FILTER needed)
-    const [allItems, activePacks] = await Promise.all([
-      prisma.erpItem.findMany({ select: { itemCode: true, itemName: true, itemCategory: true, uom: true, reorderLevel: true } }),
-      prisma.erpPack.findMany({ where: { qrConfirmed: true, status: { in: ['active', 'partial'] } }, select: { itemCode: true, qtyRemaining: true } }),
-    ])
-    const packTotals = {}
-    for (const p of activePacks) packTotals[p.itemCode] = (packTotals[p.itemCode] || 0) + Number(p.qtyRemaining)
-    XLSX.utils.book_append_sheet(wb, buildSheet(allItems.map(i => ({
-      item_code: i.itemCode, item_name: i.itemName, item_category: i.itemCategory,
-      total_qty: packTotals[i.itemCode] || 0, uom: i.uom, reorder_level: i.reorderLevel,
-    }))), '5_StockSummary')
-
-    // 6 — Microbial containers
+    // 5 — Microbial containers
     const containers = await prisma.microbialContainer.findMany({
       where:   { status: { not: 'exhausted' } },
       include: { strain: { select: { strainName: true, decayK: true } } },
@@ -654,9 +490,9 @@ export const exportManagementPack = async (req, res) => {
       const days = (today - new Date(c.mfgDate)) / 86400000
       const cfu  = Number(c.mfgCfuPerMl) * Math.exp(-Number(c.strain.decayK) * days)
       return { container_id: c.containerId, strain_name: c.strain?.strainName ?? null, volume_litres: c.volumeLitres, mfg_cfu_per_ml: c.mfgCfuPerMl, current_cfu: Number(cfu.toFixed(2)), mfg_date: fmtDate(c.mfgDate), expiry_date: fmtDate(c.expiryDate), status: c.status }
-    })), '6_MicrobialStock')
+    })), '5_MicrobialStock')
 
-    // 7 — Equipment utilisation (JS aggregation)
+    // 6 — Equipment utilisation (JS aggregation)
     const [equips, equJobs] = await Promise.all([
       prisma.erpEquipment.findMany({ select: { equipmentId: true, equipmentName: true, status: true } }),
       prisma.erpProductionJob.findMany({ select: { equipmentId: true, status: true } }),
@@ -670,20 +506,13 @@ export const exportManagementPack = async (req, res) => {
       equipment_name: ee.equipmentName,
       status:         ee.status,
       completed:      (equJobMap[ee.equipmentId] || []).filter(j => j.status === 'qc_passed').length,
-    }))), '7_Equipment')
+    }))), '6_Equipment')
 
-    // 8 — Time motion (DB VIEW — must stay raw)
+    // 7 — Time motion (DB VIEW — must stay raw)
     const tmmRows = await prisma.$queryRaw`SELECT product_code, operation_stage, avg_mins_per_unit, avg_workers, observation_count, confidence FROM time_motion_model ORDER BY product_code, operation_stage`
-    XLSX.utils.book_append_sheet(wb, buildSheet(tmmRows), '8_TimeMotion')
+    XLSX.utils.book_append_sheet(wb, buildSheet(tmmRows), '7_TimeMotion')
 
-    // 9 — Low stock alert
-    const lowStock = allItems.filter(i => (packTotals[i.itemCode] || 0) <= Number(i.reorderLevel || 0))
-    XLSX.utils.book_append_sheet(wb, buildSheet(lowStock.map(i => ({
-      item_code: i.itemCode, item_name: i.itemName,
-      stock: packTotals[i.itemCode] || 0, reorder_level: i.reorderLevel,
-    }))), '9_LowStockAlert')
-
-    // 10 — Audit log
+    // 8 — Audit log
     const auditLogs = await prisma.auditLog.findMany({
       orderBy: { createdAt: 'desc' },
       take:    500,
@@ -692,23 +521,9 @@ export const exportManagementPack = async (req, res) => {
     XLSX.utils.book_append_sheet(wb, buildSheet(auditLogs.map(r => ({
       action: r.action, table_name: r.tableName, record_id: r.recordId,
       username: r.username, created_at: fmtDate(r.createdAt), notes: r.notes,
-    }))), '10_AuditLog')
+    }))), '8_AuditLog')
 
-    // 11 — FIFO overrides
-    const fifoLogs = await prisma.fifoOverrideLog.findMany({ orderBy: { createdAt: 'desc' } })
-    const fifoUserIds = [...new Set(fifoLogs.map(f => f.overrideBy).filter(Boolean))]
-    const fifoUserMap = await fetchUserMap(fifoUserIds)
-    XLSX.utils.book_append_sheet(wb, buildSheet(fifoLogs.map(r => ({
-      item_code:    r.itemCode,
-      older_lot:    r.olderLot,
-      older_qty:    r.olderQty,
-      selected_lot: r.selectedLot,
-      override_by:  fifoUserMap[r.overrideBy] ?? null,
-      reason:       r.reason,
-      created_at:   fmtDate(r.createdAt),
-    }))), '11_FIFOOverrides')
-
-    // 12 — Gate outward flagged for deletion (is_unauthorised field removed from schema; using requestDelete)
+    // 9 — Gate outward flagged for deletion (is_unauthorised field removed from schema; using requestDelete)
     const flaggedOutward = await prisma.gateOutward.findMany({
       where:   { requestDelete: true },
       orderBy: { createdAt: 'desc' },
@@ -721,7 +536,7 @@ export const exportManagementPack = async (req, res) => {
       vehicle_no:    r.vehicleNo,
       status:        r.status,
       created_at:    fmtDate(r.createdAt),
-    }))), '12_FlaggedOutward')
+    }))), '9_FlaggedOutward')
 
     return sendXlsx(res, wb, 'SOM_ERP_ManagementPack')
   } catch (err) {

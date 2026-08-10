@@ -27,7 +27,6 @@ model User {
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
 
-  approvedBoms  ErpBomHeader[]
   notifications ErpNotification[]
 
   @@map("users")

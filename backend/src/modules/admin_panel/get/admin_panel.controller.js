@@ -66,23 +66,11 @@ export const MODELS = {
   'erp-suppliers': { model: 'erpSupplier', group: 'legacy', title: 'ERP Suppliers',        idField: 'supplierId',   orderBy: { supplierName: 'asc' } },
   'erp-plants': { model: 'erpPlant', group: 'legacy', title: 'ERP Plants',           idField: 'plantId',      orderBy: { plantName: 'asc' } },
   'erp-equipment': { model: 'erpEquipment', group: 'legacy', title: 'ERP Equipment',       idField: 'equipmentId',  orderBy: { equipmentName: 'asc' } },
-  'erp-items': { model: 'erpItem', group: 'legacy', title: 'ERP Items',            idField: 'itemCode',     orderBy: { itemName: 'asc' } },
   'customers': { model: 'customer', group: 'legacy', title: 'Customers',           idField: 'customerId',   orderBy: { customerName: 'asc' } },
-  'erp-products': { model: 'erpProduct', group: 'legacy', title: 'ERP Products',         idField: 'productCode',  orderBy: { productName: 'asc' } },
-  'bom-headers': { model: 'erpBomHeader', group: 'legacy', title: 'BOM Headers',       idField: 'bomId',        orderBy: { createdAt: 'desc' } },
-  'bom-lines-formulation': { model: 'erpBomLineFormulation', group: 'legacy', title: 'BOM Lines (Formulation)', idField: 'id'                                         },
-  'bom-lines-packing': { model: 'erpBomLinePacking', group: 'legacy', title: 'BOM Lines (Packing)',  idField: 'id'                                           },
-  'gate-lot-sequences': { model: 'gateLotSequence', group: 'legacy', title: 'Gate Lot Sequences',    idField: ['itemCode', 'year'], orderBy: { year: 'desc' } },
 
   // ── ERP Inventory ──────────────────────────────────────────────────────────
   'gate-inward': { model: 'gateInward', group: 'gate', title: 'Gate Inward',       idField: 'inwardId',    orderBy: { createdAt: 'desc' } },
-  'erp-packs': { model: 'erpPack', group: 'legacy', title: 'ERP Packs',          idField: 'packId',      orderBy: { createdAt: 'desc' } },
   'gate-outward': { model: 'gateOutward', group: 'gate', title: 'Gate Outward',      idField: 'outwardId',   orderBy: { createdAt: 'desc' } },
-  'stock-adjustments': { model: 'stockAdjustment', group: 'legacy', title: 'Stock Adjustments',  idField: 'adjustmentId', orderBy: { raisedAt: 'desc' } },
-  'warehouse-transfers': { model: 'warehouseTransfer', group: 'legacy', title: 'Warehouse Transfers', idField: 'transferId', orderBy: { initiatedAt: 'desc' } },
-  'fifo-override-log': { model: 'fifoOverrideLog', group: 'legacy', title: 'FIFO Override Log',  idField: 'id',          orderBy: { createdAt: 'desc' } },
-  'erp-containers': { model: 'erpContainer', group: 'legacy', title: 'ERP Containers',     idField: 'containerId', orderBy: { createdAt: 'desc' } },
-  'decanting-log': { model: 'decantingLog', group: 'legacy', title: 'Decanting Log',     idField: 'id',          orderBy: { createdAt: 'desc' } },
 
   // ── ERP Sales (legacy) ─────────────────────────────────────────────────────
   'erp-sales-orders': { model: 'erpSalesOrder', group: 'legacy', title: 'ERP Sales Orders (legacy)', idField: 'diNumber', orderBy: { createdAt: 'desc' } },
@@ -92,7 +80,6 @@ export const MODELS = {
   'erp-production-plans': { model: 'erpProductionPlan', group: 'legacy', title: 'ERP Production Plans (legacy)',      idField: 'planId',      orderBy: { createdAt: 'desc' } },
   'erp-production-jobs': { model: 'erpProductionJob', group: 'legacy', title: 'ERP Production Jobs (legacy)',       idField: 'jobId',       orderBy: { createdAt: 'desc' } },
   'job-equipment-assignments': { model: 'jobEquipmentAssignment', group: 'legacy', title: 'Job Equipment Assignments (legacy)', idField: 'id'                                           },
-  'erp-bom-issuance': { model: 'erpBomIssuance', group: 'legacy', title: 'ERP BOM Issuance (legacy)',         idField: 'issuanceId',  orderBy: { issuedAt: 'desc' } },
   'batch-qc-records': { model: 'batchQcRecord', group: 'legacy', title: 'Batch QC Records (legacy)',          idField: 'qcId',        orderBy: { createdAt: 'desc' } },
   'production-loss-log': { model: 'productionLossLog', group: 'legacy', title: 'Production Loss Log (legacy)',      idField: 'id',          orderBy: { createdAt: 'desc' } },
   'time-motion-logs': { model: 'timeMotionLog', group: 'legacy', title: 'Time & Motion Logs (legacy)',          idField: 'id',          orderBy: { createdAt: 'desc' } },

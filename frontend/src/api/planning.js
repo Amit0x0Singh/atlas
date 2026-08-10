@@ -12,17 +12,3 @@ export const planEngineApi = {
   logs:          ()           => api.get('/plan-engine/logs'),
 }
 
-
-export const planningApi = {
-  analyse:       (data)       => api.post('/planning/analyse', data),
-  createPlan:    (data)       => api.post('/planning/plans', data),
-  listPlans:     (params)     => api.get('/planning/plans', { params }),
-  getPlan:       (id)         => api.get(`/planning/plans/${id}`),
-  submitPlan:    (id)         => api.patch(`/planning/plans/${id}/submit`),
-  publishPlan:   (id)         => api.patch(`/planning/plans/${id}/publish`),
-  startJob:      (id)         => api.patch(`/planning/jobs/${id}/start`),
-  delayJob:      (id, data)   => api.patch(`/planning/jobs/${id}/delay`, data),
-  recordQC:      (id, data)   => api.post(`/planning/jobs/${id}/qc`, data),
-  logTimeMotion: (data)       => api.post('/planning/time-motion', data),
-  timeMotion:    (params)     => api.get('/planning/time-motion', { params }),
-}

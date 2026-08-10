@@ -8,8 +8,6 @@
  */
 import { preprocess } from '../../../../middleware/preprocessing/index.js'
 
-export const validateUpdateItem = preprocess()
-
 export const validateUpdateSupplier = preprocess({
   schema: {
     phone: { phone: true },

@@ -23,7 +23,6 @@ model MicrobialStrain {
   createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz()
 
   containers MicrobialContainer[]
-  products   ErpProduct[]
 
   @@map("microbial_strains")
 }
