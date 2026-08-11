@@ -4,8 +4,9 @@ import { packsApi, rmApi, gateApi } from "../../../../../../api/inventory.js";
 import { Button, IconButton } from "../../../../../../components/ui";
 import { useGateInward, useUpdateGateInwardStatus } from "../../../../../../hooks/inventory/useGate.js";
 import { todayStr, resolveExpiryDate } from "../utils/expiryDate.js";
-import { inp, lbl } from "../utils/formStyles.js";
+import { inp, lbl, withError } from "../utils/formStyles.js";
 import ItemLine, { BLANK_BATCH } from "../components/ItemLine.jsx";
+import FieldError from "../components/FieldError.jsx";
 import "./GenerateForm.css";
 
 import { toTitleCase } from '../../../../../../utils/textDisplay.js'
@@ -22,6 +23,11 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed, onUnlin
   const [items, setItems]             = useState([BLANK_ITEM()]);
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState("");
+  // Field-level validation errors, keyed by a flat string identifying the
+  // exact input (e.g. "hdr.supplier", "item.0.packQty",
+  // "item.0.batch.1.numberOfBags") — rendered below that specific input,
+  // separately from the general/API `error` banner above.
+  const [fieldErrors, setFieldErrors] = useState({});
   const [linkedEntry, setLinkedEntry] = useState(null);
   // Bumped on every reset so ItemLine (and its nested search/lot state) is
   // remounted instead of reused — items.map(key={i}) alone keeps the same
@@ -54,41 +60,65 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed, onUnlin
     });
     setLinkedEntry(prefill);
     setError("");
+    setFieldErrors({});
   }, [prefill]);
 
   const addItem     = ()         => setItems(its => [...its, BLANK_ITEM()]);
-  const removeItem  = (i)        => setItems(its => its.filter((_, idx) => idx !== i));
-  const updateItem  = (i, next)  => setItems(its => its.map((it, idx) => idx === i ? next : it));
-  const updateHdr   = (field, value) => setHdr(h => ({ ...h, [field]: value }));
+  const removeItem  = (i)        => { setItems(its => its.filter((_, idx) => idx !== i)); setFieldErrors({}); };
+  const updateItem  = (i, next)  => {
+    // Batch add/remove shifts every later batch's index, which would leave
+    // stale field errors pointing at the wrong batch — safest to drop all
+    // field errors whenever an item's batch count changes.
+    if (items[i] && next.batches.length !== items[i].batches.length) setFieldErrors({});
+    setItems(its => its.map((it, idx) => idx === i ? next : it));
+  };
+  const updateHdr   = (field, value) => {
+    setHdr(h => ({ ...h, [field]: value }));
+    clearFieldError(`hdr.${field}`);
+  };
+
+  const clearFieldError = (key) => {
+    setFieldErrors(fe => {
+      if (!(key in fe)) return fe;
+      const { [key]: _omit, ...rest } = fe;
+      return rest;
+    });
+  };
 
   const isManual = !linkedEntry;
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (isManual && (!hdr.supplier.trim() || !hdr.invoiceNo.trim() || !hdr.receivedDate)) {
-      setError("Supplier, Invoice No. and Received Date are required — fill them in, or pick an Incoming Gate Entry");
-      return;
+  const validate = () => {
+    const errs = {};
+    if (isManual) {
+      if (!hdr.supplier.trim())  errs["hdr.supplier"]     = "Supplier is required";
+      if (!hdr.invoiceNo.trim()) errs["hdr.invoiceNo"]    = "Invoice No is required";
+      if (!hdr.receivedDate)     errs["hdr.receivedDate"] = "Received date is required";
     }
-    for (let i = 0; i < items.length; i++) {
-      const it = items[i];
+    items.forEach((it, i) => {
       if (!it.selectedItem) {
-        setError(`Item ${i + 1}: please select a raw material`);
-        return;
+        errs[`item.${i}.selectedItem`] = "Please select a raw material";
       }
       if (!it.packQty || parseFloat(it.packQty) <= 0) {
-        setError(`Item ${i + 1}: enter a valid qty per bag`);
-        return;
+        errs[`item.${i}.packQty`] = "Enter a valid qty per bag";
       }
-      for (let j = 0; j < it.batches.length; j++) {
-        if (!it.batches[j].numberOfBags || parseInt(it.batches[j].numberOfBags) < 1) {
-          setError(`Item ${i + 1}, Batch Group ${j + 1}: enter a valid number of bags`);
-          return;
+      it.batches.forEach((b, j) => {
+        if (!b.numberOfBags || parseInt(b.numberOfBags, 10) < 1) {
+          errs[`item.${i}.batch.${j}.numberOfBags`] = "Enter a valid number of bags";
         }
-      }
-    }
+      });
+    });
+    return errs;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+
+    const errs = validate();
+    setFieldErrors(errs);
+    if (Object.keys(errs).length > 0) return;
 
     setLoading(true);
-    setError("");
     try {
       // Manual entry: mint the backing Gate Inward first (company assigned
       // server-side), then proceed exactly like the linked-entry path below
@@ -134,6 +164,7 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed, onUnlin
       // or lot number lingers for the next entry.
       setItems([BLANK_ITEM()]);
       setHdr(BLANK_HDR);
+      setFieldErrors({});
       setFormVersion(v => v + 1);
       try { await updateGateStatus.mutateAsync({ id: gateInwardId, data: { status: "approved" } }) } catch { /* ignore */ }
       setLinkedEntry(null);
@@ -204,9 +235,10 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed, onUnlin
                 onChange={e => updateHdr("supplier", e.target.value)}
                 readOnly={!isManual}
                 placeholder={isManual ? "Enter supplier name" : undefined}
-                style={isManual ? inp : { ...inp, background: "#f8fafc", color: "#0f172a", cursor: "not-allowed" }}
+                style={withError(isManual ? inp : { ...inp, background: "#f8fafc", color: "#0f172a", cursor: "not-allowed" }, !!fieldErrors["hdr.supplier"])}
                 required
               />
+              <FieldError message={fieldErrors["hdr.supplier"]} />
             </div>
             <div style={{ minWidth: 0 }}>
               <label style={lbl}>Invoice No *</label>
@@ -215,9 +247,10 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed, onUnlin
                 onChange={e => updateHdr("invoiceNo", e.target.value)}
                 readOnly={!isManual}
                 placeholder={isManual ? "e.g. INV-2026-001" : undefined}
-                style={isManual ? inp : { ...inp, background: "#f8fafc", color: "#0f172a", cursor: "not-allowed" }}
+                style={withError(isManual ? inp : { ...inp, background: "#f8fafc", color: "#0f172a", cursor: "not-allowed" }, !!fieldErrors["hdr.invoiceNo"])}
                 required
               />
+              <FieldError message={fieldErrors["hdr.invoiceNo"]} />
             </div>
             <div style={{ minWidth: 0 }}>
               <label style={lbl}>Received Date *</label>
@@ -226,9 +259,10 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed, onUnlin
                 value={hdr.receivedDate}
                 onChange={e => updateHdr("receivedDate", e.target.value)}
                 readOnly={!isManual}
-                style={isManual ? inp : { ...inp, background: "#f8fafc", color: "#0f172a", cursor: "not-allowed" }}
+                style={withError(isManual ? inp : { ...inp, background: "#f8fafc", color: "#0f172a", cursor: "not-allowed" }, !!fieldErrors["hdr.receivedDate"])}
                 required
               />
+              <FieldError message={fieldErrors["hdr.receivedDate"]} />
             </div>
           </div>
         </div>
@@ -250,6 +284,8 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed, onUnlin
                 onChange={next => updateItem(i, next)}
                 onRemove={() => removeItem(i)}
                 canRemove={items.length > 1}
+                fieldErrors={fieldErrors}
+                clearFieldError={clearFieldError}
               />
             ))}
           </div>

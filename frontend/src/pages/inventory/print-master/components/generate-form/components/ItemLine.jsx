@@ -2,7 +2,8 @@ import { useState } from "react";
 import { X } from "lucide-react";
 import { packsApi } from "../../../../../../api/inventory.js";
 import { IconButton } from "../../../../../../components/ui";
-import { inp, lbl } from "../utils/formStyles.js";
+import { inp, lbl, withError } from "../utils/formStyles.js";
+import FieldError from "./FieldError.jsx";
 import BatchGroupRow from "./BatchGroupRow.jsx";
 
 import { toTitleCase } from '../../../../../../utils/textDisplay.js'
@@ -15,10 +16,13 @@ export const BLANK_BATCH = () => ({
   remainingYears: "",
 });
 
-export default function ItemLine({ idx, item, rmList, receivedDate, onChange, onRemove, canRemove }) {
+export default function ItemLine({ idx, item, rmList, receivedDate, onChange, onRemove, canRemove, fieldErrors, clearFieldError }) {
   const [search, setSearch]     = useState(item.selectedItem?.itemName || "");
   const [showDrop, setShowDrop] = useState(false);
   const [nextLot, setNextLot]   = useState("");
+
+  const selectedItemError = fieldErrors?.[`item.${idx}.selectedItem`];
+  const packQtyError      = fieldErrors?.[`item.${idx}.packQty`];
 
   const filtered = rmList.filter(r =>
     !search ||
@@ -35,6 +39,7 @@ export default function ItemLine({ idx, item, rmList, receivedDate, onChange, on
       uom: r.inventoryUom || "Nos",
     };
     onChange({ ...item, selectedItem: sel });
+    clearFieldError?.(`item.${idx}.selectedItem`);
     setNextLot("…");
     try {
       const res = await packsApi.nextLot(r.itemCode);
@@ -77,8 +82,9 @@ export default function ItemLine({ idx, item, rmList, receivedDate, onChange, on
           onFocus={() => setShowDrop(true)}
           onBlur={() => setTimeout(() => setShowDrop(false), 160)}
           placeholder="Search item by name or code…"
-          style={inp}
+          style={withError(inp, !!selectedItemError)}
         />
+        <FieldError message={selectedItemError} />
 
         {/* Dropdown */}
         {showDrop && filtered.length > 0 && (
@@ -110,9 +116,10 @@ export default function ItemLine({ idx, item, rmList, receivedDate, onChange, on
         <label style={lbl}>Qty per Pack ({item.selectedItem?.uom || "KG"}) *</label>
         <input type="number" step="0.01" min="0.01"
           value={item.packQty}
-          onChange={e => onChange({ ...item, packQty: e.target.value })}
-          placeholder="e.g. 25" style={inp}
+          onChange={e => { onChange({ ...item, packQty: e.target.value }); clearFieldError?.(`item.${idx}.packQty`); }}
+          placeholder="e.g. 25" style={withError(inp, !!packQtyError)}
         />
+        <FieldError message={packQtyError} />
       </div>
       <div>
         <label style={lbl}>Total Bags</label>
@@ -156,6 +163,8 @@ export default function ItemLine({ idx, item, rmList, receivedDate, onChange, on
               onChange={next => onChange({ ...item, batches: item.batches.map((b, bi) => bi === i ? next : b) })}
               onRemove={() => onChange({ ...item, batches: item.batches.filter((_, bi) => bi !== i) })}
               canRemove={item.batches.length > 1}
+              error={fieldErrors?.[`item.${idx}.batch.${i}.numberOfBags`]}
+              onClearError={() => clearFieldError?.(`item.${idx}.batch.${i}.numberOfBags`)}
             />
           ))}
         </div>

@@ -1,7 +1,8 @@
 import { X } from "lucide-react";
 import { IconButton } from "../../../../../../components/ui";
 import { resolveExpiryDate, fmtDateLabel } from "../utils/expiryDate.js";
-import { inp, lbl } from "../utils/formStyles.js";
+import { inp, lbl, withError } from "../utils/formStyles.js";
+import FieldError from "./FieldError.jsx";
 
 const MODES = [
   { value: "DATE",  label: "Date" },
@@ -14,7 +15,7 @@ const MODES = [
 // ItemLine let a single lot span several supplier batches, e.g. bags 1-10
 // on Batch-A expiring Dec 2027, 11-18 on Batch-B expiring Jun 2028, all
 // still the same lot number.
-export default function BatchGroupRow({ idx, batch, receivedDate, onChange, onRemove, canRemove }) {
+export default function BatchGroupRow({ idx, batch, receivedDate, onChange, onRemove, canRemove, error, onClearError }) {
   const expiryDate = resolveExpiryDate(receivedDate, batch.expiryMode, {
     dateValue: batch.expiryDateValue,
     months: batch.remainingMonths,
@@ -37,9 +38,10 @@ export default function BatchGroupRow({ idx, batch, receivedDate, onChange, onRe
           <label style={lbl}>Number of Bags *</label>
           <input type="number" min="1"
             value={batch.numberOfBags}
-            onChange={e => onChange({ ...batch, numberOfBags: e.target.value })}
-            placeholder="e.g. 10" style={inp}
+            onChange={e => { onChange({ ...batch, numberOfBags: e.target.value }); onClearError?.(); }}
+            placeholder="e.g. 10" style={withError(inp, !!error)}
           />
+          <FieldError message={error} />
         </div>
         <div>
           <label style={{ ...lbl, color: "#6b7280" }}>
