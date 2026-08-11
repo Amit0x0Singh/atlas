@@ -145,4 +145,11 @@ export const queryKeys = {
   auth: {
     me: () => ['auth', 'me'],
   },
+
+  // ── Settings ────────────────────────────────────────────────────────────
+  options: {
+    values: (groupCode) => ['options', groupCode],
+    groups: ()           => ['options', 'groups'],
+    group:  (groupCode)  => ['options', 'groups', groupCode],
+  },
 }

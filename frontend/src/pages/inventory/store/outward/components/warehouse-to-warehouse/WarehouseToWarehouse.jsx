@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react'
 import { outwardApi } from '../../../../../../api/inventory.js'
 import { Button } from '../../../../../../components/ui'
 import ScannerPanel from '../../../../../../components/ScannerPanel/ScannerPanel.jsx'
-import { WAREHOUSES } from '../../../inward/components/pack-inward/components/constants.js'
+import { useOptionValues } from '../../../../../../hooks/useOptionValues.js'
 import './WarehouseToWarehouse.css'
 
 import { toTitleCase } from '../../../../../../utils/textDisplay.js'
@@ -16,6 +16,8 @@ export default function WarehouseToWarehouse() {
   const [submitting, setSub]    = useState(false)
   const [error, setError]       = useState('')
   const [success, setSuccess]   = useState('')
+  const { data: warehouses = [] } = useOptionValues('WAREHOUSE')
+  const warehouseCodes = warehouses.map(w => w.code)
 
   // Looks up a pack directly by its packId (as scanned from the QR code or
   // typed in) via a dedicated single-pack endpoint — no more guessing an RM
@@ -30,16 +32,16 @@ export default function WarehouseToWarehouse() {
       const data = r.data
       setPackInfo(data)
       // warehouse is stored lowercase (RULES.LOWER) but this module's
-      // WAREHOUSES list (and its datalist suggestions) are the fixed
+      // warehouse codes (and its datalist suggestions) are the fixed
       // UPPERCASE convention — match that instead of showing raw lowercase.
       const stored = (data.warehouse || '').trim().toUpperCase()
-      setFrom(WAREHOUSES.find((w) => w === stored) || data.warehouse || '')
+      setFrom(warehouseCodes.find((w) => w === stored) || data.warehouse || '')
     } catch (e) {
       setError(e.response?.data?.error || e.message)
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [warehouseCodes])
 
   const onScan = useCallback((value) => {
     const id = value.trim()
@@ -100,7 +102,7 @@ export default function WarehouseToWarehouse() {
             className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500"
           />
           <datalist id="wh-list-from">
-            {WAREHOUSES.map(w => <option key={w} value={w} />)}
+            {warehouses.map(w => <option key={w.code} value={w.code} />)}
           </datalist>
         </div>
 
@@ -112,7 +114,7 @@ export default function WarehouseToWarehouse() {
             className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white"
           >
             <option value="">Select destination warehouse</option>
-            {WAREHOUSES.map(w => <option key={w} value={w}>{w}</option>)}
+            {warehouses.map(w => <option key={w.code} value={w.code}>{w.label}</option>)}
           </select>
         </div>
 

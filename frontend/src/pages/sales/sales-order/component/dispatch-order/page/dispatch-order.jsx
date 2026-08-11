@@ -2,10 +2,10 @@ import { useState } from "react";
 import { salesOrderApi } from "../../../../../../api/sales.js";
 import {
   BRAND,
-  LABEL_TYPES,
   STATUS_STYLE,
   STATUS_LABELS,
 } from "../../../shared/constants.js";
+import { useOptionValues } from "../../../../../../hooks/useOptionValues.js";
 import { Button, IconButton } from "../../../../../../components/ui";
 import { X, Trash2, Truck } from "lucide-react";
 import DispatchLineCard from "../components/DispatchLineCard.jsx";
@@ -25,6 +25,7 @@ export default function DispatchOrder({ order, onSave, onDelete, onClose }) {
   const [remarks, setRemarks] = useState(order.remarks || "");
   const [partialToggles, setPartialToggles] = useState({});
   const [partialQty, setPartialQty] = useState({});
+  const { data: labelTypes = [] } = useOptionValues('LABEL_TYPE')
 
   // ── Determine overall status for the header badge ─────────────────────────
   const dominantStatus = order.items.every((it) => it.status === "DISPATCHED")
@@ -56,7 +57,7 @@ export default function DispatchOrder({ order, onSave, onDelete, onClose }) {
     noOfUnits: it.unitQty ? `${it.unitQty} ${it.unitUom || "KG"}` : "—",
     noOfSecPacks: it.totalCS || "—",
     labelType: it.labelType
-      ? LABEL_TYPES.find((l) => l.value === it.labelType)?.label || it.labelType
+      ? labelTypes.find((l) => l.code === it.labelType)?.label || it.labelType
       : "—",
     currentStatus: it.status,
     totalCSNum: parseInt(it.totalCS) || 0,

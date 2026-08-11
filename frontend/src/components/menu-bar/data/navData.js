@@ -6,7 +6,7 @@ import {
   ClipboardList, Snowflake, MapPin, ListChecks,
   ShoppingBag,
   Factory, CalendarDays, Beaker, Activity, Cog, TestTube2,
-  ScanLine, FileBarChart, BarChart3, Upload,
+  ScanLine, FileBarChart, BarChart3, Upload, Settings,
 } from 'lucide-react'
 
 export const APP_NAV = [
@@ -78,6 +78,12 @@ export const APP_NAV = [
     group: 'REPORTS / DATA',
     items: [
       { to: '/import', label: 'Data Import', Icon: Upload },
+    ],
+  },
+  {
+    group: 'SETTINGS',
+    items: [
+      { to: '/settings', label: 'Settings', Icon: Settings },
     ],
   },
 ]

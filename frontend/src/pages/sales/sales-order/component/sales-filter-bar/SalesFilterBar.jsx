@@ -1,4 +1,5 @@
-﻿import { COMPANIES, STATUSES, STATUS_LABELS } from "../../shared/constants.js";
+﻿import { STATUSES, STATUS_LABELS } from "../../shared/constants.js";
+import { useOptionValues } from "../../../../../hooks/useOptionValues.js";
 import { Button } from "../../../../../components/ui";
 import { X } from "lucide-react";
 
@@ -29,19 +30,19 @@ const STATUS_OPTIONS = [
   ...STATUSES.map((s) => ({ value: s, label: STATUS_LABELS[s] })),
 ];
 
-// company is stored lowercase (text-normalization standard) — option value
-// matches storage so the filter actually matches, label keeps the code as-is.
-const COMPANY_OPTIONS = [
-  { value: "", label: "All Companies" },
-  ...COMPANIES.map((c) => ({ value: c.toLowerCase(), label: c })),
-];
-
 function hasActive(f) {
   return f.search || f.status || f.company || f.from_date || f.to_date;
 }
 
 export default function SalesFilterBar({ filters, onChange, onClear, total }) {
   const active = hasActive(filters);
+  // company is stored lowercase (text-normalization standard) — option value
+  // matches storage so the filter actually matches, label keeps the code as-is.
+  const { data: companies = [] } = useOptionValues('COMPANY')
+  const COMPANY_OPTIONS = [
+    { value: "", label: "All Companies" },
+    ...companies.map((c) => ({ value: c.code.toLowerCase(), label: c.label })),
+  ];
 
   return (
     <div

@@ -6,7 +6,7 @@ export default function BomChecklistStep({
   selProduct, batchQty, batchUom, batchRef, diNo,
   bomLines, activeIdx, totalDone, totalRequired, progress,
   recipeDrift, onSyncRecipe, onBack, onOpenIssuePanel, onIssueAnother,
-  lineMsg,
+  lineMsg, rmByCode,
   packs, containers, loadingRes,
   scanErr, setScanErr,
   foundSource, setFoundSource, issueQty, setIssueQty,
@@ -194,6 +194,7 @@ export default function BomChecklistStep({
                   <IssuePanel
                     line={line}
                     remaining={remaining}
+                    rm={rmByCode.get(line.rmCode)}
                     packs={packs}
                     containers={containers}
                     loadingRes={loadingRes}

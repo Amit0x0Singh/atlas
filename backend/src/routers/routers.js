@@ -23,7 +23,11 @@ import DataManagementRouter from "../modules/data-management/router.js";
 // Admin Panel — Bulk Text Transformation Router
 import BulkTransformRouter from "../modules/admin_panel/bulk-transform/router.js";
 
-import { authorize } from "../middleware/auth.js";
+// Settings — Select Options Management Router
+import OptionsAdminRouter from "../modules/options/admin-router.js";
+import OptionsPublicRouter from "../modules/options/public-router.js";
+
+import { authenticate, authorize } from "../middleware/auth.js";
 
 const adminOnly = authorize(["admin"]);
 
@@ -73,6 +77,12 @@ router.use("/", MasterDataRouter);
 // Handles: /api/microbial-sfg/*, /api/microbial/*
 router.use("/", MicrobialRouter);
 
+// ── Select Options (public read) ─────────────────────────────────────────────
+// Handles: /api/options/:groupCode — active values for one option group, for
+// populating dropdowns app-wide. authenticate-only (no adminOnly) since every
+// logged-in user's forms need to read these, not just admins.
+router.use("/options", authenticate, OptionsPublicRouter);
+
 // ── Export ────────────────────────────────────────────────────────────────────
 // Handles: /api/export/*
 // router.use("/", ExportRouter);
@@ -90,6 +100,11 @@ router.use("/admin/backup", adminOnly, BackupRouter);
 // ---- bulk text transformation routes ─────────────────────────────────────────
 // Same reason as data-management/backup above — must precede AdminPanelRouter.
 router.use("/admin/bulk-transform", adminOnly, BulkTransformRouter);
+
+// ---- select options management routes ────────────────────────────────────────
+// Same reason as data-management/backup/bulk-transform above — must precede
+// AdminPanelRouter's own /:resource catch-all.
+router.use("/admin/options", adminOnly, OptionsAdminRouter);
 
 // ---- admin planel routes (not prefixed with /api) ───────────────────────────────────────────
 // Full raw CRUD (incl. delete-all-rows per resource) across every model —

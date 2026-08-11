@@ -1,6 +1,6 @@
 ﻿import { useState, useEffect } from "react";
 import { cpProfileApi } from "../../../../../api/sales.js";
-import { BLANK_ITEM, COMPANIES, UOMS } from "../../shared/constants.js";
+import { BLANK_ITEM, UOMS } from "../../shared/constants.js";
 import { suggestNextBatch, addDays, calcTotalCS } from "../../shared/utils.js";
 import { toTitleCase } from "../../../../../utils/textDisplay.js";
 
@@ -40,7 +40,9 @@ export default function CreateSalesOrder({
   const today = new Date().toISOString().split("T")[0];
 
   const [hdr, setHdr] = useState({
-    company: (COMPANIES[0] || "SOM").toLowerCase(),
+    // Just a sensible default for a brand-new order — the actual selectable
+    // list comes from the COMPANY option group via OrderHeaderFields.jsx.
+    company: "som",
     diNo: "",
     customerName: "",
     orderType: "DOMESTIC",

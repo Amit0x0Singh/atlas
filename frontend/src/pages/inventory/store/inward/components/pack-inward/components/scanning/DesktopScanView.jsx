@@ -1,6 +1,6 @@
 import { X, CheckCircle2, Flashlight, FlashlightOff, ScanBarcode } from 'lucide-react'
 import { Button, IconButton } from '../../../../../../../../components/ui'
-import { WAREHOUSES } from '../constants.js'
+import { useOptionValues } from '../../../../../../../../hooks/useOptionValues.js'
 
 export default function DesktopScanView({
   videoRef, canvasRef, hardwareInputRef,
@@ -11,6 +11,7 @@ export default function DesktopScanView({
   scanned, pending, session, progress, allScanned, canSubmit, submitting, onSubmit,
   onRemoveScan,
 }) {
+  const { data: warehouses = [] } = useOptionValues('WAREHOUSE')
   return (
     <>
       <div className="bg-indigo-50 border border-indigo-200 rounded-xl px-4 py-3 mb-4 flex flex-col md:flex-row md:items-center gap-3">
@@ -25,7 +26,7 @@ export default function DesktopScanView({
           onChange={e => onWarehouseChange(e.target.value)}
           className="w-full md:w-auto border-2 border-indigo-400 bg-white text-indigo-800 font-bold rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
         >
-          {WAREHOUSES.map(w => <option key={w} value={w}>{w}</option>)}
+          {warehouses.map(w => <option key={w.code} value={w.code}>{w.label}</option>)}
         </select>
       </div>
 

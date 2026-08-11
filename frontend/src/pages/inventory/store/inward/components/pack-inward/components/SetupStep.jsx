@@ -1,6 +1,6 @@
 import { Smartphone, ScanBarcode } from 'lucide-react'
 import { Button } from '../../../../../../../components/ui'
-import { WAREHOUSES } from './constants.js'
+import { useOptionValues } from '../../../../../../../hooks/useOptionValues.js'
 
 import { toTitleCase } from '../../../../../../../utils/textDisplay.js'
 export default function SetupStep({
@@ -11,6 +11,7 @@ export default function SetupStep({
   const selectedActiveSession = selected
     ? activeSessionMap[`${selected.itemCode}-${selected.lotNo}`]
     : null
+  const { data: warehouses = [] } = useOptionValues('WAREHOUSE')
 
   return (
     <div className="p-4 md:p-6 max-w-2xl">
@@ -85,7 +86,7 @@ export default function SetupStep({
               onChange={e => onWarehouseChange(e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-800 font-medium"
             >
-              {WAREHOUSES.map(w => <option key={w} value={w}>{w}</option>)}
+              {warehouses.map(w => <option key={w.code} value={w.code}>{w.label}</option>)}
             </select>
             {selectedActiveSession ? (
               <p className="text-xs text-amber-600 mt-1.5 font-medium">

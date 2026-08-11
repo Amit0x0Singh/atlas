@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { PLANT_CONFIG, PLANT_KEYS, SHIFTS } from '../../../data/plantConfig.js'
+import { PLANT_CONFIG, PLANT_KEYS } from '../../../data/plantConfig.js'
+import { useOptionValues } from '../../../../../../hooks/useOptionValues.js'
 import './AddTaskDrawer.css'
 import { sfgLoad } from '../../../utils/storage.js'
 import { todayISO } from '../../../utils/date.js'
@@ -21,6 +22,7 @@ const SECTION_TO_PLANT = {
 
 export default function AddTaskDrawer({ task, defaultDate, onSave, onClose }) {
   const isEdit = !!task
+  const { data: shiftOptions = [] } = useOptionValues('SHIFT')
 
   const [plant,           setPlant]           = useState(task?.plant        || 'Nano')
   const [date,            setDate]            = useState(task?.date         || defaultDate || todayISO())
@@ -262,7 +264,7 @@ export default function AddTaskDrawer({ task, defaultDate, onSave, onClose }) {
             />
             <Field label="Shift">
               <Sel value={shift} onChange={e => setShift(e.target.value)}>
-                {SHIFTS.map(s => <option key={s}>{s}</option>)}
+                {shiftOptions.map(s => <option key={s.code} value={s.code}>{s.label}</option>)}
               </Sel>
             </Field>
           </div>

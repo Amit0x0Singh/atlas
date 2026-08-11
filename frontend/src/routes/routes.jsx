@@ -13,6 +13,7 @@ import { productionRoutes } from "./modules/productionRoutes.jsx";
 import { qualityRoutes }   from "./modules/qualityRoutes.jsx";
 import { reportsRoutes }   from "./modules/reportsRoutes.jsx";
 import { erpRoutes }       from "./modules/erpRoutes.jsx";
+import { settingsRoutes }  from "./modules/settingsRoutes.jsx";
 
 function AccessDenied({ operation }) {
   return (
@@ -59,6 +60,7 @@ function AppLayout() {
             {qualityRoutes}
             {reportsRoutes}
             {erpRoutes}
+            {settingsRoutes}
             <Route path="*" element={<Navigate to={defaultPath} replace />} />
           </Routes>
         ) : (

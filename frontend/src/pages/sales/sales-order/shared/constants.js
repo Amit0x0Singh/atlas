@@ -8,7 +8,8 @@ export const BRAND = "#22a037";
 export const BRAND_LIGHT = "#f0fdf4";
 
 // ── Companies & order config ──────────────────────────────────────────────────
-export const COMPANIES = ["SOM", "DVS", "AL-IPL", "AL-LLC", "AL-PTE"];
+// Company is now admin-managed — see the COMPANY option group (Settings >
+// Select Options) and useOptionValues('COMPANY'), not a hardcoded list here.
 export const ORDER_TYPES = ["DOMESTIC", "EXPORT", "ECOM", "SAMPLE"];
 export const PRIORITIES = ["MODERATE", "URGENT", "VERY_URGENT"];
 export const STATUSES = [
@@ -23,65 +24,17 @@ export const SECTIONS = ["NANO", "BOTANICAL", "LIQUID", "POWDER", "GRANULES"];
 export const UOMS = ["KG", "LTR", "GM", "ML", "Number"];
 
 // ── Dropdown options ──────────────────────────────────────────────────────────
-export const CARRIER_OPTIONS = [
-  "",
-  "Dextrose",
-  "Talc",
-  "Lactose",
-  "HSCAS",
-  "China Clay",
-  "Diatomaceous Earth",
-  "LSP",
-  "Precipitated CaCO3",
-  "Silica",
-];
+// Carrier, Primary/Secondary Packing suggestions are now admin-managed — see
+// the CARRIER / PRIMARY_PACKING / SECONDARY_PACKING option groups (Settings >
+// Select Options) and useOptionValues(), not hardcoded lists here.
 
-export const PRIMARY_PACKING = [
-  "",
-  "LD Pouch",
-  "AL Pouch",
-  "HDPE Jar",
-  "100ml Bottle (Round)",
-  "100ml Bottle (Regular)",
-  "100ml Bottle (Triangle)",
-  "200ml Bottle (Round)",
-  "200ml Bottle (Regular)",
-  "200ml Bottle (Triangle)",
-  "500ml Bottle (Round)",
-  "500ml Bottle (Regular)",
-  "500ml Bottle (Triangle)",
-  "1L Bottle (Round)",
-  "1L Bottle (Regular)",
-  "1L Bottle (Triangle)",
-  "__CUSTOM__",
-];
+// Label Type options are now admin-managed — see the LABEL_TYPE option group
+// (Settings > Select Options) and useOptionValues('LABEL_TYPE').
 
-export const SECONDARY_PACKING = [
-  "",
-  "W-CBB",
-  "B-CBB",
-  "OMB 30 (30kg Drum)",
-  "OMB 50 (50kg Drum)",
-  "25Kg HDPE Bag",
-  "50Kg HDPE Bag",
-  "Cartons",
-  "25L Jerry Can",
-  "50L Barrel",
-  "5L Can",
-  "10L Can",
-  "Others",
-  "__CUSTOM__",
-];
-
-export const LABEL_TYPES = [
-  { value: "", label: "— Select —" },
-  { value: "CUSTOMER", label: "Customer Label" },
-  { value: "COMPUTER", label: "Computer Label" },
-  { value: "RETAIL", label: "Retail Label" },
-  { value: "PACKING_SLIP", label: "Packing Slip" },
-];
-
-// Only these label types require batch / date / MRP fields
+// Only these label types require batch / date / MRP fields — keyed to the
+// same codes seeded in the LABEL_TYPE option group (CUSTOMER/COMPUTER/
+// RETAIL/PACKING_SLIP); this stays hardcoded since it drives conditional
+// form logic, not just display vocabulary.
 export const LABEL_NEEDS_DETAILS = new Set(["CUSTOMER", "COMPUTER", "RETAIL"]);
 
 // ── Style maps ────────────────────────────────────────────────────────────────
