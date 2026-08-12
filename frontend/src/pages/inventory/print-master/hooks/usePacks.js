@@ -10,7 +10,9 @@ export function usePacks(filterCode, reloadTrigger) {
       setLoading(true);
       const r = await packsApi.list({
         itemCode: filterCode || undefined,
-        limit: 500,
+        // "all" — this page groups+paginates client-side and must see every
+        // pending group, not just the most-recently-created 500 bag rows.
+        limit: "all",
       });
       setPacks(r.data || []);
     } catch {

@@ -62,16 +62,22 @@ const listPacks = async (req, res) => {
     if (status) where.status = status;
     if (lotNo) where.printMaster = { lotNo };
 
+    // `limit=all` bypasses paging entirely — pages like Print Master's Pack
+    // Records list need every group (pending ones can't be dropped just
+    // because they're older than the newest 500 bag rows), and do their own
+    // client-side pagination over the grouped result.
+    const noLimit = limit === "all";
+
     const [total, bags] = await Promise.all([
       prisma.packDetail.count({ where }),
       prisma.packDetail.findMany({
         where, include: packDetailInclude,
         orderBy: { printMaster: { createdAt: "desc" } },
-        skip: (page - 1) * limit, take: parseInt(limit),
+        ...(noLimit ? {} : { skip: (page - 1) * limit, take: parseInt(limit) }),
       }),
     ]);
 
-    return res.json({ success: true, data: bags.map(flattenPack), total, page: parseInt(page), limit: parseInt(limit) });
+    return res.json({ success: true, data: bags.map(flattenPack), total, page: parseInt(page), limit: noLimit ? total : parseInt(limit) });
 
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
