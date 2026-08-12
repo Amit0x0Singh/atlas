@@ -22,7 +22,7 @@ export default function IssueFromContainer({ preselected, onDone }) {
   // Operational UOM entry unit; the server always re-derives and validates
   // the actual conversion before deducting stock.
   const [rmInfo, setRmInfo]         = useState(null)
-  const entryUom = rmInfo?.operationalUom || rmInfo?.inventoryUom || container?.uom
+  const entryUom = (rmInfo?.operationalUom || rmInfo?.inventoryUom || container?.uom || '').toUpperCase()
 
   const videoRef    = useRef(null)
   const canvasRef   = useRef(null)
@@ -105,7 +105,7 @@ export default function IssueFromContainer({ preselected, onDone }) {
         indentId: indentId || undefined,
         remarks: remarks || undefined,
       })
-      setSuccess(`Issued ${qty} ${entryUom} (${r.issued} ${r.data.uom} deducted) from ${container.containerId}. Remaining: ${r.data.currentQty} ${r.data.uom}`)
+      setSuccess(`Issued ${qty} ${entryUom} (${r.issued} ${(r.data.uom || '').toUpperCase()} deducted) from ${container.containerId}. Remaining: ${r.data.currentQty} ${(r.data.uom || '').toUpperCase()}`)
       setContainer(r.data)
       setQty(''); setRemarks(''); setIndentId('')
       onDone?.()
@@ -195,11 +195,11 @@ export default function IssueFromContainer({ preselected, onDone }) {
                 <div className={`font-bold text-xl ${container.currentQty > 0 ? 'text-green-700' : 'text-red-500'}`}>
                   {container.currentQty}
                 </div>
-                <div className="text-xs text-gray-500">Available {container.uom}</div>
+                <div className="text-xs text-gray-500">Available {container.uom?.toUpperCase()}</div>
               </div>
               <div className="bg-white rounded-lg py-2">
                 <div className="font-bold text-gray-500 text-xl">{container.capacity}</div>
-                <div className="text-xs text-gray-500">Capacity {container.uom}</div>
+                <div className="text-xs text-gray-500">Capacity {container.uom?.toUpperCase()}</div>
               </div>
             </div>
             {container.currentQty <= 0 && (
@@ -216,7 +216,7 @@ export default function IssueFromContainer({ preselected, onDone }) {
                   className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-green-500"
                 />
                 {rmInfo?.operationalUom && rmInfo.operationalUom !== rmInfo.inventoryUom && (
-                  <p className="text-xs text-gray-400 mt-1">Stock is tracked in {rmInfo.inventoryUom} — entered qty converts automatically.</p>
+                  <p className="text-xs text-gray-400 mt-1">Stock is tracked in {rmInfo.inventoryUom?.toUpperCase()} — entered qty converts automatically.</p>
                 )}
               </div>
 

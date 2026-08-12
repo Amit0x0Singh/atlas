@@ -46,11 +46,11 @@ export default function LedgerTable({ loading, rows, onOpenDetail }) {
                 : (
                   <span className={`font-semibold ${color}`}>
                     {showOperational
-                      ? <>{sign}{Number(row.operationalQty).toFixed(3)} {row.operationalUom}</>
-                      : <>{sign}{Number(invQty).toFixed(3)} {row.uom || ''}</>}
+                      ? <>{sign}{Number(row.operationalQty).toFixed(3)} {row.operationalUom?.toUpperCase()}</>
+                      : <>{sign}{Number(invQty).toFixed(3)} {(row.uom || '').toUpperCase()}</>}
                     {showOperational && (
                       <div className="text-[10px] font-normal text-gray-400">
-                        ({Number(invQty).toFixed(3)} {row.uom || ''} deducted)
+                        ({Number(invQty).toFixed(3)} {(row.uom || '').toUpperCase()} deducted)
                       </div>
                     )}
                   </span>

@@ -15,7 +15,7 @@ export default function IssuePanel({
   // rm.inventoryUom is the correct label here, not line.uom (the recipe's
   // own declared unit, which for a conversion-required item is commonly a
   // different unit, e.g. Methanol tracked in KG but recipes stated in L).
-  const inventoryUom     = rm?.inventoryUom || line.uom
+  const inventoryUom     = (rm?.inventoryUom || line.uom || '').toUpperCase()
   const totalAvailable   = packs.reduce((s, p) => s + (p.remainingQty || 0), 0)
                          + containers.reduce((s, c) => s + (c.currentQty || 0), 0)
   // `remaining` (prop) is in line.uom; totalAvailable above is always in
@@ -52,7 +52,7 @@ export default function IssuePanel({
             <StockShortageBanner
               theme="orange"
               title={`Stock insufficient for ${toTitleCase(line.rmName)}`}
-              message={<>Only <strong>{totalAvailable.toFixed(3)} {inventoryUom}</strong> available but <strong>{remaining} {line.uom}</strong> still needed. You can issue what's available now.</>}
+              message={<>Only <strong>{totalAvailable.toFixed(3)} {inventoryUom}</strong> available but <strong>{remaining} {line.uom?.toUpperCase()}</strong> still needed. You can issue what's available now.</>}
             />
           )}
 
@@ -110,7 +110,7 @@ export default function IssuePanel({
                   </div>
                   <div>
                     <span className="text-gray-400">Available: </span>
-                    <span className="font-bold text-green-700">{foundSource.availableQty} {foundSource.uom}</span>
+                    <span className="font-bold text-green-700">{foundSource.availableQty} {foundSource.uom?.toUpperCase()}</span>
                   </div>
                   <div>
                     <span className="text-gray-400">Total Qty: </span>
@@ -130,7 +130,7 @@ export default function IssuePanel({
                   )}
                   <div>
                     <span className="text-gray-400">Still needed: </span>
-                    <span className="font-bold text-red-600">{remaining} {line.uom}</span>
+                    <span className="font-bold text-red-600">{remaining} {line.uom?.toUpperCase()}</span>
                   </div>
                 </div>
               </div>
@@ -139,7 +139,7 @@ export default function IssuePanel({
                 <div className="flex items-end gap-3">
                   <div className="flex-1">
                     <label className="text-xs font-semibold text-gray-700 mb-1 block">
-                      Qty to Issue ({foundSource.entryUom || line.uom})
+                      Qty to Issue ({(foundSource.entryUom || line.uom || '').toUpperCase()})
                     </label>
                     <input type="number" min="0.001" step="0.001"
                       max={foundSource.maxEntryQty ?? Math.min(foundSource.availableQty, remaining)}
@@ -152,7 +152,7 @@ export default function IssuePanel({
                       }`}
                     />
                     <p className="text-xs text-gray-400 mt-1">
-                      Max: {(foundSource.maxEntryQty ?? Math.min(foundSource.availableQty, remaining)).toFixed(3)} {foundSource.entryUom || line.uom}
+                      Max: {(foundSource.maxEntryQty ?? Math.min(foundSource.availableQty, remaining)).toFixed(3)} {(foundSource.entryUom || line.uom || '').toUpperCase()}
                       {foundSource.entryUom && foundSource.entryUom !== inventoryUom && (
                         <> (stock tracked in {inventoryUom})</>
                       )}

@@ -26,7 +26,7 @@ export default function DispatchRow({ order, expanded, onToggle, onDispatch }) {
           {toTitleCase(order.customerName)}
         </td>
         <td className="px-4 py-3 text-right font-semibold text-xs">
-          {totalQty} {order.items[0]?.totalUom || "KG"}
+          {totalQty} {(order.items[0]?.totalUom || "KG").toUpperCase()}
         </td>
         <td
           className={`px-4 py-3 text-xs ${overdue ? "text-red-500 font-semibold" : days !== null && days <= 7 ? "text-orange-500 font-semibold" : "text-gray-500"}`}
@@ -146,7 +146,7 @@ export default function DispatchRow({ order, expanded, onToggle, onDispatch }) {
                           color: "#475569",
                         }}
                       >
-                        {it.totalQty} {it.totalUom}
+                        {it.totalQty} {it.totalUom?.toUpperCase()}
                       </td>
                       <td
                         style={{

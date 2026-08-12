@@ -113,7 +113,7 @@ export default function ItemLine({ idx, item, rmList, receivedDate, onChange, on
       </div>
 
       <div>
-        <label style={lbl}>Qty per Pack ({item.selectedItem?.uom || "KG"}) *</label>
+        <label style={lbl}>Qty per Pack ({(item.selectedItem?.uom || "KG").toUpperCase()}) *</label>
         <input type="number" step="0.01" min="0.01"
           value={item.packQty}
           onChange={e => { onChange({ ...item, packQty: e.target.value }); clearFieldError?.(`item.${idx}.packQty`); }}
@@ -143,7 +143,7 @@ export default function ItemLine({ idx, item, rmList, receivedDate, onChange, on
             </span>
             <span style={{ fontWeight: 600 }}>{toTitleCase(item.selectedItem.itemName)}</span>
             <span style={{ fontFamily: "monospace", color: "#3b82f6" }}>{item.selectedItem.itemCode}</span>
-            <span>UOM: <strong>{item.selectedItem.uom}</strong></span>
+            <span>UOM: <strong>{item.selectedItem.uom?.toUpperCase()}</strong></span>
             {nextLot && <span style={{ marginLeft: "auto", fontWeight: 700 }}>Next Lot: {nextLot}</span>}
           </div>
         </div>

@@ -102,7 +102,7 @@ export default function OrderHistory({ orders, loading, onOpenDispatch }) {
               {paginated.map(order => {
                 const isOpen   = expandedKeys.has(order.id)
                 const totalQty = order.items.reduce((n, it) => n + parseFloat(it.totalQty || 0), 0)
-                const uom      = order.items[0]?.totalUom || 'KG'
+                const uom      = (order.items[0]?.totalUom || 'KG').toUpperCase()
 
                 return (
                   <Fragment key={order.id}>
@@ -190,7 +190,7 @@ export default function OrderHistory({ orders, loading, onOpenDispatch }) {
 
                             {/* Qty */}
                             <span className="text-sm font-bold text-gray-700 w-28 shrink-0">
-                              {it.totalQty} <span className="text-xs font-normal text-gray-400">{it.totalUom}</span>
+                              {it.totalQty} <span className="text-xs font-normal text-gray-400">{it.totalUom?.toUpperCase()}</span>
                             </span>
 
                             {/* Packing */}

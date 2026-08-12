@@ -85,7 +85,7 @@ export default function WarehouseToWarehouse() {
           {packInfo && (
             <div className="mt-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-sm">
               <span className="font-mono font-semibold text-blue-900">{packId}</span>
-              <span className="text-blue-600 ml-2">· {toTitleCase(packInfo.itemName)} · Lot: {packInfo.lotNo} · Bag #{packInfo.bagNo} · {packInfo.remainingQty} {packInfo.uom} available</span>
+              <span className="text-blue-600 ml-2">· {toTitleCase(packInfo.itemName)} · Lot: {packInfo.lotNo} · Bag #{packInfo.bagNo} · {packInfo.remainingQty} {packInfo.uom?.toUpperCase()} available</span>
               {packInfo.warehouse && <span className="text-blue-600 ml-2">· Currently in: {packInfo.warehouse.toUpperCase()}</span>}
             </div>
           )}

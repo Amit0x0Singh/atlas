@@ -77,7 +77,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
   // when the code isn't in RM Master (e.g. an SFG ingredient).
   const entryUomFor = useCallback((line) => {
     const rm = rmByCode.get(line.rmCode)
-    return rm?.operationalUom || rm?.inventoryUom || line.uom
+    return (rm?.operationalUom || rm?.inventoryUom || line.uom || '').toUpperCase()
   }, [rmByCode])
 
   // Best-effort conversions for display/default-qty purposes only — fall
@@ -381,7 +381,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
     // availableQty is Inventory UOM) — the server re-derives and validates
     // the real conversion before deducting stock.
     if (toInventoryQty(line, qty) > foundSource.availableQty) {
-      setIssueError(`Qty exceeds available stock (${foundSource.availableQty} ${foundSource.uom})`); return
+      setIssueError(`Qty exceeds available stock (${foundSource.availableQty} ${(foundSource.uom || '').toUpperCase()})`); return
     }
 
     setIssuing(true); setIssueError('')
@@ -424,7 +424,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
       setBomLines(updatedLines)
       setLineMsg(prev => ({
         ...prev,
-        [activeIdx]: `Issued ${qty} ${entryUomFor(line)}${deducted !== deductedInLineUom ? ` (${deducted} ${rm?.inventoryUom || line.uom} deducted)` : ''} from ${foundSource.type === 'pack' ? 'Pack' : 'Container'}: ${foundSource.id}`,
+        [activeIdx]: `Issued ${qty} ${entryUomFor(line)}${deducted !== deductedInLineUom ? ` (${deducted} ${(rm?.inventoryUom || line.uom || '').toUpperCase()} deducted)` : ''} from ${foundSource.type === 'pack' ? 'Pack' : 'Container'}: ${foundSource.id}`,
       }))
 
       const remaining = parseFloat((line.required - newIssued).toFixed(3))

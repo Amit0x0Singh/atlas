@@ -49,7 +49,7 @@ export default function MicrobeList({ paginated, total, loading, search, page, l
                     <td className="px-4 py-3">
                       <span className="font-mono text-xs font-semibold text-blue-700 bg-blue-50 ring-1 ring-inset ring-blue-200 px-2 py-0.5 rounded-md">{m.microbeCode}</span>
                     </td>
-                    <td className="px-4 py-3 text-gray-600 text-xs">{m.uom || '—'}</td>
+                    <td className="px-4 py-3 text-gray-600 text-xs">{m.uom ? m.uom.toUpperCase() : '—'}</td>
                     <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">
                       {m.createdAt ? new Date(m.createdAt).toLocaleDateString('en-IN') : '—'}
                     </td>

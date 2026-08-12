@@ -32,7 +32,10 @@ function CellValue({ value, fieldName, fieldType, titleCase }) {
       </span>
     );
   }
-  const str = titleCase ? toTitleCase(String(value)) : String(value);
+  // UOM/unit-of-measure fields (uom, inventoryUom, qtyUnit, workingUnit, …)
+  // always render fully uppercase, regardless of how the value was stored.
+  const isUom = /uom$/i.test(fieldName || '') || /Unit$/.test(fieldName || '');
+  const str = isUom ? String(value).toUpperCase() : titleCase ? toTitleCase(String(value)) : String(value);
   const truncated = str.length > 32 ? str.slice(0, 30) + '…' : str;
   return <span title={str.length > 32 ? str : undefined}>{truncated}</span>;
 }

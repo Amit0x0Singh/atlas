@@ -70,7 +70,7 @@ function PackLabel({ pack }) {
           <div>
             <div style={{ fontSize: "7px", color: "#666", fontWeight: 700, textTransform: "uppercase" }}>Pack Qty</div>
             <div style={{ fontSize: "13px", fontWeight: 700, color: "#000" }}>
-              {pack.packQty} {pack.uom}
+              {pack.packQty} {pack.uom?.toUpperCase()}
             </div>
           </div>
           <div>

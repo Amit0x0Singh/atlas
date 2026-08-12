@@ -65,6 +65,7 @@ function MaterialLine({ line, bomId, sendId, onIssued }) {
 
   const done    = line.status === 'ISSUED'
   const noStock = line.status === 'STOCKOUT'
+  const uom     = (line.uom || '').toUpperCase()
 
   // Auto-focus scan input when panel opens in scanner mode
   useEffect(() => {
@@ -141,21 +142,21 @@ function MaterialLine({ line, bomId, sendId, onIssued }) {
 
           <div className="flex items-center gap-4 mt-1 text-xs flex-wrap">
             <span className="text-gray-500">
-              Required: <strong className="text-gray-800">{fmtQty(line.requiredQty)} {line.uom}</strong>
+              Required: <strong className="text-gray-800">{fmtQty(line.requiredQty)} {uom}</strong>
             </span>
             {line.issuedQty > 0 && (
               <span className="text-green-600">
-                Issued: <strong>{fmtQty(line.issuedQty)} {line.uom}</strong>
+                Issued: <strong>{fmtQty(line.issuedQty)} {uom}</strong>
               </span>
             )}
             {line.remainingQty > 0 && (
               <span className={line.shortage ? 'text-red-600 font-semibold' : 'text-orange-600'}>
-                Remaining: <strong>{fmtQty(line.remainingQty)} {line.uom}</strong>
+                Remaining: <strong>{fmtQty(line.remainingQty)} {uom}</strong>
               </span>
             )}
             {line.shortage && !noStock && (
               <span className="text-red-600 font-semibold">
-                Stock avail: <strong>{fmtQty(line.totalAvail)} {line.uom}</strong> — SHORT by <strong>{fmtQty(line.remainingQty - line.totalAvail)} {line.uom}</strong>
+                Stock avail: <strong>{fmtQty(line.totalAvail)} {uom}</strong> — SHORT by <strong>{fmtQty(line.remainingQty - line.totalAvail)} {uom}</strong>
               </span>
             )}
           </div>
@@ -179,12 +180,12 @@ function MaterialLine({ line, bomId, sendId, onIssued }) {
             <p className="text-xs text-red-600 mt-0.5">
               {noStock
                 ? `${toTitleCase(line.rmName)} (${line.rmCode}) has no stock. Raise a purchase indent.`
-                : `Available ${fmtQty(line.totalAvail)} ${line.uom} · Need ${fmtQty(line.remainingQty)} ${line.uom} · Short ${fmtQty(line.remainingQty - line.totalAvail)} ${line.uom}`
+                : `Available ${fmtQty(line.totalAvail)} ${uom} · Need ${fmtQty(line.remainingQty)} ${uom} · Short ${fmtQty(line.remainingQty - line.totalAvail)} ${uom}`
               }
             </p>
           </div>
           <a
-            href={`mailto:procurement@somplant.com?subject=Purchase Indent Request — ${line.rmCode}&body=Material: ${toTitleCase(line.rmName)}%0ACode: ${line.rmCode}%0AShort Qty: ${fmtQty(line.remainingQty - line.totalAvail)} ${line.uom}%0ABOM: ${sendId}%0APlease raise purchase order.`}
+            href={`mailto:procurement@somplant.com?subject=Purchase Indent Request — ${line.rmCode}&body=Material: ${toTitleCase(line.rmName)}%0ACode: ${line.rmCode}%0AShort Qty: ${fmtQty(line.remainingQty - line.totalAvail)} ${uom}%0ABOM: ${sendId}%0APlease raise purchase order.`}
             className="shrink-0 text-xs font-bold bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700 transition whitespace-nowrap"
           >
             📧 Raise Purchase Indent
@@ -214,7 +215,7 @@ function MaterialLine({ line, bomId, sendId, onIssued }) {
                 <span key={p.packId}>
                   {i > 0 && ' → '}
                   <span className="font-mono font-bold">{p.lotNo || p.packId.slice(-8)}</span>
-                  {` (Bag ${p.bagNo}, ${fmtQty(p.remainingQty)} ${line.uom} avail)`}
+                  {` (Bag ${p.bagNo}, ${fmtQty(p.remainingQty)} ${uom} avail)`}
                 </span>
               ))}
               {line.fifoPacks.length > 3 && ` + ${line.fifoPacks.length - 3} more`}
@@ -254,14 +255,14 @@ function MaterialLine({ line, bomId, sendId, onIssued }) {
               {/* Last scan result */}
               {lastScan && (
                 <div className="mt-3 bg-green-50 border border-green-200 rounded-lg px-4 py-3 text-sm">
-                  <p className="font-bold text-green-700">✅ Issued {fmtQty(lastScan.deducted)} {line.uom} from pack <span className="font-mono">{lastScan.packId?.slice(-12)}</span></p>
+                  <p className="font-bold text-green-700">✅ Issued {fmtQty(lastScan.deducted)} {uom} from pack <span className="font-mono">{lastScan.packId?.slice(-12)}</span></p>
                   <div className="flex gap-4 mt-1 text-xs text-gray-600">
-                    <span>Pack remaining: <strong className={lastScan.packRemaining > 0 ? 'text-gray-800' : 'text-red-500'}>{fmtQty(lastScan.packRemaining)} {line.uom}</strong></span>
-                    <span>Still needed: <strong className={lastScan.itemRemaining > 0 ? 'text-orange-600' : 'text-green-600'}>{fmtQty(lastScan.itemRemaining)} {line.uom}</strong></span>
+                    <span>Pack remaining: <strong className={lastScan.packRemaining > 0 ? 'text-gray-800' : 'text-red-500'}>{fmtQty(lastScan.packRemaining)} {uom}</strong></span>
+                    <span>Still needed: <strong className={lastScan.itemRemaining > 0 ? 'text-orange-600' : 'text-green-600'}>{fmtQty(lastScan.itemRemaining)} {uom}</strong></span>
                   </div>
                   {lastScan.packRemaining > 0 && lastScan.itemRemaining > 0 && (
                     <p className="text-xs text-blue-600 mt-1">
-                      📦 {fmtQty(lastScan.packRemaining)} {line.uom} left in this bag — you can transfer it to container or issue from it next time.
+                      📦 {fmtQty(lastScan.packRemaining)} {uom} left in this bag — you can transfer it to container or issue from it next time.
                     </p>
                   )}
                   {lastScan.itemRemaining <= 0 && (
@@ -316,7 +317,7 @@ function MaterialLine({ line, bomId, sendId, onIssued }) {
                           </div>
                         </div>
                         <div className="text-right">
-                          <div className="text-sm font-bold text-gray-800">{fmtQty(pack.remainingQty)} {line.uom}</div>
+                          <div className="text-sm font-bold text-gray-800">{fmtQty(pack.remainingQty)} {uom}</div>
                           <div className="text-xs text-gray-400">of {fmtQty(pack.totalQty)}</div>
                         </div>
                       </div>
@@ -328,12 +329,12 @@ function MaterialLine({ line, bomId, sendId, onIssued }) {
                       <p className="text-xs font-bold text-indigo-700 mb-3">
                         Issuing from: <span className="font-mono">{manualPack.lotNo || manualPack.packId.slice(-14)}</span>
                         {manualPack.bagNo > 0 && ` · Bag #${manualPack.bagNo}`}
-                        <span className="text-gray-400 font-normal"> · Available: {fmtQty(manualPack.remainingQty)} {line.uom}</span>
+                        <span className="text-gray-400 font-normal"> · Available: {fmtQty(manualPack.remainingQty)} {uom}</span>
                       </p>
                       <div className="flex items-end gap-3">
                         <div className="flex-1">
                           <label className="block text-xs font-semibold text-gray-600 mb-1">
-                            Qty to Issue ({line.uom}) — max {fmtQty(Math.min(manualPack.remainingQty, line.remainingQty))}
+                            Qty to Issue ({uom}) — max {fmtQty(Math.min(manualPack.remainingQty, line.remainingQty))}
                           </label>
                           <input
                             type="number"
@@ -365,7 +366,7 @@ function MaterialLine({ line, bomId, sendId, onIssued }) {
                       {/* Show pack split info if partial */}
                       {manualQty && parseFloat(manualQty) < manualPack.remainingQty && (
                         <p className="text-xs text-blue-600 mt-2">
-                          📦 {fmtQty(manualPack.remainingQty - parseFloat(manualQty))} {line.uom} will remain in this bag.
+                          📦 {fmtQty(manualPack.remainingQty - parseFloat(manualQty))} {uom} will remain in this bag.
                           Store person may transfer it to a container if needed.
                         </p>
                       )}
@@ -375,10 +376,10 @@ function MaterialLine({ line, bomId, sendId, onIssued }) {
                   {/* Last issue result */}
                   {lastScan && (
                     <div className="mt-3 bg-green-50 border border-green-200 rounded-lg px-4 py-2.5 text-xs text-green-700">
-                      ✅ Issued <strong>{fmtQty(lastScan.deducted)} {line.uom}</strong>
-                      {lastScan.packRemaining > 0 && <> · Bag remaining: <strong>{fmtQty(lastScan.packRemaining)} {line.uom}</strong></>}
+                      ✅ Issued <strong>{fmtQty(lastScan.deducted)} {uom}</strong>
+                      {lastScan.packRemaining > 0 && <> · Bag remaining: <strong>{fmtQty(lastScan.packRemaining)} {uom}</strong></>}
                       {lastScan.itemRemaining > 0
-                        ? <> · Still needed: <strong className="text-orange-600">{fmtQty(lastScan.itemRemaining)} {line.uom}</strong></>
+                        ? <> · Still needed: <strong className="text-orange-600">{fmtQty(lastScan.itemRemaining)} {uom}</strong></>
                         : <> · <span className="font-bold">Material fully issued! ✅</span></>
                       }
                     </div>
@@ -454,7 +455,7 @@ function BomDrawer({ bomId, onClose, onRefresh }) {
                   <div className="flex flex-wrap gap-3 mt-1 text-xs text-white/60">
                     <span>DI: <strong className="text-white/90">{bom.diNo}</strong></span>
                     <span>Section: <strong className="text-white/90">{bom.sectionType || '—'}</strong></span>
-                    <span>Batch: <strong className="text-white/90">{bom.totalQty} {bom.uom}</strong></span>
+                    <span>Batch: <strong className="text-white/90">{bom.totalQty} {bom.uom?.toUpperCase()}</strong></span>
                     <span>Planned: <strong className="text-white/90">{fmt(bom.plannedDate)}</strong></span>
                   </div>
                   {bom.batchNo && <div className="text-xs text-white/40 mt-0.5">Batch No: {bom.batchNo}</div>}
@@ -685,7 +686,7 @@ export default function BomIssuance() {
                   <td className="px-4 py-3 text-xs font-semibold text-gray-600">{b.sectionType || '—'}</td>
                   <td className="px-4 py-3 text-xs text-gray-600">{fmt(b.plannedDate)}</td>
                   <td className="px-4 py-3 text-right font-bold text-gray-700">
-                    {b.totalQty} <span className="text-xs text-gray-400 font-normal">{b.uom}</span>
+                    {b.totalQty} <span className="text-xs text-gray-400 font-normal">{b.uom?.toUpperCase()}</span>
                   </td>
                   <td className="px-4 py-3">
                     <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${BOM_TYPE_BADGE[b.bomType] || 'bg-gray-100 text-gray-600'}`}>

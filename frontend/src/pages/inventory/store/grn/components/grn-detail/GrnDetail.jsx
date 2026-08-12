@@ -114,7 +114,7 @@ export default function GrnDetail({ selected, detail, loading }) {
                     <td className="gd-td-bold">{item.totalBags}</td>
                     <td className="gd-td-center">{Number(item.packQty).toFixed(2)}</td>
                     <td className="gd-td-total-qty">{Number(item.totalQty).toFixed(2)}</td>
-                    <td className="gd-td-uom">{item.uom}</td>
+                    <td className="gd-td-uom">{item.uom?.toUpperCase()}</td>
                   </tr>
                 ))}
                 <tr className="gd-tfoot-row">

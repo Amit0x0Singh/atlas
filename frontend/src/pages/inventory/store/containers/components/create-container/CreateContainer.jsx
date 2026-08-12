@@ -66,7 +66,7 @@ export default function CreateContainer({ onCreated }) {
         <div className="text-4xl mb-3">o.</div>
         <h3 className="text-lg font-bold text-green-800 mb-1">Container Created!</h3>
         <p className="text-green-700 text-sm mb-0.5 font-mono font-bold">{created.containerId}</p>
-        <p className="text-green-600 text-sm mb-4">{toTitleCase(created.itemName)} — Cap: {created.capacity} {created.uom}</p>
+        <p className="text-green-600 text-sm mb-4">{toTitleCase(created.itemName)} — Cap: {created.capacity} {created.uom?.toUpperCase()}</p>
         <div className="flex gap-3 justify-center">
           <button
             type="button"
@@ -119,7 +119,7 @@ export default function CreateContainer({ onCreated }) {
                   className="w-full text-left px-4 py-2.5 hover:bg-orange-50 transition border-b border-gray-50 last:border-0"
                 >
                   <div className="text-sm font-medium text-gray-900">{toTitleCase(rm.itemName)}</div>
-                  <div className="text-xs text-gray-400 font-mono">{rm.itemCode} · {rm.inventoryUom}</div>
+                  <div className="text-xs text-gray-400 font-mono">{rm.itemCode} · {rm.inventoryUom?.toUpperCase()}</div>
                 </button>
               ))}
             </div>
@@ -127,7 +127,7 @@ export default function CreateContainer({ onCreated }) {
           {selectedRm && (
             <div className="mt-2 flex gap-3 text-xs text-gray-500 bg-orange-50 border border-orange-100 rounded-lg px-3 py-2">
               <span>Code: <strong className="font-mono text-orange-700">{selectedRm.itemCode}</strong></span>
-              <span>UOM: <strong>{selectedRm.inventoryUom}</strong></span>
+              <span>UOM: <strong>{selectedRm.inventoryUom?.toUpperCase()}</strong></span>
               <span className="text-gray-400">ID will be: <strong className="font-mono">CONT-{selectedRm.itemName.replace(/[^a-zA-Z0-9]/g,'').slice(0,4).toUpperCase()}-{selectedRm.itemCode}</strong></span>
             </div>
           )}
@@ -136,7 +136,7 @@ export default function CreateContainer({ onCreated }) {
         {/* Capacity */}
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-1">
-            Capacity ({selectedRm?.inventoryUom || 'KG'}) *
+            Capacity ({(selectedRm?.inventoryUom || 'KG').toUpperCase()}) *
           </label>
           <input
             type="number" min="0.1" step="0.1"

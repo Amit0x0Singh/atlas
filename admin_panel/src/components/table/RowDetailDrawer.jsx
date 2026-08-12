@@ -40,7 +40,10 @@ function renderValue(value, fieldName, fieldType, titleCase) {
       </span>
     );
   }
-  const str = titleCase ? toTitleCase(String(value)) : String(value);
+  // UOM/unit-of-measure fields (uom, inventoryUom, qtyUnit, workingUnit, …)
+  // always render fully uppercase, regardless of how the value was stored.
+  const isUom = /uom$/i.test(fieldName || '') || /Unit$/.test(fieldName || '');
+  const str = isUom ? String(value).toUpperCase() : titleCase ? toTitleCase(String(value)) : String(value);
   if (str.length > 60) {
     return (
       <span className="block font-mono text-xs break-all bg-slate-50 dark:bg-slate-800 rounded px-2 py-1.5 text-slate-600 dark:text-slate-300">

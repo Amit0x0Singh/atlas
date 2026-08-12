@@ -78,7 +78,7 @@ export default function RmTable({ loading, items, filtered, paginated, page, lim
                       <div className="text-xs text-gray-400 font-mono mt-0.5">{it.itemCode}</div>
                     </td>
                     <td className="px-4 py-3 text-center">
-                      <span className="bg-gray-100 text-gray-600 text-xs font-medium px-2 py-0.5 rounded-md">{it.uom || '—'}</span>
+                      <span className="bg-gray-100 text-gray-600 text-xs font-medium px-2 py-0.5 rounded-md">{it.uom ? it.uom.toUpperCase() : '—'}</span>
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums">
                       <div><StockBadge value={it.stockInPacks} /></div>
@@ -91,7 +91,7 @@ export default function RmTable({ loading, items, filtered, paginated, page, lim
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums">
                       <div className={`text-base font-bold tabular-nums ${hasStock ? 'text-gray-900' : 'text-red-400'}`}>
-                        {fmt(it.totalStock)}{it.uom && <span className="text-xs font-medium text-gray-400 ml-1">{it.uom}</span>}
+                        {fmt(it.totalStock)}{it.uom && <span className="text-xs font-medium text-gray-400 ml-1">{it.uom.toUpperCase()}</span>}
                       </div>
                       {!hasStock && <div className="text-[10px] text-red-400 font-medium">OUT OF STOCK</div>}
                     </td>

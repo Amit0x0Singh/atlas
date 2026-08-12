@@ -42,7 +42,7 @@ export default function HistoryRow({ group: g, isOpen, onToggle }) {
 
         <td className="px-3 py-3 font-semibold text-gray-800">
           {totalQty % 1 === 0 ? totalQty : totalQty.toFixed(3)}{' '}
-          <span className="text-gray-400 font-normal text-xs">{g.uom}</span>
+          <span className="text-gray-400 font-normal text-xs">{g.uom?.toUpperCase()}</span>
         </td>
 
         <td className="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">
@@ -89,7 +89,7 @@ export default function HistoryRow({ group: g, isOpen, onToggle }) {
                 {b.packId}
               </span>
               <span className="text-xs text-gray-700 w-20 shrink-0">
-                {b.packQty} {b.uom}
+                {b.packQty} {b.uom?.toUpperCase()}
               </span>
               {b.warehouse ? (
                 <span className="text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded w-36 text-center shrink-0 truncate">

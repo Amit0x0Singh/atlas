@@ -21,7 +21,7 @@ export default function BomChecklistStep({
             <div className="flex items-center gap-3 flex-wrap">
               <h2 className="text-lg font-bold text-gray-900">{toTitleCase(selProduct?.productName)}</h2>
               <span className="bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-1 rounded-lg">
-                {batchQty} {batchUom}
+                {batchQty} {batchUom?.toUpperCase()}
               </span>
               {batchRef && (
                 <span className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-lg font-mono">{batchRef}</span>
@@ -113,7 +113,7 @@ export default function BomChecklistStep({
                       <span className="text-xs px-1.5 py-0.5 rounded font-medium bg-gray-200 text-gray-600">No longer in recipe</span>
                     </div>
                     <div className="text-xs text-gray-500 mt-0.5">
-                      Previously issued: <strong className="text-gray-700">{line.issued} {line.uom}</strong> — kept here for audit only.
+                      Previously issued: <strong className="text-gray-700">{line.issued} {line.uom?.toUpperCase()}</strong> — kept here for audit only.
                     </div>
                   </div>
                 </div>
@@ -155,12 +155,12 @@ export default function BomChecklistStep({
                       )}
                     </div>
                     <div className="flex items-center gap-4 mt-0.5 text-xs text-gray-500 flex-wrap">
-                      <span>Required: <strong className="text-gray-800">{line.required} {line.uom}</strong></span>
+                      <span>Required: <strong className="text-gray-800">{line.required} {line.uom?.toUpperCase()}</strong></span>
                       <span>Issued: <strong className={line.issued > 0 ? 'text-green-700' : 'text-gray-400'}>
-                        {line.issued} {line.uom}
+                        {line.issued} {line.uom?.toUpperCase()}
                       </strong></span>
                       {!done && remaining > 0 && (
-                        <span>Remaining: <strong className="text-red-600">{remaining} {line.uom}</strong></span>
+                        <span>Remaining: <strong className="text-red-600">{remaining} {line.uom?.toUpperCase()}</strong></span>
                       )}
                     </div>
                     {lineMsg[idx] && (

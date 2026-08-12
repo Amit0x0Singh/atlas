@@ -96,7 +96,7 @@ export default function RmMaterialDetail() {
       <PageHeader
         icon={History}
         title={loading ? <span className="inline-block h-5 w-48 bg-gray-200 rounded animate-pulse align-middle" /> : (toTitleCase(rm?.itemName) ?? itemCode)}
-        description={!loading && `${rm?.itemCode} · ${rm?.inventoryUom} · Complete inward history`}
+        description={!loading && `${rm?.itemCode} · ${rm?.inventoryUom?.toUpperCase() ?? ''} · Complete inward history`}
         actions={<>
           <IconButton icon={RefreshCw} onClick={load} tooltip="Refresh" variant="outline-gray" size="sm" />
           <BackButton />
@@ -112,17 +112,17 @@ export default function RmMaterialDetail() {
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4">
               <div className="text-xs font-medium text-gray-400 mb-1.5">Total Received</div>
               <div className="text-2xl font-bold text-gray-900">{fmtQty(totalQtyReceived)}</div>
-              <div className="text-xs text-gray-400 mt-0.5">{rm?.inventoryUom} · {packs.length} bags</div>
+              <div className="text-xs text-gray-400 mt-0.5">{rm?.inventoryUom?.toUpperCase()} · {packs.length} bags</div>
             </div>
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4">
               <div className="text-xs font-medium text-gray-400 mb-1.5">Currently Available</div>
               <div className="text-2xl font-bold text-emerald-600">{fmtQty(totalRemaining)}</div>
-              <div className="text-xs text-gray-400 mt-0.5">{rm?.inventoryUom} remaining</div>
+              <div className="text-xs text-gray-400 mt-0.5">{rm?.inventoryUom?.toUpperCase()} remaining</div>
             </div>
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4">
               <div className="text-xs font-medium text-gray-400 mb-1.5">Total Consumed</div>
               <div className="text-2xl font-bold text-gray-700">{fmtQty(totalUsed)}</div>
-              <div className="text-xs text-gray-400 mt-0.5">{rm?.inventoryUom} used</div>
+              <div className="text-xs text-gray-400 mt-0.5">{rm?.inventoryUom?.toUpperCase()} used</div>
             </div>
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4">
               <div className="text-xs font-medium text-gray-400 mb-2">Overall Usage</div>

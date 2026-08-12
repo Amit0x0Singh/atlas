@@ -72,7 +72,7 @@ export default function RmDetailTable({ loading, filteredGroups, paginatedGroups
                         <span className="bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-0.5 rounded-full">{g.bags.length}</span>
                       </td>
                       <td className="px-3 py-3 text-right font-semibold text-gray-800 tabular-nums">
-                        {fmtQty(totalQty)} <span className="text-xs text-gray-400 font-normal">{g.uom}</span>
+                        {fmtQty(totalQty)} <span className="text-xs text-gray-400 font-normal">{g.uom?.toUpperCase()}</span>
                       </td>
                       <td className="px-3 py-3 text-right tabular-nums">
                         <span className={`font-semibold ${remQty > 0 ? 'text-emerald-600' : 'text-gray-400'}`}>{fmtQty(remQty)}</span>
@@ -113,7 +113,7 @@ export default function RmDetailTable({ loading, filteredGroups, paginatedGroups
                           <td className="px-3 py-2.5" />
                           <td className="px-3 py-2.5 text-right tabular-nums">
                             <span className="text-xs font-semibold text-gray-700">{fmtQty(bTotal)}</span>
-                            <span className="text-xs text-gray-400 ml-1">{bag.uom}</span>
+                            <span className="text-xs text-gray-400 ml-1">{bag.uom?.toUpperCase()}</span>
                           </td>
                           <td className="px-3 py-2.5" colSpan={1}>
                             <div className="flex flex-col gap-1 min-w-36">

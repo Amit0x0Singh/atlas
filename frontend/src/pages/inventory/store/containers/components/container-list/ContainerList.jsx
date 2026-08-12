@@ -137,7 +137,7 @@ export default function ContainerList() {
                   {c.currentQty.toFixed(2)}
                 </div>
                 <div className="text-[10px] text-gray-400">
-                  {c.capacity} {c.uom}
+                  {c.capacity} {c.uom?.toUpperCase()}
                 </div>
               </div>
 
@@ -174,7 +174,7 @@ export default function ContainerList() {
             )}
 
             <label className="block text-sm font-semibold text-gray-700 mb-1">
-              Capacity ({editing.uom})
+              Capacity ({editing.uom?.toUpperCase()})
             </label>
             <input
               type="number" min="0.001" step="0.001" autoFocus
@@ -183,7 +183,7 @@ export default function ContainerList() {
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-orange-400"
             />
             <p className="text-xs text-gray-400 mt-1.5">
-              Current stock: {editing.currentQty.toFixed(2)} {editing.uom} — new capacity can't be set below this.
+              Current stock: {editing.currentQty.toFixed(2)} {editing.uom?.toUpperCase()} — new capacity can't be set below this.
             </p>
 
             <div className="flex gap-3 mt-5">

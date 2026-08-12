@@ -62,7 +62,7 @@ export default function CustomerProductPicker({ value, cpProfiles, onSelect, onC
             >
               <span className="font-medium text-gray-800 truncate">{toTitleCase(p.productName)}</span>
               <span className="text-xs text-gray-400 shrink-0 flex gap-1">
-                {p.unitQty    && <span>{p.unitQty}{p.unitUom}</span>}
+                {p.unitQty    && <span>{p.unitQty}{p.unitUom?.toUpperCase()}</span>}
                 {p.primaryPack && <span>· {p.primaryPack}</span>}
                 {p.labelType   && <span className="text-green-600">· {p.labelType.replace('_', ' ')}</span>}
               </span>

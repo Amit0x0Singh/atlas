@@ -36,7 +36,7 @@ function StatCard({ icon: Icon, label, value, empty }) {
 
 export default function EquipmentDetailModal({ item, onClose }) {
   if (!item) return null
-  const volume = `${item.workingVolume ?? 0}${item.workingUnit ? ` ${item.workingUnit}` : ''}`
+  const volume = `${item.workingVolume ?? 0}${item.workingUnit ? ` ${item.workingUnit.toUpperCase()}` : ''}`
   const plantColor = PLANT_COLORS[item.plant] || DEFAULT_PLANT_COLOR
 
   return (

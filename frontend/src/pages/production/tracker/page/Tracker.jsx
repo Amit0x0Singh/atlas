@@ -211,7 +211,7 @@ export default function Tracker() {
                                       </div>
                                       <div className="text-right">
                                         <p className="text-red-600 font-bold text-lg">
-                                          −{Number(tx.operationalQty ?? tx.qtyIssued).toFixed(3)} {tx.operationalUom || ''}
+                                          −{Number(tx.operationalQty ?? tx.qtyIssued).toFixed(3)} {(tx.operationalUom || '').toUpperCase()}
                                         </p>
                                         {tx.operationalUom && Number(tx.operationalQty) !== Number(tx.qtyIssued) && (
                                           <p className="text-[10px] text-gray-400">({Number(tx.qtyIssued).toFixed(3)} deducted)</p>
@@ -223,7 +223,7 @@ export default function Tracker() {
                                         <div><p className="text-gray-400">Pack ID</p><p className="font-mono text-gray-700 font-medium">{tx.packDetails.packId}</p></div>
                                         <div><p className="text-gray-400">Lot No</p><p className="font-medium text-gray-700">{tx.packDetails.lotNo}</p></div>
                                         <div><p className="text-gray-400">Bag No</p><p className="font-medium text-gray-700">#{tx.packDetails.bagNo}</p></div>
-                                        <div><p className="text-gray-400">Pack Qty</p><p className="font-medium text-gray-700">{Number(tx.packDetails.packQty).toFixed(3)} {tx.packDetails.uom}</p></div>
+                                        <div><p className="text-gray-400">Pack Qty</p><p className="font-medium text-gray-700">{Number(tx.packDetails.packQty).toFixed(3)} {tx.packDetails.uom?.toUpperCase()}</p></div>
                                         {tx.packDetails.supplier && <div><p className="text-gray-400">Supplier</p><p className="font-medium text-gray-700">{tx.packDetails.supplier}</p></div>}
                                         {tx.packDetails.invoiceNo && <div><p className="text-gray-400">Invoice</p><p className="font-medium text-gray-700">{tx.packDetails.invoiceNo}</p></div>}
                                         {tx.packDetails.receivedDate && <div><p className="text-gray-400">Received</p><p className="font-medium text-gray-700">{new Date(tx.packDetails.receivedDate).toLocaleDateString('en-IN')}</p></div>}

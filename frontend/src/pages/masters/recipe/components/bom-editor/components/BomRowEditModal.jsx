@@ -133,7 +133,7 @@ export default function BomRowEditModal({
                       <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-1 py-0.5 ml-2 align-middle">MICROBE</span>
                     )}
                     <span className="text-gray-400 text-xs ml-2">{hit.code}</span>
-                    {hit.uom && <span className="text-gray-300 text-xs ml-1">· {hit.uom}</span>}
+                    {hit.uom && <span className="text-gray-300 text-xs ml-1">· {hit.uom.toUpperCase()}</span>}
                   </button>
                 ))}
               </div>

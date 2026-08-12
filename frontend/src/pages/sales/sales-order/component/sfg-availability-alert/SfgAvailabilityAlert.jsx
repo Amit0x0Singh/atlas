@@ -16,7 +16,7 @@ export default function SfgAvailabilityAlert({ sfgAlert, onDismiss }) {
                 <span className="font-semibold">{s.productCode}</span>
                 <span>{toTitleCase(s.productName)}</span>
                 <span className="ml-auto text-green-900 font-semibold">
-                  {s.sfgQty} {s.uom} in SFG
+                  {s.sfgQty} {s.uom?.toUpperCase()} in SFG
                   {s.orderedQty && (
                     <span
                       className={
@@ -26,7 +26,7 @@ export default function SfgAvailabilityAlert({ sfgAlert, onDismiss }) {
                       }
                     >
                       {" "}
-                      (ordered {s.orderedQty} {s.uom}
+                      (ordered {s.orderedQty} {s.uom?.toUpperCase()}
                       {s.sfgQty >= s.orderedQty
                         ? " — fully covered ✓"
                         : " — partial"}

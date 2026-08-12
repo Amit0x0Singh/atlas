@@ -63,7 +63,7 @@ export default function ProductDetailModal({ item, onClose }) {
       {/* Body */}
       <div className="px-6 py-5 max-h-[65vh] overflow-y-auto">
         <div className="grid grid-cols-2 gap-3">
-          <StatCard icon={Beaker}     label="UOM"           value={item.uom}   empty={!item.uom} />
+          <StatCard icon={Beaker}     label="UOM"           value={item.uom?.toUpperCase()}   empty={!item.uom} />
           <StatCard icon={GitBranch}  label="Total Recipe"  value={item.totalRecipe ?? 0} />
           <StatCard icon={MapPin}     label="Plant"         value={plants}     empty={!plants} />
         </div>

@@ -64,8 +64,8 @@ export default function StockLossAdjustment() {
     try {
       const r = await outwardApi.lossAdjustment({ packId: pack.packId, lossQty: loss, reason: finalReason })
       setSuccess(
-        `Adjusted: ${loss} ${pack.uom} deducted from ${pack.packId}. ` +
-        `Remaining: ${r.newRemaining} ${pack.uom} · Status: ${r.newStatus.replace('_', ' ')}`
+        `Adjusted: ${loss} ${(pack.uom || '').toUpperCase()} deducted from ${pack.packId}. ` +
+        `Remaining: ${r.newRemaining} ${(pack.uom || '').toUpperCase()} · Status: ${r.newStatus.replace('_', ' ')}`
       )
       setPack(null); setLossQty(''); setReason(''); setCustomReason(''); setPackInput('')
     } catch (e) {
@@ -125,14 +125,14 @@ export default function StockLossAdjustment() {
             <div className="mt-3 bg-white rounded-lg px-3 py-2.5">
               <div className="flex justify-between text-xs mb-1.5">
                 <span className="text-gray-500 font-medium">Remaining Qty</span>
-                <span className="font-bold text-gray-800">{pack.remainingQty} {pack.uom}</span>
+                <span className="font-bold text-gray-800">{pack.remainingQty} {pack.uom?.toUpperCase()}</span>
               </div>
               <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                 <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${Math.min(100, (pack.remainingQty / (pack.packQty || pack.remainingQty)) * 100)}%` }} />
               </div>
               <div className="flex justify-between text-[10px] text-gray-400 mt-1">
                 <span>0</span>
-                <span>Original: {pack.packQty || '—'} {pack.uom}</span>
+                <span>Original: {pack.packQty || '—'} {pack.uom?.toUpperCase()}</span>
               </div>
             </div>
           </div>
@@ -140,18 +140,18 @@ export default function StockLossAdjustment() {
           {/* Loss quantity */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-              Loss Quantity * <span className="text-xs font-normal text-gray-400">(max {pack.remainingQty} {pack.uom})</span>
+              Loss Quantity * <span className="text-xs font-normal text-gray-400">(max {pack.remainingQty} {pack.uom?.toUpperCase()})</span>
             </label>
             <input
               type="number" min="0.001" step="0.001" max={pack.remainingQty}
               value={lossQty}
               onChange={e => setLossQty(e.target.value)}
-              placeholder={`0.000 ${pack.uom}`}
+              placeholder={`0.000 ${(pack.uom || '').toUpperCase()}`}
               className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-red-400"
             />
             {lossQty && !isNaN(parseFloat(lossQty)) && parseFloat(lossQty) > 0 && parseFloat(lossQty) <= pack.remainingQty && (
               <p className="text-xs text-gray-400 mt-1.5">
-                After adjustment: <strong className="text-gray-700">{(pack.remainingQty - parseFloat(lossQty)).toFixed(3)} {pack.uom}</strong> remaining
+                After adjustment: <strong className="text-gray-700">{(pack.remainingQty - parseFloat(lossQty)).toFixed(3)} {pack.uom?.toUpperCase()}</strong> remaining
               </p>
             )}
           </div>

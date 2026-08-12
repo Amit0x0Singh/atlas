@@ -43,7 +43,7 @@ export default function DispatchOrder({ order, onSave, onDelete, onClose }) {
     id: it.id,
     productName: toTitleCase(it.inhouseProductName || it.customerProductName),
     totalQty: it.totalQty,
-    totalUom: it.totalUom || "KG",
+    totalUom: (it.totalUom || "KG").toUpperCase(),
     batchNo: it.batchNo || "—",
     mrp: it.mrp || "—",
     mfgDate: it.mfgDate
@@ -54,7 +54,7 @@ export default function DispatchOrder({ order, onSave, onDelete, onClose }) {
       : "—",
     primaryPack: it.unitPackType || "—",
     secondaryPack: it.packingType || "—",
-    noOfUnits: it.unitQty ? `${it.unitQty} ${it.unitUom || "KG"}` : "—",
+    noOfUnits: it.unitQty ? `${it.unitQty} ${(it.unitUom || "KG").toUpperCase()}` : "—",
     noOfSecPacks: it.totalCS || "—",
     labelType: it.labelType
       ? labelTypes.find((l) => l.code === it.labelType)?.label || it.labelType

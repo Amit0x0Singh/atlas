@@ -69,8 +69,8 @@ export default function WarehouseToContainer() {
     try {
       const r = await containerApi.fill(container.containerId, { packId: selectedPack.packId, qty: q })
       setSuccess(
-        `Filled ${r.filled} ${container.uom} into ${container.containerId}. ` +
-        `Level: ${r.data.currentQty} / ${r.data.capacity} ${r.data.uom}`
+        `Filled ${r.filled} ${(container.uom || '').toUpperCase()} into ${container.containerId}. ` +
+        `Level: ${r.data.currentQty} / ${r.data.capacity} ${(r.data.uom || '').toUpperCase()}`
       )
       // Reset for next fill
       setPack(null); setContainer(null); setAvailPacks([]); setQty(''); setPackInput('')
@@ -135,7 +135,7 @@ export default function WarehouseToContainer() {
               ].map(([l, v, c]) => (
                 <div key={l} className="bg-white rounded-lg py-2">
                   <div className={`font-bold text-sm ${c}`}>{v}</div>
-                  <div className="text-[10px] text-gray-400">{l} ({container.uom})</div>
+                  <div className="text-[10px] text-gray-400">{l} ({container.uom?.toUpperCase()})</div>
                 </div>
               ))}
             </div>
@@ -148,7 +148,7 @@ export default function WarehouseToContainer() {
               <div className="font-mono text-sm font-semibold text-blue-900 truncate">{selectedPack.packId}</div>
               <div className="text-xs text-blue-600 mt-0.5">
                 Lot: {selectedPack.lotNo} · Bag #{selectedPack.bagNo} ·
-                Available: <strong>{selectedPack.remainingQty} {container.uom}</strong>
+                Available: <strong>{selectedPack.remainingQty} {container.uom?.toUpperCase()}</strong>
               </div>
             </div>
             <IconButton icon={X} onClick={reset} variant="ghost" size="sm" tooltip="Clear" className="flex-shrink-0" />
@@ -171,7 +171,7 @@ export default function WarehouseToContainer() {
                       <div className="font-mono text-xs text-gray-700 truncate">{p.packId}</div>
                       <div className="flex justify-between mt-0.5 text-xs text-gray-500">
                         <span>Lot: {p.lotNo} · Bag #{p.bagNo}</span>
-                        <span className="font-semibold text-emerald-700">{p.remainingQty} {container.uom}</span>
+                        <span className="font-semibold text-emerald-700">{p.remainingQty} {container.uom?.toUpperCase()}</span>
                       </div>
                     </button>
                   ))}
@@ -182,9 +182,9 @@ export default function WarehouseToContainer() {
           {/* Qty + submit */}
           <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
             <div className="flex gap-4 text-xs text-gray-500 mb-3">
-              <span>Space left: <strong className="text-blue-700">{spaceLeft.toFixed(3)} {container.uom}</strong></span>
+              <span>Space left: <strong className="text-blue-700">{spaceLeft.toFixed(3)} {container.uom?.toUpperCase()}</strong></span>
               <span>·</span>
-              <span>Bag has: <strong className="text-emerald-700">{selectedPack.remainingQty} {container.uom}</strong></span>
+              <span>Bag has: <strong className="text-emerald-700">{selectedPack.remainingQty} {container.uom?.toUpperCase()}</strong></span>
             </div>
             <label className="block text-sm font-semibold text-gray-700 mb-1">Qty to Fill *</label>
             <input

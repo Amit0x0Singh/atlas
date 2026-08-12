@@ -27,7 +27,7 @@ export default function DiPickerSection({
               )}
               <span className="text-gray-600 text-[12px]">{toTitleCase(so.productName)}</span>
               {so.customerName && <span className="text-gray-400 text-[11px]">— {toTitleCase(so.customerName)}</span>}
-              {so.orderQty && <span className="text-gray-400 text-[11px]">({so.orderQty} {so.qtyUnit})</span>}
+              {so.orderQty && <span className="text-gray-400 text-[11px]">({so.orderQty} {so.qtyUnit?.toUpperCase()})</span>}
             </div>
           )}
         />
@@ -49,7 +49,7 @@ export default function DiPickerSection({
                   <span className="font-medium text-gray-800 group-hover:text-blue-700">{toTitleCase(item.productName)}</span>
                   {item.orderQty != null && (
                     <span className="text-gray-400 text-[12px] shrink-0 ml-2">
-                      {item.orderQty} {item.qtyUnit}
+                      {item.orderQty} {item.qtyUnit?.toUpperCase()}
                     </span>
                   )}
                 </button>

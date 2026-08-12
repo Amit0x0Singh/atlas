@@ -101,7 +101,7 @@ export default function FillContainer({ preselected, onDone }) {
     setSub(true); setError(''); setSuccess('')
     try {
       const r = await containerApi.fill(container.containerId, { packId: selectedPack.packId, qty: q })
-      setSuccess(`Filled ${r.filled} ${container.uom} into ${container.containerId}. New level: ${r.data.currentQty} / ${r.data.capacity} ${r.data.uom}`)
+      setSuccess(`Filled ${r.filled} ${(container.uom || '').toUpperCase()} into ${container.containerId}. New level: ${r.data.currentQty} / ${r.data.capacity} ${(r.data.uom || '').toUpperCase()}`)
       setContainer(r.data)
       setPack(null); setQty('')
       await loadPacksForContainer(r.data)
@@ -222,7 +222,7 @@ export default function FillContainer({ preselected, onDone }) {
                   <div className="font-mono text-xs text-gray-800 truncate">{p.packId}</div>
                   <div className="flex justify-between mt-1 text-xs text-gray-500">
                     <span>Lot: {p.lotNo} | Bag #{p.bagNo}</span>
-                    <span className="font-semibold text-green-700">{p.remainingQty} {container.uom}</span>
+                    <span className="font-semibold text-green-700">{p.remainingQty} {container.uom?.toUpperCase()}</span>
                   </div>
                 </button>
               ))}

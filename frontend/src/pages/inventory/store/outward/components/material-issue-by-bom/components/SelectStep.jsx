@@ -14,7 +14,7 @@ export default function SelectStep({
       <dl className="space-y-2 text-sm mb-4">
         <div className="flex items-center justify-between gap-3">
           <dt className="text-gray-400">Batch Qty</dt>
-          <dd className="font-semibold text-gray-800">{batchQty || '—'} {batchUom}</dd>
+          <dd className="font-semibold text-gray-800">{batchQty || '—'} {batchUom?.toUpperCase()}</dd>
         </div>
         {batchRef && (
           <div className="flex items-center justify-between gap-3">

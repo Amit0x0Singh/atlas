@@ -48,7 +48,7 @@ export default function WarehouseToPlant() {
     finally { setLoadingP(false) }
   }
 
-  const entryUom = rmInfo?.operationalUom || rmInfo?.inventoryUom || 'kg'
+  const entryUom = (rmInfo?.operationalUom || rmInfo?.inventoryUom || 'KG').toUpperCase()
   const packMaxInEntryUom = (pack) => {
     if (!pack || !rmInfo) return pack?.remainingQty
     try {
@@ -70,7 +70,7 @@ export default function WarehouseToPlant() {
       }
     } catch { /* RM lookup failed — keep inventory-uom default, server still validates */ }
   }
-  const indentEntryUom = indentRmInfo?.operationalUom || indentRmInfo?.inventoryUom
+  const indentEntryUom = (indentRmInfo?.operationalUom || indentRmInfo?.inventoryUom || '').toUpperCase() || null
 
   const submit = async () => {
     const q = parseFloat(qty)
@@ -135,7 +135,7 @@ export default function WarehouseToPlant() {
                   <div className="font-mono text-xs text-gray-800 truncate">{p.packId}</div>
                   <div className="flex justify-between mt-1 text-xs text-gray-500">
                     <span>Lot: {p.lotNo} | Bag #{p.bagNo}</span>
-                    <span className="font-semibold text-green-700">{p.remainingQty} {rmInfo?.inventoryUom || 'kg'}</span>
+                    <span className="font-semibold text-green-700">{p.remainingQty} {(rmInfo?.inventoryUom || 'KG').toUpperCase()}</span>
                   </div>
                   {p.supplier && <div className="text-xs text-gray-400">{p.supplier}</div>}
                 </button>
@@ -167,7 +167,7 @@ export default function WarehouseToPlant() {
                   className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 {rmInfo?.operationalUom && rmInfo.operationalUom !== rmInfo.inventoryUom && (
-                  <p className="text-xs text-gray-400 mt-1">Stock is tracked in {rmInfo.inventoryUom} — entered qty converts automatically.</p>
+                  <p className="text-xs text-gray-400 mt-1">Stock is tracked in {rmInfo.inventoryUom?.toUpperCase()} — entered qty converts automatically.</p>
                 )}
               </div>
               <div>
@@ -216,7 +216,7 @@ export default function WarehouseToPlant() {
                   className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 {indentRmInfo?.operationalUom && indentRmInfo.operationalUom !== indentRmInfo.inventoryUom && (
-                  <p className="text-xs text-gray-400 mt-1">Balance is tracked in {indentRmInfo.inventoryUom} — entered qty converts automatically.</p>
+                  <p className="text-xs text-gray-400 mt-1">Balance is tracked in {indentRmInfo.inventoryUom?.toUpperCase()} — entered qty converts automatically.</p>
                 )}
               </div>
             </div>

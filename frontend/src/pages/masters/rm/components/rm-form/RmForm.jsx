@@ -143,7 +143,7 @@ export default function RmForm({ editing, form, onChange, saving, msg, onSave, o
             </div>
             {needsDensity && (
               <p className={`mt-2 text-[11px] ${densityMissing ? 'text-red-500 font-medium' : 'text-gray-400'}`}>
-                Density converts between Inventory UOM ({form.inventoryUom}) and Operational UOM ({form.operationalUom}) when this item is issued.
+                Density converts between Inventory UOM ({form.inventoryUom?.toUpperCase()}) and Operational UOM ({form.operationalUom?.toUpperCase()}) when this item is issued.
               </p>
             )}
           </div>
@@ -212,7 +212,7 @@ export default function RmForm({ editing, form, onChange, saving, msg, onSave, o
               </div>
             </div>
             <p className={`${HINT} mt-2`}>
-              Reorder thresholds in {form.inventoryUom || 'the item\'s Inventory UOM'} — Low flags when stock needs replenishing, High flags overstock.
+              Reorder thresholds in {form.inventoryUom ? form.inventoryUom.toUpperCase() : 'the item\'s Inventory UOM'} — Low flags when stock needs replenishing, High flags overstock.
             </p>
           </div>
         </div>

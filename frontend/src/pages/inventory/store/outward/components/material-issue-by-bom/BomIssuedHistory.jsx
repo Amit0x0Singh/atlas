@@ -81,7 +81,7 @@ export default function BomIssuedHistory({ onResume }) {
         lastUpdated: s.updatedAt,
         lines: (s.bomLines || []).map(l => ({
           rmName: l.rmName, rmCode: l.rmCode,
-          detail: `${l.issued} / ${l.required} ${l.uom}`,
+          detail: `${l.issued} / ${l.required} ${(l.uom || '').toUpperCase()}`,
         })),
       }
     })
@@ -96,7 +96,7 @@ export default function BomIssuedHistory({ onResume }) {
         lastUpdated: b.lastTs,
         lines: b.lines.map(l => ({
           rmName: l.rmName || l.rmCode, rmCode: l.sourceId,
-          detail: `${Number(l.operationalQty ?? l.qtyIssued).toFixed(3)} ${l.operationalUom || ''} · ${fmtDate(l.timestamp)}`,
+          detail: `${Number(l.operationalQty ?? l.qtyIssued).toFixed(3)} ${(l.operationalUom || '').toUpperCase()} · ${fmtDate(l.timestamp)}`,
         })),
       }))
 

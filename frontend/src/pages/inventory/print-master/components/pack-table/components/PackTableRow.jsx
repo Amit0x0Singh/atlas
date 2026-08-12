@@ -49,7 +49,7 @@ export default function PackTableRow({ group: g, isOpen, onToggle }) {
 
         <td className="px-3 py-3 font-semibold text-gray-800">
           {totalQty % 1 === 0 ? totalQty : totalQty.toFixed(3)}{" "}
-          <span className="text-gray-400 font-normal text-xs">{g.uom}</span>
+          <span className="text-gray-400 font-normal text-xs">{g.uom?.toUpperCase()}</span>
         </td>
 
         <td className="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">
@@ -101,7 +101,7 @@ export default function PackTableRow({ group: g, isOpen, onToggle }) {
                 </span>
 
                 <span className="text-xs text-gray-700 w-20 shrink-0">
-                  {b.packQty} {b.uom}
+                  {b.packQty} {b.uom?.toUpperCase()}
                 </span>
 
                 <span
