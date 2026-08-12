@@ -71,8 +71,12 @@ export default function ProductDetailModal({ item, onClose }) {
 
       {/* Footer — timestamps */}
       <div className="flex items-center justify-between px-6 py-3 bg-gray-50 border-t border-gray-100 text-xs text-gray-400">
-        <span className="flex items-center gap-1.5"><Clock size={12} /> Created {fmtDateTime(item.createdAt)}</span>
-        <span className="flex items-center gap-1.5"><Clock size={12} /> Updated {fmtDateTime(item.updatedAt)}</span>
+        <span className="flex items-center gap-1.5">
+          <Clock size={12} /> Created {fmtDateTime(item.createdAt)}{item.createdBy ? ` by ${item.createdBy}` : ''}
+        </span>
+        <span className="flex items-center gap-1.5">
+          <Clock size={12} /> Updated {fmtDateTime(item.updatedAt)}{item.updatedBy ? ` by ${item.updatedBy}` : ''}
+        </span>
       </div>
     </Modal>
   )
