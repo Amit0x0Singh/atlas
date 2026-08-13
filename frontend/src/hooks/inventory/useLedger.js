@@ -10,3 +10,14 @@ export function useLedger(filters) {
     ...CACHE.OPERATIONAL,
   })
 }
+
+// Transaction-type filter options — backend-sourced so the dropdown can
+// never offer a value the ledger doesn't actually produce. Rarely changes,
+// so cached at the MASTER tier.
+export function useLedgerMeta() {
+  return useQuery({
+    queryKey: queryKeys.ledger.meta(),
+    queryFn: () => ledgerApi.meta().then(r => r.data),
+    ...CACHE.MASTER,
+  })
+}

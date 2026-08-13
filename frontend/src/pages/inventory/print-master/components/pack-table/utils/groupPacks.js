@@ -1,3 +1,8 @@
+export function fmtDate(d) {
+  if (!d) return '—'
+  return new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
 export const STATUS_COLORS = {
   AWAITING_INWARD:  "bg-yellow-100 text-yellow-800",
   INWARDED:         "bg-blue-100 text-blue-800",

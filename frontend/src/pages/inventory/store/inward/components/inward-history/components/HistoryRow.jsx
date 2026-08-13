@@ -98,6 +98,12 @@ export default function HistoryRow({ group: g, isOpen, onToggle }) {
               ) : (
                 <span className="text-xs text-gray-300 w-36 text-center shrink-0">—</span>
               )}
+              <span className="text-xs text-gray-500 w-28 shrink-0 truncate mx-4" title={b.customerBatchCode || ''}>
+                {b.customerBatchCode || '—'}
+              </span>
+              <span className="text-xs text-gray-500 w-24 shrink-0">
+                {fmtDate(b.expiryDate)}
+              </span>
               <button
                 type="button"
                 onClick={() => openAuthedFile(packsApi.labelUrl(b.packId)).catch(e => alert(`Print failed: ${e.message}`))}

@@ -185,24 +185,42 @@ const getBatchLabelsMulti = async (req, res) => {
 }
 
 const generatePacks = async (req, res) => {
-  // `batches` — one or more { numberOfBags, customerBatchCode?, expiryDate? }
-  // groups, so different bag ranges within the same lot can carry different
-  // supplier batch codes / expiry dates. packQty/uom stay lot-level — every
-  // bag in a lot is still the same physical pack size.
-  const { gateInwardId, itemCode, itemName, batches, packQty, uom } = req.body;
+  // `batches` — one or more { numberOfBags, packQty, customerBatchCode?,
+  // expiryDate? } groups, so different bag ranges within the same lot can
+  // carry different supplier batch codes / expiry dates / qty per bag — a
+  // single invoice line/lot can arrive packed at different bag sizes across
+  // its supplier batches (e.g. bags 1-10 at 25kg/bag, bags 11-18 at
+  // 20kg/bag). `uom` stays lot-level (the entry unit the qty was typed in);
+  // each batch group's own packQty is canonicalized individually since bag
+  // sizes can differ within the same lot.
+  const { gateInwardId, itemCode, itemName, batches, uom } = req.body;
   try {
-    if (!itemCode || !itemName || !packQty || !uom)
-      return res.status(400).json({ success: false, error: "itemCode, itemName, packQty, uom are required", code: 'VALIDATION_ERROR' });
+    if (!itemCode || !itemName || !uom)
+      return res.status(400).json({ success: false, error: "itemCode, itemName, uom are required", code: 'VALIDATION_ERROR' });
 
     if (!Array.isArray(batches) || batches.length === 0)
       return res.status(400).json({ success: false, error: "At least one batch group with numberOfBags is required", code: 'VALIDATION_ERROR' });
 
     const parsedBatches = [];
+    let canonicalUom;
     for (const b of batches) {
       const n = parseInt(b.numberOfBags);
       if (!n || n < 1)
         return res.status(400).json({ success: false, error: "Each batch group needs a valid number of bags", code: 'VALIDATION_ERROR' });
-      parsedBatches.push({ numberOfBags: n, customerBatchCode: b.customerBatchCode || null, expiryDate: b.expiryDate || null });
+      if (!b.packQty || parseFloat(b.packQty) <= 0)
+        return res.status(400).json({ success: false, error: "Each batch group needs a valid qty per bag", code: 'VALIDATION_ERROR' });
+
+      let canonical;
+      try {
+        canonical = toCanonical(parseFloat(b.packQty), uom);
+      } catch (e) {
+        return res.status(400).json({ success: false, error: e.message, code: 'VALIDATION_ERROR' });
+      }
+      canonicalUom = canonical.uom;
+      parsedBatches.push({
+        numberOfBags: n, packQty: canonical.qty,
+        customerBatchCode: b.customerBatchCode || null, expiryDate: b.expiryDate || null,
+      });
     }
 
     // Every pack must be linked to the Gate Inward entry it physically
@@ -215,16 +233,8 @@ const generatePacks = async (req, res) => {
     if (!gateInward)
       return res.status(404).json({ success: false, error: "Gate Inward entry not found", code: 'NOT_FOUND' });
 
-    let canonical;
-    try {
-      canonical = toCanonical(parseFloat(packQty), uom);
-    } catch (e) {
-      return res.status(400).json({ success: false, error: e.message, code: 'VALIDATION_ERROR' });
-    }
-
     const result = await generatePackBatch({
-      gateInwardId, itemCode, itemName, batches: parsedBatches,
-      packQty: canonical.qty, uom: canonical.uom,
+      gateInwardId, itemCode, itemName, batches: parsedBatches, uom: canonicalUom,
     });
     return res.status(201).json({ success: true, data: result });
 

@@ -99,6 +99,7 @@ export const queryKeys = {
   ledger: {
     all:  (filters) => filters ? ['ledger', filters] : ['ledger'],
     item: (itemCode, filters) => ['ledger', itemCode, filters ?? null],
+    meta: () => ['ledger', 'meta'],
   },
   gate: {
     inward:  (filters) => ['gate-inward', filters ?? null],

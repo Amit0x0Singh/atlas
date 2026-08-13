@@ -24,10 +24,17 @@ function FilterChip({ label: text, onRemove }) {
   )
 }
 
+// Chip text for a date value — "yyyy-mm-dd" (the raw <input type="date">
+// value) rendered as "12 Aug 2026" instead of the ISO string verbatim.
+function fmtDateChip(v) {
+  const d = new Date(`${v}T00:00:00`)
+  return isNaN(d) ? v : d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
 /**
  * Reusable server-side search/filter bar for master (CRUD list) pages.
  *
- * `fields`: [{ key, label, type: 'text'|'select', placeholder?, options?: [{value,label}], allLabel? }]
+ * `fields`: [{ key, label, type: 'text'|'select'|'date', placeholder?, options?: [{value,label}], allLabel? }]
  * `values`: current filter values, keyed by field.key (all strings, '' = unset)
  * `resultCount`: total matching records (server-reported), shown in the summary line
  * `onChange(key, value)` / `onClear()`
@@ -51,6 +58,15 @@ export default function MasterFilters({ fields, values, resultCount, onChange, o
                 <option value="">{f.allLabel || `All`}</option>
                 {(f.options || []).map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
+            ) : f.type === 'date' ? (
+              <input
+                type="date"
+                value={values[f.key] ?? ''}
+                max={f.max}
+                min={f.min}
+                onChange={e => onChange(f.key, e.target.value)}
+                className={inputCls}
+              />
             ) : (
               <div className="relative">
                 <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
@@ -84,7 +100,9 @@ export default function MasterFilters({ fields, values, resultCount, onChange, o
             if (!v) return null
             const chipLabel = f.type === 'select'
               ? `${f.label}: ${(f.options || []).find(o => o.value === v)?.label || v}`
-              : `${f.label}: "${v}"`
+              : f.type === 'date'
+                ? `${f.label}: ${fmtDateChip(v)}`
+                : `${f.label}: "${v}"`
             return <FilterChip key={f.key} label={chipLabel} onRemove={() => onChange(f.key, '')} />
           })}
         </div>

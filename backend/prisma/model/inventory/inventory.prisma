@@ -152,6 +152,11 @@ model StockLedger {
   reference       String?
   timestamp       DateTime @default(now())
 
+  // Support the Stock Ledger filter bar's item/type/date-range filters
+  // without a full-table scan as the ledger grows.
+  @@index([itemCode])
+  @@index([transactionType])
+  @@index([timestamp])
   @@map("stock_ledger")
 }
 

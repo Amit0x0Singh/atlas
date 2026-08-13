@@ -1,7 +1,7 @@
 import { Fragment } from "react";
 import { packsApi } from "../../../../../../api/inventory.js";
 import { openAuthedFile } from "../../../../../../utils/authedFile.js";
-import { groupStatus, statusColor } from "../utils/groupPacks.js";
+import { groupStatus, statusColor, fmtDate } from "../utils/groupPacks.js";
 
 import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 export default function PackTableRow({ group: g, isOpen, onToggle }) {
@@ -53,9 +53,7 @@ export default function PackTableRow({ group: g, isOpen, onToggle }) {
         </td>
 
         <td className="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">
-          {g.receivedDate
-            ? new Date(g.receivedDate).toLocaleDateString("en-IN")
-            : "—"}
+          {fmtDate(g.receivedDate)}
         </td>
 
         <td className="px-3 py-3">
@@ -108,6 +106,14 @@ export default function PackTableRow({ group: g, isOpen, onToggle }) {
                   className={`px-2 py-0.5 rounded-full text-xs font-medium w-36 text-center shrink-0 ${statusColor(b.status)}`}
                 >
                   {b.status.replace(/_/g, " ")}
+                </span>
+
+                <span className="text-xs text-gray-500 w-28 shrink-0 truncate mx-4" title={b.customerBatchCode || ""}>
+                  {b.customerBatchCode || "—"}
+                </span>
+
+                <span className="text-xs text-gray-500 w-24 shrink-0">
+                  {fmtDate(b.expiryDate)}
                 </span>
 
                 <button

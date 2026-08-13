@@ -62,9 +62,6 @@ export default function RmTableRow({ item, onEdit, onDelete, onRowClick }) {
       <td className="px-4 py-3 whitespace-nowrap">
         <span className="font-semibold text-red-600">{item.lowStockLevel ?? 0}</span>
       </td>
-      <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
-        {item.createdAt ? new Date(item.createdAt).toLocaleDateString('en-IN') : '—'}
-      </td>
       <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
         <div className="flex gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
           <IconButton icon={Pencil} tooltip="Edit" onClick={() => onEdit(item)} />

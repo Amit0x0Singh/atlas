@@ -35,18 +35,20 @@ export default function RmDetailTable({ loading, filteredGroups, paginatedGroups
               <tr className="bg-slate-700 text-white text-xs">
                 <th className="w-8 px-3 py-2.5" />
                 <th className="text-left px-3 py-2.5 font-semibold">Lot / Invoice</th>
+                <th className="text-left px-3 py-2.5 font-semibold">Batch Code</th>
                 <th className="text-left px-3 py-2.5 font-semibold">Supplier</th>
                 <th className="text-center px-3 py-2.5 font-semibold">Bags</th>
                 <th className="text-right px-3 py-2.5 font-semibold">Total Qty</th>
                 <th className="text-right px-3 py-2.5 font-semibold">Remaining</th>
                 <th className="text-left px-3 py-2.5 font-semibold">Received</th>
+                <th className="text-left px-3 py-2.5 font-semibold">Expiry Date</th>
                 <th className="text-left px-3 py-2.5 font-semibold">Status</th>
               </tr>
             </thead>
             <tbody>
               {filteredGroups.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="text-center py-14 text-gray-400">
+                  <td colSpan={10} className="text-center py-14 text-gray-400">
                     {hasFilters ? 'No records match your filters.' : 'No inward history found.'}
                   </td>
                 </tr>
@@ -67,6 +69,7 @@ export default function RmDetailTable({ loading, filteredGroups, paginatedGroups
                         <div className="font-mono text-xs font-semibold text-gray-800">{g.lotNo || '—'}</div>
                         {g.invoiceNo && <div className="text-xs text-gray-400 mt-0.5">Inv: {g.invoiceNo}</div>}
                       </td>
+                      <td className="px-3 py-3" />
                       <td className="px-3 py-3 text-sm text-gray-600">{toTitleCase(g.supplier) || '—'}</td>
                       <td className="px-3 py-3 text-center">
                         <span className="bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-0.5 rounded-full">{g.bags.length}</span>
@@ -81,6 +84,7 @@ export default function RmDetailTable({ loading, filteredGroups, paginatedGroups
                         )}
                       </td>
                       <td className="px-3 py-3 text-sm text-gray-500">{fmtDate(g.receivedDate)}</td>
+                      <td className="px-3 py-3" />
                       <td className="px-3 py-3">
                         <span className={`text-xs font-semibold px-2 py-0.5 rounded-md ${sm.cls}`}>{sm.label}</span>
                       </td>
@@ -109,6 +113,7 @@ export default function RmDetailTable({ loading, filteredGroups, paginatedGroups
                               </div>
                             </div>
                           </td>
+                          <td className="px-3 py-2.5 text-xs text-gray-400">{bag.customerBatchCode || '—'}</td>
                           <td className="px-3 py-2.5 text-xs text-gray-400">{toTitleCase(bag.supplier) || '—'}</td>
                           <td className="px-3 py-2.5" />
                           <td className="px-3 py-2.5 text-right tabular-nums">
@@ -130,6 +135,7 @@ export default function RmDetailTable({ loading, filteredGroups, paginatedGroups
                             </div>
                           </td>
                           <td className="px-3 py-2.5 text-xs text-gray-400">{fmtDate(bag.receivedDate)}</td>
+                          <td className="px-3 py-2.5 text-xs text-gray-400">{fmtDate(bag.expiryDate)}</td>
                           <td className="px-3 py-2.5">
                             <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-md ${bMeta.cls}`}>{bMeta.label}</span>
                           </td>

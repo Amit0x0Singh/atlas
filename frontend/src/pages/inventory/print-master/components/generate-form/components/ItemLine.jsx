@@ -9,6 +9,7 @@ import BatchGroupRow from "./BatchGroupRow.jsx";
 import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 export const BLANK_BATCH = () => ({
   numberOfBags: "",
+  packQty: "",
   customerBatchCode: "",
   expiryMode: "YEAR",
   expiryDateValue: "",
@@ -22,7 +23,6 @@ export default function ItemLine({ idx, item, rmList, receivedDate, onChange, on
   const [nextLot, setNextLot]   = useState("");
 
   const selectedItemError = fieldErrors?.[`item.${idx}.selectedItem`];
-  const packQtyError      = fieldErrors?.[`item.${idx}.packQty`];
 
   const filtered = rmList.filter(r =>
     !search ||
@@ -67,8 +67,8 @@ export default function ItemLine({ idx, item, rmList, receivedDate, onChange, on
         )}
       </div>
 
-      {/* Top row — item search, qty per pack, and the running bag total all
-          share one row so the card doesn't burn a full row per field. */}
+      {/* Top row — item search and the running bag total share one row so
+          the card doesn't burn a full row per field. */}
       <div className="gf-item-top-grid" style={{ marginBottom: "10px" }}>
       <div style={{ position: "relative" }}>
         <label style={lbl}>Item *</label>
@@ -113,15 +113,6 @@ export default function ItemLine({ idx, item, rmList, receivedDate, onChange, on
       </div>
 
       <div>
-        <label style={lbl}>Qty per Pack ({(item.selectedItem?.uom || "KG").toUpperCase()}) *</label>
-        <input type="number" step="0.01" min="0.01"
-          value={item.packQty}
-          onChange={e => { onChange({ ...item, packQty: e.target.value }); clearFieldError?.(`item.${idx}.packQty`); }}
-          placeholder="e.g. 25" style={withError(inp, !!packQtyError)}
-        />
-        <FieldError message={packQtyError} />
-      </div>
-      <div>
         <label style={lbl}>Total Bags</label>
         <div style={{ ...inp, background: "#f1f5f9", fontWeight: 700, color: "#0f172a", display: "flex", alignItems: "center" }}>
           {totalBags}
@@ -150,7 +141,9 @@ export default function ItemLine({ idx, item, rmList, receivedDate, onChange, on
       )}
 
       {/* Batch groups — one or more bag ranges within this lot, each with
-          its own bag count, optional supplier batch code, and expiry. */}
+          its own bag count, qty per bag, optional supplier batch code, and
+          expiry. The last row carries the inline Add control, so growing
+          the list never needs a separate full-width button below it. */}
       <div>
         <label style={lbl}>Batch Groups</label>
         <div className="gf-batch-grid">
@@ -159,23 +152,20 @@ export default function ItemLine({ idx, item, rmList, receivedDate, onChange, on
               key={i}
               idx={i}
               batch={batch}
+              uom={item.selectedItem?.uom}
               receivedDate={receivedDate}
               onChange={next => onChange({ ...item, batches: item.batches.map((b, bi) => bi === i ? next : b) })}
               onRemove={() => onChange({ ...item, batches: item.batches.filter((_, bi) => bi !== i) })}
               canRemove={item.batches.length > 1}
-              error={fieldErrors?.[`item.${idx}.batch.${i}.numberOfBags`]}
-              onClearError={() => clearFieldError?.(`item.${idx}.batch.${i}.numberOfBags`)}
+              onAdd={addBatch}
+              isLast={i === item.batches.length - 1}
+              numberOfBagsError={fieldErrors?.[`item.${idx}.batch.${i}.numberOfBags`]}
+              packQtyError={fieldErrors?.[`item.${idx}.batch.${i}.packQty`]}
+              onClearNumberOfBagsError={() => clearFieldError?.(`item.${idx}.batch.${i}.numberOfBags`)}
+              onClearPackQtyError={() => clearFieldError?.(`item.${idx}.batch.${i}.packQty`)}
             />
           ))}
         </div>
-        <button type="button" onClick={addBatch}
-          style={{
-            width: "100%", marginTop: "8px", padding: "8px", fontSize: "12px", fontWeight: 600,
-            border: "1px dashed #cbd5e1", borderRadius: "8px", background: "none", color: "#64748b", cursor: "pointer",
-          }}
-        >
-          + Add Batch Group
-        </button>
       </div>
     </div>
   );

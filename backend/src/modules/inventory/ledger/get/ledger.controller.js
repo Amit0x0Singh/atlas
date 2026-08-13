@@ -1,5 +1,6 @@
 import prisma from '../../../../db.js'
 import { flattenPack, packDetailInclude } from '../../../../services/pack-view.js'
+import { TRANSACTION_TYPES, TRANSACTION_TYPE_VALUES } from '../../../../utils/ledger-transaction-types.js'
 
 // BOM_ISSUANCE ledger rows record the deduction in Inventory UOM only
 // (outQty) — the Operational UOM qty the operator actually entered lives on
@@ -39,8 +40,51 @@ async function attachOperationalQty(rows) {
 
 export const listLedger = async (req, res) => {
   try {
-    const { itemCode, limit = 50, page = 1 } = req.query
-    const where = itemCode !== undefined ? { itemCode } : {}
+    const {
+      itemCode, search, transactionType, fromDate, toDate,
+      reference, warehouse, direction, limit = 50, page = 1,
+    } = req.query
+
+    const where = {}
+    if (itemCode) where.itemCode = itemCode
+    if (transactionType && TRANSACTION_TYPE_VALUES.has(transactionType)) where.transactionType = transactionType
+    if (reference?.trim()) where.reference = { contains: reference.trim(), mode: 'insensitive' }
+    if (direction === 'IN')  where.inQty  = { gt: 0 }
+    if (direction === 'OUT') where.outQty = { gt: 0 }
+    if (fromDate?.trim() || toDate?.trim()) {
+      where.timestamp = {}
+      if (fromDate?.trim()) where.timestamp.gte = new Date(fromDate)
+      if (toDate?.trim())  where.timestamp.lte = new Date(`${toDate}T23:59:59.999Z`)
+    }
+
+    // itemCode isn't a formal FK to RmMaster (plain string column), so a
+    // name/code search has to resolve matching item codes first — same
+    // heuristic-join-by-shared-key pattern attachOperationalQty() below
+    // already uses against Outward. An explicit `itemCode` (exact) wins if
+    // both are somehow present.
+    if (search?.trim() && !itemCode) {
+      const q = search.trim()
+      const matches = await prisma.rmMaster.findMany({
+        where: { OR: [{ itemCode: { contains: q, mode: 'insensitive' } }, { itemName: { contains: q, mode: 'insensitive' } }] },
+        select: { itemCode: true },
+      })
+      where.itemCode = { in: matches.map(m => m.itemCode) }
+    }
+
+    // StockLedger has no warehouse column — only pack-backed transactions
+    // (INWARD/BOM_ISSUANCE/PACK_TO_CONTAINER/WAREHOUSE_TRANSFER/DIRECT_ISSUE/
+    // some STOCK_RECON rows) trace back to a PackDetail.warehouse via
+    // sourceId. Container-sourced rows (CONTAINER_ISSUE, synthetic
+    // `ADJ-...` stock-adjustment sourceIds) simply won't match any pack and
+    // are correctly excluded when this filter is active.
+    if (warehouse?.trim()) {
+      // PackDetail.warehouse is stored lowercase (field-normalization-rules.js)
+      // while the WAREHOUSE option group's codes are uppercase — compare
+      // case-insensitively so the filter dropdown's value always matches.
+      const packs = await prisma.packDetail.findMany({ where: { warehouse: { equals: warehouse.trim(), mode: 'insensitive' } }, select: { packId: true } })
+      where.sourceId = { in: packs.map(p => p.packId) }
+    }
+
     const [total, rows] = await Promise.all([
       prisma.stockLedger.count({ where }),
       prisma.stockLedger.findMany({
@@ -61,6 +105,13 @@ export const listLedger = async (req, res) => {
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
   }
+}
+
+// Powers the Transaction Type filter dropdown — served from the same
+// constants file the ledger's own `transactionType` validation uses, so the
+// UI can never offer a value the backend doesn't actually produce.
+export const getLedgerMeta = async (req, res) => {
+  return res.json({ success: true, data: { transactionTypes: TRANSACTION_TYPES } })
 }
 
 export const getLedgerByItem = async (req, res) => {

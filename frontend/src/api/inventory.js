@@ -87,6 +87,7 @@ export const ledgerApi = {
   all:        (params)          => api.get('/ledger', { params }),
   item:       (itemCode, params) => api.get(`/ledger/item/${itemCode}`, { params }),
   entryDetail:(id)              => api.get(`/ledger/${id}`),
+  meta:       ()                => api.get('/ledger/meta/transaction-types'),
 }
 
 export const importApi = {

@@ -12,7 +12,6 @@ import "./GenerateForm.css";
 import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 const BLANK_ITEM = () => ({
   selectedItem: null,   // { itemCode, itemName, uom }
-  packQty: "",
   batches: [BLANK_BATCH()],
 });
 const BLANK_HDR = { supplier: "", invoiceNo: "", receivedDate: todayStr() };
@@ -98,12 +97,12 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed, onUnlin
       if (!it.selectedItem) {
         errs[`item.${i}.selectedItem`] = "Please select a raw material";
       }
-      if (!it.packQty || parseFloat(it.packQty) <= 0) {
-        errs[`item.${i}.packQty`] = "Enter a valid qty per bag";
-      }
       it.batches.forEach((b, j) => {
         if (!b.numberOfBags || parseInt(b.numberOfBags, 10) < 1) {
           errs[`item.${i}.batch.${j}.numberOfBags`] = "Enter a valid number of bags";
+        }
+        if (!b.packQty || parseFloat(b.packQty) <= 0) {
+          errs[`item.${i}.batch.${j}.packQty`] = "Enter a valid qty per bag";
         }
       });
     });
@@ -140,9 +139,9 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed, onUnlin
           itemName:     it.selectedItem.itemName,
           uom:          it.selectedItem.uom,
           gateInwardId,
-          packQty:      parseFloat(it.packQty),
           batches: it.batches.map(b => ({
             numberOfBags:      parseInt(b.numberOfBags),
+            packQty:           parseFloat(b.packQty),
             customerBatchCode: b.customerBatchCode || undefined,
             expiryDate:        resolveExpiryDate(hdr.receivedDate, b.expiryMode, {
               dateValue: b.expiryDateValue, months: b.remainingMonths, years: b.remainingYears,
