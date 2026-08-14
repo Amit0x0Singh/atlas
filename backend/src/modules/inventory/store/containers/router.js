@@ -1,5 +1,5 @@
 import express from 'express'
-import { authenticate, authorize } from '../../../../middleware/auth.js'
+import { authorize } from '../../../../middleware/auth.js'
 import { listContainers, getContainer, getContainerLabel } from './get/containers.controller.js'
 import { createContainer, fillContainer, issueFromContainer } from './create/containers.controller.js'
 import { validateCreateContainer, validateFillContainer, validateIssueFromContainer } from './create/containers.middleware.js'
@@ -7,14 +7,16 @@ import { updateContainerCapacity } from './update/containers.controller.js'
 import { validateUpdateCapacity } from './update/containers.middleware.js'
 
 const ContainersRouter = express.Router()
-const storeOrAbove = authorize(['store'])
+const canView   = authorize('inventory.containers.view')
+const canCreate = authorize('inventory.containers.create')
+const canUpdate = authorize('inventory.containers.update')
 
-ContainersRouter.get('/', authenticate, listContainers)
-ContainersRouter.post('/', authenticate, storeOrAbove, validateCreateContainer, createContainer)
-ContainersRouter.get('/:containerId/label', getContainerLabel)
-ContainersRouter.get('/:containerId', authenticate, getContainer)
-ContainersRouter.post('/:containerId/fill', authenticate, storeOrAbove, validateFillContainer, fillContainer)
-ContainersRouter.post('/:containerId/issue', authenticate, storeOrAbove, validateIssueFromContainer, issueFromContainer)
-ContainersRouter.patch('/:containerId/capacity', authenticate, storeOrAbove, validateUpdateCapacity, updateContainerCapacity)
+ContainersRouter.get('/', canView, listContainers)
+ContainersRouter.post('/', canCreate, validateCreateContainer, createContainer)
+ContainersRouter.get('/:containerId/label', canView, getContainerLabel)
+ContainersRouter.get('/:containerId', canView, getContainer)
+ContainersRouter.post('/:containerId/fill', canCreate, validateFillContainer, fillContainer)
+ContainersRouter.post('/:containerId/issue', canCreate, validateIssueFromContainer, issueFromContainer)
+ContainersRouter.patch('/:containerId/capacity', canUpdate, validateUpdateCapacity, updateContainerCapacity)
 
 export default ContainersRouter

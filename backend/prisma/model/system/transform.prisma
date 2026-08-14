@@ -10,24 +10,24 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 model TransformJob {
-  id             String    @id @default(cuid())
-  resource       String    @db.VarChar(100) // admin panel resource key, e.g. 'rm-master'
-  tableName      String    @map("table_name") @db.VarChar(100) // Prisma client accessor, e.g. 'rmMaster'
-  columns        String[]  @default([]) // target column names
-  transformType  String    @map("transform_type") @db.VarChar(50) // UPPERCASE | LOWERCASE | ... (see text-transforms.js)
-  params         Json? // transform-specific args, e.g. { find, replace, matchCase } or { prefix }
-  targetIds      Json      @map("target_ids") // [{ ...pk fields }] — exact row set, re-validated at apply time
-  status         String    @default("PENDING") @db.VarChar(20)
+  id            String    @id @default(cuid())
+  resource      String    @db.VarChar(100) // admin panel resource key, e.g. 'rm-master'
+  tableName     String    @map("table_name") @db.VarChar(100) // Prisma client accessor, e.g. 'rmMaster'
+  columns       String[]  @default([]) // target column names
+  transformType String    @map("transform_type") @db.VarChar(50) // UPPERCASE | LOWERCASE | ... (see text-transforms.js)
+  params        Json? // transform-specific args, e.g. { find, replace, matchCase } or { prefix }
+  targetIds     Json      @map("target_ids") // [{ ...pk fields }] — exact row set, re-validated at apply time
+  status        String    @default("PENDING") @db.VarChar(20)
   // PENDING | RUNNING | COMPLETED | FAILED
-  recordsTotal   Int       @default(0) @map("records_total")
-  recordsDone    Int       @default(0) @map("records_done")
-  fieldsUpdated  Int       @default(0) @map("fields_updated") // individual (row, column) values actually changed
-  skippedCount   Int       @default(0) @map("skipped_count") // (row, column) pairs skipped — value wasn't a string
-  errorMessage   String?   @map("error_message")
-  startedBy      String?   @map("started_by") @db.VarChar(200)
-  startedByName  String?   @map("started_by_name") @db.VarChar(200)
-  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz()
-  completedAt    DateTime? @map("completed_at") @db.Timestamptz()
+  recordsTotal  Int       @default(0) @map("records_total")
+  recordsDone   Int       @default(0) @map("records_done")
+  fieldsUpdated Int       @default(0) @map("fields_updated") // individual (row, column) values actually changed
+  skippedCount  Int       @default(0) @map("skipped_count") // (row, column) pairs skipped — value wasn't a string
+  errorMessage  String?   @map("error_message")
+  startedBy     String?   @map("started_by") @db.VarChar(200)
+  startedByName String?   @map("started_by_name") @db.VarChar(200)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  completedAt   DateTime? @map("completed_at") @db.Timestamptz()
 
   @@map("transform_jobs")
 }

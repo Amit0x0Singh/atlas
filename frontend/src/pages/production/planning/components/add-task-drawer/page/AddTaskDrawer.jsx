@@ -6,6 +6,7 @@ import { todayISO } from '../../../utils/date.js'
 import { generateTaskId } from '../../../utils/batchCode.js'
 import { planTasksApi } from '../../../../../../api/production.js'
 import { Button, IconButton } from '../../../../../../components/ui'
+import { Can } from '../../../../../../components/common/Can.jsx'
 import { X, Save } from 'lucide-react'
 import { Field, Inp, Sel, SecLabel } from '../components/FormFields.jsx'
 import AutocompleteInput from '../components/AutocompleteInput.jsx'
@@ -338,9 +339,11 @@ export default function AddTaskDrawer({ task, defaultDate, onSave, onClose }) {
         {/* Footer */}
         <div className="px-6 py-4 border-t bg-white flex justify-end gap-3 rounded-b-2xl">
           <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button variant="primary" icon={Save} onClick={handleSave} loading={saving}>
-            {saving ? 'Saving…' : isEdit ? 'Update Task' : 'Save Task'}
-          </Button>
+          <Can permission={isEdit ? 'production.tasks.update' : 'production.tasks.create'} mode="disable">
+            <Button variant="primary" icon={Save} onClick={handleSave} loading={saving}>
+              {saving ? 'Saving…' : isEdit ? 'Update Task' : 'Save Task'}
+            </Button>
+          </Can>
         </div>
       </div>
     </div>

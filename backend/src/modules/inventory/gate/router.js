@@ -1,5 +1,5 @@
 import express from 'express'
-import { authenticate, authorize, storeOrAbove } from '../../../middleware/auth.js'
+import { authorize } from '../../../middleware/auth.js'
 import { createGateInward, createGateOutward, createManualGateInward } from './create/gate.controller.js'
 import { validateGateInward, validateGateOutward, validateManualGateInward } from './create/gate.middleware.js'
 import { listGateInward, getGateInward, listGateOutward, getGateOutward } from './get/gate.controller.js'
@@ -11,31 +11,27 @@ import { validateGateIdParam as validateDeleteIdParam } from './delete/gate.midd
 
 const GateRouter = express.Router()
 
-// authorize() already calls authenticate() internally — no need for both
-const gateOrAbove    = authorize(['gate'])
-const managerOrAbove = authorize(['gate'])
 // Store flips a Gate Inward to 'approved' right after generating Print
 // Master packs from it (both the linked-entry and manual-entry flows) — so
-// this one status route needs 'store' too, unlike delete/outward which stay
-// gate-only.
-const inwardStatusRoles = authorize(['gate', 'store'])
+// gate.inward.create/.update are granted to the Store Manager role too (see
+// roles.seed.js), unlike outward, which stays gate-only.
+const inwardStatusRoles = authorize(['gate.inward.update'])
 
 // ── Gate Inward ───────────────────────────────────────────────────────────────
-GateRouter.post('/inward',                      gateOrAbove,    validateGateInward,  createGateInward)  // create inward record
-GateRouter.post('/inward/manual',               storeOrAbove,   validateManualGateInward, createManualGateInward)  // store-created backing entry for a manual Print Master submission
-GateRouter.get('/inward',                       authenticate,   validateGateListQuery, listGateInward)    // get list of records
-GateRouter.get('/inward/:id',                   authenticate,   validateGetIdParam,  getGateInward)     // get one recode by Id
-GateRouter.patch('/inward/:id/status',          inwardStatusRoles, validateUpdateIdParam, validateStatusUpdate, updateGateInwardStatus) // update inward status — gate or store (store approves after Print Master generation)
-GateRouter.patch('/inward/:id/request-delete',  gateOrAbove,    validateUpdateIdParam, requestDeleteGateInward)  // send request for delete inward records by gate person
-GateRouter.delete('/inward/:id',                managerOrAbove, validateDeleteIdParam, deleteGateInward)  // delete record by admin user
+GateRouter.post('/inward',                      authorize('gate.inward.create'), validateGateInward,  createGateInward)
+GateRouter.post('/inward/manual',               authorize('gate.inward.create'), validateManualGateInward, createManualGateInward)
+GateRouter.get('/inward',                       authorize('gate.inward.view'),   validateGateListQuery, listGateInward)
+GateRouter.get('/inward/:id',                   authorize('gate.inward.view'),   validateGetIdParam,  getGateInward)
+GateRouter.patch('/inward/:id/status',          inwardStatusRoles, validateUpdateIdParam, validateStatusUpdate, updateGateInwardStatus)
+GateRouter.patch('/inward/:id/request-delete',  authorize('gate.inward.update'), validateUpdateIdParam, requestDeleteGateInward)
+GateRouter.delete('/inward/:id',                authorize('gate.inward.delete'), validateDeleteIdParam, deleteGateInward)
 
 // ── Gate Outward ──────────────────────────────────────────────────────────────
-GateRouter.post('/outward',                      gateOrAbove,    validateGateOutward, createGateOutward) // create inward record
-GateRouter.get('/outward',                       authenticate,   validateGateListQuery, listGateOutward)   // get list of records
-GateRouter.get('/outward/:id',                   authenticate,   validateGetIdParam,  getGateOutward)    // get one recode by Id
-GateRouter.patch('/outward/:id/status',          managerOrAbove, validateUpdateIdParam, validateStatusUpdate, updateGateOutwardStatus)  // update ineward status
-GateRouter.patch('/outward/:id/request-delete',  gateOrAbove,    validateUpdateIdParam, requestDeleteGateOutward)  // send request for delete inward records by gate person
-GateRouter.delete('/outward/:id',                managerOrAbove, validateDeleteIdParam, deleteGateOutward)  // delete record by admin user
-
+GateRouter.post('/outward',                      authorize('gate.outward.create'), validateGateOutward, createGateOutward)
+GateRouter.get('/outward',                       authorize('gate.outward.view'),   validateGateListQuery, listGateOutward)
+GateRouter.get('/outward/:id',                   authorize('gate.outward.view'),   validateGetIdParam,  getGateOutward)
+GateRouter.patch('/outward/:id/status',          authorize('gate.outward.update'), validateUpdateIdParam, validateStatusUpdate, updateGateOutwardStatus)
+GateRouter.patch('/outward/:id/request-delete',  authorize('gate.outward.update'), validateUpdateIdParam, requestDeleteGateOutward)
+GateRouter.delete('/outward/:id',                authorize('gate.outward.delete'), validateDeleteIdParam, deleteGateOutward)
 
 export default GateRouter

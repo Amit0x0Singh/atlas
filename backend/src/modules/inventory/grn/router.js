@@ -1,11 +1,12 @@
 import express from 'express'
-import { authenticate } from '../../../middleware/auth.js'
+import { authorize } from '../../../middleware/auth.js'
 import { listGrn, getGrnDetail } from './get/grn.controller.js'
 import { validateGrnDetailQuery } from './get/grn.middleware.js'
 
 const GrnRouter = express.Router()
+const canView = authorize('inventory.grn.view')
 
-GrnRouter.get('/', authenticate, listGrn)
-GrnRouter.get('/detail', authenticate, validateGrnDetailQuery, getGrnDetail)
+GrnRouter.get('/', canView, listGrn)
+GrnRouter.get('/detail', canView, validateGrnDetailQuery, getGrnDetail)
 
 export default GrnRouter

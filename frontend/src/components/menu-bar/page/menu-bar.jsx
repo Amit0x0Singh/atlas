@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useLocation } from 'react-router-dom'
 import { PanelLeftOpen } from 'lucide-react'
 import { APP_NAV } from '../data/navData.js'
-import { operationForPath } from '../../../routes/operationMap.js'
+import { permissionForPath } from '../../../routes/operationMap.js'
 import { useApp } from '../../../context/context.jsx'
 import SidebarHeader  from '../components/sidebar-header/SidebarHeader.jsx'
 import NavGroup       from '../components/nav-group/NavGroup.jsx'
@@ -20,22 +20,22 @@ const Sidebar = () => {
   )
   const [openGroups, setOpenGroups]   = useState(() => new Set(INITIALLY_OPEN))
   const location = useLocation()
-  const { user } = useApp()
+  const { user, hasPermission } = useApp()
 
-  // Only show nav groups/items the current account's operation can reach —
-  // an 'admin' operation account (super-admin) sees everything.
+  // Only show nav groups/items the current account actually has permission
+  // for — a Super Admin (holding every permission) sees everything, without
+  // any special-cased bypass here.
   const visibleNav = useMemo(() => {
-    if (user?.operation === 'admin') return APP_NAV
     return APP_NAV
       .map(({ group, items }) => ({
         group,
         items: items.filter(i => {
-          const op = operationForPath(i.to)
-          return !op || op === user?.operation
+          const perm = i.permission || permissionForPath(i.to)
+          return !perm || (user && hasPermission(perm))
         }),
       }))
       .filter(({ items }) => items.length > 0)
-  }, [user])
+  }, [user, hasPermission])
 
   useEffect(() => {
     visibleNav.forEach(({ group, items }) => {

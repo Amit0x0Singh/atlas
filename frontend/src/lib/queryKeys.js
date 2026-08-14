@@ -152,4 +152,11 @@ export const queryKeys = {
   auth: {
     me: () => ['auth', 'me'],
   },
+
+  // ── RBAC (role/user assignment) ────────────────────────────────────────
+  rbac: {
+    roles:       () => ['rbac', 'roles'],
+    permissions: () => ['rbac', 'permissions'],
+    users:       () => ['rbac', 'users'],
+  },
 }

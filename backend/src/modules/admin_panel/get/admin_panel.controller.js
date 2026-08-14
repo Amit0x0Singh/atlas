@@ -119,6 +119,21 @@ export const MODELS = {
   'notification-delivery-log': { model: 'notificationDeliveryLog', group: 'notifications', title: 'Notification Delivery Log', idField: 'id', idType: 'bigint', orderBy: { sentAt: 'desc' } },
 };
 
+// Fields stripped from every response for these resources — this endpoint
+// returns raw Prisma rows with no per-model `select`, and 'users' now holds
+// real bcrypt hashes since login moved to the database.
+const REDACT = {
+  users: ['passwordHash', 'pinHash'],
+};
+
+export function redact(resource, record) {
+  const fields = REDACT[resource];
+  if (!fields || !record) return record;
+  const copy = { ...record };
+  for (const f of fields) delete copy[f];
+  return copy;
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 export function getMeta(resource) {
@@ -161,7 +176,7 @@ export const listRecords = async (req, res) => {
       prisma[meta.model].findMany(opts),
     ]);
 
-    return res.json({ success: true, data: records, total, page, limit });
+    return res.json({ success: true, data: records.map((r) => redact(req.params.resource, r)), total, page, limit });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
   }
@@ -174,7 +189,7 @@ export const getRecord = async (req, res) => {
     const where  = buildWhere(meta, req.params);
     const record = await prisma[meta.model].findUnique({ where });
     if (!record) return res.status(404).json({ success: false, error: 'Record not found', code: 'NOT_FOUND' });
-    return res.json({ success: true, data: record });
+    return res.json({ success: true, data: redact(req.params.resource, record) });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
   }

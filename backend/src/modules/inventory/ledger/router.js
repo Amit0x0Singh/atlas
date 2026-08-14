@@ -1,11 +1,12 @@
 import express from 'express'
-import { authenticate } from '../../../middleware/auth.js'
+import { authorize } from '../../../middleware/auth.js'
 import { listLedger, getLedgerByItem, getLedgerEntry } from './get/ledger.controller.js'
 
 const LedgerRouter = express.Router()
+const canView = authorize('inventory.ledger.view')
 
-LedgerRouter.get('/', authenticate, listLedger)
-LedgerRouter.get('/item/:itemCode', authenticate, getLedgerByItem)
-LedgerRouter.get('/:id', authenticate, getLedgerEntry)
+LedgerRouter.get('/', canView, listLedger)
+LedgerRouter.get('/item/:itemCode', canView, getLedgerByItem)
+LedgerRouter.get('/:id', canView, getLedgerEntry)
 
 export default LedgerRouter

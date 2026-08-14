@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { authorize } from "../../../middleware/auth.js";
 import {
   getCustomerProfiles,
   getCpProfiles,
@@ -11,11 +12,11 @@ import {
 
 const router = Router();
 
-router.get("/", getCustomerProfiles);
-router.get("/cp-profiles", getCpProfiles);
+router.get("/", authorize("sales.customer-profile.view"), getCustomerProfiles);
+router.get("/cp-profiles", authorize("sales.customer-profile.view"), getCpProfiles);
 
-router.post("/upsert", upsertCustomerProfile);
-router.post("/upsert-many", upsertManyCpProfiles);
-router.post("/seed", seedCustomerProfiles);
+router.post("/upsert", authorize("sales.customer-profile.update"), upsertCustomerProfile);
+router.post("/upsert-many", authorize("sales.customer-profile.create"), upsertManyCpProfiles);
+router.post("/seed", authorize("sales.customer-profile.create"), seedCustomerProfiles);
 
 export default router;

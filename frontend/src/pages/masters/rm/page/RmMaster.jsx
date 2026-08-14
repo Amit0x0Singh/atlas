@@ -5,6 +5,7 @@ import { useRmMaster, useCreateRm, useUpdateRm, useDeleteRm } from '../../../../
 import { usePackingMaterials } from '../../../../hooks/masters/usePackingMaterials.js'
 import './RmMaster.css'
 import { Button, BackButton, PageHeader } from '../../../../components/ui'
+import { Can } from '../../../../components/common/Can.jsx'
 import RmTable from '../components/rm-table/page/RmTable.jsx'
 import RmForm  from '../components/rm-form/RmForm.jsx'
 import RmDetailModal from '../components/rm-detail-modal/RmDetailModal.jsx'
@@ -121,7 +122,9 @@ export default function RmMaster() {
         <>Manage item details, inventory attributes and QR tracking configuration.</>
            }
         actions={<>
-          <Button variant="primary" icon={Plus} onClick={openAdd}>Add New Item</Button>
+          <Can permission="masters.rm.create">
+            <Button variant="primary" icon={Plus} onClick={openAdd}>Add New Item</Button>
+          </Can>
           <BackButton />
         </>}
       />

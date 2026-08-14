@@ -6,7 +6,7 @@ import {
   ClipboardList, Snowflake, MapPin, ListChecks,
   ShoppingBag,
   Factory, CalendarDays, Beaker, Activity, Cog, TestTube2,
-  ScanLine, FileBarChart, BarChart3, Upload,
+  ScanLine, FileBarChart, BarChart3, Upload, UserCog,
 } from 'lucide-react'
 
 export const APP_NAV = [
@@ -28,6 +28,7 @@ export const APP_NAV = [
       // { to: '/employee-master',  label: 'Employee Data',   Icon: Users },
       { to: '/recipe',           label: 'Recipe',    Icon: GitBranch },
       { to: '/microbes-master',  label: 'Microbial', Icon: Microscope },
+      { to: '/user-roles',       label: 'User Roles', Icon: UserCog },
     ],
   },
   {

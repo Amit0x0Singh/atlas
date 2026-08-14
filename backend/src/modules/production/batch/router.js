@@ -1,25 +1,28 @@
 import express from "express";
-import { authenticate } from "../../../middleware/auth.js";
+import { authorize } from "../../../middleware/auth.js";
 import { listBatches, getBatch } from "./get/batch.controller.js";
 import { createBatch, addFormulationCycle } from "./create/batch.controller.js";
 import { patchBatch, saveBiomass, saveTechnical, updateFormulationCycle, saveUnloading, saveSieving, savePacking, saveQc, saveInventory } from "./update/batch.controller.js";
 import { deleteFormulationCycle } from "./delete/batch.controller.js";
 
 const BatchRouter = express.Router();
+const canView   = authorize("production.batch.view");
+const canCreate = authorize("production.batch.create");
+const canUpdate = authorize("production.batch.update");
 
-BatchRouter.get("/production", authenticate, listBatches);
-BatchRouter.post("/production", authenticate, createBatch);
-BatchRouter.get("/production/:id", authenticate, getBatch);
-BatchRouter.patch("/production/:id", authenticate, patchBatch);
-BatchRouter.put("/production/:id/biomass", authenticate, saveBiomass);
-BatchRouter.put("/production/:id/technical", authenticate, saveTechnical);
-BatchRouter.post("/production/:id/formulation", authenticate, addFormulationCycle);
-BatchRouter.put("/production/:id/formulation/:cycleId", authenticate, updateFormulationCycle);
-BatchRouter.delete("/production/:id/formulation/:cycleId", authenticate, deleteFormulationCycle);
-BatchRouter.put("/production/:id/unloading", authenticate, saveUnloading);
-BatchRouter.put("/production/:id/sieving", authenticate, saveSieving);
-BatchRouter.put("/production/:id/packing", authenticate, savePacking);
-BatchRouter.put("/production/:id/qc", authenticate, saveQc);
-BatchRouter.put("/production/:id/inventory", authenticate, saveInventory);
+BatchRouter.get("/production", canView, listBatches);
+BatchRouter.post("/production", canCreate, createBatch);
+BatchRouter.get("/production/:id", canView, getBatch);
+BatchRouter.patch("/production/:id", canUpdate, patchBatch);
+BatchRouter.put("/production/:id/biomass", canUpdate, saveBiomass);
+BatchRouter.put("/production/:id/technical", canUpdate, saveTechnical);
+BatchRouter.post("/production/:id/formulation", canCreate, addFormulationCycle);
+BatchRouter.put("/production/:id/formulation/:cycleId", canUpdate, updateFormulationCycle);
+BatchRouter.delete("/production/:id/formulation/:cycleId", authorize("production.batch.delete"), deleteFormulationCycle);
+BatchRouter.put("/production/:id/unloading", canUpdate, saveUnloading);
+BatchRouter.put("/production/:id/sieving", canUpdate, saveSieving);
+BatchRouter.put("/production/:id/packing", canUpdate, savePacking);
+BatchRouter.put("/production/:id/qc", canUpdate, saveQc);
+BatchRouter.put("/production/:id/inventory", canUpdate, saveInventory);
 
 export default BatchRouter;

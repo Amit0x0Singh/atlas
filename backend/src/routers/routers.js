@@ -24,18 +24,21 @@ import DataManagementRouter from "../modules/data-management/router.js";
 // Admin Panel — Bulk Text Transformation Router
 import BulkTransformRouter from "../modules/admin_panel/bulk-transform/router.js";
 
+// RBAC management (roles/permissions/users) — thin service surface, not the
+// Admin Panel UI. See modules/admin/rbac/router.js.
+import RbacRouter from "../modules/admin/rbac/router.js";
+
 // Import controller
 import {
   previewImport,
   executeImport,
 } from "../modules/inventory/import/create/import.controller.js";
-import { authenticate, authorize } from "../middleware/auth.js";
+import { authorize } from "../middleware/auth.js";
 
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 50 * 1024 * 1024 },
 });
-const adminOnly = authorize(["admin"]);
 
 const router = express.Router();
 
@@ -90,40 +93,44 @@ router.use("/", MicrobialRouter);
 // ── Import (Excel file upload → DB) ──────────────────────────────────────────
 router.post(
   "/import/preview",
-  authenticate,
-  adminOnly,
+  authorize("admin.import.execute"),
   upload.single("file"),
   previewImport,
 );
 
 router.post(
   "/import/execute",
-  authenticate,
-  adminOnly,
+  authorize("admin.import.execute"),
   upload.single("file"),
   executeImport,
 );
 
+// ---- RBAC management (roles/permissions/users) ────────────────────────────────
+// Must precede /admin below — AdminPanelRouter's own /:resource catch-all
+// would otherwise 404 "rbac" before this router is ever reached. Each route
+// inside RbacRouter carries its own specific admin.users.*/admin.roles.*
+// permission check, not one blanket gate here.
+router.use("/admin/rbac", RbacRouter);
 
 // ---- data management (delete) routes ─────────────────────────────────────────
 // Must be registered before AdminPanelRouter for the same reason as
 // /admin/backup below — its own /:resource catch-all would 404 this first.
-router.use("/admin/data-management", adminOnly, DataManagementRouter);
+router.use("/admin/data-management", authorize("admin.data-management.manage"), DataManagementRouter);
 
 // ---- backup & restore routes ─────────────────────────────────────────────────
 // Must be registered before AdminPanelRouter — its own /:resource catch-all
 // would otherwise 404 "backup" before this router is ever reached.
-router.use("/admin/backup", adminOnly, BackupRouter);
+router.use("/admin/backup", authorize("admin.backup.manage"), BackupRouter);
 
 // ---- bulk text transformation routes ─────────────────────────────────────────
 // Same reason as data-management/backup above — must precede AdminPanelRouter.
-router.use("/admin/bulk-transform", adminOnly, BulkTransformRouter);
+router.use("/admin/bulk-transform", authorize("admin.bulk-transform.manage"), BulkTransformRouter);
 
-// ---- admin planel routes (not prefixed with /api) ───────────────────────────────────────────
-// Full raw CRUD (incl. delete-all-rows per resource) across every model —
-// gated to super-admin accounts only, same boundary already used for the
-// Excel bulk-import endpoints above.
-router.use("/admin", adminOnly, AdminPanelRouter);
+// ---- admin panel routes (not prefixed with /api) ──────────────────────────────
+// Full raw CRUD (incl. delete-all-rows per resource) across every model.
+// Reads need admin.panel.access; writes (POST/PUT/PATCH/DELETE) additionally
+// need admin.panel.manage — see admin_panel/router.js for the per-method split.
+router.use("/admin", AdminPanelRouter);
 
 
 

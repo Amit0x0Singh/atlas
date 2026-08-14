@@ -1,5 +1,5 @@
 import express from "express";
-import { authenticate, authorize } from "../../../middleware/auth.js";
+import { authorize } from "../../../middleware/auth.js";
 import { listErpPlans, getErpPlan, listTimeMotion, getPlannerQueue } from "./get/planning.controller.js";
 import { analyseOrder, createPlan, logTimeMotion, recordQc } from "./create/planning.controller.js";
 import { validateAnalyseOrder, validateCreatePlan, validateLogTimeMotion, validateRecordQc, validateJobIdParam } from "./create/planning.middleware.js";
@@ -7,22 +7,19 @@ import { submitPlan, publishPlan, startJob, delayJob } from "./update/planning.c
 import { validateDelayJob } from "./update/planning.middleware.js";
 
 const ErpPlanningRouter = express.Router();
-const plannerOrAbove = authorize(["production"]);
-const managerOrAbove = authorize(["production"]);
-const supervisorOrAbove = authorize(["production"]);
 
-ErpPlanningRouter.post("/planning/analyse", authenticate, plannerOrAbove, validateAnalyseOrder, analyseOrder);
-ErpPlanningRouter.get("/planning/time-motion", authenticate, plannerOrAbove, listTimeMotion);
-ErpPlanningRouter.post("/planning/time-motion", authenticate, supervisorOrAbove, validateLogTimeMotion, logTimeMotion);
-ErpPlanningRouter.get("/planning/plans", authenticate, plannerOrAbove, listErpPlans);
-ErpPlanningRouter.post("/planning/plans", authenticate, plannerOrAbove, validateCreatePlan, createPlan);
-ErpPlanningRouter.get("/planning/plans/:id", authenticate, plannerOrAbove, validateJobIdParam, getErpPlan);
-ErpPlanningRouter.patch("/planning/plans/:id/submit", authenticate, plannerOrAbove, validateJobIdParam, submitPlan);
-ErpPlanningRouter.patch("/planning/plans/:id/publish", authenticate, managerOrAbove, validateJobIdParam, publishPlan);
-ErpPlanningRouter.patch("/planning/jobs/:id/start", authenticate, supervisorOrAbove, validateJobIdParam, startJob);
-ErpPlanningRouter.patch("/planning/jobs/:id/delay", authenticate, supervisorOrAbove, validateJobIdParam, validateDelayJob, delayJob);
-ErpPlanningRouter.post("/planning/jobs/:id/qc", authenticate, supervisorOrAbove, validateJobIdParam, validateRecordQc, recordQc);
+ErpPlanningRouter.post("/planning/analyse", authorize("planning.engine.run"), validateAnalyseOrder, analyseOrder);
+ErpPlanningRouter.get("/planning/time-motion", authorize("planning.time-motion.view"), listTimeMotion);
+ErpPlanningRouter.post("/planning/time-motion", authorize("planning.time-motion.create"), validateLogTimeMotion, logTimeMotion);
+ErpPlanningRouter.get("/planning/plans", authorize("planning.plan.view"), listErpPlans);
+ErpPlanningRouter.post("/planning/plans", authorize("planning.plan.create"), validateCreatePlan, createPlan);
+ErpPlanningRouter.get("/planning/plans/:id", authorize("planning.plan.view"), validateJobIdParam, getErpPlan);
+ErpPlanningRouter.patch("/planning/plans/:id/submit", authorize("planning.plan.submit"), validateJobIdParam, submitPlan);
+ErpPlanningRouter.patch("/planning/plans/:id/publish", authorize("planning.plan.publish"), validateJobIdParam, publishPlan);
+ErpPlanningRouter.patch("/planning/jobs/:id/start", authorize("planning.job.update"), validateJobIdParam, startJob);
+ErpPlanningRouter.patch("/planning/jobs/:id/delay", authorize("planning.job.update"), validateJobIdParam, validateDelayJob, delayJob);
+ErpPlanningRouter.post("/planning/jobs/:id/qc", authorize("planning.job.qc"), validateJobIdParam, validateRecordQc, recordQc);
 
-ErpPlanningRouter.get("/sales/planner-queue", authenticate, plannerOrAbove, getPlannerQueue);
+ErpPlanningRouter.get("/sales/planner-queue", authorize("planning.queue.view"), getPlannerQueue);
 
 export default ErpPlanningRouter;

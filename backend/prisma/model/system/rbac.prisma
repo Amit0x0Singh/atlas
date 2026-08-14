@@ -1,0 +1,68 @@
+// ─── RBAC — ROLES & PERMISSIONS ────────────────────────────────────────────────
+//
+// Models in this file:
+//   Role               — Named permission bundle assigned to users (e.g. "Store Manager")
+//   Permission         — Catalog of module.resource.action strings (single source of
+//                        truth is backend/src/constants/permissions.catalog.js — this
+//                        table is seeded from that file, never hand-edited)
+//   RolePermissionMap  — Role <-> Permission join. Deliberately NOT named
+//                        "RolePermission" — that name is already taken by the
+//                        legacy page-path permission table in hr.prisma, which
+//                        belongs to a separate (currently dead) HR feature and
+//                        is left untouched to avoid colliding with it.
+//   UserRole           — User <-> Role join. Many-to-many from day one so a
+//                        person can hold more than one role without a schema
+//                        change, even though every seeded account gets exactly one.
+//
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Role {
+  roleId      String   @id @default(cuid()) @map("role_id")
+  name        String   @unique @db.VarChar(100)
+  description String?
+  // Seeded roles — block delete/rename of these in the future Admin Panel.
+  isSystem    Boolean  @default(false) @map("is_system")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  permissions RolePermissionMap[]
+  users       UserRole[]
+
+  @@map("roles")
+}
+
+model Permission {
+  permissionId String  @id @default(cuid()) @map("permission_id")
+  key          String  @unique @db.VarChar(150) // "inventory.inward.create"
+  module       String  @db.VarChar(50)
+  resource     String  @db.VarChar(50)
+  action       String  @db.VarChar(30)
+  description  String?
+
+  roles RolePermissionMap[]
+
+  @@index([module, resource])
+  @@map("permissions")
+}
+
+model RolePermissionMap {
+  roleId       String
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [roleId], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [permissionId], onDelete: Cascade)
+  createdAt    DateTime   @default(now()) @map("created_at")
+
+  @@id([roleId, permissionId])
+  @@map("role_permission_map")
+}
+
+model UserRole {
+  userId     String   @db.Uuid
+  roleId     String
+  user       User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  role       Role     @relation(fields: [roleId], references: [roleId], onDelete: Cascade)
+  assignedAt DateTime @default(now()) @map("assigned_at")
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+}

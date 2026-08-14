@@ -4,13 +4,29 @@ import { authenticate } from "../../middleware/auth.js";
 import { validateLogin } from "./login/login.middleware.js";
 import { login } from "./login/login.controller.js";
 import { verifyPassword } from "./verify-password/verify-password.controller.js";
+import { resolveEffectivePermissions } from "../../services/permission-resolver.js";
 
 const UserRouter = express.Router();
 
 UserRouter.post("/login", validateLogin, login);
 
-UserRouter.get("/me", authenticate, (req, res) => {
-  res.json({ success: true, user: req.user });
+// The client's explicit "check for a permission change" poll (called on app
+// load + tab-focus) — always resolves fresh (bypasses the TTL cache) so an
+// admin's just-made change is visible immediately, not after a stale window.
+UserRouter.get("/me", authenticate, async (req, res) => {
+  const { roles, permissions } = await resolveEffectivePermissions(req.user.userId, { fresh: true });
+  res.json({
+    success: true,
+    user: {
+      userId: req.user.userId,
+      email: req.user.email,
+      username: req.user.username,
+      fullName: req.user.full_name,
+      plants: req.user.plants,
+      roles,
+      permissions,
+    },
+  });
 });
 
 UserRouter.post("/verify-password", authenticate, verifyPassword);

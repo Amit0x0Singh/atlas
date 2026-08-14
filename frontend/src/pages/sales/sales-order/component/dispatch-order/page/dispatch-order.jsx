@@ -7,6 +7,7 @@ import {
   STATUS_LABELS,
 } from "../../../shared/constants.js";
 import { Button, IconButton } from "../../../../../../components/ui";
+import { Can } from "../../../../../../components/common/Can.jsx";
 import { X, Trash2, Truck } from "lucide-react";
 import DispatchLineCard from "../components/DispatchLineCard.jsx";
 import DispatchEntryFields from "../components/DispatchEntryFields.jsx";
@@ -198,28 +199,32 @@ export default function DispatchOrder({ order, onSave, onDelete, onClose }) {
 
         {/* ── Footer ──────────────────────────────────────────────────── */}
         <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100 bg-gray-50 rounded-b-2xl">
-          <Button
-            variant="danger"
-            icon={Trash2}
-            onClick={() => onDelete(order)}
-          >
-            Delete Order
-          </Button>
+          <Can permission="sales.order.delete" mode="disable">
+            <Button
+              variant="danger"
+              icon={Trash2}
+              onClick={() => onDelete(order)}
+            >
+              Delete Order
+            </Button>
+          </Can>
           <div className="flex gap-3">
             {!isAlreadyDispatched && readyLines.length > 0 && (
-              <Button
-                variant="success"
-                icon={Truck}
-                loading={saving}
-                disabled={saving}
-                onClick={markDispatched}
-              >
-                {saving
-                  ? "Processing…"
-                  : hasMixed
-                  ? `Dispatch ${readyLines.length} Ready Item${readyLines.length !== 1 ? "s" : ""}`
-                  : "Mark as Dispatched"}
-              </Button>
+              <Can permission="sales.order.dispatch" mode="disable">
+                <Button
+                  variant="success"
+                  icon={Truck}
+                  loading={saving}
+                  disabled={saving}
+                  onClick={markDispatched}
+                >
+                  {saving
+                    ? "Processing…"
+                    : hasMixed
+                    ? `Dispatch ${readyLines.length} Ready Item${readyLines.length !== 1 ? "s" : ""}`
+                    : "Mark as Dispatched"}
+                </Button>
+              </Can>
             )}
             <Button variant="secondary" onClick={onClose}>Close</Button>
           </div>

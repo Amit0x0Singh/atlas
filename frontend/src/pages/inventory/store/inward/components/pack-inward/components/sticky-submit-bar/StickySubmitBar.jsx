@@ -1,5 +1,6 @@
 import { createPortal } from 'react-dom'
 import { Button } from '../../../../../../../../components/ui'
+import { Can } from '../../../../../../../../components/common/Can.jsx'
 import { CheckCircle2, ScanLine } from 'lucide-react'
 
 /**
@@ -18,18 +19,20 @@ export default function StickySubmitBar({ scannedCount, pendingCount, allScanned
 
   return createPortal(
     <div className="fixed bottom-0 left-0 right-0 z-[9998] bg-white border-t border-gray-200 px-3 pt-2.5 pb-[calc(0.625rem_+_env(safe-area-inset-bottom))] shadow-[0_-4px_16px_rgba(0,0,0,0.06)]">
-      <Button
-        onClick={onSubmit}
-        disabled={disabled}
-        loading={loading}
-        icon={allScanned ? CheckCircle2 : ScanLine}
-        variant={allScanned ? 'success' : canSubmit ? 'primary' : 'secondary'}
-        fullWidth
-        size="lg"
-        className="!py-3.5 !text-[15px]"
-      >
-        {label}
-      </Button>
+      <Can permission="inventory.inward.create" mode="disable">
+        <Button
+          onClick={onSubmit}
+          disabled={disabled}
+          loading={loading}
+          icon={allScanned ? CheckCircle2 : ScanLine}
+          variant={allScanned ? 'success' : canSubmit ? 'primary' : 'secondary'}
+          fullWidth
+          size="lg"
+          className="!py-3.5 !text-[15px]"
+        >
+          {label}
+        </Button>
+      </Can>
     </div>,
     document.body
   )

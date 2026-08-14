@@ -23,7 +23,7 @@ const createGateInward = async (req, res) => {
         vehicleNo:    vehicle_no?.trim()  || null,
         companyName:  company.trim(),
         status:       'pending',
-        createdBy:    req.user?.user_id   || null,
+        createdBy:    req.user?.username  || null,
         // Doubles as "received date" for anything linked to this gate entry
         // (e.g. PrintMaster) — must be set at creation, not left null.
         entryTime:    new Date(),
@@ -63,7 +63,7 @@ const createManualGateInward = async (req, res) => {
         vehicleNo:    null,
         companyName:  MANUAL_ENTRY_COMPANY,
         status:       'pending',
-        createdBy:    req.user?.user_id || null,
+        createdBy:    req.user?.username || null,
         entryTime:    receivedDate,
       },
     })
@@ -90,7 +90,7 @@ const createGateOutward = async (req, res) => {
         vehicleNo:    vehicle_no?.trim()    || null,
         companyName:  company.trim(),
         status:       'pending',
-        createdBy:    req.user?.user_id     || null,
+        createdBy:    req.user?.username     || null,
       },
     })
 

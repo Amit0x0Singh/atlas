@@ -10,6 +10,7 @@ import PackEntries from "../../pages/inventory/print-master/page/PackEntries.jsx
 import EmployeeMaster from "../../pages/hr/employee/page/EmployeeMaster.jsx";
 import PackingMaster from "../../pages/masters/packing/page/PackingMaster.jsx";
 import SupplierMaster from "../../pages/masters/supplier/page/SupplierMaster.jsx";
+import UserRoles from "../../pages/masters/user-roles/page/UserRoles.jsx";
 
 export const masterRoutes = [
   <Route key="rm-master"        path="/rm-master"        element={<RmMaster />} />,
@@ -23,4 +24,5 @@ export const masterRoutes = [
   <Route key="recipe"           path="/recipe"           element={<RecipeDB />} />,
   <Route key="location-master"  path="/location-master"  element={<LocationMaster />} />,
   <Route key="packing-master"   path="/packing-master"   element={<PackingMaster />} />,
+  <Route key="user-roles"       path="/user-roles"       element={<UserRoles />} />,
 ];

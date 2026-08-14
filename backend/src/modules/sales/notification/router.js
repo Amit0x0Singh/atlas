@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { authenticate, authorize } from "../../../middleware/auth.js";
+import { authorize } from "../../../middleware/auth.js";
 import {
   getMyNotifications,
   getUnreadCount,
@@ -13,13 +13,16 @@ import {
 } from "./update/notification.controller.js";
 
 const router = Router();
+// Personal inbox actions — any authenticated account can read/act on its
+// own notifications; no module permission beyond being logged in.
+const authenticatedOnly = authorize([]);
 
-router.get("/", authenticate, getMyNotifications);
-router.get("/unread-count", authenticate, getUnreadCount);
-router.get("/admin/all", authorize(["admin"]), getAllNotificationsAdmin);
-router.get("/delivery-log", authorize(["admin", "store"]), getDeliveryLog);
-router.patch("/read-all", authenticate, markAllNotificationsRead);
-router.patch("/:id/read", authenticate, markNotificationRead);
-router.patch("/:id/action", authenticate, actionNotification);
+router.get("/", authenticatedOnly, getMyNotifications);
+router.get("/unread-count", authenticatedOnly, getUnreadCount);
+router.get("/admin/all", authorize("sales.notification.view"), getAllNotificationsAdmin);
+router.get("/delivery-log", authorize("sales.notification.view"), getDeliveryLog);
+router.patch("/read-all", authenticatedOnly, markAllNotificationsRead);
+router.patch("/:id/read", authenticatedOnly, markNotificationRead);
+router.patch("/:id/action", authenticatedOnly, actionNotification);
 
 export default router;

@@ -2,8 +2,9 @@ import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 
 import AppSidebar from "../components/menu-bar/page/menu-bar.jsx";
 import Login from "../pages/auth/page/Login.jsx";
+import AccessDenied from "../components/common/AccessDenied.jsx";
 import { useApp } from "../context/context.jsx";
-import { operationForPath, DEFAULT_PATH_FOR_OPERATION } from "./operationMap.js";
+import { permissionForPath, defaultPathForUser } from "./operationMap.js";
 
 import { dashboardRoutes } from "./modules/dashboardRoutes.jsx";
 import { masterRoutes }    from "./modules/masterRoutes.jsx";
@@ -14,29 +15,19 @@ import { qualityRoutes }   from "./modules/qualityRoutes.jsx";
 import { reportsRoutes }   from "./modules/reportsRoutes.jsx";
 import { erpRoutes }       from "./modules/erpRoutes.jsx";
 
-function AccessDenied({ operation }) {
-  return (
-    <div style={{ padding: "48px", textAlign: "center", color: "#64748b" }}>
-      <div style={{ fontSize: "40px", marginBottom: "12px" }}>🔒</div>
-      <div style={{ fontSize: "16px", fontWeight: 700, color: "#1e293b", marginBottom: "6px" }}>Access denied</div>
-      <div style={{ fontSize: "13px" }}>Your account isn't set up for the <b>{operation}</b> operation.</div>
-    </div>
-  );
-}
-
 function AppLayout() {
-  const { user } = useApp();
+  const { user, hasPermission } = useApp();
   const location = useLocation();
-  const defaultPath = DEFAULT_PATH_FOR_OPERATION[user?.operation] || "/stock";
+  const defaultPath = defaultPathForUser(user);
 
-  // The shared dashboard ("/") is admin-only now — send everyone else
-  // straight to their own operation's landing page instead of erroring.
+  // The shared dashboard ("/") sends everyone to their own landing page
+  // instead of a one-size-fits-all page.
   if (location.pathname === "/") {
     return <Navigate to={defaultPath} replace />;
   }
 
-  const requiredOp = operationForPath(location.pathname);
-  const allowed = !requiredOp || !user || user.operation === "admin" || user.operation === requiredOp;
+  const requiredPerm = permissionForPath(location.pathname);
+  const allowed = !requiredPerm || !user || hasPermission(requiredPerm);
 
   return (
     <div
@@ -62,7 +53,7 @@ function AppLayout() {
             <Route path="*" element={<Navigate to={defaultPath} replace />} />
           </Routes>
         ) : (
-          <AccessDenied operation={requiredOp} />
+          <AccessDenied variant="page" requiredPermission={requiredPerm} homePath={defaultPath} />
         )}
       </main>
     </div>

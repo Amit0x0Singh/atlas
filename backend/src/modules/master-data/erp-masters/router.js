@@ -1,5 +1,5 @@
 import express from 'express'
-import { authenticate, authorize } from '../../../middleware/auth.js'
+import { authorize } from '../../../middleware/auth.js'
 import {
   listItems, getItem, listSuppliers, listPlants, listErpEquipment,
   listErpProducts, listBom, getBom, listStrains, listCustomers,
@@ -18,52 +18,49 @@ import { updateItem, updateSupplier, patchErpEquipment } from './update/erp-mast
 import { validateUpdateItem, validateUpdateSupplier, validateUpdateErpEquipment } from './update/erp-masters.middleware.js'
 
 const ErpMastersRouter = express.Router()
-const adminOnly   = authorize(['admin'])
-const storeManager = authorize(['admin', 'store'])
-const plannerPlus  = authorize(['admin', 'production'])
 
 // ── ERP Items ─────────────────────────────────────────────────────────────────
-ErpMastersRouter.get('/masters/items', authenticate, listItems)
-ErpMastersRouter.get('/masters/items/:code', authenticate, getItem)
-ErpMastersRouter.post('/masters/items', authenticate, storeManager, validateCreateItem, createItem)
-ErpMastersRouter.put('/masters/items/:code', authenticate, storeManager, validateUpdateItem, updateItem)
+ErpMastersRouter.get('/masters/items', authorize('masters.erp-item.view'), listItems)
+ErpMastersRouter.get('/masters/items/:code', authorize('masters.erp-item.view'), getItem)
+ErpMastersRouter.post('/masters/items', authorize('masters.erp-item.create'), validateCreateItem, createItem)
+ErpMastersRouter.put('/masters/items/:code', authorize('masters.erp-item.update'), validateUpdateItem, updateItem)
 
 // ── ERP Suppliers ─────────────────────────────────────────────────────────────
-ErpMastersRouter.get('/masters/suppliers', authenticate, validateSupplierListQuery, listSuppliers)
-ErpMastersRouter.post('/masters/suppliers', authenticate, storeManager, validateCreateSupplier, createSupplier)
-ErpMastersRouter.put('/masters/suppliers/:id', authenticate, storeManager, validateUpdateSupplier, updateSupplier)
+ErpMastersRouter.get('/masters/suppliers', authorize('masters.erp-supplier.view'), validateSupplierListQuery, listSuppliers)
+ErpMastersRouter.post('/masters/suppliers', authorize('masters.erp-supplier.create'), validateCreateSupplier, createSupplier)
+ErpMastersRouter.put('/masters/suppliers/:id', authorize('masters.erp-supplier.update'), validateUpdateSupplier, updateSupplier)
 
 // ── ERP Plants ────────────────────────────────────────────────────────────────
-ErpMastersRouter.get('/masters/plants', authenticate, listPlants)
-ErpMastersRouter.post('/masters/plants', authenticate, adminOnly, validateCreatePlant, createPlant)
+ErpMastersRouter.get('/masters/plants', authorize('masters.erp-plant.view'), listPlants)
+ErpMastersRouter.post('/masters/plants', authorize('masters.erp-plant.create'), validateCreatePlant, createPlant)
 
 // ── ERP Equipment ─────────────────────────────────────────────────────────────
-ErpMastersRouter.get('/masters/equipment', authenticate, listErpEquipment)
-ErpMastersRouter.post('/masters/equipment', authenticate, adminOnly, validateCreateErpEquipment, createErpEquipment)
-ErpMastersRouter.patch('/masters/equipment/:id', authenticate, adminOnly, validateUpdateErpEquipment, patchErpEquipment)
+ErpMastersRouter.get('/masters/equipment', authorize('masters.erp-equipment.view'), listErpEquipment)
+ErpMastersRouter.post('/masters/equipment', authorize('masters.erp-equipment.create'), validateCreateErpEquipment, createErpEquipment)
+ErpMastersRouter.patch('/masters/equipment/:id', authorize('masters.erp-equipment.update'), validateUpdateErpEquipment, patchErpEquipment)
 
 // ── ERP Products ──────────────────────────────────────────────────────────────
-ErpMastersRouter.get('/masters/erp-products', authenticate, listErpProducts)
-ErpMastersRouter.post('/masters/erp-products', authenticate, adminOnly, validateCreateErpProduct, createErpProduct)
+ErpMastersRouter.get('/masters/erp-products', authorize('masters.erp-product.view'), listErpProducts)
+ErpMastersRouter.post('/masters/erp-products', authorize('masters.erp-product.create'), validateCreateErpProduct, createErpProduct)
 
 // ── BOM ───────────────────────────────────────────────────────────────────────
-ErpMastersRouter.get('/masters/bom', authenticate, plannerPlus, listBom)
-ErpMastersRouter.get('/masters/bom/:id', authenticate, getBom)
-ErpMastersRouter.post('/masters/bom', authenticate, authorize(['admin', 'production']), validateCreateBom, createBom)
+ErpMastersRouter.get('/masters/bom', authorize('masters.erp-bom.view'), listBom)
+ErpMastersRouter.get('/masters/bom/:id', authorize('masters.erp-bom.view'), getBom)
+ErpMastersRouter.post('/masters/bom', authorize('masters.erp-bom.create'), validateCreateBom, createBom)
 
 // ── Microbial Strains ─────────────────────────────────────────────────────────
-ErpMastersRouter.get('/masters/strains', authenticate, listStrains)
-ErpMastersRouter.post('/masters/strains', authenticate, adminOnly, validateCreateStrain, createStrain)
+ErpMastersRouter.get('/masters/strains', authorize('masters.erp-strain.view'), listStrains)
+ErpMastersRouter.post('/masters/strains', authorize('masters.erp-strain.create'), validateCreateStrain, createStrain)
 
 // ── Customers ─────────────────────────────────────────────────────────────────
-ErpMastersRouter.get('/masters/customers', authenticate, listCustomers)
-ErpMastersRouter.post('/masters/customers', authenticate, authorize(['admin', 'store']), validateCreateCustomer, createCustomer)
+ErpMastersRouter.get('/masters/customers', authorize('masters.erp-customer.view'), listCustomers)
+ErpMastersRouter.post('/masters/customers', authorize('masters.erp-customer.create'), validateCreateCustomer, createCustomer)
 
 // ── Reason Codes ─────────────────────────────────────────────────────────────
-ErpMastersRouter.get('/masters/reason-codes', authenticate, listReasonCodes)
+ErpMastersRouter.get('/masters/reason-codes', authorize('masters.erp-reason-code.view'), listReasonCodes)
 
 // ── Containers (for decanting) ────────────────────────────────────────────────
-ErpMastersRouter.get('/masters/containers', authenticate, listErpContainers)
-ErpMastersRouter.post('/masters/containers', authenticate, storeManager, validateCreateErpContainer, createErpContainer)
+ErpMastersRouter.get('/masters/containers', authorize('masters.erp-container.view'), listErpContainers)
+ErpMastersRouter.post('/masters/containers', authorize('masters.erp-container.create'), validateCreateErpContainer, createErpContainer)
 
 export default ErpMastersRouter

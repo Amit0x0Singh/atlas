@@ -22,8 +22,8 @@ const EMPTY_FILTERS = { search: "", invoice_no: "", status: "", company: "", fro
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function GateEntry() {
-  const { hasRole } = useAuth();
-  const canGate = hasRole("gate_person", "gate_manager", "gate_staff", "store_person", "store_manager", "admin");
+  const { hasAnyPermission } = useAuth();
+  const canGate = hasAnyPermission(["gate.inward.view", "gate.outward.view"]);
 
   // Navigation: 'home' | 'inward-list' | 'outward-list'
   const [view, setView]       = useState("home");

@@ -1,5 +1,6 @@
 import { Pencil, Trash2, Eye } from 'lucide-react'
 import { IconButton } from '../../../../../../components/ui'
+import { Can } from '../../../../../../components/common/Can.jsx'
 import TruncatedText from './TruncatedText.jsx'
 
 const TRACKING_BADGE = {
@@ -87,8 +88,12 @@ export default function RmTableRow({ item, onEdit, onDelete, onViewPacking, onRo
             <IconButton icon={Eye} tooltip="View in Packing Materials" onClick={onViewPacking} />
           ) : (
             <>
-              <IconButton icon={Pencil} tooltip="Edit" onClick={() => onEdit(item)} />
-              <IconButton icon={Trash2} variant="danger" tooltip="Delete" onClick={() => onDelete(item.itemCode)} />
+              <Can permission="masters.rm.update">
+                <IconButton icon={Pencil} tooltip="Edit" onClick={() => onEdit(item)} />
+              </Can>
+              <Can permission="masters.rm.delete">
+                <IconButton icon={Trash2} variant="danger" tooltip="Delete" onClick={() => onDelete(item.itemCode)} />
+              </Can>
             </>
           )}
         </div>

@@ -29,29 +29,28 @@ import {
 // ____________------ Router -----------------------
 
 const router = Router();
-
-// Sales Orders are management's call — not something the inventory/store
-// team should see or edit, so the whole router (reads included) is admin-only.
-router.use(authorize(["admin"]));
+const canView   = authorize("sales.order.view");
+const canCreate = authorize("sales.order.create");
+const canUpdate = authorize("sales.order.update");
 
 // Static paths must come before /:id
 
-router.post("/", createSalesOrder);
-router.post("/companies", addCompany);
+router.post("/", canCreate, createSalesOrder);
+router.post("/companies", canCreate, addCompany);
 
-router.get("/", getSalesOrders);
-router.get("/summary/dashboard", getDashboardSummary);
-router.get("/sync-log", getSyncLogs);
-router.get("/companies", getCompanies);
-router.get("/:id", getSalesOrderById);
+router.get("/", canView, getSalesOrders);
+router.get("/summary/dashboard", canView, getDashboardSummary);
+router.get("/sync-log", canView, getSyncLogs);
+router.get("/companies", canView, getCompanies);
+router.get("/:id", canView, getSalesOrderById);
 
-router.put("/:id", updateSalesOrder);
+router.put("/:id", canUpdate, updateSalesOrder);
 
-router.patch("/item/:itemId", updateSalesOrderItem);
-router.patch("/cancel/:id", cancelOrder);
-router.patch("/dispatch/:id", dispatchOrder);
+router.patch("/item/:itemId", canUpdate, updateSalesOrderItem);
+router.patch("/cancel/:id", authorize("sales.order.cancel"), cancelOrder);
+router.patch("/dispatch/:id", authorize("sales.order.dispatch"), dispatchOrder);
 
-router.delete("/item/:itemId", deleteSalesOrderItem);
-router.delete("/:id", deleteSalesOrder);
+router.delete("/item/:itemId", authorize("sales.order.delete"), deleteSalesOrderItem);
+router.delete("/:id", authorize("sales.order.delete"), deleteSalesOrder);
 
 export default router;

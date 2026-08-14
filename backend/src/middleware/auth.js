@@ -1,17 +1,32 @@
 /**
- * ERP Auth Middleware — JWT verify + operation/role guard
- * Backed by the flat-file accounts in backend/access.js (temporary — see that
- * file's header comment). Uses Node.js built-in crypto (no external JWT
- * library needed).
+ * ERP Auth Middleware — JWT verify + permission-based authorization.
+ *
+ * Login is now database-backed (Prisma `User`, bcrypt-hashed passwords) —
+ * see modules/user/login/login.controller.js. This replaces the old
+ * flat-file access.js account list (retired) and the old two-axis
+ * role(admin/employee) x operation(gate/store/production/admin) check with
+ * granular `module.resource.action` permissions resolved via
+ * User -> UserRole -> Role -> RolePermissionMap -> Permission. See
+ * backend/docs/RBAC.md for the full architecture and how to add a new
+ * protected route.
  */
 import { createHmac } from "crypto";
-import { findAccount } from "../../access.js";
+import prisma from "../db.js";
+import { resolveEffectivePermissions } from "../services/permission-resolver.js";
 
 const JWT_SECRET =
   process.env.JWT_SECRET || "som-erp-super-secret-change-in-production-2026";
 const JWT_EXPIRES_SEC = 8 * 60 * 60; // 8 hours
 
+if (process.env.NODE_ENV === "production" && !process.env.JWT_SECRET) {
+  throw new Error("JWT_SECRET must be set in production — refusing to start with the insecure default.");
+}
+
 // ─── JWT helpers ────────────────────────────────────────────────────────────
+// Payload stays minimal — { sub: userId } only, no roles/permissions baked
+// in. That's deliberate: permissions are resolved fresh (or from the short
+// TTL cache) on every request, so a role/permission change takes effect on
+// the user's next request instead of requiring a token refresh.
 
 export function signJwt(payload, expiresIn = JWT_EXPIRES_SEC) {
   const header = Buffer.from(
@@ -41,100 +56,125 @@ export function verifyJwt(token) {
   return payload;
 }
 
-// Shapes a matched access.js account into the req.user object the rest of the
-// app expects (many controllers read req.user?.user_id / .role as a plain
-// string to stamp createdBy/issuedBy/etc columns — email fills that role now).
-function toReqUser(account) {
+// Shapes a User row + its resolved permissions into the req.user object the
+// rest of the app reads. `user_id` (snake_case) is kept alongside `userId`
+// for the many existing controllers that read req.user?.user_id to stamp
+// createdBy/raisedBy/etc columns.
+function toReqUser(user, { roles, permissions }) {
   return {
-    user_id: account.email,
-    email: account.email,
-    username: account.email,
-    full_name: account.fullName,
-    role: account.role,       // 'admin' (full access) | 'employee' (read-only)
-    operation: account.operation, // 'gate' | 'store' | 'production' | 'admin'
-    plant: account.plant,     // set for production accounts only
+    userId: user.userId,
+    user_id: user.userId,
+    email: user.email,
+    username: user.username,
+    full_name: user.fullName,
+    isActive: user.isActive,
+    plants: user.plants,
+    roles,
+    permissions: new Set(permissions),
   };
 }
 
 // ─── Dev bypass ─────────────────────────────────────────────────────────────
 // Set BYPASS_AUTH=true in .env to skip token checks during development.
-// Never set this in production — the guard below prevents it.
+// Never set this in production — the guard below prevents it. Resolves (and
+// lazily creates, idempotently) a real Super Admin User row so dev-mode
+// testing still exercises the real authenticate()/authorize() code path,
+// not a synthetic shortcut.
 const BYPASS_AUTH =
   process.env.BYPASS_AUTH === "true" &&
   process.env.NODE_ENV !== "production";
 
-const DEV_USER = toReqUser({
-  email: "dev@agrilife.com",
-  fullName: "Dev Super Admin",
-  role: "admin",
-  operation: "admin",
-  plant: null,
-});
+const DEV_USER_EMAIL = "dev@agrilife.local";
+let devUserPromise = null;
 
-const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+async function getOrCreateDevUser() {
+  if (!devUserPromise) {
+    devUserPromise = (async () => {
+      let user = await prisma.user.findUnique({ where: { email: DEV_USER_EMAIL } });
+      if (!user) {
+        const superAdmin = await prisma.role.findUnique({ where: { name: "Super Admin" } });
+        user = await prisma.user.create({
+          data: {
+            username: DEV_USER_EMAIL,
+            email: DEV_USER_EMAIL,
+            passwordHash: "!", // never used for real login — BYPASS_AUTH skips password checks entirely
+            fullName: "Dev Super Admin",
+            plants: [],
+            isActive: true,
+            ...(superAdmin ? { roles: { create: [{ roleId: superAdmin.roleId }] } } : {}),
+          },
+        });
+      }
+      return user;
+    })();
+  }
+  return devUserPromise;
+}
 
 // ─── Express middleware: authenticate ────────────────────────────────────────
-// Verifies the token, sets req.user, and enforces the blanket "employees are
-// read-only" rule on every route this is applied to.
+// Verifies the token, loads the User row, resolves effective permissions,
+// and sets req.user. 401 for missing/invalid/expired token, unknown user,
+// or a disabled account — this is also how a just-disabled account gets
+// force-logged-out on its very next request, with no session store needed.
 
-export function authenticate(req, res, next) {
-  if (BYPASS_AUTH) {
-    req.user = DEV_USER;
-    return next();
-  }
+export async function authenticate(req, res, next) {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader?.startsWith("Bearer ")) {
+    let user;
+    if (BYPASS_AUTH) {
+      user = await getOrCreateDevUser();
+    } else {
+      const authHeader = req.headers.authorization;
+      if (!authHeader?.startsWith("Bearer ")) {
+        return res.status(401).json({
+          success: false,
+          error: "Missing or invalid Authorization header",
+          code: "UNAUTHORIZED",
+        });
+      }
+      const token = authHeader.slice(7);
+      const payload = verifyJwt(token);
+      user = await prisma.user.findUnique({ where: { userId: payload.sub } });
+    }
+
+    if (!user || !user.isActive) {
       return res.status(401).json({
         success: false,
-        error: "Missing or invalid Authorization header",
+        error: "Account not found or disabled",
+        code: "UNAUTHORIZED",
       });
     }
-    const token = authHeader.slice(7);
-    const payload = verifyJwt(token);
-    const account = findAccount(payload.email);
-    if (!account) {
-      return res.status(401).json({ success: false, error: "Account no longer exists" });
-    }
-    req.user = toReqUser(account);
 
-    if (MUTATING_METHODS.has(req.method) && req.user.role !== "admin") {
-      return res.status(403).json({
-        success: false,
-        error: "Read-only account — this operation requires an administrator account.",
-      });
-    }
+    const effective = await resolveEffectivePermissions(user.userId);
+    req.user = toReqUser(user, effective);
     next();
   } catch (err) {
     return res
       .status(401)
-      .json({ success: false, error: err.message || "Unauthorized" });
+      .json({ success: false, error: err.message || "Unauthorized", code: "UNAUTHORIZED" });
   }
 }
 
-// ─── Express middleware factory: authorize(operations[]) ─────────────────────
-// Restricts a route to accounts belonging to one of the given operations.
-// The 'admin' operation is a super-admin and always passes. Also runs
-// authenticate() first, so the read-only-for-employees rule still applies.
-
-export function authorize(operations = []) {
+// ─── Express middleware factory: authorize(permission) ───────────────────────
+// Restricts a route to accounts holding at least one of the given
+// permission keys. Runs authenticate() first — routes call authorize(...)
+// alone, not authenticate() + authorize() as two separate steps. No
+// operation==='admin' special-case anywhere: a "Super Admin" is simply a
+// role holding every permission, so this middleware is uniform for every
+// account.
+export function authorize(permissionOrArray) {
+  const required = Array.isArray(permissionOrArray) ? permissionOrArray : [permissionOrArray];
   return function (req, res, next) {
     authenticate(req, res, () => {
-      const op = req.user?.operation;
-      if (op !== "admin" && operations.length && !operations.includes(op)) {
+      if (required.length === 0) return next(); // authenticate-only, no specific permission required
+      const has = required.some((p) => req.user.permissions.has(p));
+      if (!has) {
         return res.status(403).json({
           success: false,
-          error: `Access denied. This module requires: ${operations.join(" or ")}. Your operation: ${op}`,
+          error: `Access denied. Requires permission: ${required.join(" or ")}`,
+          code: "FORBIDDEN",
         });
       }
       next();
     });
   };
 }
-
-// Alias for admin-operation only (super-admin)
-export const adminOnly = authorize(["admin"]);
-
-export const storeOrAbove = authorize(["store"]);
-
-export const managerOrAbove = authorize(["store"]);

@@ -1,5 +1,5 @@
 import express from 'express'
-import { authenticate, authorize } from '../../../middleware/auth.js'
+import { authorize } from '../../../middleware/auth.js'
 import { listPackingMaterials } from './get/packing-master.controller.js'
 import { createPackingMaterial } from './create/packing-master.controller.js'
 import { validateCreatePackingMaterial } from './create/packing-master.middleware.js'
@@ -9,11 +9,10 @@ import { deletePackingMaterial } from './delete/packing-master.controller.js'
 import { validatePackingIdParam as validateDeleteIdParam } from './delete/packing-master.middleware.js'
 
 const PackingMasterRouter = express.Router()
-const adminOnly    = authorize(['admin'])
 
-PackingMasterRouter.get('/packing-materials', authenticate, listPackingMaterials)
-PackingMasterRouter.post('/packing-materials', authenticate, adminOnly, validateCreatePackingMaterial, createPackingMaterial)
-PackingMasterRouter.put('/packing-materials/:id', authenticate, adminOnly, validateUpdateIdParam, validateUpdatePackingMaterial, updatePackingMaterial)
-PackingMasterRouter.delete('/packing-materials/:id', authenticate, adminOnly, validateDeleteIdParam, deletePackingMaterial)
+PackingMasterRouter.get('/packing-materials', authorize('masters.packing.view'), listPackingMaterials)
+PackingMasterRouter.post('/packing-materials', authorize('masters.packing.create'), validateCreatePackingMaterial, createPackingMaterial)
+PackingMasterRouter.put('/packing-materials/:id', authorize('masters.packing.update'), validateUpdateIdParam, validateUpdatePackingMaterial, updatePackingMaterial)
+PackingMasterRouter.delete('/packing-materials/:id', authorize('masters.packing.delete'), validateDeleteIdParam, deletePackingMaterial)
 
 export default PackingMasterRouter

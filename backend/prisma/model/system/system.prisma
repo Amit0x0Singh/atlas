@@ -14,13 +14,22 @@ model User {
   fullName     String   @map("full_name") @db.VarChar(200)
   phone        String?  @db.VarChar(20)
   pinHash      String?  @map("pin_hash") @db.VarChar(255)
-  role         String   @db.VarChar(50)
-  // gate_staff | store_person | store_manager | planner | planning_manager
-  // plant_supervisor | qc_person | sales_team | admin
+  // DEPRECATED — superseded by UserRole/Role. Column kept (not dropped) to
+  // avoid unnecessary migration churn; stop reading/writing it in new code.
+  role         String   @default("") @db.VarChar(50)
+  // Plant scope for this login — [] = unscoped (all plants), non-empty =
+  // restricted to these plant tags. Mirrors the array convention already
+  // used on ProductMaster.plant. Enforced by backend/src/middleware/scope.js.
+  plants       String[] @default([]) @map("plants")
+  // Optional link to an HR roster record. Not every login needs one, and not
+  // every EmployeeMaster row needs a login — kept as separate concepts.
+  employeeId   String?  @unique @map("employee_id")
   isActive     Boolean  @default(true) @map("is_active")
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
 
+  employee      EmployeeMaster?   @relation(fields: [employeeId], references: [id])
+  roles         UserRole[]
   approvedBoms  ErpBomHeader[]
   notifications ErpNotification[]
 

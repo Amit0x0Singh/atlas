@@ -1,4 +1,5 @@
 import prisma from '../../../db.js'
+import { scopeWhereByPlant } from '../../../middleware/scope.js'
 
 // ── SO status sync helper ─────────────────────────────────────────────────────
 const IN_PRODUCTION_STATUSES = new Set([
@@ -42,11 +43,15 @@ async function syncSoStatus(diNo, productName, taskStatus, sent) {
 export const listTasks = async (req, res) => {
   try {
     const { date, plant, status, sent } = req.query
-    const where = {}
+    let where = {}
     if (date)   where.date   = date
     if (plant)  where.plant  = plant
     if (status) where.status = status
     if (sent !== undefined) where.sent = sent === 'true'
+    // A plant-scoped caller's plain "list" narrows to their own plant(s)
+    // rather than erroring — an explicit out-of-scope ?plant= is what 403s
+    // (see requirePlantInScope on the route).
+    where = scopeWhereByPlant(req, where)
 
     const tasks = await prisma.productionTask.findMany({
       where,

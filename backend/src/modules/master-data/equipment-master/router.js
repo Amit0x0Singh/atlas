@@ -1,5 +1,5 @@
 import express from 'express'
-import { authenticate, authorize } from '../../../middleware/auth.js'
+import { authorize } from '../../../middleware/auth.js'
 import { listEquipment, listEquipmentFilterMeta } from './get/equipment-master.controller.js'
 import { validateEquipmentListQuery } from './get/equipment-master.middleware.js'
 import { createEquipment } from './create/equipment-master.controller.js'
@@ -10,12 +10,12 @@ import { deleteEquipment } from './delete/equipment-master.controller.js'
 import { validateEquipIdParam as validateDeleteEquipIdParam } from './delete/equipment-master.middleware.js'
 
 const EquipmentMasterRouter = express.Router()
-const adminOnly = authorize(['admin'])
+const canView = authorize('masters.equipment.view')
 
-EquipmentMasterRouter.get('/equipment/meta/filters', authenticate, listEquipmentFilterMeta)
-EquipmentMasterRouter.get('/equipment', authenticate, validateEquipmentListQuery, listEquipment)
-EquipmentMasterRouter.post('/equipment', authenticate, adminOnly, validateCreateEquipment, createEquipment)
-EquipmentMasterRouter.put('/equipment/:equipId', authenticate, adminOnly, validateUpdateEquipIdParam, validateUpdateEquipment, updateEquipment)
-EquipmentMasterRouter.delete('/equipment/:equipId', authenticate, adminOnly, validateDeleteEquipIdParam, deleteEquipment)
+EquipmentMasterRouter.get('/equipment/meta/filters', canView, listEquipmentFilterMeta)
+EquipmentMasterRouter.get('/equipment', canView, validateEquipmentListQuery, listEquipment)
+EquipmentMasterRouter.post('/equipment', authorize('masters.equipment.create'), validateCreateEquipment, createEquipment)
+EquipmentMasterRouter.put('/equipment/:equipId', authorize('masters.equipment.update'), validateUpdateEquipIdParam, validateUpdateEquipment, updateEquipment)
+EquipmentMasterRouter.delete('/equipment/:equipId', authorize('masters.equipment.delete'), validateDeleteEquipIdParam, deleteEquipment)
 
 export default EquipmentMasterRouter

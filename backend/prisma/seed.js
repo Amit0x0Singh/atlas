@@ -3,11 +3,79 @@
 // Idempotent: safe to run multiple times
 
 import { PrismaClient } from '@prisma/client'
+import bcrypt from 'bcryptjs'
+import { PERMISSIONS } from '../src/constants/permissions.catalog.js'
+import { ROLE_SEEDS, LEGACY_ACCOUNTS } from '../src/constants/roles.seed.js'
 const prisma = new PrismaClient()
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 const d = (s) => new Date(s)
 const log = (msg) => console.log(`  ✓ ${msg}`)
+
+// ─── 0a. RBAC — Permission catalog ────────────────────────────────────────────
+async function seedPermissions() {
+  for (const p of PERMISSIONS) {
+    await prisma.permission.upsert({
+      where: { key: p.key },
+      update: { module: p.module, resource: p.resource, action: p.action, description: p.description },
+      create: p,
+    })
+  }
+  log(`Permissions — ${PERMISSIONS.length} catalog entries`)
+}
+
+// ─── 0b. RBAC — Roles + their permission sets ─────────────────────────────────
+async function seedRoles() {
+  for (const r of ROLE_SEEDS) {
+    const role = await prisma.role.upsert({
+      where: { name: r.name },
+      update: { description: r.description, isSystem: r.isSystem },
+      create: { name: r.name, description: r.description, isSystem: r.isSystem },
+    })
+    const perms = await prisma.permission.findMany({ where: { key: { in: r.permissions } }, select: { permissionId: true } })
+    await prisma.rolePermissionMap.deleteMany({ where: { roleId: role.roleId } })
+    if (perms.length) {
+      await prisma.rolePermissionMap.createMany({
+        data: perms.map((p) => ({ roleId: role.roleId, permissionId: p.permissionId })),
+        skipDuplicates: true,
+      })
+    }
+  }
+  log(`Roles — ${ROLE_SEEDS.length} roles seeded with their permission sets`)
+}
+
+// ─── 0c. RBAC — Migrate the 18 legacy backend/access.js accounts to real,
+// bcrypt-hashed User rows, each assigned their equivalent seed role. Safe to
+// re-run: existing rows are left with their current password hash untouched
+// (so a real password change via the app survives a reseed) and only the
+// role assignment + plants are refreshed to match roles.seed.js. ──────────────
+async function seedLegacyAccounts() {
+  for (const acct of LEGACY_ACCOUNTS) {
+    const role = await prisma.role.findUnique({ where: { name: acct.role } })
+    if (!role) throw new Error(`seedLegacyAccounts: role "${acct.role}" not found — did seedRoles() run first?`)
+
+    let user = await prisma.user.findUnique({ where: { email: acct.email } })
+    if (!user) {
+      const passwordHash = await bcrypt.hash(acct.password, 10)
+      user = await prisma.user.create({
+        data: {
+          username: acct.email,
+          email: acct.email,
+          passwordHash,
+          fullName: acct.fullName,
+          plants: acct.plant ? [acct.plant] : [],
+          isActive: true,
+        },
+      })
+    } else {
+      await prisma.user.update({ where: { userId: user.userId }, data: { plants: acct.plant ? [acct.plant] : [] } })
+    }
+
+    await prisma.userRole.deleteMany({ where: { userId: user.userId } })
+    await prisma.userRole.create({ data: { userId: user.userId, roleId: role.roleId } })
+  }
+  log(`Legacy accounts — ${LEGACY_ACCOUNTS.length} users migrated to DB-backed login with role assignments`)
+}
 
 // ─── 1. Product Master ────────────────────────────────────────────────────────
 async function seedProductMaster() {
@@ -689,6 +757,9 @@ async function seedProductionData() {
 // ─── main ─────────────────────────────────────────────────────────────────────
 async function main() {
   console.log('\n🌱  SOM ERP — Database Seed\n')
+  await seedPermissions()
+  await seedRoles()
+  await seedLegacyAccounts()
   await seedProductMaster()
   await seedEquipmentMaster()
   await seedRecipeDb()

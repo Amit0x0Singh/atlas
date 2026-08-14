@@ -165,7 +165,6 @@ function StockTab({ containers, strains, loading, onRefresh }) {
   const [expanded, setExpanded] = useState(null)
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(15)
-  const { hasRole } = useAuth()
 
   const filtered = containers.filter(c =>
     (!filterStrain || c.strain_id === filterStrain) &&
@@ -270,7 +269,7 @@ function StockTab({ containers, strains, loading, onRefresh }) {
 
 // ── Tab 3: Inward ─────────────────────────────────────────────────────────────
 function InwardTab({ strains, onRefresh }) {
-  const { hasRole } = useAuth()
+  const { hasPermission } = useAuth()
   const [form, setForm] = useState({
     strain_id: '', volume_litres: '', mfg_cfu_per_ml: '',
     mfg_date: '', expiry_date: '', location_room: '',
@@ -321,7 +320,7 @@ function InwardTab({ strains, onRefresh }) {
     }
   }
 
-  const canInward = hasRole('store_person', 'store_manager', 'admin')
+  const canInward = hasPermission('microbial.erp-container.create')
 
   return (
     <div style={{ padding: '20px', display: 'grid', gridTemplateColumns: '420px 1fr', gap: '20px', alignItems: 'start' }}>
@@ -438,7 +437,7 @@ function InwardTab({ strains, onRefresh }) {
 
 // ── Tab 4: Issue Calculator ───────────────────────────────────────────────────
 function IssueCalculatorTab({ strains, onRefresh }) {
-  const { hasRole } = useAuth()
+  const { hasPermission } = useAuth()
 
   // Step 1 inputs
   const [inputs, setInputs] = useState({ strain_id: '', order_qty: '', ordered_cfu: '', mf: '1.1', di_no: '', customer: '', issued_to: '', section: '' })
@@ -560,7 +559,7 @@ function IssueCalculatorTab({ strains, onRefresh }) {
     }
   }
 
-  const canIssue = hasRole('store_person', 'store_manager', 'admin')
+  const canIssue = hasPermission('microbial.erp-transaction.create')
 
   return (
     <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>

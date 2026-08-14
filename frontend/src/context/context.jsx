@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback } from 'react'
+import { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import axios from 'axios'
 
 const BASE = import.meta.env.VITE_API_BASE || '/api'
@@ -36,6 +36,8 @@ export function AppProvider({ children }) {
     catch { return null }
   })
   const [loading, setLoading] = useState(false)
+  const userRef = useRef(user)
+  userRef.current = user
 
   const login = useCallback(async (email, password) => {
     setLoading(true)
@@ -56,30 +58,39 @@ export function AppProvider({ children }) {
     setUser(null)
   }, [])
 
-  // 'admin' operation is super-admin — always passes. Otherwise the user's
-  // operation must match the one requested (e.g. a 'store' account can't
-  // reach a 'gate'-only page).
-  const canAccess = useCallback((operation) => {
-    if (!operation) return true
-    if (!user) return false
-    return user.operation === 'admin' || user.operation === operation
-  }, [user])
+  // The client's explicit "check for a permission change" poll — always
+  // resolves fresh server-side (see backend /auth/me), so an admin revoking
+  // a role/permission is visible on this user's next call without forcing a
+  // re-login. Called on mount + on window focus (see effect below).
+  const refreshPermissions = useCallback(async () => {
+    if (!userRef.current) return
+    try {
+      const res = await api.get('/auth/me')
+      localStorage.setItem('erp_user', JSON.stringify(res.user))
+      setUser(res.user)
+    } catch {
+      // A 401 here is already handled by the response interceptor (forces
+      // logout + redirect) — nothing extra to do on failure.
+    }
+  }, [])
 
-  const isAdmin      = useCallback(() => user?.operation === 'admin', [user])
-  const isReadOnly    = user?.role === 'employee'
-  // The old fine-grained role names (store_manager, plant_supervisor, qc_person...)
-  // no longer exist — every call site used them to gate a mutating action behind
-  // "is this a full-access account", which is exactly what user.role === 'admin'
-  // means now. Arguments are accepted (and ignored) so existing call sites
-  // (both hasRole(['a','b']) and hasRole('a','b') styles) keep working unchanged.
-  const hasRole       = useCallback(() => user?.role === 'admin', [user])
-  const canApprove    = useCallback(() => user?.role === 'admin', [user])
-  const canPublish    = useCallback(() => user?.role === 'admin', [user])
+  useEffect(() => {
+    refreshPermissions()
+    window.addEventListener('focus', refreshPermissions)
+    return () => window.removeEventListener('focus', refreshPermissions)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const permissionSet = useMemo(() => new Set(user?.permissions ?? []), [user])
+
+  const hasPermission = useCallback((perm) => permissionSet.has(perm), [permissionSet])
+  const hasAnyPermission = useCallback((perms) => perms.some((p) => permissionSet.has(p)), [permissionSet])
+  const hasAllPermissions = useCallback((perms) => perms.every((p) => permissionSet.has(p)), [permissionSet])
 
   return (
     <AppContext.Provider value={{
-      user, loading, login, logout,
-      canAccess, isAdmin, isReadOnly, hasRole, canApprove, canPublish,
+      user, loading, login, logout, refreshPermissions,
+      hasPermission, hasAnyPermission, hasAllPermissions,
     }}>
       {children}
     </AppContext.Provider>
