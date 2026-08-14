@@ -210,10 +210,10 @@ export default function Tracker() {
                                       </div>
                                       <div className="text-right">
                                         <p className="text-red-600 font-bold text-lg">
-                                          −{Number(tx.operationalQty ?? tx.qtyIssued).toFixed(3)} {tx.operationalUom || ''}
+                                          −{Number(tx.operationalQty ?? tx.qtyIssued).toFixed(3)} {tx.operationalUom || tx.inventoryUom || ''}
                                         </p>
                                         {tx.operationalUom && Number(tx.operationalQty) !== Number(tx.qtyIssued) && (
-                                          <p className="text-[10px] text-gray-400">({Number(tx.qtyIssued).toFixed(3)} deducted)</p>
+                                          <p className="text-[10px] text-gray-400">({Number(tx.qtyIssued).toFixed(3)} {tx.inventoryUom || ''} deducted)</p>
                                         )}
                                       </div>
                                     </div>

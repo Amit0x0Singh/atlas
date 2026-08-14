@@ -9,14 +9,20 @@ export const listOutward = async (req, res) => {
       prisma.outward.count({ where }),
       prisma.outward.findMany({ where, orderBy: { timestamp: 'desc' }, skip: (page-1)*parseInt(limit), take: parseInt(limit) })
     ])
-    // Attach rmName from rmMaster
+    // Attach rmName + inventoryUom from rmMaster. inventoryUom is the unit
+    // qtyIssued is in — needed to label it, and as the display unit for rows
+    // written before operationalUom existed (operationalUom null there).
     const rmCodes = [...new Set(rows.map(r => r.rmCode).filter(Boolean))]
     const rmItems = await prisma.rmMaster.findMany({
       where: { itemCode: { in: rmCodes } },
-      select: { itemCode: true, itemName: true }
+      select: { itemCode: true, itemName: true, inventoryUom: true }
     })
-    const rmMap = Object.fromEntries(rmItems.map(r => [r.itemCode, r.itemName]))
-    const data = rows.map(r => ({ ...r, rmName: rmMap[r.rmCode] || r.rmCode }))
+    const rmMap = Object.fromEntries(rmItems.map(r => [r.itemCode, r]))
+    const data = rows.map(r => ({
+      ...r,
+      rmName:       rmMap[r.rmCode]?.itemName     || r.rmCode,
+      inventoryUom: rmMap[r.rmCode]?.inventoryUom || null,
+    }))
     return res.json({ success: true, data, total, page: parseInt(page), limit: parseInt(limit) })
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })

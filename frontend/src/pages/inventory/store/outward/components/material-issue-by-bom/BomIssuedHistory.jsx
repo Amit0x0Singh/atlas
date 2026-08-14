@@ -95,7 +95,10 @@ export default function BomIssuedHistory({ onResume }) {
         lastUpdated: b.lastTs,
         lines: b.lines.map(l => ({
           rmName: l.rmName || l.rmCode, rmCode: l.sourceId,
-          detail: `${Number(l.operationalQty ?? l.qtyIssued).toFixed(3)} ${l.operationalUom || ''} · ${fmtDate(l.timestamp)}`,
+          // Rows predating operationalUom have it null — fall back to the
+          // item's Inventory UOM (the unit qtyIssued is in) rather than
+          // rendering a bare number with no unit at all.
+          detail: `${Number(l.operationalQty ?? l.qtyIssued).toFixed(3)} ${l.operationalUom || l.inventoryUom || ''} · ${fmtDate(l.timestamp)}`,
         })),
       }))
 

@@ -70,6 +70,15 @@ export const getTrackerDetail = async (req, res) => {
         : [];
     const packMap = Object.fromEntries(packs.map((p) => [p.packId, p]));
 
+    // Inventory UOM per RM — the unit qtyIssued is in. IndentDetails carries
+    // no unit of its own, so it has to come from RM Master for the tracker to
+    // label the deducted qty on a converted (KG-stocked, L-issued) item.
+    const rmMasters = await prisma.rmMaster.findMany({
+      where: { itemCode: { in: indent.details.map((d) => d.rmCode) } },
+      select: { itemCode: true, inventoryUom: true },
+    });
+    const uomMap = Object.fromEntries(rmMasters.map((r) => [r.itemCode, r.inventoryUom]));
+
     const rmHistory = indent.details.map((d) => {
       const txns = outwardRecords
         .filter((o) => o.rmCode === d.rmCode)
@@ -79,6 +88,7 @@ export const getTrackerDetail = async (req, res) => {
           qtyIssued: o.qtyIssued,
           operationalQty: o.operationalQty,
           operationalUom: o.operationalUom,
+          inventoryUom: uomMap[o.rmCode] || null,
           timestamp: o.timestamp,
           sourceType: o.sourceType,
           remarks: o.remarks,
