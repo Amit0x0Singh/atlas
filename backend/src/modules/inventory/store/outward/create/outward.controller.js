@@ -73,12 +73,23 @@ const bagLossAdjustment = async (req, res) => {
   if (!packId || !lossQty || !reason || reason.trim().length < 3)
     return res.status(400).json({ success: false, error: 'packId, lossQty, and reason (min 3 chars) required', code: 'VALIDATION_ERROR' })
   try {
-    const loss = parseFloat(lossQty)
-    if (isNaN(loss) || loss <= 0)
+    const entered = parseFloat(lossQty)
+    if (isNaN(entered) || entered <= 0)
       return res.status(400).json({ success: false, error: 'lossQty must be a positive number', code: 'VALIDATION_ERROR' })
 
     const pack = await prisma.packDetail.findUnique({ where: { packId } })
     if (!pack || pack.status !== 'INWARDED') return res.status(404).json({ success: false, error: 'Pack not found or not inwarded', code: 'NOT_FOUND' })
+
+    // The store person weighs/measures the loss in the item's Operational UOM
+    // (e.g. spilled 2 L of an oil stocked in KG) — convert to Inventory UOM
+    // server-side, same authority as directIssue/bomDirectIssue, before
+    // checking against and deducting the pack balance.
+    let rm, loss, operationalQty, operationalUom
+    try {
+      ({ rm, inventoryQty: loss, operationalQty, operationalUom } = await resolveIssueQty(pack.itemCode, entered))
+    } catch (e) {
+      return res.status(400).json({ success: false, error: e.message, code: 'VALIDATION_ERROR' })
+    }
     if (loss > pack.remainingQty)
       return res.status(400).json({ success: false, error: `Loss (${loss}) exceeds remaining qty (${pack.remainingQty})` , code: 'VALIDATION_ERROR' })
 
@@ -90,7 +101,7 @@ const bagLossAdjustment = async (req, res) => {
     await prisma.$transaction(async (tx) => {
       await tx.packDetail.update({ where: { packId }, data: { remainingQty: newRemaining } })
       await tx.outward.create({
-        data: { sourceId: packId, sourceType: 'STOCK_ADJUSTMENT', rmCode: pack.itemCode, qtyIssued: loss, remarks: reason.trim() }
+        data: { sourceId: packId, sourceType: 'STOCK_ADJUSTMENT', rmCode: pack.itemCode, qtyIssued: loss, operationalQty, operationalUom, remarks: reason.trim() }
       })
       const prev = await tx.stockLedger.findFirst({ where: { itemCode: pack.itemCode }, orderBy: { timestamp: 'desc' } })
       await tx.stockLedger.create({
@@ -101,7 +112,13 @@ const bagLossAdjustment = async (req, res) => {
       })
     })
 
-    return res.json({ success: true, packId, lossDeducted: loss, newRemaining, newStatus })
+    // lossDeducted/newRemaining are Inventory UOM (what stock is tracked in);
+    // operationalQty/operationalUom echo back what the operator actually
+    // entered, so the UI can show both sides of a converted adjustment.
+    return res.json({
+      success: true, packId, lossDeducted: loss, newRemaining, newStatus,
+      operationalQty, operationalUom, inventoryUom: rm.inventoryUom,
+    })
   } catch (e) {
     return res.status(400).json({ success: false, error: e.message, code: 'VALIDATION_ERROR' })
   }
