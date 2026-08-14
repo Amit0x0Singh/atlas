@@ -5,6 +5,10 @@ import { api } from '../context/context.jsx'
 // assignment.
 export const rbacApi = {
   listRoles:       ()               => api.get('/admin/rbac/roles'),
+  createRole:      (data)           => api.post('/admin/rbac/roles', data),
+  updateRole:      (roleId, data)   => api.put(`/admin/rbac/roles/${roleId}`, data),
+  deleteRole:      (roleId)         => api.delete(`/admin/rbac/roles/${roleId}`),
+  setRolePermissions: (roleId, permissionKeys) => api.put(`/admin/rbac/roles/${roleId}/permissions`, { permissionKeys }),
   listPermissions: ()               => api.get('/admin/rbac/permissions'),
 
   listUsers:       ()               => api.get('/admin/rbac/users'),

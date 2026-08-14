@@ -108,6 +108,27 @@ export const PERMISSIONS = [
   ...group('sales', 'bom-send', ['view', 'create', 'update', 'delete', 'issue']),
   ...group('sales', 'tracker', ['view']),
   ...group('sales', 'notification', ['view', 'update']),
+
+  // ─── QC ─────────────────────────────────────────────────────────────────
+  // Reserved — QC has no backend routes yet (the frontend's /qc-samples,
+  // /qc-results, /qc-reports pages are still placeholders). Added now so the
+  // Role permission matrix can already show a QC row; wire real
+  // authorize('qc.sample.*') calls into the router when that module is built.
+  ...group('qc', 'sample', ['view', 'create', 'update', 'delete'], (a) => `${a} a QC sample/result — reserved, no endpoint exists yet`),
+
+  // ─── Reports / Export ─────────────────────────────────────────────────────
+  // One reserved "export" permission per module — none of these are wired to
+  // a real endpoint yet (the /api/export/* router is confirmed dead/
+  // unmounted), but the Role permission matrix's "Export" column needs
+  // something to bind to per module ahead of that work landing.
+  ...group('gate', 'reports', ['export'], () => 'Export Gate inward/outward records — reserved, no endpoint exists yet'),
+  ...group('inventory', 'reports', ['export'], () => 'Export Store/Inventory records — reserved, no endpoint exists yet'),
+  ...group('qc', 'reports', ['export'], () => 'Export QC records — reserved, no endpoint exists yet'),
+  ...group('masters', 'reports', ['export'], () => 'Export Master Data records — reserved, no endpoint exists yet'),
+  ...group('planning', 'reports', ['export'], () => 'Export Planning records — reserved, no endpoint exists yet'),
+  ...group('production', 'reports', ['export'], () => 'Export Production records — reserved, no endpoint exists yet'),
+  ...group('microbial', 'reports', ['export'], () => 'Export Microbial Store records — reserved, no endpoint exists yet'),
+  ...group('sales', 'reports', ['export'], () => 'Export Sales records — reserved, no endpoint exists yet'),
 ]
 
 export const PERMISSION_KEYS = PERMISSIONS.map((p) => p.key)

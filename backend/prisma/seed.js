@@ -21,7 +21,15 @@ async function seedPermissions() {
       create: p,
     })
   }
-  log(`Permissions — ${PERMISSIONS.length} catalog entries`)
+  // Prune rows for keys removed from the catalog file since the last seed —
+  // the file is the single source of truth per its own header comment, so a
+  // key deleted there shouldn't linger in the DB. RolePermissionMap cascades
+  // on delete, so this also detaches it from any role (should be none, in
+  // practice, since removing a still-assigned key from the catalog is itself
+  // a mistake worth surfacing rather than silently orphaning).
+  const keys = PERMISSIONS.map((p) => p.key)
+  const { count } = await prisma.permission.deleteMany({ where: { key: { notIn: keys } } })
+  log(`Permissions — ${PERMISSIONS.length} catalog entries${count ? ` (pruned ${count} stale)` : ''}`)
 }
 
 // ─── 0b. RBAC — Roles + their permission sets ─────────────────────────────────
