@@ -1,26 +1,33 @@
 /**
  * ERP Auth Middleware — JWT verify + permission-based authorization.
  *
- * Login is now database-backed (Prisma `User`, bcrypt-hashed passwords) —
- * see modules/user/login/login.controller.js. This replaces the old
- * flat-file access.js account list (retired) and the old two-axis
- * role(admin/employee) x operation(gate/store/production/admin) check with
- * granular `module.resource.action` permissions resolved via
+ * Login is database-backed (Prisma `User`, bcrypt-hashed passwords) — see
+ * modules/user/login/login.controller.js. This replaces the old flat-file
+ * access.js account list (retired) and the old two-axis role(admin/employee)
+ * x operation(gate/store/production/admin) check with granular
+ * `module.resource.action` permissions resolved via
  * User -> UserRole -> Role -> RolePermissionMap -> Permission. See
  * backend/docs/RBAC.md for the full architecture and how to add a new
  * protected route.
+ *
+ * Every authenticated request also runs inside a request-context (see
+ * utils/request-context.js) carrying the caller's email, so the
+ * audit-stamp Prisma Client Extension (utils/prisma-audit-extension.js) can
+ * auto-populate createdBy/updatedBy on any write made during that request
+ * with zero per-controller wiring.
  */
 import { createHmac } from "crypto";
 import prisma from "../db.js";
 import { resolveEffectivePermissions } from "../services/permission-resolver.js";
+import { runWithRequestContext } from "../utils/request-context.js";
 
-const JWT_SECRET =
-  process.env.JWT_SECRET || "som-erp-super-secret-change-in-production-2026";
-const JWT_EXPIRES_SEC = 8 * 60 * 60; // 8 hours
-
-if (process.env.NODE_ENV === "production" && !process.env.JWT_SECRET) {
-  throw new Error("JWT_SECRET must be set in production — refusing to start with the insecure default.");
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error(
+    "JWT_SECRET is not defined. Please set it in backend/.env or your environment variables.",
+  );
 }
+const JWT_EXPIRES_SEC = 8 * 60 * 60; // 8 hours
 
 // ─── JWT helpers ────────────────────────────────────────────────────────────
 // Payload stays minimal — { sub: userId } only, no roles/permissions baked
@@ -116,6 +123,9 @@ async function getOrCreateDevUser() {
 // and sets req.user. 401 for missing/invalid/expired token, unknown user,
 // or a disabled account — this is also how a just-disabled account gets
 // force-logged-out on its very next request, with no session store needed.
+// Runs the rest of the middleware/controller chain inside a request-context
+// carrying req.user.email, so the audit-stamp Prisma extension can attribute
+// any write made during this request to this account.
 
 export async function authenticate(req, res, next) {
   try {
@@ -146,7 +156,7 @@ export async function authenticate(req, res, next) {
 
     const effective = await resolveEffectivePermissions(user.userId);
     req.user = toReqUser(user, effective);
-    next();
+    return runWithRequestContext({ userEmail: req.user.email }, next);
   } catch (err) {
     return res
       .status(401)

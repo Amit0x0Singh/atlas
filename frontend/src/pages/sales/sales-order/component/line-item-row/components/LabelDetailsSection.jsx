@@ -1,4 +1,5 @@
-import { LABEL_TYPES, LABEL_NEEDS_DETAILS } from "../../../shared/constants.js";
+import { LABEL_NEEDS_DETAILS } from "../../../shared/constants.js";
+import { useOptionValues } from "../../../../../../hooks/useOptionValues.js";
 import { addDays } from "../../../shared/utils.js";
 
 const field = "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none";
@@ -6,6 +7,7 @@ const label = "block text-xs font-semibold text-gray-500 mb-1";
 
 export default function LabelDetailsSection({ item, set }) {
   const showLabelDetails = LABEL_NEEDS_DETAILS.has(item.labelType);
+  const { data: labelTypes = [] } = useOptionValues('LABEL_TYPE')
 
   return (
     <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: "12px" }}>
@@ -15,8 +17,9 @@ export default function LabelDetailsSection({ item, set }) {
       <div style={{ maxWidth: "260px" }}>
         <label className={label}>Label Type</label>
         <select value={item.labelType || ""} onChange={(e) => set("labelType", e.target.value)} className={field}>
-          {LABEL_TYPES.map((lt) => (
-            <option key={lt.value} value={lt.value}>{lt.label}</option>
+          <option value="">— Select —</option>
+          {labelTypes.map((lt) => (
+            <option key={lt.code} value={lt.code}>{lt.label}</option>
           ))}
         </select>
         {item.labelType && !LABEL_NEEDS_DETAILS.has(item.labelType) && (

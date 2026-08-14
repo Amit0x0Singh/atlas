@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { toTitleCase } from '../../../../../utils/textDisplay.js'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // InhouseProductPicker
@@ -28,9 +29,10 @@ export default function InhouseProductPicker({ value, productCode, products, onC
     .slice(0, 20)
 
   function pick(p) {
-    setQuery(p.productName)
+    const name = toTitleCase(p.productName)
+    setQuery(name)
     setOpen(false)
-    onChange(p.productName, p.productCode)
+    onChange(name, p.productCode)
   }
 
   return (
@@ -69,7 +71,7 @@ export default function InhouseProductPicker({ value, productCode, products, onC
                 onMouseDown={() => pick(p)}
                 className="w-full text-left px-3 py-2 hover:bg-green-50 text-sm flex items-center justify-between gap-2"
               >
-                <span className="font-medium text-gray-800">{p.productName}</span>
+                <span className="font-medium text-gray-800">{toTitleCase(p.productName)}</span>
                 <span className="text-xs text-gray-400 font-mono shrink-0">{p.productCode}</span>
               </button>
             ))

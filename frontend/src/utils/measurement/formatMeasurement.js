@@ -117,8 +117,11 @@ export function formatMeasurement(value, unit, options = {}) {
   const displayValue = toTierValue(canonicalQty, tier)
   const cleaned = cleanNumber(displayValue, precision ?? tier.precision ?? DEFAULT_PRECISION)
   const text = locale ? getFormatter(locale, precision ?? tier.precision ?? DEFAULT_PRECISION).format(cleaned) : String(cleaned)
+  // Tier symbols are configured in mixed case (mg/g/kg/ml/kL) — always
+  // display UOM values uppercase regardless of the config's own casing.
+  const tierUnit = tier.unit.toUpperCase()
 
-  return { value: cleaned, unit: tier.unit, formatted: showUnit ? `${text} ${tier.unit}` : text, category }
+  return { value: cleaned, unit: tierUnit, formatted: showUnit ? `${text} ${tierUnit}` : text, category }
 }
 
 /**

@@ -1,21 +1,31 @@
-﻿import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ledgerApi } from '../../../../../api/inventory.js'
 import { BackButton, Button, PageHeader } from '../../../../../components/ui'
+import Pagination from '../../../../../components/pagination/Pagination.jsx'
 import LedgerTable             from '../components/ledger-table/LedgerTable.jsx'
+import LedgerFilters           from '../components/ledger-filters/LedgerFilters.jsx'
 import TransactionDetailModal  from '../components/transaction-detail-modal/TransactionDetailModal.jsx'
-import { RefreshCw, X, ScrollText } from 'lucide-react'
+import { RefreshCw, ScrollText } from 'lucide-react'
 import { useLedger } from '../../../../../hooks/inventory/useLedger.js'
-import { useRmMaster } from '../../../../../hooks/inventory/useRmMaster.js'
+import { useDebouncedValue } from '../../../../../hooks/useDebouncedValue.js'
 import './Ledger.css'
 
-export default function Ledger() {
-  const [filterItem, setFilterItem] = useState('')
-  const [page,       setPage]       = useState(1)
-  const [detail,     setDetail]     = useState(null)
-  const LIMIT = 50
+const BLANK_FILTERS = { search: '', transactionType: '', fromDate: '', toDate: '', warehouse: '', reference: '', direction: '' }
 
-  const { data: rmList = [] } = useRmMaster()
-  const ledgerQuery = useLedger({ page, limit: LIMIT, ...(filterItem ? { itemCode: filterItem } : {}) })
+export default function Ledger() {
+  const [filters, setFilters] = useState(BLANK_FILTERS)
+  const [page,    setPage]    = useState(1)
+  const [limit,   setLimit]   = useState(50)
+  const [detail,  setDetail]  = useState(null)
+
+  // Debounce the free-text fields before they hit the query key, so typing
+  // doesn't fire a request per keystroke — select/date fields already only
+  // change on discrete user actions, but debouncing the whole object keeps
+  // this one simple rule instead of splitting text vs. non-text filters.
+  const debouncedFilters = useDebouncedValue(filters, 300)
+  useEffect(() => { setPage(1) }, [debouncedFilters])
+
+  const ledgerQuery = useLedger({ page, limit, ...debouncedFilters })
   const rows    = ledgerQuery.data?.rows ?? []
   const total   = ledgerQuery.data?.total ?? 0
   const loading = ledgerQuery.isLoading
@@ -30,7 +40,8 @@ export default function Ledger() {
     }
   }
 
-  const totalPages = Math.ceil(total / LIMIT)
+  const setFilter    = (key, value) => setFilters(f => ({ ...f, [key]: value }))
+  const clearFilters  = () => setFilters(BLANK_FILTERS)
 
   return (
     <div className="flex flex-col h-full">
@@ -45,41 +56,27 @@ export default function Ledger() {
       />
 
       <div className="p-6">
-      {/* Filter */}
-      <div className="flex items-center gap-3 mb-4">
-        <label className="text-sm font-medium text-gray-700">Filter by Item:</label>
-        <select value={filterItem} onChange={e => { setFilterItem(e.target.value); setPage(1) }}
-          className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-500">
-          <option value="">— All Items —</option>
-          {rmList.map(r => <option key={r.itemCode} value={r.itemCode}>{r.itemName} ({r.itemCode})</option>)}
-        </select>
-        {filterItem && (
-          <Button onClick={() => { setFilterItem(''); setPage(1) }} variant="ghost" size="xs" icon={X}>Clear</Button>
-        )}
-        <span className="text-xs text-gray-400 ml-auto">{total} total entries · Page {page} of {totalPages || 1}</span>
-      </div>
+      <LedgerFilters
+        values={filters}
+        resultCount={total}
+        onChange={setFilter}
+        onClear={clearFilters}
+      />
 
       <LedgerTable loading={loading} rows={rows} onOpenDetail={openDetail} />
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 mt-4">
-          <button disabled={page <= 1} onClick={() => setPage(p => p - 1)}
-            className="px-3 py-1.5 border rounded-lg text-sm disabled:opacity-40 hover:bg-gray-50">← Prev</button>
-          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-            const pg = Math.max(1, Math.min(page - 2, totalPages - 4)) + i
-            if (pg < 1 || pg > totalPages) return null
-            return (
-              <button key={pg} onClick={() => setPage(pg)}
-                className={`px-3 py-1.5 border rounded-lg text-sm ${pg === page ? 'bg-blue-600 text-white border-blue-600' : 'hover:bg-gray-50'}`}>
-                {pg}
-              </button>
-            )
-          })}
-          <button disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}
-            className="px-3 py-1.5 border rounded-lg text-sm disabled:opacity-40 hover:bg-gray-50">Next →</button>
-        </div>
-      )}
+      <div className="flex items-center justify-between">
+        <span className="text-xs text-gray-400">
+          {total} transaction{total !== 1 ? 's' : ''} found · Page {page} of {Math.max(1, Math.ceil(total / limit))}
+        </span>
+        <Pagination
+          page={page}
+          total={total}
+          limit={limit}
+          onChange={setPage}
+          onLimitChange={l => { setLimit(l); setPage(1) }}
+        />
+      </div>
 
       <TransactionDetailModal detail={detail} onClose={() => setDetail(null)} />
       </div>

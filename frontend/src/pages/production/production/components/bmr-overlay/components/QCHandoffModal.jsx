@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { planTasksApi } from '../../../../../../api/production.js'
+import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 
 export default function QCHandoffModal({ task, bmrData, sfgCreated, onClose }) {
   const [remarks, setRemarks] = useState('')
@@ -7,13 +8,13 @@ export default function QCHandoffModal({ task, bmrData, sfgCreated, onClose }) {
     ? sfgCreated.qty
     : (parseFloat(bmrData['total-qty-packed']) || parseFloat(bmrData['total-qty']) || task.qty)
   const storedWhere = sfgCreated
-    ? `SFG — ${sfgCreated.location}`
-    : (task.process === 'Packing' ? 'Packed & ready for dispatch' : task.location || '—')
+    ? `SFG — ${toTitleCase(sfgCreated.location)}`
+    : (task.process === 'Packing' ? 'Packed & ready for dispatch' : toTitleCase(task.location) || '—')
 
   async function confirmSend() {
     const qcQueue = (() => { try { return JSON.parse(localStorage.getItem('erp_qc_queue'))||[] } catch { return [] } })()
     const id = () => Date.now().toString(36) + Math.random().toString(36).slice(2,5)
-    qcQueue.push({ id: id(), taskId:task.id, productName:task.productName, batchCode:task.batchCode,
+    qcQueue.push({ id: id(), taskId:task.id, productName:toTitleCase(task.productName), batchCode:task.batchCode,
       diNo:task.diNo, plant:task.plant, qty:task.qty, qtyUom:task.qtyUom,
       remarks, sentAt:new Date().toISOString(), qcStatus:'Pending' })
     localStorage.setItem('erp_qc_queue', JSON.stringify(qcQueue))
@@ -32,7 +33,7 @@ export default function QCHandoffModal({ task, bmrData, sfgCreated, onClose }) {
         </div>
         <div className="p-6">
           <div className="grid grid-cols-2 gap-3 mb-4">
-            {[['Product',task.productName],['Batch No',task.batchCode||'—'],['DI Number',task.diNo||'—'],['Plant',task.plant],['Qty',`${finalQty} ${task.qtyUom||'kg'}`],['Stored At',storedWhere]].map(([l,v]) => (
+            {[['Product',toTitleCase(task.productName)],['Batch No',task.batchCode||'—'],['DI Number',task.diNo||'—'],['Plant',task.plant],['Qty',`${finalQty} ${task.qtyUom||'kg'}`],['Stored At',storedWhere]].map(([l,v]) => (
               <div key={l}>
                 <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-0.5">{l}</div>
                 <div className="font-semibold text-[13.5px]">{v}</div>

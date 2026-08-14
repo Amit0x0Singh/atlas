@@ -1,6 +1,7 @@
 import { Button, IconButton } from '../../../../../components/ui'
 import { X } from 'lucide-react'
 
+import { toTitleCase } from '../../../../../utils/textDisplay.js'
 export default function CreateIndentModal({
   form, setForm, error,
   prodSearch, setProdSearch, showProdDrop, setShowProdDrop, filteredProducts, onSelectProduct,
@@ -35,7 +36,7 @@ export default function CreateIndentModal({
                 {filteredProducts.map(p => (
                   <button key={p.productCode} type="button" onMouseDown={() => onSelectProduct(p)}
                     className="w-full text-left px-3 py-2 hover:bg-blue-50 text-sm">
-                    <span className="font-medium">{p.productName}</span>
+                    <span className="font-medium">{toTitleCase(p.productName)}</span>
                     <span className="text-gray-400 ml-2 text-xs">{p.productCode}</span>
                   </button>
                 ))}
@@ -45,7 +46,7 @@ export default function CreateIndentModal({
 
           {form.productCode && (
             <div className="bg-blue-50 border border-blue-100 px-3 py-2 rounded-lg text-sm text-blue-800 flex items-center gap-2">
-              o. <strong>{form.productName}</strong>
+              o. <strong>{toTitleCase(form.productName)}</strong>
               <span className="text-blue-400 font-mono text-xs">[{form.productCode}]</span>
             </div>
           )}
@@ -98,7 +99,7 @@ export default function CreateIndentModal({
                   <tbody>
                     {recipePreview.map(r => (
                       <tr key={r.rmCode} className={`border-t ${r.ok ? '' : 'bg-red-50'}`}>
-                        <td className="px-3 py-1.5 font-medium">{r.rmName}</td>
+                        <td className="px-3 py-1.5 font-medium">{toTitleCase(r.rmName)}</td>
                         <td className="px-3 py-1.5 text-right">{Number(r.required || r.requiredQty).toFixed(3)}</td>
                         <td className={`px-3 py-1.5 text-right font-semibold ${r.ok ? 'text-green-700' : 'text-red-600'}`}>
                           {Number(r.available || r.availableQty).toFixed(3)}
@@ -135,7 +136,7 @@ export default function CreateIndentModal({
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="">— Select (optional) —</option>
                 {equipmentList.map(eq => (
-                  <option key={eq.equipId} value={eq.equipName}>{eq.equipName}{eq.plant ? ` (${eq.plant})` : ''}</option>
+                  <option key={eq.equipId} value={eq.equipName}>{toTitleCase(eq.equipName)}{eq.plant ? ` (${eq.plant})` : ''}</option>
                 ))}
               </select>
             </div>

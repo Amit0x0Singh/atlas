@@ -2,7 +2,7 @@ import { X, CheckCircle2, Clock, Search, Undo2, Flashlight, FlashlightOff, ScanB
 import { IconButton, BottomSheet } from '../../../../../../../../components/ui'
 import ScanSummaryCard from '../scan-summary-card/ScanSummaryCard.jsx'
 import StickySubmitBar from '../sticky-submit-bar/StickySubmitBar.jsx'
-import { WAREHOUSES } from '../constants.js'
+import { useOptionValues } from '../../../../../../../../hooks/useOptionValues.js'
 
 export default function MobileScanView({
   videoRef, canvasRef, hardwareInputRef,
@@ -16,6 +16,7 @@ export default function MobileScanView({
   scannedSearch, setScannedSearch, pendingSearch, setPendingSearch,
   onUndoLastScan, onRemoveScan,
 }) {
+  const { data: warehouses = [] } = useOptionValues('WAREHOUSE')
   return (
     <>
       <div className="pb-24">
@@ -25,7 +26,7 @@ export default function MobileScanView({
           onChange={e => onWarehouseChange(e.target.value)}
           className="w-full border-2 border-indigo-400 bg-indigo-50 text-indigo-800 font-bold rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer mb-2.5"
         >
-          {WAREHOUSES.map(w => <option key={w} value={w}>{w}</option>)}
+          {warehouses.map(w => <option key={w.code} value={w.code}>{w.label}</option>)}
         </select>
         {warehouseFlash && (
           <div className="bg-indigo-600 text-white px-4 py-2 rounded-lg mb-2.5 text-sm font-semibold text-center animate-pulse">

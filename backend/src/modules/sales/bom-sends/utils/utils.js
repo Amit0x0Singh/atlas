@@ -4,7 +4,7 @@ const getIssuedQty = async (sendId, rmCode) => {
   const rows = await prisma.stockLedger.findMany({
     where: {
       transactionType: "BOM_ISSUANCE",
-      reference: { contains: sendId },
+      reference: { contains: sendId, mode: "insensitive" },
       itemCode: rmCode,
     },
   });

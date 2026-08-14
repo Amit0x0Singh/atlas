@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { authorize } from "../../../middleware/auth.js";
+import { validateCreateSalesOrder, validateUpdateSalesOrder } from "./create/sales-order.middleware.js";
 
 import {
   createSalesOrder,
@@ -35,7 +36,7 @@ const canUpdate = authorize("sales.order.update");
 
 // Static paths must come before /:id
 
-router.post("/", canCreate, createSalesOrder);
+router.post("/", canCreate, validateCreateSalesOrder, createSalesOrder);
 router.post("/companies", canCreate, addCompany);
 
 router.get("/", canView, getSalesOrders);
@@ -44,7 +45,7 @@ router.get("/sync-log", canView, getSyncLogs);
 router.get("/companies", canView, getCompanies);
 router.get("/:id", canView, getSalesOrderById);
 
-router.put("/:id", canUpdate, updateSalesOrder);
+router.put("/:id", canUpdate, validateUpdateSalesOrder, updateSalesOrder);
 
 router.patch("/item/:itemId", canUpdate, updateSalesOrderItem);
 router.patch("/cancel/:id", authorize("sales.order.cancel"), cancelOrder);

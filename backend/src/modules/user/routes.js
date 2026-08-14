@@ -1,6 +1,7 @@
 import express from "express";
 
 import { authenticate } from "../../middleware/auth.js";
+import { authLimiter } from "../../middleware/rate-limit.js";
 import { validateLogin } from "./login/login.middleware.js";
 import { login } from "./login/login.controller.js";
 import { verifyPassword } from "./verify-password/verify-password.controller.js";
@@ -8,7 +9,7 @@ import { resolveEffectivePermissions } from "../../services/permission-resolver.
 
 const UserRouter = express.Router();
 
-UserRouter.post("/login", validateLogin, login);
+UserRouter.post("/login", authLimiter, validateLogin, login);
 
 // The client's explicit "check for a permission change" poll (called on app
 // load + tab-focus) — always resolves fresh (bypasses the TTL cache) so an
@@ -29,6 +30,6 @@ UserRouter.get("/me", authenticate, async (req, res) => {
   });
 });
 
-UserRouter.post("/verify-password", authenticate, verifyPassword);
+UserRouter.post("/verify-password", authLimiter, authenticate, verifyPassword);
 
 export default UserRouter;

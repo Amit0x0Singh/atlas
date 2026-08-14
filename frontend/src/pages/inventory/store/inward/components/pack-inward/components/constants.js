@@ -1,19 +1,4 @@
 export const STEPS = { SETUP: 'setup', SCANNING: 'scanning', DONE: 'done' }
 
-export const WAREHOUSES = [
-  'BULK ROOM',
-  'BOX GODOWN',
-  'BOTTLE GODOWN',
-  'STERILE ROOM I',
-  'STERILE ROOM II',
-  'COLD ROOM',
-  'SOLVENT GODOWN',
-  'ACM ROOM',
-  'HERBAL STORAGE',
-  'BLACK POWDER GODOWN',
-  'SEED STORAGE GODOWN',
-  'POWDER STORAGE GODOWN',
-  'GRANULES GODOWN',
-  'GENERAL GODOWN',
-  'PRINTING SECTION',
-]
+// Warehouse list is now admin-managed — see the WAREHOUSE option group
+// (Settings > Select Options) and useOptionValues('WAREHOUSE').

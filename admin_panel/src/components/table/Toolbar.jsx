@@ -4,14 +4,19 @@ import Button from '../common/Button.jsx';
 import SearchBar from './SearchBar.jsx';
 import FilterPanel from './FilterPanel.jsx';
 
+function isActiveFilterValue(v) {
+  if (v == null || v === '') return false;
+  if (typeof v === 'object') return !!(v.from || v.to);
+  return true;
+}
+
 export default function Toolbar({
   searchRef, query, onQueryChange,
-  statusField, statusOptions = [], statusValue, onStatusChange,
-  dateField, dateRange, onDateRangeChange,
+  filterFields = [], filterValues = {}, onFilterChange,
   onExport, onImport, onRefresh, onReset,
 }) {
   const [filterOpen, setFilterOpen] = useState(false);
-  const activeFilterCount = (statusValue ? 1 : 0) + ((dateRange?.from || dateRange?.to) ? 1 : 0);
+  const activeFilterCount = Object.values(filterValues).filter(isActiveFilterValue).length;
   const hasAnyActive = activeFilterCount > 0 || !!query;
 
   return (
@@ -20,11 +25,11 @@ export default function Toolbar({
         ref={searchRef}
         value={query}
         onChange={onQueryChange}
-        placeholder="Search this page…"
+        placeholder="Search all fields…"
         className="flex-1 min-w-[180px] max-w-sm"
       />
 
-      {(statusField || dateField) && (
+      {filterFields.length > 0 && (
         <div className="relative">
           <Button variant="secondary" icon={SlidersHorizontal} onClick={() => setFilterOpen((o) => !o)}>
             Filters
@@ -36,13 +41,9 @@ export default function Toolbar({
           </Button>
           {filterOpen && (
             <FilterPanel
-              statusField={statusField}
-              statusOptions={statusOptions}
-              statusValue={statusValue}
-              onStatusChange={onStatusChange}
-              dateField={dateField}
-              dateRange={dateRange}
-              onDateRangeChange={onDateRangeChange}
+              fields={filterFields}
+              values={filterValues}
+              onChange={onFilterChange}
               onClose={() => setFilterOpen(false)}
             />
           )}

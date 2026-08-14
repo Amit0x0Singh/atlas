@@ -1,5 +1,6 @@
 import express from "express";
 import { authenticate, authorize } from "../../../middleware/auth.js";
+import { validateCreateEmployee } from "./create/employees.middleware.js";
 import { listEmployees, listPages, listRoleDefaults, getPermissionsByRole, getEmployee, listCompanies } from "./get/employees.controller.js";
 import { createEmployee, savePermissions, seedDefaultPermissions, upsertCompany } from "./create/employees.controller.js";
 import { updateEmployee } from "./update/employees.controller.js";
@@ -21,6 +22,6 @@ EmployeesRouter.get("/employees/:id", authenticate, getEmployee);
 EmployeesRouter.put("/employees/:id", authenticate, adminOnly, updateEmployee);
 EmployeesRouter.delete("/employees/:id", authenticate, adminOnly, deleteEmployee);
 EmployeesRouter.get("/employees", authenticate, listEmployees);
-EmployeesRouter.post("/employees", authenticate, adminOnly, createEmployee);
+EmployeesRouter.post("/employees", authenticate, adminOnly, validateCreateEmployee, createEmployee);
 
 export default EmployeesRouter;

@@ -14,6 +14,9 @@ model CompanyMaster {
   name      String
   isActive  Boolean  @default(true) @map("is_active")
   createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  createdBy String?  @map("created_by") @db.VarChar(255)
+  updatedBy String?  @map("updated_by") @db.VarChar(255)
 
   @@map("company_master")
 }
@@ -31,6 +34,8 @@ model EmployeeMaster {
   isActive  Boolean  @default(true) @map("is_active")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
+  createdBy String?  @map("created_by") @db.VarChar(255)
+  updatedBy String?  @map("updated_by") @db.VarChar(255)
 
   user User?
 
@@ -38,10 +43,14 @@ model EmployeeMaster {
 }
 
 model RolePermission {
-  id        String @id @default(cuid())
+  id        String   @id @default(cuid())
   role      String
-  pagePath  String @map("page_path")
-  pageLabel String @map("page_label")
+  pagePath  String   @map("page_path")
+  pageLabel String   @map("page_label")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  createdBy String?  @map("created_by") @db.VarChar(255)
+  updatedBy String?  @map("updated_by") @db.VarChar(255)
 
   @@unique([role, pagePath])
   @@map("role_permission")

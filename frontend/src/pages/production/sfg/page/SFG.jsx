@@ -4,6 +4,7 @@ import { Button, BackButton } from '../../../../components/ui'
 import { RefreshCw, Save } from 'lucide-react'
 import './SFG.css'
 
+import { toTitleCase } from '../../../../utils/textDisplay.js'
 const STATUS_COLOR = {
   OPEN:     'bg-gray-100 text-gray-600',
   PARTIAL:  'bg-indigo-100 text-indigo-700',
@@ -96,7 +97,7 @@ export default function SFG() {
             return (
               <div key={s.productCode} className="bg-white border border-gray-200 rounded-xl p-4">
                 <div className="text-xs text-gray-400 font-mono mb-0.5">{s.productCode}</div>
-                <div className="font-bold text-gray-800 truncate">{s.productName}</div>
+                <div className="font-bold text-gray-800 truncate">{toTitleCase(s.productName)}</div>
                 <div className="mt-3 space-y-1.5 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-500">Formulated</span>
@@ -169,7 +170,7 @@ export default function SFG() {
                   onClick={() => handleExpand(sfg.sfgId)}>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-bold text-gray-900">{sfg.productName}</span>
+                      <span className="font-bold text-gray-900">{toTitleCase(sfg.productName)}</span>
                       <span className="text-gray-400 font-mono text-xs">[{sfg.productCode}]</span>
                       <span className={`px-2 py-0.5 rounded text-xs font-semibold ${STATUS_COLOR[sfg.status] || 'bg-gray-100 text-gray-500'}`}>
                         {sfg.status}

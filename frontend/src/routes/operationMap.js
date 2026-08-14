@@ -14,7 +14,6 @@ export const PERMISSION_ROUTES = [
   { prefix: '/containers',      permission: 'inventory.containers.view' },
   { prefix: '/ledger',          permission: 'inventory.ledger.view' },
   { prefix: '/grn',             permission: 'inventory.grn.view' },
-  { prefix: '/location-master', permission: 'inventory.bulk-location.view' },
   { prefix: '/indent',          permission: 'production.indent.view' },
   { prefix: '/print-master',    permission: 'inventory.inward.view' },
 
@@ -41,7 +40,6 @@ export const PERMISSION_ROUTES = [
   { prefix: '/rm-material',     permission: 'inventory.stock.view' },
 
   // Master Data and Data Import stay admin-only — view and edit.
-  { prefix: '/packing-master',  permission: 'masters.packing.view' },
   { prefix: '/rm-master',       permission: 'masters.rm.view' },
   { prefix: '/product-master',  permission: 'masters.product.view' },
   { prefix: '/equipment-master', permission: 'masters.equipment.view' },
@@ -51,6 +49,7 @@ export const PERMISSION_ROUTES = [
   { prefix: '/recipe',          permission: 'masters.recipe.view' },
   { prefix: '/microbes-master', permission: 'masters.microbe.view' },
   { prefix: '/import',          permission: 'admin.import.execute' },
+  { prefix: '/settings',        permission: 'admin.settings.access' },
 ]
 
 // Longest matching prefix wins, so more specific routes (e.g. /erp/microbial)

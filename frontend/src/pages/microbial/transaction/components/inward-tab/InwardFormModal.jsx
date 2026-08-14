@@ -6,6 +6,7 @@ import { deriveTypeCode, fmtDate } from '../../utils/format.js'
 import { useAvailableSlots } from '../../../../../hooks/microbial/useMicrobialStorage.js'
 import MicrobeAutocomplete from '../shared/MicrobeAutocomplete.jsx'
 import ContainerChooserModal from './ContainerChooserModal.jsx'
+import { toTitleCase } from '../../../../../utils/textDisplay.js'
 
 const EMPTY_FORM = {
   microbe_id: '', microbe_code: '', microbe_name: '',
@@ -68,7 +69,7 @@ export default function InwardFormModal({ open, onClose, microbes, recentRecords
   }
 
   const handleMicrobeSelect = async (m) => {
-    setForm((p) => ({ ...p, microbe_id: m?.microbeId || '', microbe_code: m?.microbeCode || '', microbe_name: m?.microbeName || '', mode: 'new', container_id: '', is_reactivating: false, rack: '', shelf: '', side: '', position: '' }))
+    setForm((p) => ({ ...p, microbe_id: m?.microbeId || '', microbe_code: m?.microbeCode || '', microbe_name: toTitleCase(m?.microbeName) || '', mode: 'new', container_id: '', is_reactivating: false, rack: '', shelf: '', side: '', position: '' }))
     if (m) {
       // Previous entry lookup — most recent inward record for this microbe.
       const matches = recentRecords.filter((r) => r.microbe_code === m.microbeCode).sort((a, b) => new Date(b.created_at) - new Date(a.created_at))

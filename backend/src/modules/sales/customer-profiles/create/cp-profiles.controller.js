@@ -12,14 +12,14 @@ const seedCustomerProfiles = async (req, res) => {
     let created = 0, updated = 0;
     for (const p of profiles) {
       if (!p.customerName?.trim()) continue;
-      const name = p.customerName.trim().toUpperCase();
-      const existing = await prisma.customerProfile.findUnique({
-        where: { customerName: name },
+      const name = p.customerName.trim();
+      const existing = await prisma.customerProfile.findFirst({
+        where: { customerName: { equals: name, mode: "insensitive" } },
       });
       if (existing) {
         if (p.orderCount > existing.orderCount) {
           await prisma.customerProfile.update({
-            where: { customerName: name },
+            where: { customerName: existing.customerName },
             data: {
               company:    p.company   || existing.company,
               orderType:  p.orderType || existing.orderType,
@@ -55,7 +55,7 @@ const upsertManyCpProfiles = async (req, res) => {
         .status(400)
         .json({ success: false, error: "customerName and items[] required" });
 
-    const name = customerName.trim().toUpperCase();
+    const name = customerName.trim();
     let saved = 0;
 
     for (const it of items) {
@@ -91,13 +91,27 @@ const upsertManyCpProfiles = async (req, res) => {
         lastOrderedAt: new Date(),
       };
 
-      const key = {
-        customerName_productName: { customerName: name, productName: pname },
-      };
-      const existing = await prisma.customerProductProfile.findUnique({ where: key });
+      // Compound-unique lookups can't take `mode: 'insensitive'` directly on
+      // a findUnique's composite-key object, so match case/whitespace-
+      // insensitively via findFirst first, then build the exact compound
+      // key from the found row's actual stored values for the update.
+      const existing = await prisma.customerProductProfile.findFirst({
+        where: {
+          customerName: { equals: name, mode: "insensitive" },
+          productName: { equals: pname, mode: "insensitive" },
+        },
+      });
 
       if (existing) {
-        await prisma.customerProductProfile.update({ where: key, data: update });
+        await prisma.customerProductProfile.update({
+          where: {
+            customerName_productName: {
+              customerName: existing.customerName,
+              productName: existing.productName,
+            },
+          },
+          data: update,
+        });
       } else {
         await prisma.customerProductProfile.create({
           data: {

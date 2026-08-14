@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import QRCode from "qrcode";
 
+import { toTitleCase } from '../../../../../utils/textDisplay.js'
 // Generate a data-URL for one packId
 async function toDataUrl(packId) {
   return QRCode.toDataURL(packId, {
@@ -64,12 +65,12 @@ function PackLabel({ pack }) {
         <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "4px", minWidth: 0 }}>
           <div>
             <div style={{ fontSize: "7px", color: "#666", fontWeight: 700, textTransform: "uppercase" }}>Item</div>
-            <div style={{ fontSize: "11px", fontWeight: 700, color: "#111", lineHeight: 1.2 }}>{pack.itemName}</div>
+            <div style={{ fontSize: "11px", fontWeight: 700, color: "#111", lineHeight: 1.2 }}>{toTitleCase(pack.itemName)}</div>
           </div>
           <div>
             <div style={{ fontSize: "7px", color: "#666", fontWeight: 700, textTransform: "uppercase" }}>Pack Qty</div>
             <div style={{ fontSize: "13px", fontWeight: 700, color: "#000" }}>
-              {pack.packQty} {pack.uom}
+              {pack.packQty} {pack.uom?.toUpperCase()}
             </div>
           </div>
           <div>

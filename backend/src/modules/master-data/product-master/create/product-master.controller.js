@@ -14,7 +14,11 @@ export const createProduct = async (req, res) => {
       if (!CANONICAL_UNITS.includes(canonicalUom))
         return res.status(400).json({ success: false, error: `uom must convert to one of ${CANONICAL_UNITS.join(', ')} — got "${uom}"`, code: 'VALIDATION_ERROR' })
     }
-    const existing = await prisma.productMaster.findUnique({ where: { productName } })
+    // productName is stored lowercase (RULES.LOWER) and unique — match
+    // case-insensitively so an existing "npk biofertilizer" is still caught
+    // when someone submits "NPK Biofertilizer" (avoids a raw unique-
+    // constraint error from create() below).
+    const existing = await prisma.productMaster.findFirst({ where: { productName: { equals: productName, mode: 'insensitive' } } })
     if (existing) return res.status(409).json({ success: false, error: 'Product name already exists', code: 'CONFLICT' })
     // productCode is never accepted here — the backend assigns it.
     const nextNum = await getMaxProductCodeNum(prisma)

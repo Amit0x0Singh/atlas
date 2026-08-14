@@ -31,7 +31,7 @@ const Select = forwardRef(function Select({
           onFocus={(e) => { setFocused(true); onFocus?.(e); }}
           onBlur={(e) => { setFocused(false); onBlur?.(e); }}
           className={[
-            'peer w-full appearance-none border rounded-lg px-3 pt-5 pb-2 pr-9 text-sm text-slate-900 dark:text-slate-100',
+            'peer w-full appearance-none border rounded-lg px-3 pt-4 pb-1.5 pr-9 text-sm text-slate-900 dark:text-slate-100',
             'bg-white dark:bg-slate-900 outline-none transition-colors cursor-pointer',
             'disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-slate-50 dark:disabled:bg-slate-800/50',
             error

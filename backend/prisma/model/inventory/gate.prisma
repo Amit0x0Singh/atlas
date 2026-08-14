@@ -11,15 +11,14 @@ model GateInward {
   // Stores the acting account's email (see middleware/auth.js's toReqUser) —
   // not a real UUID, so this column can't be @db.Uuid.
   createdBy    String?   @map("created_by") @db.VarChar(255)
+  updatedBy    String?   @map("updated_by") @db.VarChar(255)
   entryTime    DateTime? @map("entry_time") @db.Timestamptz()
-  numPacks     Int?      @map("num_packs")
 
   requestDelete Boolean @default(false) @map("request_delete")
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
 
-  packs        ErpPack[]
   printMasters PrintMaster[]
 
   @@map("gate_inward")
@@ -35,6 +34,7 @@ model GateOutward {
   status       String  @default("pending") @db.VarChar(50)
   // Same as GateInward.createdBy — an email string, not a UUID.
   createdBy    String? @map("created_by") @db.VarChar(255)
+  updatedBy    String? @map("updated_by") @db.VarChar(255)
 
   requestDelete Boolean @default(false) @map("request_delete")
 

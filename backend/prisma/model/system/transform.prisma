@@ -27,7 +27,10 @@ model TransformJob {
   startedBy     String?   @map("started_by") @db.VarChar(200)
   startedByName String?   @map("started_by_name") @db.VarChar(200)
   createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
   completedAt   DateTime? @map("completed_at") @db.Timestamptz()
+  createdBy     String?   @map("created_by") @db.VarChar(200)
+  updatedBy     String?   @map("updated_by") @db.VarChar(200)
 
   @@map("transform_jobs")
 }

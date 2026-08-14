@@ -5,6 +5,7 @@ import MicrobeList   from '../components/microbe-list/MicrobeList.jsx'
 import MicrobeForm   from '../components/microbe-form/MicrobeForm.jsx'
 import { useMicrobes, useCreateMicrobe, useUpdateMicrobe, useDeleteMicrobe } from '../../../../hooks/masters/useMicrobes.js'
 import { useMicrobialContainers } from '../../../../hooks/masters/useMicrobialContainers.js'
+import { toTitleCase } from '../../../../utils/textDisplay.js'
 
 const EMPTY_FORM = { microbe_name: '', uom: 'KG' }
 
@@ -41,7 +42,7 @@ export default function MicrobesMaster() {
   }
 
   const handleEdit = (m) => {
-    setForm({ microbe_name: m.microbeName, microbe_code: m.microbeCode, uom: m.uom || 'KG' })
+    setForm({ microbe_name: toTitleCase(m.microbeName), microbe_code: m.microbeCode, uom: m.uom || 'KG' })
     setEditId(m.microbeId)
     setShowForm(true)
   }

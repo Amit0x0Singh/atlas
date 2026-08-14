@@ -1,5 +1,4 @@
 import express from "express";
-import multer from "multer";
 
 import UserRouter from "../modules/user/routes.js";
 import InventoryRouter from "../modules/inventory/routes.js";
@@ -28,17 +27,11 @@ import BulkTransformRouter from "../modules/admin_panel/bulk-transform/router.js
 // Admin Panel UI. See modules/admin/rbac/router.js.
 import RbacRouter from "../modules/admin/rbac/router.js";
 
-// Import controller
-import {
-  previewImport,
-  executeImport,
-} from "../modules/inventory/import/create/import.controller.js";
-import { authorize } from "../middleware/auth.js";
+// Settings — Select Options Management Router
+import OptionsAdminRouter from "../modules/options/admin-router.js";
+import OptionsPublicRouter from "../modules/options/public-router.js";
 
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 50 * 1024 * 1024 },
-});
+import { authenticate, authorize } from "../middleware/auth.js";
 
 const router = express.Router();
 
@@ -53,7 +46,7 @@ router.use("/auth", UserRouter);
 //          /api/gate, /api/inventory
 
 router.use("/", InventoryRouter);
- 
+
 
 // ── Sales ─────────────────────────────────────────────────────────────────────
 // Handles: /api/customer-profiles, /api/cp-profiles, /api/tracker,
@@ -86,24 +79,15 @@ router.use("/", MasterDataRouter);
 // Handles: /api/microbial-sfg/*, /api/microbial/*
 router.use("/", MicrobialRouter);
 
+// ── Select Options (public read) ─────────────────────────────────────────────
+// Handles: /api/options/:groupCode — active values for one option group, for
+// populating dropdowns app-wide. authenticate-only (no permission check)
+// since every logged-in user's forms need to read these, not just admins.
+router.use("/options", authenticate, OptionsPublicRouter);
+
 // ── Export ────────────────────────────────────────────────────────────────────
 // Handles: /api/export/*
 // router.use("/", ExportRouter);
-
-// ── Import (Excel file upload → DB) ──────────────────────────────────────────
-router.post(
-  "/import/preview",
-  authorize("admin.import.execute"),
-  upload.single("file"),
-  previewImport,
-);
-
-router.post(
-  "/import/execute",
-  authorize("admin.import.execute"),
-  upload.single("file"),
-  executeImport,
-);
 
 // ---- RBAC management (roles/permissions/users) ────────────────────────────────
 // Must precede /admin below — AdminPanelRouter's own /:resource catch-all
@@ -126,13 +110,15 @@ router.use("/admin/backup", authorize("admin.backup.manage"), BackupRouter);
 // Same reason as data-management/backup above — must precede AdminPanelRouter.
 router.use("/admin/bulk-transform", authorize("admin.bulk-transform.manage"), BulkTransformRouter);
 
+// ---- select options management routes ────────────────────────────────────────
+// Same reason as data-management/backup/bulk-transform above — must precede
+// AdminPanelRouter's own /:resource catch-all.
+router.use("/admin/options", OptionsAdminRouter);
+
 // ---- admin panel routes (not prefixed with /api) ──────────────────────────────
 // Full raw CRUD (incl. delete-all-rows per resource) across every model.
 // Reads need admin.panel.access; writes (POST/PUT/PATCH/DELETE) additionally
 // need admin.panel.manage — see admin_panel/router.js for the per-method split.
 router.use("/admin", AdminPanelRouter);
-
-
-
 
 export default router;

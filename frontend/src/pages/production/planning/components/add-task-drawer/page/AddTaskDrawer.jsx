@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { PLANT_CONFIG, PLANT_KEYS, SHIFTS } from '../../../data/plantConfig.js'
+import { PLANT_CONFIG, PLANT_KEYS } from '../../../data/plantConfig.js'
+import { useOptionValues } from '../../../../../../hooks/useOptionValues.js'
 import './AddTaskDrawer.css'
 import { sfgLoad } from '../../../utils/storage.js'
 import { todayISO } from '../../../utils/date.js'
@@ -14,6 +15,7 @@ import DiPickerSection from '../components/DiPickerSection.jsx'
 import PackingDetailsSection from '../components/PackingDetailsSection.jsx'
 import AssignmentAndExtrasSection from '../components/AssignmentAndExtrasSection.jsx'
 
+import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 const SECTION_TO_PLANT = {
   NANO: 'Nano', BOTANICAL: 'Botanical',
   LIQUID: 'Liquid', POWDER: 'Powder', GRANULES: 'Granules',
@@ -21,19 +23,20 @@ const SECTION_TO_PLANT = {
 
 export default function AddTaskDrawer({ task, defaultDate, onSave, onClose }) {
   const isEdit = !!task
+  const { data: shiftOptions = [] } = useOptionValues('SHIFT')
 
   const [plant,           setPlant]           = useState(task?.plant        || 'Nano')
   const [date,            setDate]            = useState(task?.date         || defaultDate || todayISO())
   const [diNo,            setDiNo]            = useState(task?.diNo         || '')
   const [shift,           setShift]           = useState(task?.shift        || 'General')
-  const [productName,     setProductName]     = useState(task?.productName  || '')
+  const [productName,     setProductName]     = useState(toTitleCase(task?.productName)  || '')
   const [batchCode,       setBatchCode]       = useState(task?.batchCode    || '')
   const [qty,             setQty]             = useState(task?.qty          || '')
   const [process,         setProcess]         = useState(task?.process      || '')
   const [incharge,        setIncharge]        = useState(task?.incharge     || '')
   const [equipment,       setEquipment]       = useState(task?.equipment    || '')
-  const [location,        setLocation]        = useState(task?.location     || '')
-  const [carrier,         setCarrier]         = useState(task?.carrier      || '')
+  const [location,        setLocation]        = useState(toTitleCase(task?.location)     || '')
+  const [carrier,         setCarrier]         = useState(toTitleCase(task?.carrier)      || '')
   const [specs,           setSpecs]           = useState(task?.specs        || '')
   const [status,          setStatus]          = useState(task?.status       || 'Not Started')
   const [remarks,         setRemarks]         = useState(task?.remarks      || '')
@@ -112,7 +115,7 @@ export default function AddTaskDrawer({ task, defaultDate, onSave, onClose }) {
     if (!entry) return
     setBatchCode(entry.batchCode)
     if (!qty) setQty(String(entry.qtyRemaining))
-    setSfgHint(`Sourcing: ${entry.batchCode} — ${entry.qtyRemaining} ${entry.qtyUom} @ ${entry.location || '—'}`)
+    setSfgHint(`Sourcing: ${entry.batchCode} — ${entry.qtyRemaining} ${entry.qtyUom} @ ${toTitleCase(entry.location) || '—'}`)
   }
 
   async function handleDiSelect(so) {
@@ -138,7 +141,7 @@ export default function AddTaskDrawer({ task, defaultDate, onSave, onClose }) {
   }
 
   function applyDiItem(item) {
-    setProductName(item.productName)
+    setProductName(toTitleCase(item.productName))
     if (item.orderQty) setQty(String(item.orderQty))
     if (item.sectionName) {
       const autoPlant = SECTION_TO_PLANT[item.sectionName.toUpperCase()]
@@ -262,7 +265,7 @@ export default function AddTaskDrawer({ task, defaultDate, onSave, onClose }) {
             />
             <Field label="Shift">
               <Sel value={shift} onChange={e => setShift(e.target.value)}>
-                {SHIFTS.map(s => <option key={s}>{s}</option>)}
+                {shiftOptions.map(s => <option key={s.code} value={s.code}>{s.label}</option>)}
               </Sel>
             </Field>
           </div>
@@ -273,12 +276,12 @@ export default function AddTaskDrawer({ task, defaultDate, onSave, onClose }) {
               <AutocompleteInput
                 value={productName}
                 onChange={setProductName}
-                onSelect={p => setProductName(p.productName)}
+                onSelect={p => setProductName(toTitleCase(p.productName))}
                 fetchFn={q => planTasksApi.searchProducts(q, plant)}
                 placeholder="e.g. Kohinoor, Trichoderma..."
                 renderOption={p => (
                   <div>
-                    <span className="font-semibold">{p.productName}</span>
+                    <span className="font-semibold">{toTitleCase(p.productName)}</span>
                     {p.productCode && <span className="text-gray-400 ml-2 font-mono text-[11px]">{p.productCode}</span>}
                   </div>
                 )}

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { toTitleCase } from '../../../../../utils/textDisplay.js'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CustomerProductPicker
@@ -51,16 +52,17 @@ export default function CustomerProductPicker({ value, cpProfiles, onSelect, onC
               type="button"
               onMouseDown={e => {
                 e.preventDefault()
-                setSearch(p.productName)
-                onChange(p.productName)
+                const name = toTitleCase(p.productName)
+                setSearch(name)
+                onChange(name)
                 setOpen(false)
                 onSelect(p)
               }}
               className="w-full text-left px-3 py-2 text-sm hover:bg-green-50 flex items-center justify-between gap-2"
             >
-              <span className="font-medium text-gray-800 truncate">{p.productName}</span>
+              <span className="font-medium text-gray-800 truncate">{toTitleCase(p.productName)}</span>
               <span className="text-xs text-gray-400 shrink-0 flex gap-1">
-                {p.unitQty    && <span>{p.unitQty}{p.unitUom}</span>}
+                {p.unitQty    && <span>{p.unitQty}{p.unitUom?.toUpperCase()}</span>}
                 {p.primaryPack && <span>· {p.primaryPack}</span>}
                 {p.labelType   && <span className="text-green-600">· {p.labelType.replace('_', ' ')}</span>}
               </span>

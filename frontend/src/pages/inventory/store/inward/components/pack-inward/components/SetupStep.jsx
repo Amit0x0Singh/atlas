@@ -1,7 +1,8 @@
 import { Smartphone, ScanBarcode } from 'lucide-react'
 import { Button } from '../../../../../../../components/ui'
-import { WAREHOUSES } from './constants.js'
+import { useOptionValues } from '../../../../../../../hooks/useOptionValues.js'
 
+import { toTitleCase } from '../../../../../../../utils/textDisplay.js'
 export default function SetupStep({
   error, loadingGroups, pendingGroups, activeSessionMap,
   selected, warehouse, creating, scanMode,
@@ -10,6 +11,7 @@ export default function SetupStep({
   const selectedActiveSession = selected
     ? activeSessionMap[`${selected.itemCode}-${selected.lotNo}`]
     : null
+  const { data: warehouses = [] } = useOptionValues('WAREHOUSE')
 
   return (
     <div className="p-4 md:p-6 max-w-2xl">
@@ -51,7 +53,7 @@ export default function SetupStep({
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <div className="font-medium">{g.itemName}</div>
+                        <div className="font-medium">{toTitleCase(g.itemName)}</div>
                         <div className="text-sm text-gray-500">
                           Code: {g.itemCode} | Lot: {g.lotNo} |{' '}
                           <span className="font-semibold text-blue-700">{g.bagCount} bags</span>
@@ -84,11 +86,11 @@ export default function SetupStep({
               onChange={e => onWarehouseChange(e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-800 font-medium"
             >
-              {WAREHOUSES.map(w => <option key={w} value={w}>{w}</option>)}
+              {warehouses.map(w => <option key={w.code} value={w.code}>{w.label}</option>)}
             </select>
             {selectedActiveSession ? (
               <p className="text-xs text-amber-600 mt-1.5 font-medium">
-                Session was last using <strong>{selectedActiveSession.warehouse}</strong> — change here if you want to scan remaining bags to a different warehouse.
+                Session was last using <strong>{(selectedActiveSession.warehouse || '').toUpperCase()}</strong> — change here if you want to scan remaining bags to a different warehouse.
               </p>
             ) : (
               <p className="text-xs text-gray-400 mt-1.5">

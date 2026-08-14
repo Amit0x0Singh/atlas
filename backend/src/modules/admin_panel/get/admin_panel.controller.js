@@ -1,4 +1,5 @@
 import prisma from '../../../db.js';
+import { redactSecretFields, getSearchableFields, scalarFieldType } from '../shared/field-guard.js';
 
 // ─── Model registry ───────────────────────────────────────────────────────────
 // idField:  string → simple PK field name
@@ -11,10 +12,6 @@ import prisma from '../../../db.js';
 export const MODELS = {
   // ── Inventory ──────────────────────────────────────────────────────────────
   'rm-master': { model: 'rmMaster', group: 'masters', title: 'Raw Material Master',              idField: 'itemCode',                orderBy: { createdAt: 'desc' } },
-  'packing-material': { model: 'packingMaterial', group: 'masters', title: 'Packing Material',        idField: 'id',                      orderBy: { createdAt: 'desc' } },
-  'bulk-location': { model: 'bulkLocation', group: 'masters', title: 'Bulk Locations',           idField: 'locationId',              orderBy: { createdAt: 'desc' } },
-  'bulk-lot-entry': { model: 'bulkLotEntry', group: 'inventory', title: 'Bulk Lot Entries',           idField: 'id',                      orderBy: { createdAt: 'desc' } },
-  'bulk-lot-sequence': { model: 'bulkLotSequence', group: 'inventory', title: 'Bulk Lot Sequence',        idField: ['itemCode', 'year'],       orderBy: { year: 'desc' } },
   'lot-sequence': { model: 'lotSequence', group: 'inventory', title: 'Lot Sequence',            idField: ['itemCode', 'year'],       orderBy: { year: 'desc' } },
   'print-master': { model: 'printMaster', group: 'inventory', title: 'Print Master',            idField: 'id',                       orderBy: { createdAt: 'desc' } },
   'pack-detail': { model: 'packDetail', group: 'inventory', title: 'Pack Detail',             idField: 'packId'                                                  },
@@ -69,23 +66,11 @@ export const MODELS = {
   'erp-suppliers': { model: 'erpSupplier', group: 'legacy', title: 'ERP Suppliers',        idField: 'supplierId',   orderBy: { supplierName: 'asc' } },
   'erp-plants': { model: 'erpPlant', group: 'legacy', title: 'ERP Plants',           idField: 'plantId',      orderBy: { plantName: 'asc' } },
   'erp-equipment': { model: 'erpEquipment', group: 'legacy', title: 'ERP Equipment',       idField: 'equipmentId',  orderBy: { equipmentName: 'asc' } },
-  'erp-items': { model: 'erpItem', group: 'legacy', title: 'ERP Items',            idField: 'itemCode',     orderBy: { itemName: 'asc' } },
   'customers': { model: 'customer', group: 'legacy', title: 'Customers',           idField: 'customerId',   orderBy: { customerName: 'asc' } },
-  'erp-products': { model: 'erpProduct', group: 'legacy', title: 'ERP Products',         idField: 'productCode',  orderBy: { productName: 'asc' } },
-  'bom-headers': { model: 'erpBomHeader', group: 'legacy', title: 'BOM Headers',       idField: 'bomId',        orderBy: { createdAt: 'desc' } },
-  'bom-lines-formulation': { model: 'erpBomLineFormulation', group: 'legacy', title: 'BOM Lines (Formulation)', idField: 'id'                                         },
-  'bom-lines-packing': { model: 'erpBomLinePacking', group: 'legacy', title: 'BOM Lines (Packing)',  idField: 'id'                                           },
-  'gate-lot-sequences': { model: 'gateLotSequence', group: 'legacy', title: 'Gate Lot Sequences',    idField: ['itemCode', 'year'], orderBy: { year: 'desc' } },
 
   // ── ERP Inventory ──────────────────────────────────────────────────────────
   'gate-inward': { model: 'gateInward', group: 'gate', title: 'Gate Inward',       idField: 'inwardId',    orderBy: { createdAt: 'desc' } },
-  'erp-packs': { model: 'erpPack', group: 'legacy', title: 'ERP Packs',          idField: 'packId',      orderBy: { createdAt: 'desc' } },
   'gate-outward': { model: 'gateOutward', group: 'gate', title: 'Gate Outward',      idField: 'outwardId',   orderBy: { createdAt: 'desc' } },
-  'stock-adjustments': { model: 'stockAdjustment', group: 'legacy', title: 'Stock Adjustments',  idField: 'adjustmentId', orderBy: { raisedAt: 'desc' } },
-  'warehouse-transfers': { model: 'warehouseTransfer', group: 'legacy', title: 'Warehouse Transfers', idField: 'transferId', orderBy: { initiatedAt: 'desc' } },
-  'fifo-override-log': { model: 'fifoOverrideLog', group: 'legacy', title: 'FIFO Override Log',  idField: 'id',          orderBy: { createdAt: 'desc' } },
-  'erp-containers': { model: 'erpContainer', group: 'legacy', title: 'ERP Containers',     idField: 'containerId', orderBy: { createdAt: 'desc' } },
-  'decanting-log': { model: 'decantingLog', group: 'legacy', title: 'Decanting Log',     idField: 'id',          orderBy: { createdAt: 'desc' } },
 
   // ── ERP Sales (legacy) ─────────────────────────────────────────────────────
   'erp-sales-orders': { model: 'erpSalesOrder', group: 'legacy', title: 'ERP Sales Orders (legacy)', idField: 'diNumber', orderBy: { createdAt: 'desc' } },
@@ -95,7 +80,6 @@ export const MODELS = {
   'erp-production-plans': { model: 'erpProductionPlan', group: 'legacy', title: 'ERP Production Plans (legacy)',      idField: 'planId',      orderBy: { createdAt: 'desc' } },
   'erp-production-jobs': { model: 'erpProductionJob', group: 'legacy', title: 'ERP Production Jobs (legacy)',       idField: 'jobId',       orderBy: { createdAt: 'desc' } },
   'job-equipment-assignments': { model: 'jobEquipmentAssignment', group: 'legacy', title: 'Job Equipment Assignments (legacy)', idField: 'id'                                           },
-  'erp-bom-issuance': { model: 'erpBomIssuance', group: 'legacy', title: 'ERP BOM Issuance (legacy)',         idField: 'issuanceId',  orderBy: { issuedAt: 'desc' } },
   'batch-qc-records': { model: 'batchQcRecord', group: 'legacy', title: 'Batch QC Records (legacy)',          idField: 'qcId',        orderBy: { createdAt: 'desc' } },
   'production-loss-log': { model: 'productionLossLog', group: 'legacy', title: 'Production Loss Log (legacy)',      idField: 'id',          orderBy: { createdAt: 'desc' } },
   'time-motion-logs': { model: 'timeMotionLog', group: 'legacy', title: 'Time & Motion Logs (legacy)',          idField: 'id',          orderBy: { createdAt: 'desc' } },
@@ -118,21 +102,6 @@ export const MODELS = {
   'notification-escalations': { model: 'notificationEscalation', group: 'notifications', title: 'Notification Escalations',  idField: 'id', idType: 'bigint', orderBy: { escalatedAt: 'desc' } },
   'notification-delivery-log': { model: 'notificationDeliveryLog', group: 'notifications', title: 'Notification Delivery Log', idField: 'id', idType: 'bigint', orderBy: { sentAt: 'desc' } },
 };
-
-// Fields stripped from every response for these resources — this endpoint
-// returns raw Prisma rows with no per-model `select`, and 'users' now holds
-// real bcrypt hashes since login moved to the database.
-const REDACT = {
-  users: ['passwordHash', 'pinHash'],
-};
-
-export function redact(resource, record) {
-  const fields = REDACT[resource];
-  if (!fields || !record) return record;
-  const copy = { ...record };
-  for (const f of fields) delete copy[f];
-  return copy;
-}
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -159,6 +128,63 @@ export function buildWhere(meta, params) {
   return { [meta.idField]: val };
 }
 
+// Builds the Prisma `where` for listRecords from the generic admin table's
+// search box + filter panel — used identically for both count() and
+// findMany() so the reported total always matches what's actually shown.
+//
+// `search` -> substring OR across every String scalar field (DMMF-derived,
+// secrets excluded — see getSearchableFields), trimmed and whitespace-
+// collapsed so stray double-spaces in the search box don't break matching.
+//
+// `filtersJson` -> a JSON-encoded `{ fieldName: value }` object from the
+// filter panel. Only keys that resolve to a real scalar column on this
+// model are honored (everything else is silently dropped, not errored —
+// defends against a stale/renamed field in a cached client and against
+// arbitrary-field or operator-shaped values being smuggled in as filters).
+// String fields match case-insensitively via `contains` — the same partial-
+// match semantics as the search box, since the frontend doesn't tell this
+// endpoint whether a given filter is a closed select (where an exact value
+// was picked) or a free-text box, and `contains` is correct for both: a
+// select's option value still only matches rows containing that exact
+// string, while a free-text filter gets real partial matching. A `{ from, to }`
+// value against a DateTime field becomes an inclusive date range.
+function buildSearchAndFilterWhere(meta, { search, filtersJson }) {
+  const and = [];
+
+  if (search && typeof search === 'string') {
+    const term = search.trim().replace(/\s+/g, ' ');
+    const searchable = getSearchableFields(meta);
+    if (term && searchable.length) {
+      and.push({ OR: searchable.map((f) => ({ [f]: { contains: term, mode: 'insensitive' } })) });
+    }
+  }
+
+  if (filtersJson) {
+    let filters;
+    try { filters = JSON.parse(filtersJson); } catch { filters = null; }
+    if (filters && typeof filters === 'object') {
+      for (const [field, value] of Object.entries(filters)) {
+        if (value === null || value === undefined || value === '') continue;
+        const type = scalarFieldType(meta, field);
+        if (!type) continue; // unknown/relation field — ignore rather than error
+        if (type === 'DateTime' && value && typeof value === 'object') {
+          const { from, to } = value;
+          const range = {};
+          if (from && typeof from === 'string') range.gte = new Date(from);
+          if (to && typeof to === 'string') range.lte = new Date(`${to}T23:59:59.999Z`);
+          if (Object.keys(range).length) and.push({ [field]: range });
+        } else if (type === 'String' && typeof value === 'string' && value.trim()) {
+          and.push({ [field]: { contains: value.trim(), mode: 'insensitive' } });
+        }
+        // Any other type/shape combination is ignored — not a filter this
+        // endpoint knows how to safely apply.
+      }
+    }
+  }
+
+  return and.length ? { AND: and } : {};
+}
+
 // ─── Route handlers ───────────────────────────────────────────────────────────
 
 export const listRecords = async (req, res) => {
@@ -169,14 +195,16 @@ export const listRecords = async (req, res) => {
     const limit = Math.min(500, parseInt(req.query.limit) || 200);
     const skip  = (page - 1) * limit;
 
-    const opts = { skip, take: limit };
+    const where = buildSearchAndFilterWhere(meta, { search: req.query.search, filtersJson: req.query.filters });
+
+    const opts = { skip, take: limit, where };
     if (meta.orderBy) opts.orderBy = meta.orderBy;
     const [total, records] = await Promise.all([
-      prisma[meta.model].count(),
+      prisma[meta.model].count({ where }),
       prisma[meta.model].findMany(opts),
     ]);
 
-    return res.json({ success: true, data: records.map((r) => redact(req.params.resource, r)), total, page, limit });
+    return res.json({ success: true, data: redactSecretFields(meta, records), total, page, limit });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
   }
@@ -189,7 +217,7 @@ export const getRecord = async (req, res) => {
     const where  = buildWhere(meta, req.params);
     const record = await prisma[meta.model].findUnique({ where });
     if (!record) return res.status(404).json({ success: false, error: 'Record not found', code: 'NOT_FOUND' });
-    return res.json({ success: true, data: redact(req.params.resource, record) });
+    return res.json({ success: true, data: redactSecretFields(meta, record) });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
   }

@@ -2,6 +2,7 @@ import { useState } from "react";
 import Pagination from "../../../../../components/pagination/Pagination.jsx";
 import { Button } from "../../../../../components/ui";
 import "./InwardTable.css";
+import { toTitleCase } from "../../../../../utils/textDisplay.js";
 
 function StatusBadge({ status }) {
   return (
@@ -25,7 +26,7 @@ function DeleteRequestBadge() {
   return <span className="it-del-badge">Delete Requested</span>;
 }
 
-export default function InwardTable({ list, total, onOpenDetail, onRequestDelete }) {
+export default function InwardTable({ list, total, onRequestDelete }) {
   const [limit, setLimit] = useState(15);
   const [page, setPage] = useState(1);
   const paginated = list.slice((page - 1) * limit, page * limit);
@@ -65,10 +66,10 @@ export default function InwardTable({ list, total, onOpenDetail, onRequestDelete
                 className={`it-row ${idx % 2 === 0 ? "it-row--even" : "it-row--odd"}`}
               >
                 <td className="it-td it-td-text">
-                  {item.company_name || item.companyName || "—"}
+                  {toTitleCase(item.company_name || item.companyName) || "—"}
                 </td>
                 <td className="it-td it-td-supplier">
-                  {item.supplier_name || item.supplierName}
+                  {toTitleCase(item.supplier_name || item.supplierName)}
                 </td>
                 <td className="it-td it-td-text">
                   {item.invoice_no || item.invoiceNo || "—"}
@@ -86,14 +87,6 @@ export default function InwardTable({ list, total, onOpenDetail, onRequestDelete
                 </td>
                 <td className="it-td">
                   <div className="it-actions">
-                    <Button
-                      variant="outline"
-                      size="xs"
-                      onClick={() => onOpenDetail(item.inward_id || item.inwardId)}
-                    >
-                      Details
-                    </Button>
-
                     {item.request_delete ? (
                       <DeleteRequestBadge />
                     ) : (

@@ -2,6 +2,7 @@ import { Loader2, ClipboardList, FlaskConical, X } from 'lucide-react'
 import { Button, IconButton, BottomSheet } from '../../../../../../../components/ui'
 import { PLANT_BADGE, statusBadgeCls } from '../../../../../../production/planning/data/plantConfig.js'
 
+import { toTitleCase } from '../../../../../../../utils/textDisplay.js'
 export default function SelectStep({
   error, isMobile,
   selProduct, batchQty, batchUom, batchRef, diNo, selTaskId,
@@ -13,7 +14,7 @@ export default function SelectStep({
       <dl className="space-y-2 text-sm mb-4">
         <div className="flex items-center justify-between gap-3">
           <dt className="text-gray-400">Batch Qty</dt>
-          <dd className="font-semibold text-gray-800">{batchQty || '—'} {batchUom}</dd>
+          <dd className="font-semibold text-gray-800">{batchQty || '—'} {batchUom?.toUpperCase()}</dd>
         </div>
         {batchRef && (
           <div className="flex items-center justify-between gap-3">
@@ -100,7 +101,7 @@ export default function SelectStep({
                       </span>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
-                          <div className="font-semibold text-gray-900 text-sm truncate">{task.productName}</div>
+                          <div className="font-semibold text-gray-900 text-sm truncate">{toTitleCase(task.productName)}</div>
                           <span className={`shrink-0 text-[10px] px-2 py-0.5 rounded-full font-bold ${statusBadgeCls(task.status)}`}>{task.status}</span>
                         </div>
                         <div className="flex items-center gap-3 mt-1 flex-wrap text-xs text-gray-400">
@@ -132,7 +133,7 @@ export default function SelectStep({
                   </span>
                   <div className="min-w-0">
                     <p className="text-[11px] font-bold text-indigo-400 uppercase tracking-wide">Selected Task</p>
-                    <p className="text-sm font-bold text-gray-900 truncate">{selProduct.productName}</p>
+                    <p className="text-sm font-bold text-gray-900 truncate">{toTitleCase(selProduct.productName)}</p>
                   </div>
                   <IconButton icon={X} onClick={onClearSelection} variant="ghost" size="xs" tooltip="Clear selection" className="ml-auto flex-shrink-0" />
                 </div>
@@ -154,7 +155,7 @@ export default function SelectStep({
       {/* ── Mobile: selected-task detail opens as a popup instead of an
           inline side panel — pops up automatically once a task is picked. */}
       {isMobile && (
-        <BottomSheet open={!!selProduct} onClose={onClearSelection} title={selProduct?.productName || 'Selected Task'}>
+        <BottomSheet open={!!selProduct} onClose={onClearSelection} title={toTitleCase(selProduct?.productName) || 'Selected Task'}>
           <div className="p-4">
             {taskDetailBody}
           </div>

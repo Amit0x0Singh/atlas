@@ -1,41 +1,38 @@
 import { useState, useEffect } from "react";
 import { DoorOpen, X } from "lucide-react";
 import { packsApi, rmApi, gateApi } from "../../../../../../api/inventory.js";
-import { packingMaterialApi } from "../../../../../../api/masters.js";
 import { Button, IconButton } from "../../../../../../components/ui";
-import { SUB_TYPES } from "../../../../../masters/packing/components/packing-constants/packingConstants.jsx";
 import { useGateInward, useUpdateGateInwardStatus } from "../../../../../../hooks/inventory/useGate.js";
 import { todayStr, resolveExpiryDate } from "../utils/expiryDate.js";
-import { inp, lbl } from "../utils/formStyles.js";
+import { inp, lbl, withError } from "../utils/formStyles.js";
 import ItemLine, { BLANK_BATCH } from "../components/ItemLine.jsx";
+import FieldError from "../components/FieldError.jsx";
 import "./GenerateForm.css";
 
-// Packing Material Master's own browsing UI (CategoryList/SubTypeGrid) only
-// renders this fixed category → sub-type structure — a row whose subType
-// doesn't match one of these is invisible there (can't be seen, edited, or
-// deleted from Packing Material Master at all). Applying the same check here keeps
-// this item search limited to packing materials the user can actually find
-// and manage in Packing Material Master, instead of surfacing orphaned rows
-// that read as "materials I never created."
-function isProperlyCategorized(pm) {
-  return (SUB_TYPES[pm.category] || []).some(s => s.value === pm.subType);
-}
-
+import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 const BLANK_ITEM = () => ({
-  selectedItem: null,   // { itemCode, itemName, uom, _type: 'rm'|'pm', _pmData?: {...} }
-  packQty: "",
+  selectedItem: null,   // { itemCode, itemName, uom }
   batches: [BLANK_BATCH()],
 });
 const BLANK_HDR = { supplier: "", invoiceNo: "", receivedDate: todayStr() };
 
 export default function GenerateForm({ onGenerated, prefill, onGateUsed, onUnlink, onOpenGatePanel }) {
   const [rmList, setRmList]           = useState([]);
-  const [pmList, setPmList]           = useState([]);
   const [hdr, setHdr]                 = useState(BLANK_HDR);
   const [items, setItems]             = useState([BLANK_ITEM()]);
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState("");
+  // Field-level validation errors, keyed by a flat string identifying the
+  // exact input (e.g. "hdr.supplier", "item.0.packQty",
+  // "item.0.batch.1.numberOfBags") — rendered below that specific input,
+  // separately from the general/API `error` banner above.
+  const [fieldErrors, setFieldErrors] = useState({});
   const [linkedEntry, setLinkedEntry] = useState(null);
+  // Bumped on every reset so ItemLine (and its nested search/lot state) is
+  // remounted instead of reused — items.map(key={i}) alone keeps the same
+  // key across a reset, so the old search text/lot number would otherwise
+  // survive in the still-mounted component even after `items` is cleared.
+  const [formVersion, setFormVersion] = useState(0);
 
   // Pending-entry count for the "Incoming Gate Entries" button badge —
   // polls so it stays current even when another user (e.g. Security)
@@ -45,10 +42,9 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed, onUnlin
   const pendingCount = pending?.total ?? 0;
   const updateGateStatus = useUpdateGateInwardStatus();
 
-  // Load RM list and packing materials once
+  // Load RM list once
   useEffect(() => {
     rmApi.list({}).then(r => setRmList(r.data || [])).catch(console.error);
-    packingMaterialApi.list().then(r => setPmList((r.data || []).filter(isProperlyCategorized))).catch(console.error);
   }, []);
 
   // Auto-fill header from gate inward selection
@@ -63,41 +59,65 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed, onUnlin
     });
     setLinkedEntry(prefill);
     setError("");
+    setFieldErrors({});
   }, [prefill]);
 
   const addItem     = ()         => setItems(its => [...its, BLANK_ITEM()]);
-  const removeItem  = (i)        => setItems(its => its.filter((_, idx) => idx !== i));
-  const updateItem  = (i, next)  => setItems(its => its.map((it, idx) => idx === i ? next : it));
-  const updateHdr   = (field, value) => setHdr(h => ({ ...h, [field]: value }));
+  const removeItem  = (i)        => { setItems(its => its.filter((_, idx) => idx !== i)); setFieldErrors({}); };
+  const updateItem  = (i, next)  => {
+    // Batch add/remove shifts every later batch's index, which would leave
+    // stale field errors pointing at the wrong batch — safest to drop all
+    // field errors whenever an item's batch count changes.
+    if (items[i] && next.batches.length !== items[i].batches.length) setFieldErrors({});
+    setItems(its => its.map((it, idx) => idx === i ? next : it));
+  };
+  const updateHdr   = (field, value) => {
+    setHdr(h => ({ ...h, [field]: value }));
+    clearFieldError(`hdr.${field}`);
+  };
+
+  const clearFieldError = (key) => {
+    setFieldErrors(fe => {
+      if (!(key in fe)) return fe;
+      const { [key]: _omit, ...rest } = fe;
+      return rest;
+    });
+  };
 
   const isManual = !linkedEntry;
 
+  const validate = () => {
+    const errs = {};
+    if (isManual) {
+      if (!hdr.supplier.trim())  errs["hdr.supplier"]     = "Supplier is required";
+      if (!hdr.invoiceNo.trim()) errs["hdr.invoiceNo"]    = "Invoice No is required";
+      if (!hdr.receivedDate)     errs["hdr.receivedDate"] = "Received date is required";
+    }
+    items.forEach((it, i) => {
+      if (!it.selectedItem) {
+        errs[`item.${i}.selectedItem`] = "Please select a raw material";
+      }
+      it.batches.forEach((b, j) => {
+        if (!b.numberOfBags || parseInt(b.numberOfBags, 10) < 1) {
+          errs[`item.${i}.batch.${j}.numberOfBags`] = "Enter a valid number of bags";
+        }
+        if (!b.packQty || parseFloat(b.packQty) <= 0) {
+          errs[`item.${i}.batch.${j}.packQty`] = "Enter a valid qty per bag";
+        }
+      });
+    });
+    return errs;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (isManual && (!hdr.supplier.trim() || !hdr.invoiceNo.trim() || !hdr.receivedDate)) {
-      setError("Supplier, Invoice No. and Received Date are required — fill them in, or pick an Incoming Gate Entry");
-      return;
-    }
-    for (let i = 0; i < items.length; i++) {
-      const it = items[i];
-      if (!it.selectedItem) {
-        setError(`Item ${i + 1}: please select a raw material or packing material`);
-        return;
-      }
-      if (!it.packQty || parseFloat(it.packQty) <= 0) {
-        setError(`Item ${i + 1}: enter a valid qty per bag`);
-        return;
-      }
-      for (let j = 0; j < it.batches.length; j++) {
-        if (!it.batches[j].numberOfBags || parseInt(it.batches[j].numberOfBags) < 1) {
-          setError(`Item ${i + 1}, Batch Group ${j + 1}: enter a valid number of bags`);
-          return;
-        }
-      }
-    }
+    setError("");
+
+    const errs = validate();
+    setFieldErrors(errs);
+    if (Object.keys(errs).length > 0) return;
 
     setLoading(true);
-    setError("");
     try {
       // Manual entry: mint the backing Gate Inward first (company assigned
       // server-side), then proceed exactly like the linked-entry path below
@@ -119,9 +139,9 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed, onUnlin
           itemName:     it.selectedItem.itemName,
           uom:          it.selectedItem.uom,
           gateInwardId,
-          packQty:      parseFloat(it.packQty),
           batches: it.batches.map(b => ({
             numberOfBags:      parseInt(b.numberOfBags),
+            packQty:           parseFloat(b.packQty),
             customerBatchCode: b.customerBatchCode || undefined,
             expiryDate:        resolveExpiryDate(hdr.receivedDate, b.expiryMode, {
               dateValue: b.expiryDateValue, months: b.remainingMonths, years: b.remainingYears,
@@ -130,12 +150,24 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed, onUnlin
         });
         allResults.push(res.data);
       }
+
+      // Snapshot summary info before the form state below is cleared.
+      const totalPacks  = allResults.reduce((n, r) => n + (r?.packs?.length || 0), 0);
+      const itemNames   = items.map(it => it.selectedItem.itemName);
+      const lotNumbers  = allResults.map(r => r.lotNo);
+      const groups      = items.map((it, idx) => ({ itemCode: it.selectedItem.itemCode, lotNo: allResults[idx]?.lotNo }));
+      const invoiceNo   = hdr.invoiceNo;
+
+      // Full reset — clears header, items/batches, the linked gate entry,
+      // and remounts ItemLine (via formVersion) so no stale item search text
+      // or lot number lingers for the next entry.
       setItems([BLANK_ITEM()]);
       setHdr(BLANK_HDR);
+      setFieldErrors({});
+      setFormVersion(v => v + 1);
       try { await updateGateStatus.mutateAsync({ id: gateInwardId, data: { status: "approved" } }) } catch { /* ignore */ }
       setLinkedEntry(null);
-      const totalPacks = allResults.reduce((n, r) => n + (r?.packs?.length || 0), 0);
-      onGenerated?.({ results: allResults, totalPacks });
+      onGenerated?.({ results: allResults, totalPacks, itemNames, invoiceNo, lotNumbers, groups });
       onGateUsed?.();
     } catch (ex) {
       setError(ex.message);
@@ -155,7 +187,7 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed, onUnlin
           {linkedEntry ? (
             <>
               <span style={{ color: "#15803d" }}>
-                📎 {linkedEntry.supplierName}{linkedEntry.invoiceNo && ` — ${linkedEntry.invoiceNo}`}
+                📎 {toTitleCase(linkedEntry.supplierName)}{linkedEntry.invoiceNo && ` — ${linkedEntry.invoiceNo}`}
               </span>
               <IconButton icon={X} variant="ghost" size="xs" tooltip="Unlink and switch to manual entry"
                 onClick={() => { setLinkedEntry(null); setHdr(BLANK_HDR); onUnlink?.(); }}
@@ -202,9 +234,10 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed, onUnlin
                 onChange={e => updateHdr("supplier", e.target.value)}
                 readOnly={!isManual}
                 placeholder={isManual ? "Enter supplier name" : undefined}
-                style={isManual ? inp : { ...inp, background: "#f8fafc", color: "#0f172a", cursor: "not-allowed" }}
+                style={withError(isManual ? inp : { ...inp, background: "#f8fafc", color: "#0f172a", cursor: "not-allowed" }, !!fieldErrors["hdr.supplier"])}
                 required
               />
+              <FieldError message={fieldErrors["hdr.supplier"]} />
             </div>
             <div style={{ minWidth: 0 }}>
               <label style={lbl}>Invoice No *</label>
@@ -213,9 +246,10 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed, onUnlin
                 onChange={e => updateHdr("invoiceNo", e.target.value)}
                 readOnly={!isManual}
                 placeholder={isManual ? "e.g. INV-2026-001" : undefined}
-                style={isManual ? inp : { ...inp, background: "#f8fafc", color: "#0f172a", cursor: "not-allowed" }}
+                style={withError(isManual ? inp : { ...inp, background: "#f8fafc", color: "#0f172a", cursor: "not-allowed" }, !!fieldErrors["hdr.invoiceNo"])}
                 required
               />
+              <FieldError message={fieldErrors["hdr.invoiceNo"]} />
             </div>
             <div style={{ minWidth: 0 }}>
               <label style={lbl}>Received Date *</label>
@@ -224,9 +258,10 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed, onUnlin
                 value={hdr.receivedDate}
                 onChange={e => updateHdr("receivedDate", e.target.value)}
                 readOnly={!isManual}
-                style={isManual ? inp : { ...inp, background: "#f8fafc", color: "#0f172a", cursor: "not-allowed" }}
+                style={withError(isManual ? inp : { ...inp, background: "#f8fafc", color: "#0f172a", cursor: "not-allowed" }, !!fieldErrors["hdr.receivedDate"])}
                 required
               />
+              <FieldError message={fieldErrors["hdr.receivedDate"]} />
             </div>
           </div>
         </div>
@@ -240,15 +275,16 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed, onUnlin
           <div className="gf-items-grid">
             {items.map((it, i) => (
               <ItemLine
-                key={i}
+                key={`${formVersion}-${i}`}
                 idx={i}
                 item={it}
                 rmList={rmList}
-                pmList={pmList}
                 receivedDate={hdr.receivedDate}
                 onChange={next => updateItem(i, next)}
                 onRemove={() => removeItem(i)}
                 canRemove={items.length > 1}
+                fieldErrors={fieldErrors}
+                clearFieldError={clearFieldError}
               />
             ))}
           </div>

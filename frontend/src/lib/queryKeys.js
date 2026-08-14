@@ -31,10 +31,6 @@ export const queryKeys = {
     all:  (filters) => filters ? ['equipment', filters] : ['equipment'],
     meta: () => ['equipment', 'meta'],
   },
-  packingMaterials: {
-    all:    (filters) => filters ? ['packing-materials', filters] : ['packing-materials'],
-    detail: (id)       => ['packing-material', id],
-  },
   recipes: {
     all:    (productCode) => ['recipes', productCode ?? null],
     products: () => ['recipes', 'products'],
@@ -71,9 +67,6 @@ export const queryKeys = {
     microbeWise:     () => ['microbial-sfg-stock-summary', 'microbe-wise'],
     containerLedger: () => ['microbial-sfg-stock-summary', 'container-ledger'],
   },
-  locations: {
-    all: () => ['locations'],
-  },
   suppliers: {
     all: (filters) => filters ? ['suppliers', filters] : ['suppliers'],
   },
@@ -106,6 +99,7 @@ export const queryKeys = {
   ledger: {
     all:  (filters) => filters ? ['ledger', filters] : ['ledger'],
     item: (itemCode, filters) => ['ledger', itemCode, filters ?? null],
+    meta: () => ['ledger', 'meta'],
   },
   gate: {
     inward:  (filters) => ['gate-inward', filters ?? null],
@@ -158,5 +152,12 @@ export const queryKeys = {
     roles:       () => ['rbac', 'roles'],
     permissions: () => ['rbac', 'permissions'],
     users:       () => ['rbac', 'users'],
+  },
+
+  // ── Settings ────────────────────────────────────────────────────────────
+  options: {
+    values: (groupCode) => ['options', groupCode],
+    groups: ()           => ['options', 'groups'],
+    group:  (groupCode)  => ['options', 'groups', groupCode],
   },
 }

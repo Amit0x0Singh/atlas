@@ -12,5 +12,7 @@ export const validateProductListQuery = preprocess({
     productCode: { maxLength: 50 },
     productName: { maxLength: 150 },
     plant:       { maxLength: 100 },
+    uom:         { maxLength: 20 },
+    state:       { enum: ['SOLID', 'LIQUID', 'GAS'] },
   },
 })

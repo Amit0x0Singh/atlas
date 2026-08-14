@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { toTitleCase } from '../../../../../utils/textDisplay.js'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CustomerNamePicker
@@ -30,9 +31,12 @@ export default function CustomerNamePicker({ value, profiles, onSelect }) {
   }
 
   function pick(p) {
-    setQuery(p.customerName)
+    const name = toTitleCase(p.customerName)
+    setQuery(name)
     setOpen(false)
-    onSelect(p.customerName, p.company, p.orderType)
+    // company is a short code (SOM/DVS/AL-IPL/…), stored+matched lowercase
+    // by the header <select> — not a display name, so no Title Case here.
+    onSelect(name, (p.company || '').toLowerCase(), p.orderType)
   }
 
   return (
@@ -63,8 +67,8 @@ export default function CustomerNamePicker({ value, profiles, onSelect }) {
                   className="w-full text-left px-3 py-2.5 hover:bg-green-50 transition flex items-center justify-between gap-3 border-b border-gray-50 last:border-0"
                 >
                   <div>
-                    <div className="text-sm font-semibold text-gray-800">{p.customerName}</div>
-                    <div className="text-xs text-gray-400 mt-0.5">{p.company} · {p.orderType}</div>
+                    <div className="text-sm font-semibold text-gray-800">{toTitleCase(p.customerName)}</div>
+                    <div className="text-xs text-gray-400 mt-0.5">{(p.company || '').toUpperCase()} · {p.orderType}</div>
                   </div>
                   <span className={`text-xs font-bold px-2 py-0.5 rounded-full shrink-0 ${b.cls}`}>
                     {b.label}

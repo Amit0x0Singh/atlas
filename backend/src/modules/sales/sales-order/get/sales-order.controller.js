@@ -19,7 +19,9 @@ const getSalesOrders = async (req, res) => {
   } = req.query;
 
   const where = {};
-  if (company) where.company = company;
+  // company is stored lowercase (RULES.LOWER) — match case-insensitively so
+  // this still works regardless of what case the caller passes.
+  if (company) where.company = { equals: company, mode: "insensitive" };
   if (priority) where.priority = priority;
   if (diNo) where.diNo = { contains: diNo, mode: "insensitive" };
   if (search) where.customerName = { contains: search, mode: "insensitive" };

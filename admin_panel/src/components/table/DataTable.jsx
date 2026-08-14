@@ -5,13 +5,14 @@ import {
   getSortedRowModel,
   flexRender,
 } from '@tanstack/react-table';
-import { ChevronUp, ChevronDown, ChevronsUpDown, Columns3 } from 'lucide-react';
+import { ChevronUp, ChevronDown, ChevronsUpDown, Columns3, Loader2 } from 'lucide-react';
 import StatusBadge, { BoolBadge } from '../common/StatusBadge.jsx';
 import EmptyState from '../common/EmptyState.jsx';
 import { TableSkeleton } from '../common/PageSkeleton.jsx';
 import ActionMenu from './ActionMenu.jsx';
+import { toTitleCase } from '../../utils/textDisplay.js';
 
-function CellValue({ value, fieldName, fieldType }) {
+function CellValue({ value, fieldName, fieldType, titleCase }) {
   if (value === null || value === undefined || value === '') {
     return <span className="text-slate-300 dark:text-slate-600">—</span>;
   }
@@ -31,7 +32,10 @@ function CellValue({ value, fieldName, fieldType }) {
       </span>
     );
   }
-  const str = String(value);
+  // UOM/unit-of-measure fields (uom, inventoryUom, qtyUnit, workingUnit, …)
+  // always render fully uppercase, regardless of how the value was stored.
+  const isUom = /uom$/i.test(fieldName || '') || /Unit$/.test(fieldName || '');
+  const str = isUom ? String(value).toUpperCase() : titleCase ? toTitleCase(String(value)) : String(value);
   const truncated = str.length > 32 ? str.slice(0, 30) + '…' : str;
   return <span title={str.length > 32 ? str : undefined}>{truncated}</span>;
 }
@@ -49,6 +53,11 @@ export default function DataTable({
   resource, records, loading,
   onRowClick, onEdit, onDelete, onDuplicate,
   selectedIds, onSelectionChange,
+  // Header checkbox state/handler are controlled by the parent — "select
+  // all" needs to reach every record matching the current filters across
+  // the whole resource, not just the rows loaded on this page, so the
+  // parent (which owns pagination + filters) decides what "all" means.
+  allSelected, someSelected, onToggleAll, selectingAll,
 }) {
   const [sorting, setSorting] = useState([]);
   const [columnVisibility, setColumnVisibility] = useState(() => {
@@ -63,7 +72,7 @@ export default function DataTable({
     accessorKey: f.name,
     header: f.label,
     size: 180,
-    cell: (info) => <CellValue value={info.getValue()} fieldName={f.name} fieldType={f.type} />,
+    cell: (info) => <CellValue value={info.getValue()} fieldName={f.name} fieldType={f.type} titleCase={f.titleCase} />,
   })), [resource]);
 
   const table = useReactTable({
@@ -83,14 +92,6 @@ export default function DataTable({
   }
   if (!records.length) {
     return <EmptyState title="No records found" description="Try adjusting your search or filters." />;
-  }
-
-  const allSelected = records.length > 0 && records.every((r, i) => selectedIds.has(getRowKey(r, resource, i)));
-  const someSelected = !allSelected && records.some((r, i) => selectedIds.has(getRowKey(r, resource, i)));
-
-  function toggleAll() {
-    if (allSelected) onSelectionChange(new Set());
-    else onSelectionChange(new Set(records.map((r, i) => getRowKey(r, resource, i))));
   }
 
   function toggleRow(id) {
@@ -136,21 +137,25 @@ export default function DataTable({
           <thead className="sticky top-0 z-10 bg-slate-50/95 dark:bg-slate-900/90 backdrop-blur">
             {table.getHeaderGroups().map((hg) => (
               <tr key={hg.id}>
-                <th className="sticky left-0 z-20 bg-slate-50/95 dark:bg-slate-900/90 w-10 px-3 py-2.5 border-b border-slate-200 dark:border-slate-800">
-                  <input
-                    type="checkbox"
-                    checked={allSelected}
-                    ref={(el) => { if (el) el.indeterminate = someSelected; }}
-                    onChange={toggleAll}
-                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                  />
+                <th className="sticky left-0 z-20 bg-slate-50/95 dark:bg-slate-900/90 w-10 px-2.5 py-1.5 border-b border-slate-200 dark:border-slate-800">
+                  {selectingAll ? (
+                    <Loader2 size={14} className="animate-spin text-slate-400" />
+                  ) : (
+                    <input
+                      type="checkbox"
+                      checked={allSelected}
+                      ref={(el) => { if (el) el.indeterminate = someSelected; }}
+                      onChange={onToggleAll}
+                      className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    />
+                  )}
                 </th>
                 {hg.headers.map((header, idx) => (
                   <th
                     key={header.id}
                     style={{ width: header.getSize() }}
                     className={[
-                      'relative text-left font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide text-[11px] px-3 py-2.5 border-b border-slate-200 dark:border-slate-800 select-none',
+                      'relative text-left font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide text-[11px] px-2.5 py-1.5 border-b border-slate-200 dark:border-slate-800 select-none',
                       idx === 0 ? 'sticky left-10 z-20 bg-slate-50/95 dark:bg-slate-900/90' : '',
                     ].join(' ')}
                   >
@@ -170,7 +175,7 @@ export default function DataTable({
                     />
                   </th>
                 ))}
-                <th className="w-28 px-3 py-2.5 border-b border-slate-200 dark:border-slate-800" />
+                <th className="w-28 px-2.5 py-1.5 border-b border-slate-200 dark:border-slate-800" />
               </tr>
             ))}
           </thead>
@@ -190,7 +195,7 @@ export default function DataTable({
                     selected ? 'bg-blue-50/60 dark:bg-blue-950/30' : 'hover:bg-slate-50 dark:hover:bg-slate-800/40',
                   ].join(' ')}
                 >
-                  <td className={`sticky left-0 z-[5] px-3 py-2.5 ${stickyBg}`} onClick={(e) => e.stopPropagation()}>
+                  <td className={`sticky left-0 z-[5] px-2.5 py-1.5 ${stickyBg}`} onClick={(e) => e.stopPropagation()}>
                     <input
                       type="checkbox"
                       checked={selected}
@@ -203,14 +208,14 @@ export default function DataTable({
                       key={cell.id}
                       style={{ width: cell.column.getSize() }}
                       className={[
-                        'px-3 py-2.5 text-slate-700 dark:text-slate-300 truncate',
+                        'px-2.5 py-1.5 text-slate-700 dark:text-slate-300 truncate',
                         cIdx === 0 ? `sticky left-10 z-[5] ${stickyBg}` : '',
                       ].join(' ')}
                     >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
                   ))}
-                  <td className="px-3 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
+                  <td className="px-2.5 py-1.5 text-right" onClick={(e) => e.stopPropagation()}>
                     <ActionMenu
                       onView={() => onRowClick(row.original)}
                       onEdit={() => onEdit(row.original)}

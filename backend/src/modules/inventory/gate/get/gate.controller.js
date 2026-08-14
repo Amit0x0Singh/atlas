@@ -21,7 +21,9 @@ const listGateInward = async (req, res) => {
     }
     if (invoice_no?.trim()) where.invoiceNo    = { contains: invoice_no.trim(), mode: 'insensitive' }
     if (status?.trim())     where.status       = status.trim()
-    if (company?.trim())    where.companyName  = company.trim()
+    // companyName is stored lowercase (RULES.LOWER) but the frontend filter
+    // dropdown still sends Title Case ("SOM Phytopharma") — match case-insensitively.
+    if (company?.trim())    where.companyName  = { equals: company.trim(), mode: 'insensitive' }
     if (from_date?.trim() || to_date?.trim()) {
       where.createdAt = {}
       if (from_date?.trim()) where.createdAt.gte = new Date(from_date)
@@ -78,7 +80,9 @@ const listGateOutward = async (req, res) => {
     if (search?.trim())     where.receiverName = { contains: search.trim(), mode: 'insensitive' }
     if (invoice_no?.trim()) where.invoiceNo    = { contains: invoice_no.trim(), mode: 'insensitive' }
     if (status?.trim())     where.status       = status.trim()
-    if (company?.trim())    where.companyName  = company.trim()
+    // companyName is stored lowercase (RULES.LOWER) but the frontend filter
+    // dropdown still sends Title Case ("SOM Phytopharma") — match case-insensitively.
+    if (company?.trim())    where.companyName  = { equals: company.trim(), mode: 'insensitive' }
     if (from_date?.trim() || to_date?.trim()) {
       where.createdAt = {}
       if (from_date?.trim()) where.createdAt.gte = new Date(from_date)

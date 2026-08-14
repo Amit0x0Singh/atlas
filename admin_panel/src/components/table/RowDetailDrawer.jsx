@@ -3,8 +3,9 @@ import { createPortal } from 'react-dom';
 import { X, Pencil, Trash2, Pin, PinOff } from 'lucide-react';
 import StatusBadge, { BoolBadge } from '../common/StatusBadge.jsx';
 import Button from '../common/Button.jsx';
+import { toTitleCase } from '../../utils/textDisplay.js';
 
-function renderValue(value, fieldName, fieldType) {
+function renderValue(value, fieldName, fieldType, titleCase) {
   if (value === null || value === undefined || value === '') {
     return <span className="text-slate-300 dark:text-slate-600 italic">empty</span>;
   }
@@ -39,7 +40,10 @@ function renderValue(value, fieldName, fieldType) {
       </span>
     );
   }
-  const str = String(value);
+  // UOM/unit-of-measure fields (uom, inventoryUom, qtyUnit, workingUnit, …)
+  // always render fully uppercase, regardless of how the value was stored.
+  const isUom = /uom$/i.test(fieldName || '') || /Unit$/.test(fieldName || '');
+  const str = isUom ? String(value).toUpperCase() : titleCase ? toTitleCase(String(value)) : String(value);
   if (str.length > 60) {
     return (
       <span className="block font-mono text-xs break-all bg-slate-50 dark:bg-slate-800 rounded px-2 py-1.5 text-slate-600 dark:text-slate-300">
@@ -54,7 +58,8 @@ export default function RowDetailDrawer({ resource, record, onClose, onEdit, onD
   const titleField = resource.fields.find(
     (f) => f.name.toLowerCase().includes('name') || f.name.toLowerCase().includes('id')
   );
-  const title = record && (titleField ? String(record[titleField.name] ?? '') : resource.title);
+  const titleRaw = record && (titleField ? String(record[titleField.name] ?? '') : resource.title);
+  const title = record && titleField?.titleCase ? toTitleCase(titleRaw) : titleRaw;
 
   return createPortal(
     <AnimatePresence>
@@ -88,7 +93,7 @@ export default function RowDetailDrawer({ resource, record, onClose, onEdit, onD
               {resource.fields.map((field) => (
                 <div key={field.name} className="grid grid-cols-[140px_1fr] gap-4 py-3 border-b border-slate-50 dark:border-slate-800/60 last:border-0">
                   <div className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wide pt-0.5">{field.label}</div>
-                  <div className="text-sm text-slate-700 dark:text-slate-300 break-words">{renderValue(record[field.name], field.name, field.type)}</div>
+                  <div className="text-sm text-slate-700 dark:text-slate-300 break-words">{renderValue(record[field.name], field.name, field.type, field.titleCase)}</div>
                 </div>
               ))}
             </div>

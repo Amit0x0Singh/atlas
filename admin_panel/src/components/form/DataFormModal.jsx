@@ -5,8 +5,33 @@ import Button from '../common/Button.jsx';
 import Input from '../common/Input.jsx';
 import Select from '../common/Select.jsx';
 import FormSection from './FormSection.jsx';
+import { normalizeEmailInput, normalizePhoneInput, isPhoneFieldName } from '../../utils/textNormalize.js';
+import { toTitleCase } from '../../utils/textDisplay.js';
 
-function toInputValue(value, type) {
+// A handful of resource fields (RmMaster.conversionRequired, the many
+// `requestDelete`/`flagged`/`*Flag` columns, etc.) are real Prisma Boolean
+// columns modeled here as a plain select with string options — there's no
+// dedicated 'boolean' field type, so this is how those ~30 fields are
+// recognized on both the read side (toInputValue) and write side
+// (normalizeValue) without having to tag every one individually.
+function isBooleanSelect(field) {
+  if (field.type !== 'select' || !Array.isArray(field.options)) return false;
+  const values = field.options.map((o) => (typeof o === 'object' ? o.value : o));
+  return values.length === 2 && values.includes('true') && values.includes('false');
+}
+
+// titleCase only affects the value shown when a field is first populated
+// (form open / record switch) — never applied on keystroke, so it doesn't
+// fight the user while typing. Whatever they leave in the field is sent
+// as-is; the backend's Prisma Client Extension normalizes storage casing.
+function toInputValue(value, field) {
+  const { type, titleCase } = field;
+  // Every boolean column in this schema is non-nullable with @default(false)
+  // (conversionRequired, requestDelete, the various *Flag/flagged columns,
+  // ...) — defaulting an untouched field to 'false' here, rather than
+  // leaving the select on its blank placeholder, matches that DB default
+  // and avoids submitting an explicit null a NOT NULL column would reject.
+  if (isBooleanSelect(field)) return value === null || value === undefined ? 'false' : String(value);
   if (value === null || value === undefined) return '';
   if (type === 'datetime-local') {
     const date = new Date(value);
@@ -20,16 +45,29 @@ function toInputValue(value, type) {
   }
   if (type === 'tags') return Array.isArray(value) ? value.join(', ') : value;
   if (type === 'json') return JSON.stringify(value, null, 2);
+  // select must keep the raw (lowercase) value so it matches an option's
+  // `value` exactly — titleCase there is display-only, handled by the
+  // option's separate `label` ({ value, label } option shape).
+  if (titleCase && type !== 'select') return toTitleCase(value ?? '');
   return value ?? '';
 }
 
-function normalizeValue(value, type) {
+// Live-typing UX only — the backend's Client Extension is what actually
+// guarantees correct storage regardless of what gets sent, so this is a
+// safety net for the two field kinds normalized here (email/phone), not the
+// source of truth. Fixed-vocabulary/select fields are never touched, same
+// as the backend's own rule (see field-normalization-rules.js).
+function normalizeValue(value, field) {
+  const { type, name: fieldName } = field;
+  if (isBooleanSelect(field)) return value === '' ? null : value === 'true';
   if (value === '') return null;
   if (type === 'number') return Number(value);
   if (type === 'tags') return String(value).split(',').map((s) => s.trim()).filter(Boolean);
   if (type === 'json') return JSON.parse(value);
   if (type === 'datetime-local') return new Date(value).toISOString();
   if (type === 'date') return new Date(`${value}T00:00:00`).toISOString();
+  if (type === 'email') return normalizeEmailInput(value);
+  if (isPhoneFieldName(fieldName)) return normalizePhoneInput(value);
   return value;
 }
 
@@ -43,10 +81,21 @@ export default function DataFormModal({ mode, resource, record, onClose, onSubmi
 
   useEffect(() => {
     const next = {};
-    editableFields.forEach((field) => { next[field.name] = toInputValue(record?.[field.name], field.type); });
+    editableFields.forEach((field) => { next[field.name] = toInputValue(record?.[field.name], field); });
     setForm(next);
     setDirty(false);
   }, [editableFields, record]);
+
+  // A field can declare `visibleIf(form)` to only show up once some other
+  // field's value makes it relevant — e.g. RmMaster's `density` only
+  // matters once `conversionRequired` is true (see resources.js). Hidden
+  // fields are still cleared to null on submit rather than left out of the
+  // payload, so switching a record back to "not applicable" actually wipes
+  // whatever stale value it had.
+  const visibleFields = useMemo(
+    () => editableFields.filter((field) => !field.visibleIf || field.visibleIf(form)),
+    [editableFields, form]
+  );
 
   function updateField(name, value) {
     setForm((current) => ({ ...current, [name]: value }));
@@ -58,7 +107,8 @@ export default function DataFormModal({ mode, resource, record, onClose, onSubmi
     const payload = {};
     editableFields.forEach((field) => {
       if (field.readOnly) return;
-      payload[field.name] = normalizeValue(form[field.name], field.type);
+      const isVisible = !field.visibleIf || field.visibleIf(form);
+      payload[field.name] = isVisible ? normalizeValue(form[field.name], field) : null;
     });
     onSubmit(payload);
   }
@@ -80,7 +130,7 @@ export default function DataFormModal({ mode, resource, record, onClose, onSubmi
 
         <div className="flex-1 overflow-y-auto scrollbar-thin px-6 py-5">
           <FormSection columns={2}>
-            {editableFields.map((field) => {
+            {visibleFields.map((field) => {
               if (field.type === 'select') {
                 return (
                   <Select
@@ -134,6 +184,10 @@ export default function DataFormModal({ mode, resource, record, onClose, onSubmi
                   placeholder={field.type === 'tags' ? 'Comma separated values' : undefined}
                   value={form[field.name] ?? ''}
                   onChange={(e) => updateField(field.name, e.target.value)}
+                  onBlur={(e) => {
+                    if (field.type === 'email') updateField(field.name, normalizeEmailInput(e.target.value));
+                    else if (isPhoneFieldName(field.name)) updateField(field.name, normalizePhoneInput(e.target.value));
+                  }}
                 />
               );
             })}

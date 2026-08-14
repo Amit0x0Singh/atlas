@@ -18,6 +18,11 @@ export const packsApi = {
   pendingInward:  ()                => api.get('/packs/pending-inward'),
   labelUrl:       (packId)          => `/api/packs/label/${encodeURIComponent(packId)}`,
   batchLabelsUrl: (itemCode, lotNo) => `/api/packs/labels/lot/${itemCode}/${encodeURIComponent(lotNo)}`,
+  // `groups` — [{ itemCode, lotNo }] — merges labels from multiple lots
+  // (e.g. several items generated in one Print Master submission) into a
+  // single PDF; `download` forces a Content-Disposition attachment.
+  batchLabelsMultiUrl: (groups, { download = false } = {}) =>
+    `/api/packs/labels/batch?pairs=${encodeURIComponent(JSON.stringify(groups))}${download ? '&download=1' : ''}`,
 }
 
 // Scan/submit are scoped by (itemCode, lotNo) — one Print Master header —
@@ -82,6 +87,7 @@ export const ledgerApi = {
   all:        (params)          => api.get('/ledger', { params }),
   item:       (itemCode, params) => api.get(`/ledger/item/${itemCode}`, { params }),
   entryDetail:(id)              => api.get(`/ledger/${id}`),
+  meta:       ()                => api.get('/ledger/meta/transaction-types'),
 }
 
 export const importApi = {
@@ -102,18 +108,6 @@ export const grnApi = {
   detail: (gateInwardId)         => api.get('/grn/detail', { params: { gateInwardId } }),
 }
 
-export const bulkApi = {
-  listLocations:    (params)     => api.get('/bulk/locations', { params }),
-  getLocation:      (locationId) => api.get(`/bulk/locations/${encodeURIComponent(locationId)}`),
-  createLocation:   (data)       => api.post('/bulk/locations', data),
-  deleteLocation:   (locationId) => api.delete(`/bulk/locations/${encodeURIComponent(locationId)}`),
-  locationLabelUrl: (locationId) => `/api/bulk/locations/${encodeURIComponent(locationId)}/label`,
-  bulkInward:       (data)       => api.post('/bulk/inward', data),
-  bulkOutward:      (data)       => api.post('/bulk/outward', data),
-  stockSummary:     ()           => api.get('/bulk/summary'),
-}
-
-
 export const gateApi = {
 
   // Inward
@@ -122,7 +116,6 @@ export const gateApi = {
   // existing Gate Inward selected) — company is assigned server-side.
   createManualInward:   (data)     => api.post('/gate/inward/manual', data),
   inwardList:           (params)   => api.get('/gate/inward', { params }),
-  inwardDetail:         (id)       => api.get(`/gate/inward/${id}`),
   updateInward:         (id, data) => api.patch(`/gate/inward/${id}/status`, data),
   requestDeleteInward:  (id)       => api.patch(`/gate/inward/${id}/request-delete`),
   deleteInward:         (id)       => api.delete(`/gate/inward/${id}`),
@@ -138,17 +131,3 @@ export const gateApi = {
   
 }
 
-export const inventoryApi = {
-  createAdj:       (data)       => api.post('/inventory/adjustments', data),
-  approveAdj:      (id, data)   => api.patch(`/inventory/adjustments/${id}/approve`, data),
-  rejectAdj:       (id, data)   => api.patch(`/inventory/adjustments/${id}/reject`, data),
-  listAdj:         (params)     => api.get('/inventory/adjustments', { params }),
-  createTransfer:  (data)       => api.post('/inventory/transfers', data),
-  receiveTransfer: (id, data)   => api.patch(`/inventory/transfers/${id}/receive`, data),
-  listTransfers:   (params)     => api.get('/inventory/transfers', { params }),
-  decant:          (data)       => api.post('/inventory/decanting', data),
-  listDecanting:   (params)     => api.get('/inventory/decanting', { params }),
-  fifoCheck:       (data)       => api.post('/inventory/fifo-check', data),
-  fifoOverride:    (data)       => api.post('/inventory/fifo-override', data),
-  stockSummary:    ()           => api.get('/inventory/stock-summary'),
-}

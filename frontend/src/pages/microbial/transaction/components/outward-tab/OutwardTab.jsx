@@ -12,6 +12,7 @@ import RecentIssuances from './RecentIssuances.jsx'
 import GrandSummary from './GrandSummary.jsx'
 import AltContainerModal from './AltContainerModal.jsx'
 
+import { toTitleCase } from '../../../../../utils/textDisplay.js'
 let rid = 0
 const newRow = (m = {}) => ({
   id: `row-${++rid}`,
@@ -118,11 +119,11 @@ export default function OutwardTab() {
         (task.productCode && p.productCode === task.productCode)
       )
       const productCode = match?.productCode || task.productCode
-      if (!productCode) { alert(`Could not resolve a product code for "${task.productName}". Check Product Master.`); return }
+      if (!productCode) { alert(`Could not resolve a product code for "${toTitleCase(task.productName)}". Check Product Master.`); return }
 
       const res = await microbialSfgApi.productMicrobes({ product_code: productCode, qty: task.qty })
       if (!res.has_microbes || !res.microbes?.length) {
-        alert(`No microbe ingredients were detected in the recipe for "${task.productName}". Nothing to issue here.`)
+        alert(`No microbe ingredients were detected in the recipe for "${toTitleCase(task.productName)}". Nothing to issue here.`)
         return
       }
 

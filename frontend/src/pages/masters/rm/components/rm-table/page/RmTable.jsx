@@ -6,7 +6,7 @@ import Pagination from '../../../../../../components/pagination/Pagination.jsx'
 
 export default function RmTable({
   visibleItems, loading, error, page, limit, filters,
-  onFilterChange, onClearFilters, onEdit, onDelete, onViewPacking, onRowClick, onPageChange, onLimitChange,
+  onFilterChange, onClearFilters, onEdit, onDelete, onRowClick, onPageChange, onLimitChange,
 }) {
   const paginated = visibleItems.slice((page - 1) * limit, page * limit)
 
@@ -34,36 +34,34 @@ export default function RmTable({
                 <th className="w-24 text-left px-4 py-2.5 text-xs font-semibold text-gray-700 whitespace-nowrap">Con. Required</th>
                 <th className="w-20 text-left px-4 py-2.5 text-xs font-semibold text-gray-700 whitespace-nowrap">Con. Factor</th>
                 <th className="w-28 text-left px-4 py-2.5 text-xs font-semibold text-gray-700 whitespace-nowrap">Re-order Level</th>
-                <th className="w-24 text-left px-4 py-2.5 text-xs font-semibold text-gray-700 whitespace-nowrap">Added On</th>
                 <th className="w-20 text-left px-4 py-2.5 text-xs font-semibold text-gray-700 whitespace-nowrap">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {loading ? (
                 <tr>
-                  <td colSpan={11} className="py-14 text-center text-gray-400">
+                  <td colSpan={10} className="py-14 text-center text-gray-400">
                     <Loader2 size={22} className="animate-spin mx-auto mb-2" />
                     Loading items…
                   </td>
                 </tr>
               ) : error ? (
                 <tr>
-                  <td colSpan={11} className="py-14 text-center text-red-500">{error}</td>
+                  <td colSpan={10} className="py-14 text-center text-red-500">{error}</td>
                 </tr>
               ) : visibleItems.length === 0 ? (
                 <tr>
-                  <td colSpan={11} className="py-14 text-center text-gray-400">
+                  <td colSpan={10} className="py-14 text-center text-gray-400">
                     <PackageX size={26} className="mx-auto mb-2 text-gray-300" />
                     No items found. Click "Add New Item" to start.
                   </td>
                 </tr>
               ) : paginated.map(item => (
                 <RmTableRow
-                  key={item.kind === 'packing' ? `pm-${item.id}` : item.itemCode}
+                  key={item.itemCode}
                   item={item}
                   onEdit={onEdit}
                   onDelete={onDelete}
-                  onViewPacking={onViewPacking}
                   onRowClick={onRowClick}
                 />
               ))}

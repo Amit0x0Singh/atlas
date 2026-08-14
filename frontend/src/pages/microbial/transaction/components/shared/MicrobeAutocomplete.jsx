@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 
+import { toTitleCase } from '../../../../../utils/textDisplay.js'
 // Type-to-search microbe field — mirrors SupplierAutocomplete's commit
 // semantics: the committed value only ever becomes a real microbe (matched
 // by exact name or by clicking a suggestion); anything else leaves the
@@ -59,7 +60,7 @@ export default function MicrobeAutocomplete({ value, microbes, onSelect, placeho
               onMouseDown={() => pick(m)}
               className="w-full text-left px-3 py-2 hover:bg-blue-50 text-sm border-b border-gray-50 last:border-0"
             >
-              {m.microbeName} <span className="text-gray-400 font-mono text-xs">({m.microbeCode})</span>
+              {toTitleCase(m.microbeName)} <span className="text-gray-400 font-mono text-xs">({m.microbeCode})</span>
             </button>
           ))}
         </div>

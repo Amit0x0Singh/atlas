@@ -1,11 +1,13 @@
 ﻿import { useState } from "react";
 import './ContainerList.css';
 import { containerApi } from "../../../../../../api/inventory.js";
+import { openAuthedFile } from "../../../../../../utils/authedFile.js";
 import { useContainers } from "../../hooks/useContainers.js";
 import Pagination from "../../../../../../components/pagination/Pagination.jsx";
 import { Button, IconButton, Modal } from "../../../../../../components/ui";
 import { Pencil } from "lucide-react";
 
+import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 function fillPct(c) {
   if (!c.capacity) return 0;
   return Math.min(100, Math.round((c.currentQty / c.capacity) * 100));
@@ -135,20 +137,19 @@ export default function ContainerList() {
                   {c.currentQty.toFixed(2)}
                 </div>
                 <div className="text-[10px] text-gray-400">
-                  {c.capacity} {c.uom}
+                  {c.capacity} {c.uom?.toUpperCase()}
                 </div>
               </div>
 
               {/* QR Label */}
               <div className="flex justify-center">
-                <a
-                  href={containerApi.labelUrl(c.containerId)}
-                  target="_blank"
-                  rel="noreferrer"
+                <button
+                  type="button"
+                  onClick={() => openAuthedFile(containerApi.labelUrl(c.containerId)).catch(e => alert(`Print failed: ${e.message}`))}
                   className="text-[10px] border border-orange-200 bg-orange-50 text-orange-700 px-2 py-1 rounded hover:bg-orange-100 whitespace-nowrap"
                 >
                   QR
-                </a>
+                </button>
               </div>
 
               {/* Edit capacity */}
@@ -166,14 +167,14 @@ export default function ContainerList() {
         {editing && (
           <div className="p-5">
             <h3 className="text-base font-bold text-gray-900 mb-1">Edit Container Size</h3>
-            <p className="text-xs text-gray-400 mb-4 font-mono">{editing.containerId} · {editing.itemName}</p>
+            <p className="text-xs text-gray-400 mb-4 font-mono">{editing.containerId} · {toTitleCase(editing.itemName)}</p>
 
             {editErr && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg mb-3 text-xs">{editErr}</div>
             )}
 
             <label className="block text-sm font-semibold text-gray-700 mb-1">
-              Capacity ({editing.uom})
+              Capacity ({editing.uom?.toUpperCase()})
             </label>
             <input
               type="number" min="0.001" step="0.001" autoFocus
@@ -182,7 +183,7 @@ export default function ContainerList() {
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-orange-400"
             />
             <p className="text-xs text-gray-400 mt-1.5">
-              Current stock: {editing.currentQty.toFixed(2)} {editing.uom} — new capacity can't be set below this.
+              Current stock: {editing.currentQty.toFixed(2)} {editing.uom?.toUpperCase()} — new capacity can't be set below this.
             </p>
 
             <div className="flex gap-3 mt-5">

@@ -6,14 +6,22 @@ import ProductForm from '../components/product-form/ProductForm.jsx'
 import ProductDetailModal from '../components/product-detail-modal/ProductDetailModal.jsx'
 import { useProducts, useProductFilterMeta, useCreateProduct, useUpdateProduct, useDeleteProduct } from '../../../../hooks/masters/useProducts.js'
 import { useDebouncedValue } from '../../../../hooks/useDebouncedValue.js'
+import { toTitleCase } from '../../../../utils/textDisplay.js'
+import { normalizeUom, CANONICAL_UNITS } from '../../../../utils/uom.js'
 
-const BLANK_FILTERS = { productCode: '', productName: '', plant: '' }
+const BLANK_FILTERS = { productCode: '', productName: '', plant: '', uom: '', state: '' }
+const STATE_OPTIONS = [
+  { value: 'SOLID',  label: 'Solid' },
+  { value: 'LIQUID', label: 'Liquid' },
+  { value: 'GAS',    label: 'Gas' },
+]
+const UOM_OPTIONS = CANONICAL_UNITS.map(u => ({ value: u, label: u }))
 
 export default function ProductMaster() {
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing]  = useState(null)
   const [viewing, setViewing]  = useState(null)
-  const [form, setForm]        = useState({ productCode: '', productName: '', uom: '', state: '', plant: '' })
+  const [form, setForm]        = useState({ productCode: '', productName: '', uom: '', state: '', plant: [] })
   const [msg, setMsg]          = useState('')
   const [filters, setFilters]  = useState(BLANK_FILTERS)
   const [page, setPage]        = useState(1)
@@ -35,12 +43,12 @@ export default function ProductMaster() {
   const updateProduct = useUpdateProduct()
   const deleteProduct = useDeleteProduct()
 
-  const openAdd  = () => { setEditing(null); setForm({ productCode: '', productName: '', uom: '', state: '', plant: '' }); setShowForm(true); setMsg('') }
+  const openAdd  = () => { setEditing(null); setForm({ productCode: '', productName: '', uom: '', state: '', plant: [] }); setShowForm(true); setMsg('') }
   const openEdit = (item) => {
     setEditing(item)
     setForm({
-      productCode: item.productCode, productName: item.productName,
-      uom: item.uom || '', state: item.state || '', plant: (item.plant || []).join(', '),
+      productCode: item.productCode, productName: toTitleCase(item.productName),
+      uom: normalizeUom(item.uom) || item.uom || '', state: (item.state || '').toUpperCase(), plant: item.plant || [],
     })
     setShowForm(true); setMsg('')
   }
@@ -82,6 +90,8 @@ export default function ProductMaster() {
           { key: 'productCode', label: 'Product Code', type: 'text', placeholder: 'Search code…' },
           { key: 'productName', label: 'Product Name', type: 'text', placeholder: 'Search name…' },
           { key: 'plant',       label: 'Plant',         type: 'select', options: plantOptions, allLabel: 'All Plants' },
+          { key: 'uom',         label: 'UOM',           type: 'select', options: UOM_OPTIONS,   allLabel: 'All UOM' },
+          { key: 'state',       label: 'State',         type: 'select', options: STATE_OPTIONS, allLabel: 'All States' },
         ]}
         values={filters}
         resultCount={total}
@@ -106,6 +116,7 @@ export default function ProductMaster() {
         <ProductForm
           editing={editing}
           form={form}
+          plantOptions={meta?.plants || []}
           onChange={(field, val) => setForm(f => ({ ...f, [field]: val }))}
           saving={createProduct.isPending || updateProduct.isPending}
           msg={msg}

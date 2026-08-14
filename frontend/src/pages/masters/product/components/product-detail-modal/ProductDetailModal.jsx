@@ -1,14 +1,15 @@
 import { X, FlaskConical, Hash, Beaker, MapPin, GitBranch, Clock } from 'lucide-react'
 import { Modal } from '../../../../../components/ui'
+import { toTitleCase } from '../../../../../utils/textDisplay.js'
 
 const fmtDateTime = (d) => d
   ? new Date(d).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })
   : '—'
 
 const STATE_BADGE = {
-  SOLID:  'bg-stone-50 text-stone-700 ring-stone-200',
-  LIQUID: 'bg-sky-50 text-sky-700 ring-sky-200',
-  GAS:    'bg-violet-50 text-violet-700 ring-violet-200',
+  solid:  'bg-stone-50 text-stone-700 ring-stone-200',
+  liquid: 'bg-sky-50 text-sky-700 ring-sky-200',
+  gas:    'bg-violet-50 text-violet-700 ring-violet-200',
 }
 
 function StatCard({ icon: Icon, label, value, empty }) {
@@ -29,7 +30,7 @@ function StatCard({ icon: Icon, label, value, empty }) {
 
 export default function ProductDetailModal({ item, onClose }) {
   if (!item) return null
-  const stateColor = STATE_BADGE[item.state] || 'bg-gray-100 text-gray-600 ring-gray-200'
+  const stateColor = STATE_BADGE[(item.state || '').toLowerCase()] || 'bg-gray-100 text-gray-600 ring-gray-200'
   const plants = item.plant?.length ? item.plant.join(', ') : null
 
   return (
@@ -41,14 +42,14 @@ export default function ProductDetailModal({ item, onClose }) {
             <FlaskConical size={20} />
           </div>
           <div className="min-w-0">
-            <h2 className="text-lg font-bold text-gray-900 truncate">{item.productName}</h2>
+            <h2 className="text-lg font-bold text-gray-900 truncate">{toTitleCase(item.productName)}</h2>
             <div className="flex items-center gap-2 mt-1 flex-wrap">
               <span className="inline-flex items-center gap-1 font-mono text-xs font-semibold text-green-700 bg-green-50 ring-1 ring-inset ring-green-200 px-2 py-0.5 rounded-md">
                 <Hash size={11} />{item.productCode}
               </span>
               {item.state && (
                 <span className={`text-xs font-semibold px-2 py-0.5 rounded-md ring-1 ring-inset ${stateColor}`}>
-                  {item.state}
+                  {item.state.toUpperCase()}
                 </span>
               )}
             </div>
@@ -62,7 +63,7 @@ export default function ProductDetailModal({ item, onClose }) {
       {/* Body */}
       <div className="px-6 py-5 max-h-[65vh] overflow-y-auto">
         <div className="grid grid-cols-2 gap-3">
-          <StatCard icon={Beaker}     label="UOM"           value={item.uom}   empty={!item.uom} />
+          <StatCard icon={Beaker}     label="UOM"           value={item.uom?.toUpperCase()}   empty={!item.uom} />
           <StatCard icon={GitBranch}  label="Total Recipe"  value={item.totalRecipe ?? 0} />
           <StatCard icon={MapPin}     label="Plant"         value={plants}     empty={!plants} />
         </div>
@@ -70,8 +71,12 @@ export default function ProductDetailModal({ item, onClose }) {
 
       {/* Footer — timestamps */}
       <div className="flex items-center justify-between px-6 py-3 bg-gray-50 border-t border-gray-100 text-xs text-gray-400">
-        <span className="flex items-center gap-1.5"><Clock size={12} /> Created {fmtDateTime(item.createdAt)}</span>
-        <span className="flex items-center gap-1.5"><Clock size={12} /> Updated {fmtDateTime(item.updatedAt)}</span>
+        <span className="flex items-center gap-1.5">
+          <Clock size={12} /> Created {fmtDateTime(item.createdAt)}{item.createdBy ? ` by ${item.createdBy}` : ''}
+        </span>
+        <span className="flex items-center gap-1.5">
+          <Clock size={12} /> Updated {fmtDateTime(item.updatedAt)}{item.updatedBy ? ` by ${item.updatedBy}` : ''}
+        </span>
       </div>
     </Modal>
   )

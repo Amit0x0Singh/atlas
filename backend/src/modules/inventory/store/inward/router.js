@@ -2,7 +2,7 @@ import express from 'express'
 import { authorize } from '../../../../middleware/auth.js'
 import {
   getPendingInwardGroups, getNextLotNumber, listPacks, getPackById,
-  getPackLabel, getBatchLabels, generatePacks,
+  getPackLabel, getBatchLabels, getBatchLabelsMulti, generatePacks,
   listInward, listActiveSessions, getSession
 } from './get/inward.controller.js'
 import { scanPack, batchScanPack, submitLot } from './create/inward.controller.js'
@@ -20,6 +20,7 @@ InwardRouter.get('/packs/next-lot/:itemCode', canView, getNextLotNumber)
 // Label printing needs only the same view permission as the parent resource.
 InwardRouter.get('/packs/label/:packId', canView, getPackLabel)
 InwardRouter.get('/packs/labels/lot/:itemCode/:lotNo', canView, getBatchLabels)
+InwardRouter.get('/packs/labels/batch', canView, getBatchLabelsMulti)
 InwardRouter.get('/packs/:packId', canView, getPackById)
 InwardRouter.get('/packs', canView, listPacks)
 InwardRouter.post('/packs/generate', canCreate, generatePacks)

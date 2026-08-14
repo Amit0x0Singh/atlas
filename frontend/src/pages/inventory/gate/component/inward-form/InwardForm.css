@@ -61,6 +61,17 @@
   border-color: #3b82f6;
 }
 
+.if-input--error {
+  border-color: #dc2626;
+}
+
+.if-field-error {
+  margin: 5px 0 0;
+  font-size: 11px;
+  color: #dc2626;
+  font-weight: 600;
+}
+
 .if-actions {
   display: flex;
   gap: 8px;

@@ -5,6 +5,7 @@ import SupplierTable from '../components/supplier-table/SupplierTable.jsx'
 import SupplierForm from '../components/supplier-form/SupplierForm.jsx'
 import { useSuppliers, useCreateSupplier, useUpdateSupplier } from '../../../../hooks/masters/useSuppliers.js'
 import { useDebouncedValue } from '../../../../hooks/useDebouncedValue.js'
+import { toTitleCase } from '../../../../utils/textDisplay.js'
 
 const EMPTY = { supplier_name: '', phone: '', email: '', gstin: '', address: '' }
 const BLANK_FILTERS = { supplier_name: '', phone: '', email: '', gstin: '', address: '' }
@@ -32,7 +33,7 @@ export default function SupplierMaster() {
   const openEdit = (item) => {
     setEditing(item)
     setForm({
-      supplier_name: item.supplierName, phone: item.phone || '',
+      supplier_name: toTitleCase(item.supplierName), phone: item.phone || '',
       email: item.email || '', gstin: item.gstin || '', address: item.address || '',
     })
     setShowForm(true); setMsg('')
@@ -49,7 +50,7 @@ export default function SupplierMaster() {
   }
 
   const deactivate = async (id, name) => {
-    if (!confirm(`Deactivate supplier "${name}"? It will no longer show up in dropdowns/suggestions, but past records referencing it are unaffected.`)) return
+    if (!confirm(`Deactivate supplier "${toTitleCase(name)}"? It will no longer show up in dropdowns/suggestions, but past records referencing it are unaffected.`)) return
     try { await updateSupplier.mutateAsync({ id, data: { is_active: false } }) } catch (e) { alert(e.message) }
   }
 

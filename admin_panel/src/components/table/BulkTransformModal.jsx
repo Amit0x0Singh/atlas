@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Type, ArrowRight } from 'lucide-react';
+import { Type, ArrowRight, AlertTriangle } from 'lucide-react';
 import Modal from '../common/Modal.jsx';
 import Button from '../common/Button.jsx';
 import Select from '../common/Select.jsx';
@@ -214,6 +214,24 @@ export default function BulkTransformModal({ open, onClose, onDone, resource, id
               )}
             </div>
 
+            {preview.uniqueConflicts?.length > 0 && (
+              <div className="rounded-lg border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 px-4 py-3 space-y-1.5">
+                <p className="text-sm font-medium text-red-700 dark:text-red-400 flex items-center gap-1.5">
+                  <AlertTriangle size={15} className="flex-shrink-0" />
+                  This would create duplicate values in a unique column — applying is blocked until resolved.
+                </p>
+                <ul className="text-xs text-red-600 dark:text-red-400 space-y-0.5 pl-5 list-disc">
+                  {preview.uniqueConflicts.map((c, i) => (
+                    <li key={i}>
+                      <span className="font-medium">{fields.find((f) => f.name === c.column)?.label || c.column}</span>:
+                      {' '}"{c.value}" would apply to {c.count} records ({c.ids.join(', ')}{c.count > c.ids.length ? ', …' : ''})
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-xs text-red-500 dark:text-red-400/80">Deselect the conflicting records, or choose a transformation that keeps their values distinct.</p>
+              </div>
+            )}
+
             {preview.changedCount === 0 ? (
               <p className="text-sm text-slate-500">Nothing to change — every selected value is already in the target form.</p>
             ) : (
@@ -246,7 +264,11 @@ export default function BulkTransformModal({ open, onClose, onDone, resource, id
 
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="secondary" onClick={() => setStep('pick')}>Back</Button>
-              <Button loading={submitting} disabled={preview.changedCount === 0} onClick={handleApply}>
+              <Button
+                loading={submitting}
+                disabled={preview.changedCount === 0 || preview.uniqueConflicts?.length > 0}
+                onClick={handleApply}
+              >
                 Apply to {preview.recordsToUpdate.toLocaleString()} Record(s)
               </Button>
             </div>

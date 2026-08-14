@@ -1,43 +1,6 @@
 import prisma from '../../../../db.js'
 import { writeAudit, auditUser } from '../../../../middleware/audit.js'
-import { createNotification } from '../../../../services/notification-service.js'
-import { normalizeUom, toCanonical, CANONICAL_UNITS } from '../../../../utils/uom.js'
-
-// ── Items ─────────────────────────────────────────────────────────────────────
-
-export const createItem = async (req, res) => {
-  try {
-    const { item_code, item_name, item_category, uom, warehouse_zone,
-            reorder_level, decanting_tolerance_pct, is_microbial, supplier_default } = req.body || {}
-    if (!item_code || !item_name || !item_category || !uom)
-      return res.status(400).json({ success: false, error: 'item_code, item_name, item_category, uom required', code: 'VALIDATION_ERROR' })
-
-    // Item master's unit is its physical stock unit — must be a real
-    // KG/L/NOS quantity (not a special unit like CFU/g).
-    const canonicalUom = normalizeUom(uom)
-    if (!CANONICAL_UNITS.includes(canonicalUom))
-      return res.status(400).json({ success: false, error: `uom must convert to one of ${CANONICAL_UNITS.join(', ')} — got "${uom}"`, code: 'VALIDATION_ERROR' })
-
-    const item = await prisma.erpItem.create({
-      data: {
-        itemCode: item_code,
-        itemName: item_name,
-        itemCategory: item_category,
-        uom: canonicalUom,
-        warehouseZone: warehouse_zone || null,
-        reorderLevel: reorder_level || 0,
-        decantingTolerancePct: decanting_tolerance_pct || 0.5,
-        isMicrobial: is_microbial || false,
-        supplierDefault: supplier_default || null,
-      },
-    })
-    await writeAudit({ ...auditUser(req), action: 'CREATE', tableName: 'erp_items', recordId: item_code, newValue: req.body })
-    return res.status(201).json({ success: true, data: item })
-  } catch (err) {
-    if (err.code === 'P2002') return res.status(409).json({ success: false, error: 'Item code already exists', code: 'CONFLICT' })
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
-  }
-}
+import { normalizeUom, toCanonical } from '../../../../utils/uom.js'
 
 // ── Suppliers ─────────────────────────────────────────────────────────────────
 
@@ -129,114 +92,6 @@ export const createErpEquipment = async (req, res) => {
   }
 }
 
-// ── ERP Products ──────────────────────────────────────────────────────────────
-
-export const createErpProduct = async (req, res) => {
-  try {
-    const { product_code, product_name, product_category, plant_id, alternate_plant_id,
-            alt_plant_requires_approval, formulation_type, shelf_life_days,
-            consolidation_window_days, is_microbial, microbial_strain_id } = req.body || {}
-    if (!product_code || !product_name)
-      return res.status(400).json({ success: false, error: 'product_code and product_name required', code: 'VALIDATION_ERROR' })
-
-    const row = await prisma.erpProduct.create({
-      data: {
-        productCode: product_code,
-        productName: product_name,
-        productCategory: product_category || null,
-        plantId: plant_id || null,
-        alternatePlantId: alternate_plant_id || null,
-        altPlantRequiresApproval: alt_plant_requires_approval || false,
-        formulationType: formulation_type || null,
-        shelfLifeDays: shelf_life_days || null,
-        consolidationWindowDays: consolidation_window_days || 3,
-        isMicrobial: is_microbial || false,
-        microbialStrainId: microbial_strain_id || null,
-      },
-    })
-    await writeAudit({ ...auditUser(req), action: 'CREATE', tableName: 'erp_products', recordId: product_code, newValue: req.body })
-    return res.status(201).json({ success: true, data: row })
-  } catch (err) {
-    if (err.code === 'P2002') return res.status(409).json({ success: false, error: 'Product code already exists', code: 'CONFLICT' })
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
-  }
-}
-
-// ── BOM ───────────────────────────────────────────────────────────────────────
-
-export const createBom = async (req, res) => {
-  try {
-    const { product_code, bom_version, effective_date, yield_pct, notes,
-            formulation_lines = [], packing_lines = [] } = req.body || {}
-    if (!product_code || !bom_version || !effective_date)
-      return res.status(400).json({ success: false, error: 'product_code, bom_version, effective_date required', code: 'VALIDATION_ERROR' })
-
-    const bom = await prisma.$transaction(async (tx) => {
-      await tx.erpBomHeader.updateMany({
-        where: { productCode: product_code, status: 'active' },
-        data: { status: 'inactive' },
-      })
-      const newBom = await tx.erpBomHeader.create({
-        data: {
-          productCode: product_code,
-          bomVersion: bom_version,
-          effectiveDate: new Date(effective_date),
-          approvedBy: req.user?.user_id || null,
-          yieldPct: yield_pct || 98,
-          notes: notes || null,
-        },
-      })
-      // Formulation lines can carry potency units (CFU/g) that pass through
-      // toCanonical() unchanged; packing lines are always a real KG/L/NOS
-      // quantity, so any special unit there is a genuine input error.
-      if (formulation_lines.length) {
-        await tx.erpBomLineFormulation.createMany({
-          data: formulation_lines.map(({ item_code, qty_per_unit, unit, is_critical }, i) => {
-            const c = toCanonical(qty_per_unit, unit)
-            return {
-              bomId: newBom.bomId,
-              itemCode: item_code,
-              qtyPerUnit: c.qty,
-              unit: c.uom,
-              isCritical: is_critical || false,
-              seqNo: i + 1,
-            }
-          }),
-        })
-      }
-      if (packing_lines.length) {
-        await tx.erpBomLinePacking.createMany({
-          data: packing_lines.map(({ item_code, qty_per_unit, unit }, i) => {
-            const c = toCanonical(qty_per_unit, unit)
-            if (c.special) throw new Error(`Packing line for ${item_code}: "${unit}" is not a valid packing quantity unit`)
-            return {
-              bomId: newBom.bomId,
-              itemCode: item_code,
-              qtyPerUnit: c.qty,
-              unit: c.uom,
-              seqNo: i + 1,
-            }
-          }),
-        })
-      }
-      return newBom
-    })
-
-    await createNotification({
-      type: 'bom_version_changed',
-      title: `BOM Updated: ${product_code} → ${bom_version}`,
-      message: `BOM for Product ${product_code} updated to ${bom_version}. All pending plans using previous version require review.`,
-      targetRole: 'planner',
-      refType: 'bom_header',
-      refId: bom.bomId,
-    })
-    await writeAudit({ ...auditUser(req), action: 'CREATE', tableName: 'bom_headers', recordId: bom.bomId, newValue: req.body })
-    return res.status(201).json({ success: true, data: bom })
-  } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
-  }
-}
-
 // ── Strains ───────────────────────────────────────────────────────────────────
 
 export const createStrain = async (req, res) => {
@@ -282,45 +137,6 @@ export const createCustomer = async (req, res) => {
     return res.status(201).json({ success: true, data: row })
   } catch (err) {
     if (err.code === 'P2002') return res.status(409).json({ success: false, error: 'Customer code already exists', code: 'CONFLICT' })
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
-  }
-}
-
-// ── Containers ────────────────────────────────────────────────────────────────
-
-export const createErpContainer = async (req, res) => {
-  try {
-    const { container_id, container_qr, item_code, location, max_capacity, uom, low_stock_threshold } = req.body || {}
-    if (!container_id || !item_code || !max_capacity)
-      return res.status(400).json({ success: false, error: 'container_id, item_code, max_capacity required', code: 'VALIDATION_ERROR' })
-
-    let canonicalMaxCapacity = max_capacity
-    let canonicalUom = uom || null
-    if (uom) {
-      try {
-        const c = toCanonical(max_capacity, uom)
-        canonicalMaxCapacity = c.qty
-        canonicalUom = c.uom
-      } catch (e) {
-        return res.status(400).json({ success: false, error: `uom: ${e.message}`, code: 'VALIDATION_ERROR' })
-      }
-    }
-
-    const row = await prisma.erpContainer.create({
-      data: {
-        containerId: container_id,
-        containerQr: container_qr || container_id,
-        itemCode: item_code,
-        location: location || null,
-        maxCapacity: canonicalMaxCapacity,
-        uom: canonicalUom,
-        lowStockThreshold: low_stock_threshold || 0,
-      },
-    })
-    await writeAudit({ ...auditUser(req), action: 'CREATE', tableName: 'erp_containers', recordId: container_id, newValue: req.body })
-    return res.status(201).json({ success: true, data: row })
-  } catch (err) {
-    if (err.code === 'P2002') return res.status(409).json({ success: false, error: 'Container ID already exists', code: 'CONFLICT' })
     return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
   }
 }

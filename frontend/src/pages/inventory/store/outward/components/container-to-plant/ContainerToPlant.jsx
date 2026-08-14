@@ -5,6 +5,7 @@ import { useQrScanner } from '../../../../../../hooks/useQrScanner.js'
 import { Button } from '../../../../../../components/ui'
 import './ContainerToPlant.css'
 
+import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 export default function ContainerToPlant({ preselected, onDone }) {
   const [container, setContainer]   = useState(preselected || null)
   const [manualId, setManualId]     = useState('')
@@ -21,7 +22,7 @@ export default function ContainerToPlant({ preselected, onDone }) {
   // Operational UOM entry unit; the server always re-derives and validates
   // the actual conversion before deducting stock.
   const [rmInfo, setRmInfo]         = useState(null)
-  const entryUom = rmInfo?.operationalUom || rmInfo?.inventoryUom || container?.uom
+  const entryUom = (rmInfo?.operationalUom || rmInfo?.inventoryUom || container?.uom || '').toUpperCase()
 
   useEffect(() => {
     if (preselected) {
@@ -70,7 +71,7 @@ export default function ContainerToPlant({ preselected, onDone }) {
         remarks: remarks || (plant ? `To: ${plant}` : undefined),
       })
       const linked = indentId ? ` (Indent linked)` : (plant ? ` → ${plant}` : '')
-      setSuccess(`Issued ${qty} ${entryUom} (${r.issued} ${r.data.uom} deducted) from ${container.containerId}${linked}. Remaining: ${r.data.currentQty} ${r.data.uom}`)
+      setSuccess(`Issued ${qty} ${entryUom} (${r.issued} ${(r.data.uom || '').toUpperCase()} deducted) from ${container.containerId}${linked}. Remaining: ${r.data.currentQty} ${(r.data.uom || '').toUpperCase()}`)
       setContainer(r.data)
       setQty(''); setPlant(''); setRemarks(''); setIndentId('')
     } catch (e) { setError(e.response?.data?.error || e.message) }
@@ -126,18 +127,18 @@ export default function ContainerToPlant({ preselected, onDone }) {
             <div className="flex justify-between items-start mb-3">
               <div>
                 <div className="font-bold text-green-900 font-mono">{container.containerId}</div>
-                <div className="text-sm text-green-700">{container.itemName} <span className="text-xs font-mono">({container.itemCode})</span></div>
+                <div className="text-sm text-green-700">{toTitleCase(container.itemName)} <span className="text-xs font-mono">({container.itemCode})</span></div>
               </div>
               <Button onClick={() => { setContainer(null); setError(''); setSuccess('') }} variant="ghost" size="xs">Change</Button>
             </div>
             <div className="grid grid-cols-2 gap-3 text-center">
               <div className="bg-white rounded-lg py-2">
                 <div className={`font-bold text-xl ${container.currentQty > 0 ? 'text-green-700' : 'text-red-500'}`}>{container.currentQty}</div>
-                <div className="text-xs text-gray-500">Available ({container.uom})</div>
+                <div className="text-xs text-gray-500">Available ({container.uom?.toUpperCase()})</div>
               </div>
               <div className="bg-white rounded-lg py-2">
                 <div className="font-bold text-xl text-gray-400">{container.capacity}</div>
-                <div className="text-xs text-gray-500">Capacity ({container.uom})</div>
+                <div className="text-xs text-gray-500">Capacity ({container.uom?.toUpperCase()})</div>
               </div>
             </div>
             {container.currentQty <= 0 && <p className="text-red-600 text-xs mt-2 text-center font-semibold">Container is empty — fill it first</p>}
@@ -152,7 +153,7 @@ export default function ContainerToPlant({ preselected, onDone }) {
                   className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-green-500"
                 />
                 {rmInfo?.operationalUom && rmInfo.operationalUom !== rmInfo.inventoryUom && (
-                  <p className="text-xs text-gray-400 mt-1">Stock is tracked in {rmInfo.inventoryUom} — entered qty converts automatically.</p>
+                  <p className="text-xs text-gray-400 mt-1">Stock is tracked in {rmInfo.inventoryUom?.toUpperCase()} — entered qty converts automatically.</p>
                 )}
               </div>
 
@@ -177,7 +178,7 @@ export default function ContainerToPlant({ preselected, onDone }) {
                   <option value="">— No indent —</option>
                   {indents.map(i => (
                     <option key={i.indentId} value={i.indentId}>
-                      {i.productName} | {i.batchNo} | {i.batchSize} kg
+                      {toTitleCase(i.productName)} | {i.batchNo} | {i.batchSize} kg
                     </option>
                   ))}
                 </select>

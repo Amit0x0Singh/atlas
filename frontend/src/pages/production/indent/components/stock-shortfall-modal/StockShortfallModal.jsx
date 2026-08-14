@@ -1,5 +1,6 @@
 import { Button } from '../../../../../components/ui'
 
+import { toTitleCase } from '../../../../../utils/textDisplay.js'
 export default function StockShortfallModal({ shortfallItems, creating, onConfirm, onCancel }) {
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
@@ -15,7 +16,7 @@ export default function StockShortfallModal({ shortfallItems, creating, onConfir
         <div className="bg-red-50 border border-red-100 rounded-lg p-3 mb-4 space-y-2">
           {shortfallItems.map(c => (
             <div key={c.rmCode} className="text-sm">
-              <div className="font-semibold text-red-700">{c.rmName} <span className="font-mono text-xs text-red-400">[{c.rmCode}]</span></div>
+              <div className="font-semibold text-red-700">{toTitleCase(c.rmName)} <span className="font-mono text-xs text-red-400">[{c.rmCode}]</span></div>
               <div className="text-xs text-red-600 flex gap-4 mt-0.5">
                 <span>Required: <strong>{Number(c.required || c.requiredQty).toFixed(3)}</strong></span>
                 <span>Available: <strong>{Number(c.available || c.availableQty).toFixed(3)}</strong></span>

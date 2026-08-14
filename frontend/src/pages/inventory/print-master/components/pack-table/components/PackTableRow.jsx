@@ -1,7 +1,9 @@
 import { Fragment } from "react";
 import { packsApi } from "../../../../../../api/inventory.js";
-import { groupStatus, statusColor } from "../utils/groupPacks.js";
+import { openAuthedFile } from "../../../../../../utils/authedFile.js";
+import { groupStatus, statusColor, fmtDate } from "../utils/groupPacks.js";
 
+import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 export default function PackTableRow({ group: g, isOpen, onToggle }) {
   const totalQty = g.bags.reduce((s, b) => s + (b.packQty || 0), 0);
   const status   = groupStatus(g.bags);
@@ -22,7 +24,7 @@ export default function PackTableRow({ group: g, isOpen, onToggle }) {
         </td>
 
         <td className="px-3 py-3">
-          <div className="font-semibold text-gray-900">{g.itemName}</div>
+          <div className="font-semibold text-gray-900">{toTitleCase(g.itemName)}</div>
           <div className="text-xs text-gray-400 font-mono mt-0.5">{g.itemCode}</div>
         </td>
 
@@ -47,13 +49,11 @@ export default function PackTableRow({ group: g, isOpen, onToggle }) {
 
         <td className="px-3 py-3 font-semibold text-gray-800">
           {totalQty % 1 === 0 ? totalQty : totalQty.toFixed(3)}{" "}
-          <span className="text-gray-400 font-normal text-xs">{g.uom}</span>
+          <span className="text-gray-400 font-normal text-xs">{g.uom?.toUpperCase()}</span>
         </td>
 
         <td className="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">
-          {g.receivedDate
-            ? new Date(g.receivedDate).toLocaleDateString("en-IN")
-            : "—"}
+          {fmtDate(g.receivedDate)}
         </td>
 
         <td className="px-3 py-3">
@@ -66,14 +66,13 @@ export default function PackTableRow({ group: g, isOpen, onToggle }) {
           className="px-3 py-3"
           onClick={(e) => e.stopPropagation()}
         >
-          <a
-            href={packsApi.batchLabelsUrl(g.itemCode, g.lotNo)}
-            target="_blank"
-            rel="noreferrer"
+          <button
+            type="button"
+            onClick={() => openAuthedFile(packsApi.batchLabelsUrl(g.itemCode, g.lotNo)).catch((e) => alert(`Print failed: ${e.message}`))}
             className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-lg transition whitespace-nowrap"
           >
             🖨️ Print All ({g.bags.length})
-          </a>
+          </button>
         </td>
       </tr>
 
@@ -100,7 +99,7 @@ export default function PackTableRow({ group: g, isOpen, onToggle }) {
                 </span>
 
                 <span className="text-xs text-gray-700 w-20 shrink-0">
-                  {b.packQty} {b.uom}
+                  {b.packQty} {b.uom?.toUpperCase()}
                 </span>
 
                 <span
@@ -109,14 +108,21 @@ export default function PackTableRow({ group: g, isOpen, onToggle }) {
                   {b.status.replace(/_/g, " ")}
                 </span>
 
-                <a
-                  href={packsApi.labelUrl(b.packId)}
-                  target="_blank"
-                  rel="noreferrer"
+                <span className="text-xs text-gray-500 w-28 shrink-0 truncate mx-4" title={b.customerBatchCode || ""}>
+                  {b.customerBatchCode || "—"}
+                </span>
+
+                <span className="text-xs text-gray-500 w-24 shrink-0">
+                  {fmtDate(b.expiryDate)}
+                </span>
+
+                <button
+                  type="button"
+                  onClick={() => openAuthedFile(packsApi.labelUrl(b.packId)).catch((e) => alert(`Print failed: ${e.message}`))}
                   className="text-xs text-blue-600 hover:text-blue-800 font-medium ml-4 shrink-0 whitespace-nowrap"
                 >
                   🖨️ Label
-                </a>
+                </button>
               </div>
             </td>
           </tr>

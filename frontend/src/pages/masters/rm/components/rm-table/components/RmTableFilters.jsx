@@ -1,6 +1,7 @@
 import { Search, X } from 'lucide-react'
 import { Button, IconButton } from '../../../../../../components/ui'
 
+import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 const label    = 'text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1'
 const inputCls = 'w-full border border-gray-200 rounded-lg px-3 py-2 text-[13px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white text-gray-900 placeholder:text-gray-400'
 
@@ -60,7 +61,7 @@ export default function RmTableFilters({ filters, resultCount, onFilterChange, o
       {hasActiveFilters && (
         <div className="flex flex-wrap gap-1.5 mt-2.5 pt-2.5 border-t border-gray-100">
           {filters.itemCode && <FilterChip label={`Item Code: "${filters.itemCode}"`} onRemove={() => onFilterChange('itemCode', '')} />}
-          {filters.itemName && <FilterChip label={`Item Name: "${filters.itemName}"`} onRemove={() => onFilterChange('itemName', '')} />}
+          {filters.itemName && <FilterChip label={`Item Name: "${toTitleCase(filters.itemName)}"`} onRemove={() => onFilterChange('itemName', '')} />}
           {filters.conversionRequired && <FilterChip label={`Conversion Required: ${filters.conversionRequired === 'YES' ? 'Yes' : 'No'}`} onRemove={() => onFilterChange('conversionRequired', '')} />}
         </div>
       )}

@@ -2,6 +2,7 @@
 import { Button } from '../../../../../components/ui'
 import './ProductSidebar.css'
 
+import { toTitleCase } from '../../../../../utils/textDisplay.js'
 export default function ProductSidebar({ productList, loading, selectedProduct, prodSearch, onSearchChange, onSelectProduct, onReconcile }) {
   const filtered = productList.filter(p =>
     !prodSearch ||
@@ -35,7 +36,7 @@ export default function ProductSidebar({ productList, loading, selectedProduct, 
             }`}
           >
             <div className={`text-sm font-semibold truncate ${selectedProduct?.productCode === p.productCode ? 'text-white' : 'text-gray-800'}`}>
-              {p.productName}
+              {toTitleCase(p.productName)}
             </div>
             <div className={`text-xs font-mono ${selectedProduct?.productCode === p.productCode ? 'text-blue-200' : 'text-gray-400'}`}>
               {p.productCode}

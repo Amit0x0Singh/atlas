@@ -12,7 +12,7 @@
 import { PERMISSION_KEYS } from './permissions.catalog.js'
 
 const all = (...prefixes) => PERMISSION_KEYS.filter((k) => prefixes.some((p) => k.startsWith(`${p}.`)))
-const viewOnly = (keys) => keys.filter((k) => k.endsWith('.view') || k === 'admin.panel.access' || k === 'inventory.fifo.check')
+const viewOnly = (keys) => keys.filter((k) => k.endsWith('.view') || k === 'admin.panel.access')
 
 const inventoryAll = all('inventory')
 const productionAll = all('production', 'planning', 'microbial')
@@ -51,10 +51,7 @@ export const ROLE_SEEDS = [
     permissions: [
       ...inventoryAll,
       'gate.inward.view', 'gate.inward.create', 'gate.inward.update', 'gate.outward.view',
-      'masters.rm.view', 'masters.product.view', 'masters.packing.view',
-      // Material Issue by BOM — issuing raw materials to production is a
-      // Store function even though its route module lives under production/.
-      'production.bom-issuance.view', 'production.bom-issuance.create', 'production.bom-issuance.reprocess',
+      'masters.rm.view', 'masters.product.view',
       // Notification delivery log — previously authorize(['admin','store']).
       'sales.notification.view',
     ],

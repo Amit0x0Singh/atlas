@@ -18,13 +18,6 @@ export const equipmentApi = {
   delete: (id)         => api.delete(`/equipment/${id}`),
 }
 
-export const packingMaterialApi = {
-  list:   ()           => api.get('/packing-materials'),
-  create: (data)       => api.post('/packing-materials', data),
-  update: (id, data)   => api.put(`/packing-materials/${id}`, data),
-  delete: (id)         => api.delete(`/packing-materials/${id}`),
-}
-
 export const recipeApi = {
   list:           (params)   => api.get('/recipe', { params }),
   products:       ()         => api.get('/recipe/products'),
@@ -35,13 +28,6 @@ export const recipeApi = {
   fixRmMapping:   (mappings) => api.post('/recipe/fix-rm-mapping', { mappings }),
 }
 
-
-export const erpItemsApi = {
-  list:   (params)     => api.get('/masters/items', { params }),
-  get:    (code)       => api.get(`/masters/items/${encodeURIComponent(code)}`),
-  create: (data)       => api.post('/masters/items', data),
-  update: (code, data) => api.put(`/masters/items/${encodeURIComponent(code)}`, data),
-}
 
 export const erpSuppliersApi = {
   list:   (params)     => api.get('/masters/suppliers', { params }),
@@ -60,17 +46,6 @@ export const erpEquipmentApi = {
   patch:  (id, data) => api.patch(`/masters/equipment/${id}`, data),
 }
 
-export const erpProductsApi = {
-  list:   (params) => api.get('/masters/erp-products', { params }),
-  create: (data)   => api.post('/masters/erp-products', data),
-}
-
-export const erpBomApi = {
-  list:   (params) => api.get('/masters/bom', { params }),
-  get:    (id)     => api.get(`/masters/bom/${id}`),
-  create: (data)   => api.post('/masters/bom', data),
-}
-
 export const erpStrainsApi = {
   list:   ()     => api.get('/masters/strains'),
   create: (data) => api.post('/masters/strains', data),
@@ -83,9 +58,4 @@ export const erpCustomersApi = {
 
 export const erpReasonCodesApi = {
   list: (params) => api.get('/masters/reason-codes', { params }),
-}
-
-export const erpContainersApi = {
-  list:   (params) => api.get('/masters/containers', { params }),
-  create: (data)   => api.post('/masters/containers', data),
 }

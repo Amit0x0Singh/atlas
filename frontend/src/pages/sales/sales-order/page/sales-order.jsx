@@ -6,7 +6,6 @@ import {
   useSalesOrders, useCreateSalesOrder, useUpdateSalesOrder, useDeleteSalesOrder,
 } from "../../../../hooks/sales/useSalesOrders.js";
 import { useProducts } from "../../../../hooks/masters/useProducts.js";
-import { usePackingMaterials } from "../../../../hooks/masters/usePackingMaterials.js";
 import { useCustomerProfiles } from "../../../../hooks/sales/useCustomerProfiles.js";
 import { queryKeys } from "../../../../lib/queryKeys.js";
 import { STATUSES } from "../shared/constants.js";
@@ -43,18 +42,13 @@ const SalesOrder = () => {
 
   const { data: productsResult } = useProducts();
   const products = productsResult?.items ?? [];
-  const { data: allPackingMaterials = [] } = usePackingMaterials();
-  const packingMaterials = useMemo(() => ({
-    primary:   allPackingMaterials.filter(m => ['BOTTLES_TINS', 'POUCHES_BAGS'].includes(m.category)),
-    secondary: allPackingMaterials.filter(m => m.category === 'CORRUGATED_BOXES'),
-  }), [allPackingMaterials]);
 
   const { data: fetchedProfiles = [] } = useCustomerProfiles();
   const profiles = useMemo(() => {
     if (!fetchedProfiles.length) return STATIC_CUSTOMER_PROFILES;
     const merged = [...STATIC_CUSTOMER_PROFILES];
     for (const p of fetchedProfiles) {
-      if (!merged.find((x) => x.customerName === p.customerName)) merged.push(p);
+      if (!merged.find((x) => x.customerName?.toLowerCase() === p.customerName?.toLowerCase())) merged.push(p);
     }
     return merged.sort((a, b) => (b.orderCount || 0) - (a.orderCount || 0));
   }, [fetchedProfiles]);
@@ -265,7 +259,6 @@ const SalesOrder = () => {
           editing={editing}
           products={products}
           profiles={profiles}
-          packingMaterials={packingMaterials}
           onSave={handleSave}
           onClose={() => {
             setShowForm(false);

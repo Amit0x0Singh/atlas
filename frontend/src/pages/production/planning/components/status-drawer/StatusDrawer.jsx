@@ -6,6 +6,7 @@ import { X, Check } from 'lucide-react'
 import { planTasksApi } from '../../../../../api/production.js'
 import './StatusDrawer.css'
 
+import { toTitleCase } from '../../../../../utils/textDisplay.js'
 export default function StatusDrawer({ task, onSave, onClose }) {
   const cfg = PLANT_CONFIG[task.plant] || {}
   const [status,  setStatus]  = useState(task.status  || 'Not Started')
@@ -53,7 +54,7 @@ export default function StatusDrawer({ task, onSave, onClose }) {
             <div className="text-[11px] text-gray-400 mb-1">
               Task: <span className="font-mono font-bold text-gray-700">{task.taskId}</span>
             </div>
-            <div className="font-bold text-gray-900">{task.productName}</div>
+            <div className="font-bold text-gray-900">{toTitleCase(task.productName)}</div>
             <div className="text-gray-500 mt-0.5">{task.process} — {task.qty} {task.qtyUom || ''}</div>
             <div className="mt-2">Current: <StatusBadge status={task.status || 'Not Started'} /></div>
           </div>

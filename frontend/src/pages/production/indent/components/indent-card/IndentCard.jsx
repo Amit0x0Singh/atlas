@@ -1,5 +1,6 @@
 import './IndentCard.css'
 
+import { toTitleCase } from '../../../../../utils/textDisplay.js'
 const STATUS_BADGE = {
   OPEN:          'bg-blue-100 text-blue-800',
   PARTIAL:       'bg-orange-100 text-orange-800',
@@ -24,7 +25,7 @@ export default function IndentCard({ indent, selected, setSelected }) {
               {indent.status}
             </span>
           </div>
-          <div className="text-sm text-gray-700 mt-1 font-medium">{indent.productName}</div>
+          <div className="text-sm text-gray-700 mt-1 font-medium">{toTitleCase(indent.productName)}</div>
           <div className="flex gap-4 mt-1.5 text-xs text-gray-400 flex-wrap">
             <span>Batch: <strong className="text-gray-600">{indent.batchNo}</strong></span>
             <span>Size: <strong className="text-gray-600">{indent.batchSize}</strong></span>
@@ -55,7 +56,7 @@ export default function IndentCard({ indent, selected, setSelected }) {
                 <tbody>
                   {indent.items.map((item, i) => (
                     <tr key={i} className="border-b border-gray-100 last:border-0">
-                      <td className="py-2 pr-4 font-medium text-gray-700">{item.rmName}</td>
+                      <td className="py-2 pr-4 font-medium text-gray-700">{toTitleCase(item.rmName)}</td>
                       <td className="py-2 pr-4 font-mono text-blue-600">{item.rmCode}</td>
                       <td className="py-2 pr-4 text-right">{Number(item.requiredQty).toFixed(3)}</td>
                       <td className="py-2 text-center">

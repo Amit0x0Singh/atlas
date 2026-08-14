@@ -1,5 +1,6 @@
 import { IconButton } from "../../../../../components/ui";
 import { X } from "lucide-react";
+import { toTitleCase } from "../../../../../utils/textDisplay.js";
 
 export default function SfgAvailabilityAlert({ sfgAlert, onDismiss }) {
   return (
@@ -13,9 +14,9 @@ export default function SfgAvailabilityAlert({ sfgAlert, onDismiss }) {
             {sfgAlert.map((s, i) => (
               <div key={i} className="text-sm text-green-700 flex gap-3">
                 <span className="font-semibold">{s.productCode}</span>
-                <span>{s.productName}</span>
+                <span>{toTitleCase(s.productName)}</span>
                 <span className="ml-auto text-green-900 font-semibold">
-                  {s.sfgQty} {s.uom} in SFG
+                  {s.sfgQty} {s.uom?.toUpperCase()} in SFG
                   {s.orderedQty && (
                     <span
                       className={
@@ -25,7 +26,7 @@ export default function SfgAvailabilityAlert({ sfgAlert, onDismiss }) {
                       }
                     >
                       {" "}
-                      (ordered {s.orderedQty} {s.uom}
+                      (ordered {s.orderedQty} {s.uom?.toUpperCase()}
                       {s.sfgQty >= s.orderedQty
                         ? " — fully covered ✓"
                         : " — partial"}

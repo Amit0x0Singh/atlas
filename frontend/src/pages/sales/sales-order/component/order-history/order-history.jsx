@@ -3,6 +3,7 @@ import Pagination from '../../../../../components/pagination/Pagination.jsx'
 import { STATUS_STYLE, STATUS_LABELS } from '../../shared/constants.js'
 import { fmtDate, etdDays } from '../../shared/utils.js'
 import { Button } from '../../../../../components/ui'
+import { toTitleCase } from '../../../../../utils/textDisplay.js'
 
 function TypeBadge({ type }) {
   const isExport = type === 'EXPORT'
@@ -101,7 +102,7 @@ export default function OrderHistory({ orders, loading, onOpenDispatch }) {
               {paginated.map(order => {
                 const isOpen   = expandedKeys.has(order.id)
                 const totalQty = order.items.reduce((n, it) => n + parseFloat(it.totalQty || 0), 0)
-                const uom      = order.items[0]?.totalUom || 'KG'
+                const uom      = (order.items[0]?.totalUom || 'KG').toUpperCase()
 
                 return (
                   <Fragment key={order.id}>
@@ -131,7 +132,7 @@ export default function OrderHistory({ orders, loading, onOpenDispatch }) {
 
                       {/* Customer */}
                       <td className="px-3 py-3.5 font-semibold text-gray-800">
-                        {order.customerName}
+                        {toTitleCase(order.customerName)}
                       </td>
 
                       {/* Type */}
@@ -178,18 +179,18 @@ export default function OrderHistory({ orders, loading, onOpenDispatch }) {
                             {/* Product name + sub-label */}
                             <div className="flex-1 min-w-0">
                               <span className="text-sm font-semibold text-gray-800">
-                                {it.inhouseProductName || it.customerProductName || '—'}
+                                {toTitleCase(it.inhouseProductName || it.customerProductName) || '—'}
                               </span>
                               {it.customerProductName && it.customerProductName !== it.inhouseProductName && (
                                 <span className="ml-2 text-[10px] text-gray-400 italic">
-                                  ({it.customerProductName})
+                                  ({toTitleCase(it.customerProductName)})
                                 </span>
                               )}
                             </div>
 
                             {/* Qty */}
                             <span className="text-sm font-bold text-gray-700 w-28 shrink-0">
-                              {it.totalQty} <span className="text-xs font-normal text-gray-400">{it.totalUom}</span>
+                              {it.totalQty} <span className="text-xs font-normal text-gray-400">{it.totalUom?.toUpperCase()}</span>
                             </span>
 
                             {/* Packing */}

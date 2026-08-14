@@ -30,7 +30,6 @@ model User {
 
   employee      EmployeeMaster?   @relation(fields: [employeeId], references: [id])
   roles         UserRole[]
-  approvedBoms  ErpBomHeader[]
   notifications ErpNotification[]
 
   @@map("users")

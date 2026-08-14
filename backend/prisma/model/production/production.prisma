@@ -41,6 +41,8 @@ model ProductMaster {
   totalRecipe Int      @default(0) @map("total_recipe")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
+  createdBy   String?  @map("created_by") @db.VarChar(255)
+  updatedBy   String?  @map("updated_by") @db.VarChar(255)
 
   @@map("product_master")
 }
@@ -63,6 +65,8 @@ model EquipmentMaster {
   plant             String   @default("")
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
+  createdBy         String?  @map("created_by") @db.VarChar(255)
+  updatedBy         String?  @map("updated_by") @db.VarChar(255)
 
   @@map("equipment_master")
 }
@@ -121,6 +125,8 @@ model ProductionTask {
   microbeIssueStartedAt DateTime? @map("microbe_issue_started_at") @db.Timestamptz()
   createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt             DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+  createdBy             String?   @map("created_by") @db.VarChar(255)
+  updatedBy             String?   @map("updated_by") @db.VarChar(255)
 
   @@index([plant, date])
   @@index([date, sent])
@@ -148,6 +154,8 @@ model RecipeDb {
   requiredCfu Float?   @map("required_cfu")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
+  createdBy   String?  @map("created_by") @db.VarChar(255)
+  updatedBy   String?  @map("updated_by") @db.VarChar(255)
 
   @@unique([productCode, recipeNo, rmCode])
   @@map("recipe_db")
@@ -170,6 +178,9 @@ model IndentMaster {
   status            String            @default("OPEN")
   poSentAt          DateTime?         @map("po_sent_at")
   createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
+  createdBy         String?           @map("created_by") @db.VarChar(255)
+  updatedBy         String?           @map("updated_by") @db.VarChar(255)
   details           IndentDetails[]
   productionBatches ProductionBatch[]
 
@@ -184,6 +195,10 @@ model IndentDetails {
   requiredQty Float        @map("required_qty")
   issuedQty   Float        @default(0) @map("issued_qty")
   balanceQty  Float        @map("balance_qty")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+  createdBy   String?      @map("created_by") @db.VarChar(255)
+  updatedBy   String?      @map("updated_by") @db.VarChar(255)
   indent      IndentMaster @relation(fields: [indentId], references: [indentId])
 
   @@map("indent_details")
@@ -204,6 +219,8 @@ model SfgMaster {
   remarks       String?
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
+  createdBy     String?  @map("created_by") @db.VarChar(255)
+  updatedBy     String?  @map("updated_by") @db.VarChar(255)
 
   @@map("sfg_master")
 }
@@ -218,7 +235,7 @@ model ProductionBatch {
   diNo            String   @map("di_no")
   batchCode       String   @map("batch_code")
   orderQty        Float    @map("order_qty")
-  category        String   @default("POWDER")
+  category        String   @default("powder")
   currentStage    String   @default("BIOMASS") @map("current_stage")
   status          String   @default("DRAFT")
   temperature     Float?
@@ -232,6 +249,8 @@ model ProductionBatch {
   qcFlag          Boolean  @default(false) @map("qc_flag")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
+  createdBy       String?  @map("created_by") @db.VarChar(255)
+  updatedBy       String?  @map("updated_by") @db.VarChar(255)
 
   indent            IndentMaster       @relation(fields: [indentId], references: [indentId])
   biomassInputs     BiomassInput[]
@@ -260,6 +279,10 @@ model BiomassInput {
   receivedDate String          @default("") @map("received_date")
   receivedTime String          @default("") @map("received_time")
   flagged      Boolean         @default(false)
+  createdAt    DateTime        @default(now()) @map("created_at")
+  updatedAt    DateTime        @updatedAt @map("updated_at")
+  createdBy    String?         @map("created_by") @db.VarChar(255)
+  updatedBy    String?         @map("updated_by") @db.VarChar(255)
   batch        ProductionBatch @relation(fields: [batchId], references: [id])
 
   @@map("biomass_input")
@@ -280,6 +303,10 @@ model TechnicalDetail {
   qtyAfterSieving   Float?          @map("qty_after_sieving")
   wastage           Float?
   flagged           Boolean         @default(false)
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
+  createdBy         String?         @map("created_by") @db.VarChar(255)
+  updatedBy         String?         @map("updated_by") @db.VarChar(255)
   batch             ProductionBatch @relation(fields: [batchId], references: [id])
 
   @@map("technical_detail")
@@ -300,6 +327,10 @@ model FormulationCycle {
   carrierType     String?         @map("carrier_type")
   inchargeName    String?         @map("incharge_name")
   flagged         Boolean         @default(false)
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+  createdBy       String?         @map("created_by") @db.VarChar(255)
+  updatedBy       String?         @map("updated_by") @db.VarChar(255)
   batch           ProductionBatch @relation(fields: [batchId], references: [id])
 
   @@map("formulation_cycle")
@@ -314,6 +345,10 @@ model UnloadingLog {
   noOfWorkers  Int?            @map("no_of_workers")
   inchargeName String?         @map("incharge_name")
   flagged      Boolean         @default(false)
+  createdAt    DateTime        @default(now()) @map("created_at")
+  updatedAt    DateTime        @updatedAt @map("updated_at")
+  createdBy    String?         @map("created_by") @db.VarChar(255)
+  updatedBy    String?         @map("updated_by") @db.VarChar(255)
   batch        ProductionBatch @relation(fields: [batchId], references: [id])
 
   @@map("unloading_log")
@@ -329,6 +364,10 @@ model SievingLog {
   noOfWorkers  Int?            @map("no_of_workers")
   inchargeName String?         @map("incharge_name")
   flagged      Boolean         @default(false)
+  createdAt    DateTime        @default(now()) @map("created_at")
+  updatedAt    DateTime        @updatedAt @map("updated_at")
+  createdBy    String?         @map("created_by") @db.VarChar(255)
+  updatedBy    String?         @map("updated_by") @db.VarChar(255)
   batch        ProductionBatch @relation(fields: [batchId], references: [id])
 
   @@map("sieving_log")
@@ -354,6 +393,10 @@ model PackingLog {
   noOfWorkers        Int?            @map("no_of_workers")
   inchargeName       String?         @map("incharge_name")
   flagged            Boolean         @default(false)
+  createdAt          DateTime        @default(now()) @map("created_at")
+  updatedAt          DateTime        @updatedAt @map("updated_at")
+  createdBy          String?         @map("created_by") @db.VarChar(255)
+  updatedBy          String?         @map("updated_by") @db.VarChar(255)
   batch              ProductionBatch @relation(fields: [batchId], references: [id])
 
   @@map("packing_log")
@@ -368,6 +411,10 @@ model QcSample {
   submittedOn      String?         @map("submitted_on")
   rxAttached       Boolean         @default(false) @map("rx_attached")
   flagged          Boolean         @default(false)
+  createdAt        DateTime        @default(now()) @map("created_at")
+  updatedAt        DateTime        @updatedAt @map("updated_at")
+  createdBy        String?         @map("created_by") @db.VarChar(255)
+  updatedBy        String?         @map("updated_by") @db.VarChar(255)
   batch            ProductionBatch @relation(fields: [batchId], references: [id])
 
   @@map("qc_sample")
@@ -380,6 +427,10 @@ model InventoryHandover {
   handedOverTo      String?         @map("handed_over_to")
   leftoverQtyAt     String?         @map("leftover_qty_at")
   sfgUpdated        Boolean         @default(false) @map("sfg_updated")
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
+  createdBy         String?         @map("created_by") @db.VarChar(255)
+  updatedBy         String?         @map("updated_by") @db.VarChar(255)
   batch             ProductionBatch @relation(fields: [batchId], references: [id])
 
   @@map("inventory_handover")
@@ -391,7 +442,6 @@ model InventoryHandover {
 //   ErpProductionPlan       — ERP production plans (separate from app-level ProductionPlan)
 //   ErpProductionJob        — Individual batch jobs within an ERP production plan
 //   JobEquipmentAssignment  — Equipment time blocks assigned to a job
-//   ErpBomIssuance          — Material issuances from store to production (per pack)
 //   BatchQcRecord           — QC results per production job
 //   ProductionLossLog       — Material loss entries during production
 //   TimeMotionLog           — Time-and-motion observations for capacity planning
@@ -451,7 +501,6 @@ model ErpProductionJob {
   plan                 ErpProductionPlan?       @relation(fields: [planId], references: [planId])
   equipment            ErpEquipment?            @relation(fields: [equipmentId], references: [equipmentId])
   equipmentAssignments JobEquipmentAssignment[]
-  issuances            ErpBomIssuance[]
   qcRecords            BatchQcRecord[]
   lossLogs             ProductionLossLog[]
 
@@ -468,24 +517,6 @@ model JobEquipmentAssignment {
   job ErpProductionJob? @relation(fields: [jobId], references: [jobId])
 
   @@map("job_equipment_assignments")
-}
-
-model ErpBomIssuance {
-  issuanceId   String   @id @default(dbgenerated("gen_random_uuid()")) @map("issuance_id") @db.Uuid
-  jobId        String?  @map("job_id") @db.Uuid
-  itemCode     String?  @map("item_code") @db.VarChar(50)
-  packId       String?  @map("pack_id") @db.Uuid
-  requiredQty  Decimal  @map("required_qty") @db.Decimal(12, 6)
-  issuedQty    Decimal  @map("issued_qty") @db.Decimal(12, 6)
-  issuedBy     String?  @map("issued_by") @db.Uuid
-  issuedAt     DateTime @default(now()) @map("issued_at") @db.Timestamptz()
-  fifoOverride Boolean  @default(false) @map("fifo_override")
-  notes        String?
-
-  job  ErpProductionJob? @relation(fields: [jobId], references: [jobId])
-  pack ErpPack?          @relation(fields: [packId], references: [packId])
-
-  @@map("bom_issuance")
 }
 
 model BatchQcRecord {

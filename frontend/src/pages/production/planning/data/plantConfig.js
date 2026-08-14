@@ -84,7 +84,8 @@ export const PLANT_CONFIG = {
 }
 
 export const PLANT_KEYS = ['Nano','Botanical','Liquid','Powder','Granules']
-export const SHIFTS = ['General','A','B','G','A+G','A+B']
+// Shift options are now admin-managed — see the SHIFT option group
+// (Settings > Select Options) and useOptionValues('SHIFT').
 
 // Plant tab id → plant name
 export const TAB_TO_PLANT = {

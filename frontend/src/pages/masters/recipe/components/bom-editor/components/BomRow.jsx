@@ -2,6 +2,7 @@ import { Pencil, Trash2 } from 'lucide-react'
 import { IconButton } from '../../../../../../components/ui'
 import { formatMeasurement } from '../../../../../../utils/measurement/formatMeasurement.js'
 
+import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 const ROLE_TYPE_STYLE = {
   INGREDIENT: 'bg-gray-100 text-gray-600',
   CARRIER:    'bg-purple-100 text-purple-700',
@@ -46,7 +47,7 @@ export default function BomRow({ row, idx, isProductCode, isMicrobeCode, onEdit,
     }`}>
       <td className="px-3 py-2 text-gray-400 text-xs">{idx + 1}</td>
 
-      <td className="px-3 py-2 text-sm text-gray-800 truncate" title={row.rmName}>{row.rmName || <span className="text-gray-300">—</span>}</td>
+      <td className="px-3 py-2 text-sm text-gray-800 truncate" title={toTitleCase(row.rmName)}>{row.rmName || <span className="text-gray-300">—</span>}</td>
 
       <td className="px-3 py-2 truncate">
         <span className="font-mono text-xs text-blue-700">{row.rmCode || '—'}</span>

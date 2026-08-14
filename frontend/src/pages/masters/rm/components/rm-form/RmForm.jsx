@@ -1,6 +1,7 @@
 ﻿import { Save, X, Package, Hash, Beaker, Layers, Gauge } from 'lucide-react'
 import { Button, IconButton, InfoTooltip } from '../../../../../components/ui'
 import { CANONICAL_UNITS } from '../../../../../utils/uom.js'
+import RestrictedSearchSelect from './RestrictedSearchSelect.jsx'
 import './RmForm.css'
 
 const LABEL = 'block text-xs font-medium text-gray-700 mb-1'
@@ -18,7 +19,7 @@ function SectionHeading({ icon: Icon, tone, children }) {
   )
 }
 
-export default function RmForm({ editing, form, onChange, saving, msg, onSave, onClose }) {
+export default function RmForm({ editing, form, onChange, saving, msg, onSave, onClose, categories = [], subCategories = [] }) {
   // Mirrors the backend guard exactly (rm-master.controller.js) — density is
   // only actually required once the two UOMs genuinely differ, regardless of
   // physical State (that field is just classification, not what drives the
@@ -142,13 +143,8 @@ export default function RmForm({ editing, form, onChange, saving, msg, onSave, o
             </div>
             {needsDensity && (
               <p className={`mt-2 text-[11px] ${densityMissing ? 'text-red-500 font-medium' : 'text-gray-400'}`}>
-                Density converts between Inventory UOM ({form.inventoryUom}) and Operational UOM ({form.operationalUom}) when this item is issued.
+                Density converts between Inventory UOM ({form.inventoryUom?.toUpperCase()}) and Operational UOM ({form.operationalUom?.toUpperCase()}) when this item is issued.
               </p>
-            )}
-            {form.trackingType === 'BULK' && (
-              <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2 text-[11px] text-green-800 mt-3">
-                After saving, go to <strong>Location Master</strong> to create a shelf/rack location for this item.
-              </div>
             )}
           </div>
 
@@ -157,19 +153,21 @@ export default function RmForm({ editing, form, onChange, saving, msg, onSave, o
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div>
                 <label className={LABEL}>Category</label>
-                <input
+                <RestrictedSearchSelect
                   value={form.category || ''}
-                  onChange={e => onChange('category', e.target.value)}
-                  placeholder="e.g. Solvent"
+                  options={categories}
+                  onChange={v => onChange('category', v)}
+                  placeholder="Search category..."
                   className={FIELD}
                 />
               </div>
               <div>
                 <label className={LABEL}>Sub Category</label>
-                <input
+                <RestrictedSearchSelect
                   value={form.subCategory || ''}
-                  onChange={e => onChange('subCategory', e.target.value)}
-                  placeholder="e.g. Alcohol"
+                  options={subCategories}
+                  onChange={v => onChange('subCategory', v)}
+                  placeholder="Search sub category..."
                   className={FIELD}
                 />
               </div>
@@ -214,7 +212,7 @@ export default function RmForm({ editing, form, onChange, saving, msg, onSave, o
               </div>
             </div>
             <p className={`${HINT} mt-2`}>
-              Reorder thresholds in {form.inventoryUom || 'the item\'s Inventory UOM'} — Low flags when stock needs replenishing, High flags overstock.
+              Reorder thresholds in {form.inventoryUom ? form.inventoryUom.toUpperCase() : 'the item\'s Inventory UOM'} — Low flags when stock needs replenishing, High flags overstock.
             </p>
           </div>
         </div>

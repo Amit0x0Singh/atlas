@@ -7,6 +7,8 @@ import {
 } from '../../../../hooks/hr/useEmployees.js'
 import { BackButton, Button, ConfirmModal } from '../../../../components/ui'
 import Pagination from '../../../../components/pagination/Pagination.jsx'
+import { normalizeEmailInput, normalizePhoneInput } from '../../../../utils/textNormalize.js'
+import { toTitleCase } from '../../../../utils/textDisplay.js'
 
 const ROLES = ['ADMIN', 'SALES', 'PRODUCTION', 'QC', 'DISPATCH', 'PLANNING', 'ACCOUNTS']
 const SECTIONS = ['NANO', 'BOTANICAL', 'LIQUID', 'POWDER', 'GRANULES']
@@ -58,12 +60,14 @@ function EmployeeForm({ initial, onSave, onCancel }) {
         <div>
           <label className="block text-xs font-semibold text-gray-500 mb-1">Email</label>
           <input type="email" value={form.email} onChange={e => set('email', e.target.value)}
+            onBlur={e => set('email', normalizeEmailInput(e.target.value))}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
             placeholder="optional" />
         </div>
         <div>
           <label className="block text-xs font-semibold text-gray-500 mb-1">Phone</label>
           <input value={form.phone} onChange={e => set('phone', e.target.value)}
+            onBlur={e => set('phone', normalizePhoneInput(e.target.value))}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
             placeholder="optional" />
         </div>
@@ -270,7 +274,7 @@ export default function EmployeeMaster() {
 
       {showForm && (
         <div className="bg-white border border-gray-200 rounded-xl p-6 mb-6 shadow-sm">
-          <h2 className="text-base font-bold text-gray-800 mb-4">{editing ? `Edit — ${editing.name}` : 'New Employee'}</h2>
+          <h2 className="text-base font-bold text-gray-800 mb-4">{editing ? `Edit — ${toTitleCase(editing.name)}` : 'New Employee'}</h2>
           <EmployeeForm initial={editing || {}} onSave={handleSave} onCancel={() => { setShowForm(false); setEditing(null) }} />
         </div>
       )}
@@ -322,7 +326,7 @@ export default function EmployeeMaster() {
                   {paginatedEmployees.map(emp => (
                     <tr key={emp.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50">
                       <td className="px-4 py-3 font-mono text-xs text-gray-400">{emp.empCode}</td>
-                      <td className="px-4 py-3 font-semibold text-gray-800">{emp.name}</td>
+                      <td className="px-4 py-3 font-semibold text-gray-800">{toTitleCase(emp.name)}</td>
                       <td className="px-4 py-3"><Badge text={emp.role} color={ROLE_COLORS[emp.role] || 'bg-gray-100 text-gray-600'} /></td>
                       <td className="px-4 py-3 text-gray-500 text-xs">{emp.section || '—'}</td>
                       <td className="px-4 py-3 text-gray-500 text-xs">
@@ -332,7 +336,7 @@ export default function EmployeeMaster() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex gap-2 justify-end">
-                          <Button variant="outline" size="xs" onClick={() => { setEditing(emp); setShowForm(true) }}>Edit</Button>
+                          <Button variant="outline" size="xs" onClick={() => { setEditing({ ...emp, name: toTitleCase(emp.name) }); setShowForm(true) }}>Edit</Button>
                           <Button variant="danger" size="xs" onClick={() => handleDelete(emp)}>Remove</Button>
                         </div>
                       </td>
@@ -366,7 +370,7 @@ export default function EmployeeMaster() {
       <ConfirmModal
         open={!!deactivateTarget}
         title="Deactivate Employee"
-        message={`Deactivate ${deactivateTarget?.name}? They will lose system access.`}
+        message={`Deactivate ${toTitleCase(deactivateTarget?.name)}? They will lose system access.`}
         acceptText="Deactivate"
         variant="danger"
         onAccept={confirmDeactivate}

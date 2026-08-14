@@ -34,25 +34,29 @@ export const PERMISSIONS = [
   ...group('admin', 'data-management', ['manage']),
   ...group('admin', 'bulk-transform', ['manage']),
   ...group('admin', 'import', ['execute']),
+  // Settings — Select Options management (dropdown option groups/values
+  // used across the app's forms). Reads (used by every logged-in user's
+  // forms) are ungated at the route level (see routers.js) — only the
+  // management screen itself needs a permission.
+  ...group('admin', 'settings', ['access', 'manage'], (a) =>
+    a === 'access' ? 'View the Settings / Select Options admin screen' : 'Create/update option groups and values'),
 
   // ─── Masters ────────────────────────────────────────────────────────────
+  // Note: Packing Master, ERP Items, ERP Products, and BOM/Containers-for-
+  // decanting were removed as features (deleted routers/pages) — no
+  // permission entries for them.
   ...group('masters', 'rm', ['view', 'create', 'update', 'delete']),
   ...group('masters', 'product', ['view', 'create', 'update', 'delete']),
   ...group('masters', 'equipment', ['view', 'create', 'update', 'delete']),
-  ...group('masters', 'packing', ['view', 'create', 'update', 'delete']),
   ...group('masters', 'recipe', ['view', 'create', 'update', 'delete']),
   ...group('masters', 'microbe', ['view', 'create', 'update', 'delete']),
   ...group('masters', 'employee', ['view', 'create', 'update', 'delete']),
   // ERP Masters module (master-data/erp-masters) — distinct resources sharing the "masters" module.
-  ...group('masters', 'erp-item', ['view', 'create', 'update']),
   ...group('masters', 'erp-supplier', ['view', 'create', 'update']),
   ...group('masters', 'erp-plant', ['view', 'create']),
   ...group('masters', 'erp-equipment', ['view', 'create', 'update']),
-  ...group('masters', 'erp-product', ['view', 'create']),
-  ...group('masters', 'erp-bom', ['view', 'create']),
   ...group('masters', 'erp-strain', ['view', 'create']),
   ...group('masters', 'erp-customer', ['view', 'create']),
-  ...group('masters', 'erp-container', ['view', 'create']),
   ...group('masters', 'erp-reason-code', ['view']),
 
   // ─── Inventory ──────────────────────────────────────────────────────────
@@ -61,14 +65,11 @@ export const PERMISSIONS = [
   ...group('inventory', 'grn', ['view']),
   ...group('inventory', 'inward', ['view', 'create', 'delete']),
   ...group('inventory', 'outward', ['view', 'create', 'adjust'], (a) =>
-    a === 'adjust' ? 'Inline stock-adjustment endpoint on the Outward screen (distinct from the Adjustments module workflow)' : `${a} outward`),
+    a === 'adjust' ? 'Inline stock-adjustment endpoint on the Outward screen' : `${a} outward`),
   ...group('inventory', 'containers', ['view', 'create', 'update']),
-  ...group('inventory', 'bulk-location', ['view', 'create', 'delete', 'inward', 'outward']),
-  ...group('inventory', 'adjustment', ['view', 'create', 'approve', 'reject', 'reverse'], (a) =>
-    a === 'reverse' ? 'Reopen an approved adjustment — reserved, no endpoint exists yet' : `${a} a stock adjustment`),
-  ...group('inventory', 'transfer', ['view', 'create', 'receive']),
-  ...group('inventory', 'decanting', ['view', 'create']),
-  ...group('inventory', 'fifo', ['check', 'override']),
+  // Note: Bulk Location and the Adjustments module (Stock Adjustments,
+  // Warehouse Transfers, Decanting, FIFO Override) were removed as features
+  // — no permission entries for them.
 
   // ─── Gate ───────────────────────────────────────────────────────────────
   ...group('gate', 'inward', ['view', 'create', 'update', 'delete']),
@@ -80,7 +81,10 @@ export const PERMISSIONS = [
     a === 'delete' ? 'Delete a formulation cycle sub-record from a batch' : `${a} a production batch`),
   ...group('production', 'indent', ['view', 'create', 'update']),
   ...group('production', 'sfg', ['view', 'create', 'update']),
-  ...group('production', 'bom-issuance', ['view', 'create', 'reprocess']),
+  // Note: the legacy BOM Issuance workflow (pending-jobs/history/issue/
+  // scrap/reprocess) was removed as a feature. Not to be confused with
+  // "Material Issue by BOM" (the live feature under Store Outward), which
+  // is governed by inventory.outward.* and is unaffected.
 
   // ─── Planning ───────────────────────────────────────────────────────────
   ...group('planning', 'plan', ['view', 'create', 'submit', 'publish', 'cancel', 'reverse'], (a) =>

@@ -25,7 +25,7 @@ export function buildProtocolRows(comps, taskId) {
         <tr key={i} className="border-b border-gray-100 hover:bg-gray-50">
           <td className="px-2 py-1.5 text-center text-xs font-bold text-gray-400 w-10">{i+1}</td>
           <td className="px-2 py-1.5 font-medium text-[12.5px]">{c.component}</td>
-          <td className="px-2 py-1.5 font-mono text-[12px] text-blue-700 text-center">{c.qty||''} {c.uom||''}</td>
+          <td className="px-2 py-1.5 font-mono text-[12px] text-blue-700 text-center">{c.qty||''} {(c.uom||'').toUpperCase()}</td>
           <td className="px-2 py-1.5 text-center"><input type="checkbox" data-bmr-field={`p-tick-${i}`} className="w-4 h-4 accent-green-600"/></td>
           <td className="px-2 py-1.5"><BInp type="number" data-bmr-field={`p-seq-${i}`} className="w-16 text-center"/></td>
           <td className="px-2 py-1.5"><BInp type="time" data-bmr-field={`p-time-${i}`} className="w-28"/></td>
@@ -62,7 +62,7 @@ export function buildFormulationRows(comps) {
         <tr key={i} className="border-b border-gray-100 hover:bg-gray-50">
           <td className="px-2 py-1.5 text-center text-xs font-bold text-gray-400 w-10">{i+1}</td>
           <td className="px-2 py-1.5 font-medium text-[12.5px]">{c.component}</td>
-          <td className="px-2 py-1.5 font-mono text-[12px] text-blue-700">{c.qty||''} {c.uom||''}</td>
+          <td className="px-2 py-1.5 font-mono text-[12px] text-blue-700">{c.qty||''} {(c.uom||'').toUpperCase()}</td>
           <td className="px-2 py-1.5 text-center"><input type="checkbox" data-bmr-field={`f-tick-${i}`} className="w-4 h-4 accent-green-600"/></td>
           <td className="px-2 py-1.5"><BInp type="number" data-bmr-field={`f-seq-${i}`} className="w-16 text-center"/></td>
           <td className="px-2 py-1.5"><BInp type="time" data-bmr-field={`f-time-${i}`} className="w-28"/></td>

@@ -3,6 +3,7 @@ import { outwardApi } from '../../../../../../api/inventory.js'
 import { Button } from '../../../../../../components/ui'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 
+import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 function fmtDate(iso) {
   return new Date(iso).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
@@ -62,7 +63,7 @@ export default function BomIssuedHistory({ onResume }) {
   // A session already in progress "owns" its batch; only add the backend
   // batch separately once that session has completed and disappeared.
   const rows = useMemo(() => {
-    const sessionKeys = new Set(sessions.map(s => `${s.productName}__${s.batchRef || ''}`))
+    const sessionKeys = new Set(sessions.map(s => `${toTitleCase(s.productName)}__${s.batchRef || ''}`))
 
     const sessionRows = sessions.map(s => {
       // Orphaned lines (dropped from the recipe, kept only for audit) don't
@@ -80,13 +81,13 @@ export default function BomIssuedHistory({ onResume }) {
         lastUpdated: s.updatedAt,
         lines: (s.bomLines || []).map(l => ({
           rmName: l.rmName, rmCode: l.rmCode,
-          detail: `${l.issued} / ${l.required} ${l.uom}`,
+          detail: `${l.issued} / ${l.required} ${(l.uom || '').toUpperCase()}`,
         })),
       }
     })
 
     const historyRows = historyBatches
-      .filter(b => !sessionKeys.has(`${b.productName}__${b.batchRef || ''}`))
+      .filter(b => !sessionKeys.has(`${toTitleCase(b.productName)}__${b.batchRef || ''}`))
       .map(b => ({
         key: `hist-${b.key}`, isSession: false,
         productName: b.productName, productCode: '',
@@ -98,7 +99,7 @@ export default function BomIssuedHistory({ onResume }) {
           // Rows predating operationalUom have it null — fall back to the
           // item's Inventory UOM (the unit qtyIssued is in) rather than
           // rendering a bare number with no unit at all.
-          detail: `${Number(l.operationalQty ?? l.qtyIssued).toFixed(3)} ${l.operationalUom || l.inventoryUom || ''} · ${fmtDate(l.timestamp)}`,
+          detail: `${Number(l.operationalQty ?? l.qtyIssued).toFixed(3)} ${(l.operationalUom || l.inventoryUom || '').toUpperCase()} · ${fmtDate(l.timestamp)}`,
         })),
       }))
 
@@ -146,7 +147,7 @@ export default function BomIssuedHistory({ onResume }) {
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${STATUS_STYLE[row.status]}`}>{row.status}</span>
                       </td>
                       <td className="px-4 py-2.5">
-                        <div className="font-semibold text-gray-900">{row.productName}</div>
+                        <div className="font-semibold text-gray-900">{toTitleCase(row.productName)}</div>
                         {row.productCode && <div className="text-xs text-gray-400 font-mono">{row.productCode}</div>}
                       </td>
                       <td className="px-4 py-2.5">
@@ -180,7 +181,7 @@ export default function BomIssuedHistory({ onResume }) {
                             <tbody>
                               {row.lines.map((l, i) => (
                                 <tr key={i} className="border-t border-gray-200">
-                                  <td className="py-1 text-gray-700">{l.rmName}</td>
+                                  <td className="py-1 text-gray-700">{toTitleCase(l.rmName)}</td>
                                   <td className="py-1 font-mono text-gray-400">{l.rmCode}</td>
                                   <td className="py-1 text-gray-600">{l.detail}</td>
                                 </tr>

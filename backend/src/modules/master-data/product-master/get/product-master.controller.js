@@ -7,7 +7,7 @@ const clampInt = (val, fallback, min = 1) => {
 
 export const listProducts = async (req, res) => {
   try {
-    const { productCode, productName, plant } = req.query
+    const { productCode, productName, plant, uom, state } = req.query
     // Pagination is opt-in — plenty of existing callers (dropdowns/pickers
     // elsewhere in the app) hit this endpoint expecting the full list back
     // with no page/limit at all, and must keep getting exactly that.
@@ -22,6 +22,12 @@ export const listProducts = async (req, res) => {
       // this exact value (case-sensitive, but the dropdown only ever offers
       // values that already exist verbatim, via listProductFilterMeta).
       ...(plant ? { plant: { has: plant } } : {}),
+      // uom/state are stored lowercase (field-normalization-rules.js) while
+      // the filter dropdowns send the canonical uppercase form — match
+      // case-insensitively so both stay in sync without either side caring
+      // about storage casing.
+      ...(uom   ? { uom:   { equals: uom,   mode: 'insensitive' } } : {}),
+      ...(state ? { state: { equals: state, mode: 'insensitive' } } : {}),
     }
 
     const [total, items] = await Promise.all([

@@ -34,7 +34,10 @@ export const createRm = async (req, res) => {
     // saved before this padding rule (e.g. unpadded "177822") must still be
     // caught as a duplicate, not slip past because this request now checks
     // for "0177822" instead.
-    const existing = await prisma.rmMaster.findFirst({ where: { OR: [{ itemCode }, { itemCode: rawItemCode }, { itemName }] } })
+    // itemName is stored lowercase (RULES.LOWER) and unique — match it
+    // case-insensitively so "Potassium Humate" still catches an existing
+    // "potassium humate" row instead of slipping past into create().
+    const existing = await prisma.rmMaster.findFirst({ where: { OR: [{ itemCode }, { itemCode: rawItemCode }, { itemName: { equals: itemName, mode: 'insensitive' } }] } })
     if (existing) return res.status(409).json({ success: false, error: 'Item code or name already exists', code: 'CONFLICT' })
     const item = await prisma.rmMaster.create({
       data: {

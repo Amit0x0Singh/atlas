@@ -3,6 +3,7 @@ import { IconButton } from '../../../../../../components/ui'
 import { X } from 'lucide-react'
 import './TransactionDetailModal.css'
 
+import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 export default function TransactionDetailModal({ detail, onClose }) {
   if (!detail) return null
 
@@ -31,7 +32,7 @@ export default function TransactionDetailModal({ detail, onClose }) {
                   <DRow label="In Qty"           value={detail.entry.inQty  > 0 ? `+${Number(detail.entry.inQty).toFixed(3)}`  : '—'} />
                   <DRow label="Out Qty"          value={detail.entry.outQty > 0 ? `-${Number(detail.entry.outQty).toFixed(3)}` : '—'} />
                   {detail.detail?.outward?.operationalUom && Number(detail.detail.outward.operationalQty) !== Number(detail.detail.outward.qtyIssued) && (
-                    <DRow label="Issued (Operational UOM)" value={`${Number(detail.detail.outward.operationalQty).toFixed(3)} ${detail.detail.outward.operationalUom}`} />
+                    <DRow label="Issued (Operational UOM)" value={`${Number(detail.detail.outward.operationalQty).toFixed(3)} ${(detail.detail.outward.operationalUom || '').toUpperCase()}`} />
                   )}
                   <DRow label="Balance After"    value={Number(detail.entry.balance).toFixed(3)} />
                   <DRow label="Reference"        value={detail.entry.reference || '—'} />
@@ -42,10 +43,10 @@ export default function TransactionDetailModal({ detail, onClose }) {
                 <DSection title="Pack / Bag Details">
                   <DGrid>
                     <DRow label="Pack ID"   value={detail.detail.pack.packId} mono />
-                    <DRow label="Item Name" value={detail.detail.pack.itemName} />
+                    <DRow label="Item Name" value={toTitleCase(detail.detail.pack.itemName)} />
                     <DRow label="Lot No"    value={detail.detail.pack.lotNo} />
                     <DRow label="Bag No"    value={`#${detail.detail.pack.bagNo}`} />
-                    <DRow label="Pack Qty"  value={`${detail.detail.pack.packQty} ${detail.detail.pack.uom}`} />
+                    <DRow label="Pack Qty"  value={`${detail.detail.pack.packQty} ${(detail.detail.pack.uom || '').toUpperCase()}`} />
                     {detail.detail.pack.supplier  && <DRow label="Supplier"   value={detail.detail.pack.supplier} />}
                     {detail.detail.pack.invoiceNo && <DRow label="Invoice No" value={detail.detail.pack.invoiceNo} />}
                   </DGrid>
@@ -55,7 +56,7 @@ export default function TransactionDetailModal({ detail, onClose }) {
               {detail.detail?.inward && (
                 <DSection title="Inward Details">
                   <DGrid>
-                    <DRow label="Warehouse"   value={detail.detail.inward.warehouse} />
+                    <DRow label="Warehouse"   value={toTitleCase(detail.detail.inward.warehouse)} />
                     <DRow label="Inward Time" value={new Date(detail.detail.inward.inwardTime).toLocaleString('en-IN')} />
                   </DGrid>
                 </DSection>
@@ -65,7 +66,7 @@ export default function TransactionDetailModal({ detail, onClose }) {
                 <DSection title="Production Indent">
                   <DGrid>
                     <DRow label="Indent ID" value={detail.detail.indent.indentId} mono />
-                    <DRow label="Product"   value={detail.detail.indent.productName} />
+                    <DRow label="Product"   value={toTitleCase(detail.detail.indent.productName)} />
                     <DRow label="DI No"     value={detail.detail.indent.diNo} />
                     <DRow label="Batch No"  value={detail.detail.indent.batchNo} />
                     <DRow label="Status"    value={detail.detail.indent.status} />

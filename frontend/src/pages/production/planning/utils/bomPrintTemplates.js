@@ -115,7 +115,7 @@ export const state = {
         var map = {};
         items.forEach(function (c) {
           if (!c || !c.component) return;
-          var uom = (c.uom || '-').trim(), qty = parseFloat(c.qty);
+          var uom = (c.uom || '-').trim().toUpperCase(), qty = parseFloat(c.qty);
           if (!isNaN(qty)) map[uom] = (map[uom] || 0) + qty;
         });
         var totStr = Object.entries(map).map(function (e) {
@@ -131,7 +131,7 @@ export const state = {
         var map = {};
         components.forEach(function (c) {
           if (!c || !c.component || c.isHeader) return;
-          var uom = (c.uom || '-').trim(), qty = parseFloat(c.qty);
+          var uom = (c.uom || '-').trim().toUpperCase(), qty = parseFloat(c.qty);
           if (!isNaN(qty)) map[uom] = (map[uom] || 0) + qty;
         });
         return Object.entries(map).map(function (e) {
@@ -143,7 +143,7 @@ export const state = {
         var map = {};
         pageRows.forEach(function (r) {
           if (!r || !r.component || r.isHeader) return;
-          var uom = (r.uom || '-').trim(), qty = parseFloat(r.qty);
+          var uom = (r.uom || '-').trim().toUpperCase(), qty = parseFloat(r.qty);
           if (!isNaN(qty)) map[uom] = (map[uom] || 0) + qty;
         });
         return Object.entries(map).map(function (e) {
@@ -241,7 +241,7 @@ export const state = {
               + '<td style="border:1px solid #000;padding:2px 4px;text-align:center;font-size:10.5pt">' + esc(row.sno || String(curSno)) + '</td>'
               + '<td style="border:1px solid #000;padding:2px 5px;font-size:10.5pt">' + esc(row.component) + '</td>'
               + '<td style="border:1px solid #000;padding:2px 4px;text-align:center;font-size:10.5pt">' + esc(row.qty || '') + '</td>'
-              + '<td style="border:1px solid #000;padding:2px 4px;text-align:center;font-size:10.5pt">' + esc(row.uom || '') + '</td>'
+              + '<td style="border:1px solid #000;padding:2px 4px;text-align:center;font-size:10.5pt">' + esc((row.uom || '').toUpperCase()) + '</td>'
               + '<td style="border:1px solid #000;padding:2px 5px;font-size:10.5pt">' + esc(row.remarks || '') + '</td></tr>';
             // Inject section sub-total after the last item in each named section
             if (showTotal) {
@@ -336,7 +336,7 @@ export const state = {
         var map = {};
         components.forEach(function (c) {
           if (!c || !c.component || c.isHeader) return;
-          var uom = (c.uom || '-').trim(), qty = parseFloat(c.qty);
+          var uom = (c.uom || '-').trim().toUpperCase(), qty = parseFloat(c.qty);
           if (!isNaN(qty)) map[uom] = (map[uom] || 0) + qty;
         });
         return Object.entries(map).map(function (e) {
@@ -366,7 +366,7 @@ export const state = {
         var map = {};
         items.forEach(function (c) {
           if (!c || !c.component || c.isHeader) return;
-          var uom = (c.uom || '-').trim(), qty = parseFloat(c.qty);
+          var uom = (c.uom || '-').trim().toUpperCase(), qty = parseFloat(c.qty);
           if (!isNaN(qty)) map[uom] = (map[uom] || 0) + qty;
         });
         var totStr = Object.entries(map).map(function (e) {
@@ -432,7 +432,7 @@ export const state = {
             + '<td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:9.5pt">' + (row ? esc(row.sno || String(i + 1)) : '') + '</td>'
             + '<td style="border:1px solid #000;padding:2px 4px;font-size:9.5pt">' + (row ? esc(row.component) : '') + '</td>'
             + '<td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:9.5pt">' + (row ? esc(row.qty || '') : '') + '</td>'
-            + '<td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:9.5pt">' + (row ? esc(row.uom || '') : '') + '</td>'
+            + '<td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:9.5pt">' + (row ? esc((row.uom || '').toUpperCase()) : '') + '</td>'
             + '<td style="border:1px solid #000;padding:2px 4px;font-size:9.5pt">' + (row ? esc(row.remarks || '') : '') + '</td></tr>';
         }).join('')
         + totalRow
@@ -647,7 +647,7 @@ export const state = {
       // Calculate totals per UOM
       var totMap = {};
       comps.forEach(function (c) {
-        var uom = (c.uom || '').trim(), qty = parseFloat(c.qty);
+        var uom = (c.uom || '').trim().toUpperCase(), qty = parseFloat(c.qty);
         if (uom && !isNaN(qty)) totMap[uom] = (totMap[uom] || 0) + qty;
       });
       var totLines = Object.entries(totMap).map(function (e) {
@@ -667,7 +667,7 @@ export const state = {
       }
       function fmSecTotal(items) {
         var m = {};
-        items.forEach(function (c) { var u = (c.uom || '-').trim(), q = parseFloat(c.qty); if (!isNaN(q)) m[u] = (m[u] || 0) + q; });
+        items.forEach(function (c) { var u = (c.uom || '-').trim().toUpperCase(), q = parseFloat(c.qty); if (!isNaN(q)) m[u] = (m[u] || 0) + q; });
         return Object.entries(m).map(function (e) { return parseFloat(e[1].toFixed(4)) + ' ' + e[0]; }).join(' + ') || '&mdash;';
       }
       var fmGroups = fmBuildGroups(allComps);
@@ -700,7 +700,7 @@ export const state = {
               body += '<tr style="height:16px">'
                 + '<td style="' + BSTD + ';text-align:center">' + (c.sno || String(++secSno)) + '</td>'
                 + '<td style="' + BSTD + '">' + esc(c.component) + '</td>'
-                + '<td style="' + BSTD + ';text-align:center">' + esc(c.qty || '') + ' ' + esc(c.uom || '') + '</td>'
+                + '<td style="' + BSTD + ';text-align:center">' + esc(c.qty || '') + ' ' + esc((c.uom || '').toUpperCase()) + '</td>'
                 + '<td style="' + BSTD + '"></td>'
                 + '<td style="' + BSTD + ';text-align:center;font-size:13pt"></td>'
                 + '<td style="' + BSTD + '"></td>'
@@ -744,7 +744,7 @@ export const state = {
           body += '<tr style="height:16px">'
             + '<td style="' + BSTD + ';text-align:center">' + esc(c.sno || String(sno2)) + '</td>'
             + '<td style="' + BSTD + '">' + esc(c.component) + '</td>'
-            + '<td style="' + BSTD + ';text-align:center">' + esc(c.qty || '') + ' ' + esc(c.uom || '') + '</td>'
+            + '<td style="' + BSTD + ';text-align:center">' + esc(c.qty || '') + ' ' + esc((c.uom || '').toUpperCase()) + '</td>'
             + '<td style="' + BSTD + ';text-align:center;font-size:13pt"></td>'
             + '<td style="' + BSTD + ';text-align:center"></td>'
             + '<td style="' + BSTD + '"></td>'
@@ -1310,7 +1310,7 @@ export const state = {
         body += '<tr style="height:15px">'
           + '<td style="' + NTD + ';text-align:center;background:#f0f0f0;font-weight:700">' + (i + 1) + '</td>'
           + '<td style="' + NTD + '">' + (c ? esc(c.component) : '') + '</td>'
-          + '<td style="' + NTD + ';text-align:center">' + (c ? esc(c.qty || '') + ' ' + esc(c.uom || '') : '') + '</td>'
+          + '<td style="' + NTD + ';text-align:center">' + (c ? esc(c.qty || '') + ' ' + esc((c.uom || '').toUpperCase()) : '') + '</td>'
           + '<td style="' + NTD + ';text-align:center;font-size:13pt"></td>'
           + '<td style="' + NTD + '"></td>'
           + '<td style="' + NTD + '"></td>'
@@ -1471,7 +1471,7 @@ export const state = {
       }
       function mSecTotal(items) {
         var m = {};
-        items.forEach(function (c) { var u = (c.uom || '-').trim(), q = parseFloat(c.qty); if (!isNaN(q)) m[u] = (m[u] || 0) + q; });
+        items.forEach(function (c) { var u = (c.uom || '-').trim().toUpperCase(), q = parseFloat(c.qty); if (!isNaN(q)) m[u] = (m[u] || 0) + q; });
         var per = Object.entries(m).map(function (e) { return parseFloat(e[1].toFixed(4)) + ' ' + e[0]; }).join(' + ');
         var tot = Object.entries(m).map(function (e) { return parseFloat((e[1] * cycles).toFixed(4)) + ' ' + e[0]; }).join(' + ');
         return { per: per, tot: tot };
@@ -1491,7 +1491,7 @@ export const state = {
 
       // Grand total
       var gtMap = {};
-      comps.forEach(function (c) { var u = (c.uom || '-').trim(), q = parseFloat(c.qty); if (!isNaN(q)) gtMap[u] = (gtMap[u] || 0) + q; });
+      comps.forEach(function (c) { var u = (c.uom || '-').trim().toUpperCase(), q = parseFloat(c.qty); if (!isNaN(q)) gtMap[u] = (gtMap[u] || 0) + q; });
       var gtPer = Object.entries(gtMap).map(function (e) { return parseFloat(e[1].toFixed(4)) + ' ' + e[0]; }).join(' + ');
       var gtTot = Object.entries(gtMap).map(function (e) { return parseFloat((e[1] * cycles).toFixed(4)) + ' ' + e[0]; }).join(' + ');
 
@@ -1617,7 +1617,7 @@ export const state = {
             + '<td style="' + MTV + ';text-align:center">' + sno + '</td>'
             + '<td style="' + MTV + '">' + esc(c.component) + '</td>'
             + '<td style="' + MTV + ';text-align:center">' + esc(c.qty || '') + '</td>'
-            + '<td style="' + MTV + ';text-align:center">' + esc(c.uom || '') + '</td>'
+            + '<td style="' + MTV + ';text-align:center">' + esc((c.uom || '').toUpperCase()) + '</td>'
             + '<td style="' + MTV + ';text-align:center;font-weight:700">' + (tq || '') + '</td>'
             + '<td style="' + MTV + '"></td>'
             + '</tr>';

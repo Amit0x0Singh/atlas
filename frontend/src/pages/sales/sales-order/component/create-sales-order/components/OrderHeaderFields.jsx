@@ -1,7 +1,9 @@
-import { COMPANIES, ORDER_TYPES } from "../../../shared/constants.js";
+import { ORDER_TYPES } from "../../../shared/constants.js";
+import { useOptionValues } from "../../../../../../hooks/useOptionValues.js";
 import CustomerNamePicker from "../../customer-name-picker/CustomerNamePicker.jsx";
 
 export default function OrderHeaderFields({ hdr, setH, profiles }) {
+  const { data: companies = [] } = useOptionValues('COMPANY')
   return (
     <div>
       <h3 className="text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide">
@@ -30,7 +32,7 @@ export default function OrderHeaderFields({ hdr, setH, profiles }) {
             }}
           />
           {hdr.customerName &&
-            profiles.find((p) => p.customerName === hdr.customerName.toUpperCase()) && (
+            profiles.find((p) => p.customerName?.toLowerCase() === hdr.customerName.toLowerCase()) && (
               <p className="mt-1 text-xs text-green-600">Auto-filled from memory</p>
             )}
         </div>
@@ -53,7 +55,9 @@ export default function OrderHeaderFields({ hdr, setH, profiles }) {
             onChange={(e) => setH("company", e.target.value)}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
           >
-            {COMPANIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            {/* company is stored lowercase (text-normalization standard) —
+                option value matches storage, label keeps the readable code */}
+            {companies.map((c) => <option key={c.code} value={c.code.toLowerCase()}>{c.label}</option>)}
           </select>
         </div>
 

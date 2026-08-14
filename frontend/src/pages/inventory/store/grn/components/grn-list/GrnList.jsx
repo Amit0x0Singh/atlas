@@ -18,7 +18,7 @@ export default function GrnList({ list, loading, search, selected, onSearch, onS
         <div className="p-6 text-center text-gray-400 text-sm">Loading…</div>
       ) : list.length === 0 ? (
         <div className="p-6 text-center text-gray-400 text-sm">
-          No GRNs yet. Add Invoice No to packs in Print Master first.
+          No GRNs yet. Scan bags in Raw Material Inward to create one.
         </div>
       ) : (
         <div className="divide-y divide-gray-100">

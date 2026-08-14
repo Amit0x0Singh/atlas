@@ -4,6 +4,7 @@ import { X } from 'lucide-react'
 import './SFGStockModal.css'
 
 
+import { toTitleCase } from '../../../../../utils/textDisplay.js'
 export default function SFGStockModal({ onClose }) {
   const list = sfgLoad().sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt))
 
@@ -49,7 +50,7 @@ export default function SFGStockModal({ onClose }) {
                 <tbody>
                   {list.map(s => (
                     <tr key={s.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                      <td className="px-3 py-2.5 font-semibold text-gray-800">{s.productName}</td>
+                      <td className="px-3 py-2.5 font-semibold text-gray-800">{toTitleCase(s.productName)}</td>
                       <td className="px-3 py-2.5 font-mono text-[12px] text-gray-600">{s.batchCode||'—'}</td>
                       <td className="px-3 py-2.5 text-gray-600">{s.plant}</td>
                       <td className={`px-3 py-2.5 font-bold ${s.qtyRemaining > 0 ? 'ssm-qty--positive' : 'ssm-qty--zero'}`}>

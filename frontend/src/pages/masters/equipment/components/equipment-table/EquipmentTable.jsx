@@ -1,6 +1,7 @@
 import { Pencil, Trash2 } from 'lucide-react'
 import { IconButton } from '../../../../../components/ui'
 import Pagination from '../../../../../components/pagination/Pagination.jsx'
+import { toTitleCase } from '../../../../../utils/textDisplay.js'
 
 // `items` is already the current page's rows (filtering + pagination happen
 // server-side) — `total` is the server-reported match count, used only by
@@ -30,8 +31,8 @@ export default function EquipmentTable({ items, total, page, limit, onEdit, onDe
             ) : items.map(item => (
               <tr key={item.equipId} className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer" onClick={() => onRowClick(item)}>
                 <td className="px-4 py-3 font-mono text-gray-500 whitespace-nowrap">{item.equipCode}</td>
-                <td className="px-4 py-3 font-medium whitespace-nowrap">{item.equipName}</td>
-                <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{item.workingVolume ?? 0}{item.workingUnit ? ` ${item.workingUnit}` : ''}</td>
+                <td className="px-4 py-3 font-medium whitespace-nowrap">{toTitleCase(item.equipName)}</td>
+                <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{item.workingVolume ?? 0}{item.workingUnit ? ` ${item.workingUnit.toUpperCase()}` : ''}</td>
                 <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{item.operation || '—'}</td>
                 <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{item.plant || '—'}</td>
                 <td className="px-4 py-3 flex gap-1" onClick={(e) => e.stopPropagation()}>

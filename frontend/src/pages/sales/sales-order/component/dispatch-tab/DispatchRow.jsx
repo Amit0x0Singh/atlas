@@ -2,6 +2,7 @@ import { Fragment } from "react";
 import { Button } from "../../../../../components/ui";
 import { STATUS_STYLE, STATUS_LABELS } from "../../shared/constants.js";
 import { fmtDate, etdDays } from "../../shared/utils.js";
+import { toTitleCase } from "../../../../../utils/textDisplay.js";
 
 export default function DispatchRow({ order, expanded, onToggle, onDispatch }) {
   const days = etdDays(order.estimatedDispatchDate);
@@ -22,10 +23,10 @@ export default function DispatchRow({ order, expanded, onToggle, onDispatch }) {
           {fmtDate(order.orderReceivedDate)}
         </td>
         <td className="px-4 py-3 font-semibold text-gray-800">
-          {order.customerName}
+          {toTitleCase(order.customerName)}
         </td>
         <td className="px-4 py-3 text-right font-semibold text-xs">
-          {totalQty} {order.items[0]?.totalUom || "KG"}
+          {totalQty} {(order.items[0]?.totalUom || "KG").toUpperCase()}
         </td>
         <td
           className={`px-4 py-3 text-xs ${overdue ? "text-red-500 font-semibold" : days !== null && days <= 7 ? "text-orange-500 font-semibold" : "text-gray-500"}`}
@@ -120,7 +121,7 @@ export default function DispatchRow({ order, expanded, onToggle, onDispatch }) {
                           color: "#1e293b",
                         }}
                       >
-                        {it.inhouseProductName || "—"}
+                        {toTitleCase(it.inhouseProductName) || "—"}
                         {it.customerProductName &&
                           it.customerProductName !==
                             it.inhouseProductName && (
@@ -132,7 +133,7 @@ export default function DispatchRow({ order, expanded, onToggle, onDispatch }) {
                                 fontWeight: 400,
                               }}
                             >
-                              ({it.customerProductName})
+                              ({toTitleCase(it.customerProductName)})
                             </span>
                           )}
                       </td>
@@ -145,7 +146,7 @@ export default function DispatchRow({ order, expanded, onToggle, onDispatch }) {
                           color: "#475569",
                         }}
                       >
-                        {it.totalQty} {it.totalUom}
+                        {it.totalQty} {it.totalUom?.toUpperCase()}
                       </td>
                       <td
                         style={{

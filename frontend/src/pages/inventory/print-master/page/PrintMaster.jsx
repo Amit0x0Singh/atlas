@@ -2,7 +2,9 @@ import './PrintMaster.css';
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { BackButton, Button, PageHeader, Modal } from "../../../../components/ui";
-import { CheckCircle, Printer } from "lucide-react";
+import { CheckCircle, Printer, Download } from "lucide-react";
+import { packsApi } from "../../../../api/inventory.js";
+import { openAuthedFile, downloadAuthedFile } from "../../../../utils/authedFile.js";
 import GenerateForm from "../components/generate-form/page/GenerateForm.jsx";
 import GateInwardPanel from "../components/gate-inward-panel/GateInwardPanel.jsx";
 
@@ -15,6 +17,32 @@ export default function PrintMaster() {
   const selectGate = (record) => {
     setSelectedGate(record);
     setShowGatePanel(false);
+  };
+
+  // Print opens the merged label PDF inline in a new tab — same pattern as
+  // the per-lot "🖨️ Print All" links on Pack Records, just spanning every
+  // item/lot produced by this one generation. Download forces the same PDF
+  // to save via a Content-Disposition attachment instead. The label
+  // endpoints require auth, so a plain <a>/window.open can't reach them —
+  // fetch with the token and open/download the resulting blob instead.
+  const printAllLabels = async () => {
+    if (!successInfo?.groups?.length) return;
+    try {
+      await openAuthedFile(packsApi.batchLabelsMultiUrl(successInfo.groups));
+    } catch (e) {
+      alert(`Print failed: ${e.message}`);
+    }
+  };
+  const downloadAllLabels = async () => {
+    if (!successInfo?.groups?.length) return;
+    try {
+      await downloadAuthedFile(
+        packsApi.batchLabelsMultiUrl(successInfo.groups, { download: true }),
+        "qr-labels.pdf",
+      );
+    } catch (e) {
+      alert(`Download failed: ${e.message}`);
+    }
   };
 
   return (
@@ -32,22 +60,29 @@ export default function PrintMaster() {
       />
 
       <div className="p-4 md:p-6">
-        {/* Success popup — QR labels themselves are printed/downloaded from
-            Pack Records, not from here, so this just confirms generation. */}
+        {/* Success popup — lets the QR labels just generated be printed or
+            downloaded in one shot, without a trip to Pack Records. */}
         <Modal open={!!successInfo} onClose={() => setSuccessInfo(null)} size="sm">
           <div className="p-6 text-center">
             <div className="w-14 h-14 rounded-full bg-green-100 text-green-600 flex items-center justify-center mx-auto mb-4">
               <CheckCircle size={28} />
             </div>
-            <h2 className="text-lg font-bold text-gray-900 mb-1">QR Codes Generated</h2>
-            <p className="text-sm text-gray-500 mb-6">
+            <h2 className="text-lg font-bold text-gray-900 mb-1">QR Codes Generated Successfully</h2>
+            <p className="text-sm text-gray-500 mb-4">
               {successInfo?.totalPacks} pack{successInfo?.totalPacks !== 1 ? 's' : ''} generated across {successInfo?.results.length} item{successInfo?.results.length !== 1 ? 's' : ''}.
-              Head to Pack Records to print or download the QR labels.
             </p>
-            <div className="flex gap-3">
-              <Button variant="secondary" fullWidth onClick={() => setSuccessInfo(null)}>Close</Button>
-              <Button variant="primary" fullWidth onClick={() => navigate("/print-master/entries")}>Go to Pack Records</Button>
+
+            <div className="text-left text-sm bg-gray-50 border border-gray-200 rounded-lg p-3 mb-6 space-y-1">
+              <div><span className="text-gray-500">Item{successInfo?.itemNames?.length !== 1 ? 's' : ''}:</span> <span className="font-medium text-gray-900">{successInfo?.itemNames?.join(', ')}</span></div>
+              <div><span className="text-gray-500">Invoice No:</span> <span className="font-medium text-gray-900">{successInfo?.invoiceNo}</span></div>
+              <div><span className="text-gray-500">Lot No{successInfo?.lotNumbers?.length !== 1 ? 's' : ''}:</span> <span className="font-medium text-gray-900">{successInfo?.lotNumbers?.join(', ')}</span></div>
             </div>
+
+            <div className="flex gap-3 mb-3">
+              <Button variant="primary" fullWidth icon={Printer} onClick={printAllLabels}>Print All QR Codes</Button>
+              <Button variant="outline" fullWidth icon={Download} onClick={downloadAllLabels}>Download All</Button>
+            </div>
+            <Button variant="secondary" fullWidth onClick={() => setSuccessInfo(null)}>Close</Button>
           </div>
         </Modal>
 

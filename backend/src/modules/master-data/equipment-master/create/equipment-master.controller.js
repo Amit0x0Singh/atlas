@@ -5,7 +5,11 @@ export const createEquipment = async (req, res) => {
   try {
     const { equipName, plant, workingVolume, operation, designatedProduct, workingUnit } = req.body
     if (!equipName) return res.status(400).json({ success: false, error: 'equipName is required', code: 'VALIDATION_ERROR' })
-    const existing = await prisma.equipmentMaster.findUnique({ where: { equipName } })
+    // equipName is stored lowercase (RULES.LOWER) and unique — an exact-match
+    // findUnique on raw input would miss an existing "Reactor A" vs stored
+    // "reactor a" and let create() through, which then collides with the DB
+    // unique constraint. Match case-insensitively instead.
+    const existing = await prisma.equipmentMaster.findFirst({ where: { equipName: { equals: equipName, mode: 'insensitive' } } })
     if (existing) return res.status(409).json({ success: false, error: 'Equipment already exists', code: 'CONFLICT' })
     const nextNum = await getMaxEquipCodeNum(prisma)
     const item = await prisma.equipmentMaster.create({

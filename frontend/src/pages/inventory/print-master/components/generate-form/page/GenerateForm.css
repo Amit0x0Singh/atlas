@@ -129,12 +129,12 @@
   gap: 12px;
 }
 
-/* ItemLine top row — item search, qty per pack, total bags in one row.
-   Item gets more space since it's a search field; collapses to one column
-   once there isn't room for three fields to stay usable. */
+/* ItemLine top row — item search and total bags in one row. Item gets more
+   space since it's a search field; collapses to one column once there isn't
+   room for both fields to stay usable. */
 .gf-item-top-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr;
+  grid-template-columns: 3fr 1fr;
   gap: 10px;
 }
 
@@ -277,32 +277,6 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-}
-
-/* Fields inside one batch group card — 4 across for raw materials (bags,
-   batch code, expiry type, expiry value), 2 for packing materials (no
-   expiry). Cards are full width now, so this has real room on desktop;
-   still collapses for tablet/mobile. */
-.gf-batch-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1fr;
-  gap: 10px;
-}
-
-.gf-batch-row-2 {
-  grid-template-columns: 1fr 1fr;
-}
-
-@media (max-width: 900px) {
-  .gf-batch-row:not(.gf-batch-row-2) {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
-@media (max-width: 480px) {
-  .gf-batch-row {
-    grid-template-columns: 1fr !important;
-  }
 }
 
 @media (max-width: 640px) {

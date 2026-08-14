@@ -1,8 +1,8 @@
 import {
-  CARRIER_OPTIONS,
   UOMS,
   SECTIONS,
 } from "../../shared/constants.js";
+import { useOptionValues } from "../../../../../hooks/useOptionValues.js";
 import { calcTotalCS } from "../../shared/utils.js";
 import InhouseProductPicker from "../inhouse-product-picker/InhouseProductPicker.jsx";
 import CustomerProductPicker from "../customer-product-picker/CustomerProductPicker.jsx";
@@ -19,17 +19,13 @@ export default function LineItemRow({
   idx,
   products,
   cpProfiles,
-  packingMaterials,   // { primary: [...], secondary: [...] }
   onChange,
   onRemove,
   onProductPicked,
   onCpProductPicked,
 }) {
   const set = (k, v) => onChange(idx, { ...item, [k]: v });
-
-  // Use API materials if available, else fall back to empty (user can type custom)
-  const primaryMaterials   = packingMaterials?.primary   || []
-  const secondaryMaterials = packingMaterials?.secondary || []
+  const { data: carriers = [] } = useOptionValues('CARRIER')
 
   return (
     <div
@@ -106,8 +102,9 @@ export default function LineItemRow({
         <div style={{ minWidth: 0 }}>
           <label className={label}>Carrier</label>
           <select value={item.carrier || ""} onChange={(e) => set("carrier", e.target.value)} className={field}>
-            {CARRIER_OPTIONS.map((c) => (
-              <option key={c} value={c}>{c || "— Select —"}</option>
+            <option value="">— Select —</option>
+            {carriers.map((c) => (
+              <option key={c.code} value={c.code}>{c.label}</option>
             ))}
           </select>
         </div>
@@ -174,10 +171,7 @@ export default function LineItemRow({
         </div>
       </div>
 
-      <PackingSection
-        item={item} idx={idx} onChange={onChange} set={set}
-        primaryMaterials={primaryMaterials} secondaryMaterials={secondaryMaterials}
-      />
+      <PackingSection item={item} idx={idx} onChange={onChange} set={set} />
 
       <LabelDetailsSection item={item} set={set} />
     </div>

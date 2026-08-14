@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { inwardApi, packsApi } from '../../../../../../../api/inventory.js'
 import { useIsMobile } from '../../../../../../../hooks/useIsMobile.js'
-import { STEPS, WAREHOUSES } from '../components/constants.js'
+import { useOptionValues } from '../../../../../../../hooks/useOptionValues.js'
+import { STEPS } from '../components/constants.js'
 import DoneStep from '../components/DoneStep.jsx'
 import SetupStep from '../components/SetupStep.jsx'
 import ScanningStep from '../components/ScanningStep.jsx'
@@ -41,7 +42,9 @@ export default function PackInward() {
   const [loadingGroups, setLoading] = useState(true)
   const [activeSessionMap, setActiveSessionMap] = useState({})
   const [selected, setSelected]     = useState(null)
-  const [warehouse, setWarehouse]   = useState(WAREHOUSES[0])
+  const { data: warehouseOptions = [] } = useOptionValues('WAREHOUSE')
+  const warehouseCodes = warehouseOptions.map(w => w.code)
+  const [warehouse, setWarehouse]   = useState('')
   const [session, setSession]       = useState(null)
   const [resumed, setResumed]       = useState(false)
   const [creating, setCreating]     = useState(false)
@@ -107,6 +110,12 @@ export default function PackInward() {
   }, [])
   useEffect(() => { sessionRef.current = session }, [session])
   useEffect(() => { warehouseRef.current = warehouse }, [warehouse])
+  // Warehouse options load async (API-backed, not a static import anymore) —
+  // default to the first one once they arrive, same effective behavior as
+  // the old useState(WAREHOUSES[0]) eager default.
+  useEffect(() => {
+    if (!warehouse && warehouseOptions.length) setWarehouse(warehouseOptions[0].code)
+  }, [warehouse, warehouseOptions])
 
   // Flush whatever's queued right before the tab is backgrounded/locked —
   // the moment right before connectivity is most likely to drop.
@@ -558,7 +567,7 @@ export default function PackInward() {
     sessionRef.current = null
     setStep(STEPS.SETUP); setSession(null); setSelected(null)
     setError(''); setScanError(''); setLastScan(''); clearScanBuffer()
-    setWarehouse(WAREHOUSES[0]); setResumed(false)
+    setWarehouse(warehouseCodes[0] || ''); setResumed(false)
     loadGroups()
   }
 
@@ -571,7 +580,15 @@ export default function PackInward() {
 
   const handleSelectGroup = (g, partialSession) => {
     setSelected(g)
-    if (partialSession) setWarehouse(partialSession.warehouse || WAREHOUSES[0])
+    if (partialSession) {
+      // warehouse is stored lowercase (RULES.LOWER) but the warehouse option
+      // codes are UPPERCASE — match case-insensitively so resuming a session
+      // still pre-selects the right one instead of silently falling back to
+      // the first warehouse.
+      const stored = (partialSession.warehouse || '').trim().toUpperCase()
+      const matched = warehouseCodes.find((w) => w === stored)
+      setWarehouse(matched || partialSession.warehouse || warehouseCodes[0])
+    }
   }
 
   const progress   = session ? Math.round((scanned.length / session.expectedBags) * 100) : 0

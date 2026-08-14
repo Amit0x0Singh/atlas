@@ -2,6 +2,7 @@ import { FlaskConical } from 'lucide-react'
 import { PLANT_KEYS, PLANT_CONFIG } from '../../../data/plantConfig.js'
 import { Field, SectionHeader, inputCls, inputBaseCls } from './formPrimitives.jsx'
 
+import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 const SHIFTS = ['A', 'B', 'C', 'General', 'Day', 'Night']
 const BATCH_TYPES = ['Commercial', 'Pilot', 'R&D', 'Trial', 'Validation']
 const BATCH_UOMS = ['L', 'kg', 'mL', 'g', 'MT', 'pcs']
@@ -31,7 +32,7 @@ export default function BatchDetailsForm({
                 <div key={p.productCode}
                   onMouseDown={() => { onSelectProduct(p.productCode, p.productName); setShowSugg(false) }}
                   className="px-3 py-2 text-[13px] hover:bg-indigo-50 cursor-pointer border-b border-slate-50 last:border-0 flex items-center justify-between">
-                  <span className="font-medium text-slate-800">{p.productName}</span>
+                  <span className="font-medium text-slate-800">{toTitleCase(p.productName)}</span>
                   <span className="text-[11px] text-slate-400 font-mono">{p.productCode}</span>
                 </div>
               ))}

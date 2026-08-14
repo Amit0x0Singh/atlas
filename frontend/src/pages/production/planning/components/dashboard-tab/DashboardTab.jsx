@@ -4,6 +4,7 @@ import { Button } from '../../../../../components/ui'
 import StatusBadge from '../ui/status-badge/StatusBadge.jsx'
 import PlantBadge from '../ui/plant-badge/PlantBadge.jsx'
 
+import { toTitleCase } from '../../../../../utils/textDisplay.js'
 export default function DashboardTab({ tasks, onStatusUpdate }) {
   const today = todayISO()
   const todayTasks = tasks.filter(t => t.date === today && t.sent && t.status !== 'Completed')
@@ -38,7 +39,7 @@ export default function DashboardTab({ tasks, onStatusUpdate }) {
               <div className="px-4 py-3 flex items-start justify-between">
                 <div>
                   <div className="font-mono text-[11px] text-gray-400 mb-0.5">{t.taskId}</div>
-                  <div className="font-bold text-[14px]">{t.productName}</div>
+                  <div className="font-bold text-[14px]">{toTitleCase(t.productName)}</div>
                 </div>
                 <StatusBadge status={t.status || 'Not Started'} />
               </div>

@@ -15,9 +15,12 @@ export const downloadBackup = async (req, res) => {
   res.download(job.filePath, job.fileName || `${job.id}.json.gz`);
 };
 
-// Reporting/analysis export only — the original .json.gz is never touched,
-// and restoring a database must always go through that original file, never
-// this derived .xlsx (see backup-excel-export.service.js).
+// Primarily for reporting/analysis — the original .json.gz is untouched by
+// this and remains the preferred, exact restore source. This derived .xlsx
+// can also be uploaded back through Restore (see
+// backup-excel-import.service.js), but that path is a best-effort
+// reconstruction: some numeric/JSON values were reformatted for
+// readability on the way out and can't be recovered byte-for-byte.
 export const downloadBackupExcel = async (req, res) => {
   const job = await prisma.backupJob.findUnique({ where: { id: req.params.id } });
   if (!job) return res.status(404).json({ success: false, error: 'Backup not found.' });

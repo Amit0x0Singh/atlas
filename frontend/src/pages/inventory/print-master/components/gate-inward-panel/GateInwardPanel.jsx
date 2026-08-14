@@ -5,6 +5,7 @@ import { useDebouncedValue } from "../../../../../hooks/useDebouncedValue.js";
 import { IconButton } from "../../../../../components/ui";
 import Pagination from "../../../../../components/pagination/Pagination.jsx";
 
+import { toTitleCase } from '../../../../../utils/textDisplay.js'
 const STATUS_COLORS = {
   pending:  { bg: "#fef3c7", color: "#92400e" },
   approved: { bg: "#f0fdf4", color: "#15803d" },
@@ -126,7 +127,7 @@ export default function GateInwardPanel({ onSelect, selectedId, onClose }) {
                   onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.borderColor = "#e2e8f0"; }}
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "5px" }}>
-                    <span style={{ fontWeight: 700, fontSize: "13px", color: "#0f172a" }}>{r.supplierName}</span>
+                    <span style={{ fontWeight: 700, fontSize: "13px", color: "#0f172a" }}>{toTitleCase(r.supplierName)}</span>
                     <StatusBadge status={r.status} />
                   </div>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", fontSize: "11px", color: "#64748b" }}>

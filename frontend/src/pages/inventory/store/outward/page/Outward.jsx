@@ -8,6 +8,7 @@ import BomIssuedHistory       from '../components/material-issue-by-bom/BomIssue
 import StockLossAdjustment    from '../components/stock-loss-adjustment/StockLossAdjustment.jsx'
 import { RefreshCw, Warehouse, ClipboardList, Container, TriangleAlert, History, ArrowUpFromLine } from 'lucide-react'
 import './Outward.css'
+import { toTitleCase } from '../../../../../utils/textDisplay.js'
 
 const MODES = [
   {
@@ -199,17 +200,17 @@ export default function Outward() {
                         {h.sourceType?.replace(/_/g, ' ')}
                       </span>
                     </td>
-                    <td className="px-4 py-2.5 text-xs text-gray-800 font-medium">{h.rmName || h.rmCode}</td>
+                    <td className="px-4 py-2.5 text-xs text-gray-800 font-medium">{toTitleCase(h.rmName) || h.rmCode}</td>
                     <td className="px-4 py-2.5 font-mono text-xs text-gray-500 max-w-[150px] truncate">{h.sourceId}</td>
                     <td className="px-4 py-2.5 text-right font-bold text-red-600 whitespace-nowrap">
                       {/* Main figure is what the operator entered (Operational
                           UOM); the sub-line is what actually left inventory,
                           so it carries the Inventory UOM — without the unit,
                           "12.000 L (18.000 deducted)" reads as nonsense. */}
-                      {Number(h.operationalQty ?? h.qtyIssued).toFixed(3)} {h.operationalUom || h.inventoryUom || ''}
+                      {Number(h.operationalQty ?? h.qtyIssued).toFixed(3)} {(h.operationalUom || h.inventoryUom || '').toUpperCase()}
                       {h.operationalUom && Number(h.operationalQty) !== Number(h.qtyIssued) && (
                         <div className="text-[10px] font-normal text-gray-400">
-                          ({Number(h.qtyIssued).toFixed(3)} {h.inventoryUom || ''} deducted)
+                          ({Number(h.qtyIssued).toFixed(3)} {(h.inventoryUom || '').toUpperCase()} deducted)
                         </div>
                       )}
                     </td>

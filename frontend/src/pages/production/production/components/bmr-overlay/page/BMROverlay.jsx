@@ -8,6 +8,7 @@ import QCHandoffModal from '../components/QCHandoffModal.jsx'
 import { bmrLoad, bmrSave } from '../utils/bmrDrafts.js'
 import './BMROverlay.css'
 
+import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 const PLANT_COLOR = {
   Nano: '#1a4a6b', Botanical: '#2d5e18', Liquid: '#7c3aed', Powder: '#92400e', Granules: '#0f766e',
 }
@@ -63,7 +64,7 @@ export default function BMROverlay({ openTasks, onClose, onTasksChange }) {
     if (task.process === 'Formulation' && task.packAfter === 'NO') {
       const qty = parseFloat(bmrData['weight-after-sieve']) || parseFloat(bmrData['weight-after-unload']) || task.qty
       const loc = prompt(
-        `Formulation complete — no packing scheduled.\nEnter SFG storage location:\n(${task.productName} | ${task.batchCode} | ${qty} ${task.qtyUom||'kg'})`,
+        `Formulation complete — no packing scheduled.\nEnter SFG storage location:\n(${toTitleCase(task.productName)} | ${task.batchCode} | ${qty} ${task.qtyUom||'kg'})`,
         task.location || ''
       )
       if (loc === null) { alert('SFG location required. BMR not submitted.'); return }
@@ -130,7 +131,7 @@ export default function BMROverlay({ openTasks, onClose, onTasksChange }) {
                     ${isAct ? 'bg-blue-700 text-white' : 'text-[#94a3b8] hover:bg-[#334155] hover:text-white'}`}
                   onClick={() => { saveCurrentDraft(); setActiveId(e.taskId) }}>
                   <div className="w-2 h-2 rounded-full flex-shrink-0" style={{background: PLANT_COLOR[e.task.plant]||'#64748b'}}/>
-                  <span className="max-w-[120px] overflow-hidden text-ellipsis whitespace-nowrap">{e.task.productName}</span>
+                  <span className="max-w-[120px] overflow-hidden text-ellipsis whitespace-nowrap">{toTitleCase(e.task.productName)}</span>
                   <span className="text-[10px] opacity-70">{e.task.taskId}</span>
                   <button className="opacity-60 hover:opacity-100 text-sm ml-1"
                     onClick={ev => { ev.stopPropagation(); handleCloseTask(e.taskId) }}>✕</button>
@@ -150,10 +151,10 @@ export default function BMROverlay({ openTasks, onClose, onTasksChange }) {
             <div className="sticky top-0 z-10 flex items-center justify-between px-7 py-4 text-white flex-shrink-0 bo-bmr-header">
               <div>
                 <div className="text-[11px] opacity-70 mb-0.5">{task.taskId} — {task.plant} Plant</div>
-                <div className="font-bold text-base">{task.productName}</div>
+                <div className="font-bold text-base">{toTitleCase(task.productName)}</div>
                 <div className="text-[12px] opacity-80 mt-0.5">
                   DI: {task.diNo||'—'} | Batch: {task.batchCode||'—'} | Qty: {task.qty} {task.qtyUom||''} | Incharge: {task.incharge||'—'}
-                  {task.carrier ? ` | Carrier: ${task.carrier}` : ''}{task.specs ? ` | Specs: ${task.specs}` : ''}
+                  {task.carrier ? ` | Carrier: ${toTitleCase(task.carrier)}` : ''}{task.specs ? ` | Specs: ${task.specs}` : ''}
                 </div>
               </div>
               <div className="flex items-center gap-3">

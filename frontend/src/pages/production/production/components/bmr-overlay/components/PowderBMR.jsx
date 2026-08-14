@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { BField, BInp, BSel, BSection, BGrid } from './BFormFields.jsx'
 import { buildFormulationRows } from './ProtocolRows.jsx'
+import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 
 // ── Powder / Granules / Liquid BMR — 5 pages ─────────────────────────────────
 export default function PowderBMR({ task, comps }) {
@@ -30,7 +31,7 @@ export default function PowderBMR({ task, comps }) {
             <BField label="CFU Count Ordered"><BInp type="text" data-bmr-field="cfu-ordered" defaultValue={task.specs||''}/></BField>
             <BField label="Equip. Cleaning Date & Time"><BInp type="datetime-local" data-bmr-field="equip-cleaning-dt"/></BField>
             <BField label="Cleaning Status"><BSel data-bmr-field="cleaning-status"><option value="Clean">Clean</option><option value="Not Clean">Not Clean</option></BSel></BField>
-            <BField label="Location"><BInp type="text" data-bmr-field="location" defaultValue={task.location||''}/></BField>
+            <BField label="Location"><BInp type="text" data-bmr-field="location" defaultValue={toTitleCase(task.location)||''}/></BField>
           </BGrid>
           <div className="mt-3 grid grid-cols-2 gap-3">
             <BField label="Batch Started By"><BInp type="text" data-bmr-field="batch-started-by" defaultValue={task.incharge||''}/></BField>
@@ -44,7 +45,7 @@ export default function PowderBMR({ task, comps }) {
           <div className="grid grid-cols-3 gap-3 mb-4">
             <BField label="SFG Used"><BSel data-bmr-field="sfg-used"><option value="NO">NO</option><option value="YES">YES</option></BSel></BField>
             <BField label="SFG Details (DI / DOF / Qty)"><BInp type="text" data-bmr-field="sfg-details"/></BField>
-            <BField label="Carrier"><BInp type="text" data-bmr-field="carrier" defaultValue={task.carrier||''}/></BField>
+            <BField label="Carrier"><BInp type="text" data-bmr-field="carrier" defaultValue={toTitleCase(task.carrier)||''}/></BField>
             <BField label="No. of Workers"><BInp type="number" data-bmr-field="no-workers" min="1"/></BField>
             <BField label="M / F / M+F"><BSel data-bmr-field="worker-gender"><option>M</option><option>F</option><option>M+F</option></BSel></BField>
             <BField label="Equipment Used"><BInp type="text" data-bmr-field="equipment-used" defaultValue={task.equipment||''}/></BField>

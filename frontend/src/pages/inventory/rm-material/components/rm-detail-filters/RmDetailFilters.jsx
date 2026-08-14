@@ -1,6 +1,7 @@
 ﻿import './RmDetailFilters.css'
 import { Button } from '../../../../../components/ui'
 import { RefreshCw } from 'lucide-react'
+import { toTitleCase } from '../../../../../utils/textDisplay.js'
 
 export default function RmDetailFilters({ search, supplierFilter, statusFilter, dateFrom, dateTo, suppliers, hasFilters, onChange, onClear, onRefresh }) {
   return (
@@ -15,7 +16,7 @@ export default function RmDetailFilters({ search, supplierFilter, statusFilter, 
         <select value={supplierFilter} onChange={e => onChange('supplier', e.target.value)}
           className="border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-gray-900 min-w-36 bg-white">
           <option value="">All Suppliers</option>
-          {suppliers.map(s => <option key={s} value={s}>{s}</option>)}
+          {suppliers.map(s => <option key={s} value={s}>{toTitleCase(s)}</option>)}
         </select>
         <select value={statusFilter} onChange={e => onChange('status', e.target.value)}
           className="border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-gray-900 min-w-36 bg-white">

@@ -1,8 +1,10 @@
 ﻿import { useState, useEffect, useRef } from 'react'
 import './CreateContainer.css'
 import { containerApi, rmApi } from '../../../../../../api/inventory.js'
+import { openAuthedFile } from '../../../../../../utils/authedFile.js'
 import { Button } from '../../../../../../components/ui'
 
+import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 export default function CreateContainer({ onCreated }) {
   const [query, setQuery]       = useState('')
   const [allRms, setAllRms]     = useState([])
@@ -15,7 +17,12 @@ export default function CreateContainer({ onCreated }) {
   const inputRef = useRef(null)
 
   useEffect(() => {
-    rmApi.list().then(r => setAllRms(r.data || [])).catch(() => {})
+    // Containers are only created for raw materials — items tagged with the
+    // "Packing Material" category in RM Master shouldn't appear here.
+    rmApi.list().then(r => {
+      const rms = (r.data || []).filter(rm => (rm.category || '').trim().toLowerCase() !== 'packing material')
+      setAllRms(rms)
+    }).catch(() => {})
   }, [])
 
   const handleQueryChange = (val) => {
@@ -59,15 +66,15 @@ export default function CreateContainer({ onCreated }) {
         <div className="text-4xl mb-3">o.</div>
         <h3 className="text-lg font-bold text-green-800 mb-1">Container Created!</h3>
         <p className="text-green-700 text-sm mb-0.5 font-mono font-bold">{created.containerId}</p>
-        <p className="text-green-600 text-sm mb-4">{created.itemName} — Cap: {created.capacity} {created.uom}</p>
+        <p className="text-green-600 text-sm mb-4">{toTitleCase(created.itemName)} — Cap: {created.capacity} {created.uom?.toUpperCase()}</p>
         <div className="flex gap-3 justify-center">
-          <a
-            href={containerApi.labelUrl(created.containerId)}
-            target="_blank" rel="noreferrer"
+          <button
+            type="button"
+            onClick={() => openAuthedFile(containerApi.labelUrl(created.containerId)).catch(e => alert(`Print failed: ${e.message}`))}
             className="bg-orange-500 text-white px-5 py-2.5 rounded-lg font-semibold text-sm hover:bg-orange-600"
           >
             Print QR Label
-          </a>
+          </button>
           <Button
             variant="outline-gray"
             onClick={() => { setCreated(null); setQuery(''); setSelRm(null); setCapacity('') }}
@@ -111,8 +118,8 @@ export default function CreateContainer({ onCreated }) {
                   onMouseDown={() => pickRm(rm)}
                   className="w-full text-left px-4 py-2.5 hover:bg-orange-50 transition border-b border-gray-50 last:border-0"
                 >
-                  <div className="text-sm font-medium text-gray-900">{rm.itemName}</div>
-                  <div className="text-xs text-gray-400 font-mono">{rm.itemCode} · {rm.inventoryUom}</div>
+                  <div className="text-sm font-medium text-gray-900">{toTitleCase(rm.itemName)}</div>
+                  <div className="text-xs text-gray-400 font-mono">{rm.itemCode} · {rm.inventoryUom?.toUpperCase()}</div>
                 </button>
               ))}
             </div>
@@ -120,7 +127,7 @@ export default function CreateContainer({ onCreated }) {
           {selectedRm && (
             <div className="mt-2 flex gap-3 text-xs text-gray-500 bg-orange-50 border border-orange-100 rounded-lg px-3 py-2">
               <span>Code: <strong className="font-mono text-orange-700">{selectedRm.itemCode}</strong></span>
-              <span>UOM: <strong>{selectedRm.inventoryUom}</strong></span>
+              <span>UOM: <strong>{selectedRm.inventoryUom?.toUpperCase()}</strong></span>
               <span className="text-gray-400">ID will be: <strong className="font-mono">CONT-{selectedRm.itemName.replace(/[^a-zA-Z0-9]/g,'').slice(0,4).toUpperCase()}-{selectedRm.itemCode}</strong></span>
             </div>
           )}
@@ -129,7 +136,7 @@ export default function CreateContainer({ onCreated }) {
         {/* Capacity */}
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-1">
-            Capacity ({selectedRm?.inventoryUom || 'KG'}) *
+            Capacity ({(selectedRm?.inventoryUom || 'KG').toUpperCase()}) *
           </label>
           <input
             type="number" min="0.1" step="0.1"

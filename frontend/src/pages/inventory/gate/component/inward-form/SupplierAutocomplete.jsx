@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 
+import { toTitleCase } from '../../../../../utils/textDisplay.js'
 // Type-to-search supplier field: suggestions filter from Supplier Master as
 // you type, but the committed value (what onChange reports to the parent
 // form) only ever becomes a real supplier name — either by clicking a
 // suggestion, or by typing one out exactly. Typing something that matches
 // no supplier leaves the committed value empty, even though the input still
 // shows whatever text was typed.
-export default function SupplierAutocomplete({ value, suppliers, onChange, placeholder }) {
+export default function SupplierAutocomplete({ value, suppliers, onChange, placeholder, hasError }) {
   const [query, setQuery] = useState(value || "");
   const [open, setOpen] = useState(false);
   const lastCommitted = useRef(value || "");
@@ -53,7 +54,7 @@ export default function SupplierAutocomplete({ value, suppliers, onChange, place
         onFocus={() => setOpen(true)}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
         placeholder={placeholder}
-        className="if-input"
+        className={`if-input${hasError ? " if-input--error" : ""}`}
         autoComplete="off"
         role="combobox"
         aria-expanded={open}
@@ -68,7 +69,7 @@ export default function SupplierAutocomplete({ value, suppliers, onChange, place
               onMouseDown={() => pick(s.supplierName)}
               className="w-full text-left px-3 py-2 hover:bg-blue-50 text-sm border-b border-gray-50 last:border-0"
             >
-              {s.supplierName}
+              {toTitleCase(s.supplierName)}
             </button>
           ))}
         </div>

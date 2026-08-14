@@ -45,11 +45,3 @@ export const planTasksApi = {
   searchEquipment:      (plant)   => api.get('/plan-tasks/search/equipment',        { params: { plant } }),
 }
 
-export const bomIssuanceApi = {
-  pendingJobs:  ()         => api.get('/bom-issuance/pending-jobs'),
-  getJob:       (id)       => api.get(`/bom-issuance/job/${id}`),
-  issue:        (data)     => api.post('/bom-issuance/issue', data),
-  scrapJob:     (id, data) => api.post(`/bom-issuance/jobs/${id}/scrap`, data),
-  reprocessJob: (id)       => api.post(`/bom-issuance/jobs/${id}/reprocess`),
-  history:      (params)   => api.get('/bom-issuance/history', { params }),
-}

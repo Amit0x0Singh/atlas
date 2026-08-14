@@ -1,4 +1,5 @@
 import { fmtCfu } from '../../../transaction/utils/format.js'
+import { toTitleCase } from '../../../../../utils/textDisplay.js'
 
 export default function TodayActivityPanel({ todayInward, todayIssued }) {
   return (
@@ -14,10 +15,10 @@ export default function TodayActivityPanel({ todayInward, todayIssued }) {
               {todayInward.map((r, i) => (
                 <tr key={i} className="border-b border-gray-100">
                   <td className="px-3 py-2 font-mono text-gray-700">{r.container_code}</td>
-                  <td className="px-3 py-2 text-gray-800">{r.microbe_name}</td>
+                  <td className="px-3 py-2 text-gray-800">{toTitleCase(r.microbe_name)}</td>
                   <td className="px-3 py-2 text-gray-600">{fmtCfu(r.cfu_per_g)}</td>
                   <td className="px-3 py-2 font-bold text-gray-900">{Number(r.qty_kg).toFixed(4)}</td>
-                  <td className="px-3 py-2 text-gray-500">{r.location || '—'}</td>
+                  <td className="px-3 py-2 text-gray-500">{toTitleCase(r.location) || '—'}</td>
                 </tr>
               ))}
             </tbody>
@@ -36,10 +37,10 @@ export default function TodayActivityPanel({ todayInward, todayIssued }) {
               {todayIssued.map((r, i) => (
                 <tr key={i} className="border-b border-gray-100">
                   <td className="px-3 py-2 font-mono text-gray-700">{r.container_code}</td>
-                  <td className="px-3 py-2 text-gray-800">{r.microbe_name}</td>
+                  <td className="px-3 py-2 text-gray-800">{toTitleCase(r.microbe_name)}</td>
                   <td className="px-3 py-2 font-bold text-red-600">{Number(r.qty_kg).toFixed(4)}</td>
-                  <td className="px-3 py-2 text-gray-600">{r.product_name || '—'}</td>
-                  <td className="px-3 py-2 text-gray-500">{r.customer_name || '—'}</td>
+                  <td className="px-3 py-2 text-gray-600">{toTitleCase(r.product_name) || '—'}</td>
+                  <td className="px-3 py-2 text-gray-500">{toTitleCase(r.customer_name) || '—'}</td>
                 </tr>
               ))}
             </tbody>

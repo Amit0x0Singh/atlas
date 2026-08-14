@@ -4,6 +4,7 @@ import Card from '../components/common/Card.jsx';
 import Input from '../components/common/Input.jsx';
 import Button from '../components/common/Button.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
+import { normalizeEmailInput } from '../utils/textNormalize.js';
 
 export default function Login() {
   const { login, loading } = useAuth();
@@ -15,7 +16,7 @@ export default function Login() {
     e.preventDefault();
     setError('');
     try {
-      await login(email.trim(), password);
+      await login(normalizeEmailInput(email), password);
     } catch (err) {
       setError(err.response?.data?.error || err.message || 'Login failed');
     }

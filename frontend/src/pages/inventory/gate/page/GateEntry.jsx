@@ -1,6 +1,5 @@
 ﻿import { useState, useEffect, useRef } from "react";
 import { ArrowDown, ArrowUp, CheckCircle } from "lucide-react";
-import { gateApi } from "../../../../api/inventory.js";
 import {
   useGateInward, useGateOutward,
   useCreateGateInward, useCreateGateOutward,
@@ -13,11 +12,11 @@ import GateTabs from "../component/gate-tabs/GateTabs.jsx";
 import GateFilterBar from "../component/gate-filter-bar/GateFilterBar.jsx";
 import InwardForm from "../component/inward-form/InwardForm.jsx";
 import OutwardForm from "../component/outward-form/OutwardForm.jsx";
-import InwardDetailPanel from "../component/inward-detail-panel/InwardDetailPanel.jsx";
 import InwardTable from "../component/inward-table/InwardTable.jsx";
 import OutwardTable from "../component/outward-table/OutwardTable.jsx";
 import "./GateEntry.css";
 
+import { toTitleCase } from '../../../../utils/textDisplay.js'
 const EMPTY_FILTERS = { search: "", invoice_no: "", status: "", company: "", from_date: "", to_date: "" };
 
 // ── Main ──────────────────────────────────────────────────────────────────────
@@ -35,7 +34,6 @@ export default function GateEntry() {
   // free-text fields (search/invoice_no) so we don't refetch per keystroke.
   const [filters, setFilters]           = useState(EMPTY_FILTERS);
   const [queryFilters, setQueryFilters] = useState(EMPTY_FILTERS);
-  const [detail, setDetail]   = useState(null);
   const [errModal, setErrModal]           = useState({ open: false, message: '' });
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [successMsg, setSuccessMsg]       = useState('');
@@ -66,13 +64,11 @@ export default function GateEntry() {
   }, [view]);
 
   function openList(type) {
-    setDetail(null);
     setView(type === "inward" ? "inward-list" : "outward-list");
   }
 
   function goHome() {
     setView("home");
-    setDetail(null);
     setFilters(EMPTY_FILTERS);
   }
 
@@ -101,7 +97,7 @@ export default function GateEntry() {
     try {
       const res = await createInwardMutation.mutateAsync(form);
       const entry = res.data;
-      showSuccess(`Inward entry created${entry?.companyName ? ` for ${entry.companyName}` : ''}${entry?.supplierName ? ` · ${entry.supplierName}` : ''}${entry?.invoiceNo ? ` · ${entry.invoiceNo}` : ''}`);
+      showSuccess(`Inward entry created${entry?.companyName ? ` for ${toTitleCase(entry.companyName)}` : ''}${entry?.supplierName ? ` · ${toTitleCase(entry.supplierName)}` : ''}${entry?.invoiceNo ? ` · ${entry.invoiceNo}` : ''}`);
       setFormKey(k => k + 1);
     } catch (e) {
       setErrModal({ open: true, message: e.message });
@@ -112,17 +108,8 @@ export default function GateEntry() {
     try {
       const res = await createOutwardMutation.mutateAsync(form);
       const entry = res.data;
-      showSuccess(`Outward entry recorded${entry?.companyName ? ` for ${entry.companyName}` : ''}${entry?.receiverName ? ` · ${entry.receiverName}` : ''}${entry?.invoiceNo ? ` · ${entry.invoiceNo}` : ''}`);
+      showSuccess(`Outward entry recorded${entry?.companyName ? ` for ${toTitleCase(entry.companyName)}` : ''}${entry?.receiverName ? ` · ${toTitleCase(entry.receiverName)}` : ''}${entry?.invoiceNo ? ` · ${entry.invoiceNo}` : ''}`);
       setFormKey(k => k + 1);
-    } catch (e) {
-      setErrModal({ open: true, message: e.message });
-    }
-  };
-
-  const openDetail = async (id) => {
-    try {
-      const res = await gateApi.inwardDetail(id);
-      setDetail(res.data);
     } catch (e) {
       setErrModal({ open: true, message: e.message });
     }
@@ -206,8 +193,6 @@ export default function GateEntry() {
           <PageHeader icon={ArrowDown} title="Inward Entries" actions={<BackButton onClick={goHome} />} />
 
           <div className="ge-body">
-            {detail && <InwardDetailPanel detail={detail} onClose={() => setDetail(null)} />}
-
             <GateFilterBar
               tab="inward"
               filters={filters}
@@ -223,7 +208,6 @@ export default function GateEntry() {
               : <InwardTable
                   list={list}
                   total={total}
-                  onOpenDetail={openDetail}
                   onRequestDelete={(id) => handleRequestDelete(id, "inward")}
                 />
             }

@@ -32,7 +32,7 @@ model ProductionPlan {
   productName      String   @map("product_name")
   batchCode        String?  @map("batch_code")
   totalQty         Float    @map("total_qty")
-  uom              String   @default("KG")
+  uom              String   @default("kg")
   carrier          String?
   specs            String?
   process          String?
@@ -60,6 +60,8 @@ model ProductionPlan {
   remarks        String?
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
+  createdBy      String?  @map("created_by") @db.VarChar(255)
+  updatedBy      String?  @map("updated_by") @db.VarChar(255)
 
   @@map("production_plan")
 }
@@ -98,13 +100,17 @@ model BomSend {
   sectionType String?   @map("section_type")
   bomType     String    @map("bom_type") // 'FORMULATION' | 'PACKING'
   totalQty    Float     @map("total_qty")
-  uom         String    @default("KG")
+  uom         String    @default("kg")
   status      String    @default("PENDING") // PENDING | PICKED | ISSUED | CANCELLED
   remarks     String?
   sentBy      String?   @map("sent_by")
   sentAt      DateTime  @default(now()) @map("sent_at")
   pickedAt    DateTime? @map("picked_at")
   issuedAt    DateTime? @map("issued_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  createdBy   String?   @map("created_by") @db.VarChar(255)
+  updatedBy   String?   @map("updated_by") @db.VarChar(255)
 
   @@map("bom_send")
 }

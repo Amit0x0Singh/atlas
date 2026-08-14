@@ -7,6 +7,7 @@ import { X } from 'lucide-react'
 import './StockLossAdjustment.css'
 
 
+import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 const REASONS = [
   'Production spillage',
   'Damaged / broken bag',
@@ -161,7 +162,7 @@ export default function StockLossAdjustment() {
               <div className="min-w-0">
                 <div className="text-[10px] font-semibold text-red-400 uppercase tracking-widest mb-0.5">Selected Bag</div>
                 <div className="font-mono text-sm font-bold text-red-900 truncate">{pack.packId}</div>
-                <div className="text-sm text-red-700 mt-0.5 font-medium truncate">{pack.itemName}</div>
+                <div className="text-sm text-red-700 mt-0.5 font-medium truncate">{toTitleCase(pack.itemName)}</div>
                 <div className="text-xs text-red-500 mt-0.5">
                   Lot: {pack.lotNo} · Bag #{pack.bagNo} · Supplier: {pack.supplier || '—'}
                 </div>
@@ -173,14 +174,14 @@ export default function StockLossAdjustment() {
             <div className="mt-3 bg-white rounded-lg px-3 py-2.5">
               <div className="flex justify-between text-xs mb-1.5">
                 <span className="text-gray-500 font-medium">Remaining Qty</span>
-                <span className="font-bold text-gray-800">{pack.remainingQty} {inventoryUom}</span>
+                <span className="font-bold text-gray-800">{pack.remainingQty} {inventoryUom?.toUpperCase()}</span>
               </div>
               <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                 <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${Math.min(100, (pack.remainingQty / (pack.packQty || pack.remainingQty)) * 100)}%` }} />
               </div>
               <div className="flex justify-between text-[10px] text-gray-400 mt-1">
                 <span>0</span>
-                <span>Original: {pack.packQty || '—'} {inventoryUom}</span>
+                <span>Original: {pack.packQty || '—'} {inventoryUom?.toUpperCase()}</span>
               </div>
               {/* Only shown for items configured with a distinct Operational
                   UOM — makes it explicit that the same physical stock reads
@@ -217,21 +218,21 @@ export default function StockLossAdjustment() {
           {/* Loss quantity — entered in the Operational UOM */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-              Loss Quantity ({entryUom}) * <span className="text-xs font-normal text-gray-400">(max {maxEntryQty.toFixed(3)} {entryUom})</span>
+              Loss Quantity ({entryUom?.toUpperCase()}) * <span className="text-xs font-normal text-gray-400">(max {maxEntryQty.toFixed(3)} {entryUom?.toUpperCase()})</span>
             </label>
             <input
               type="number" min="0.001" step="0.001" max={maxEntryQty}
               value={lossQty}
               onChange={e => setLossQty(e.target.value)}
-              placeholder={`0.000 ${entryUom}`}
+              placeholder={`0.000 ${(entryUom || '').toUpperCase()}`}
               className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-red-400"
             />
             {lossValid && (
               <p className="text-xs text-gray-400 mt-1.5">
                 {converts && (
-                  <>Deducts <strong className="text-gray-700">{lossInventory.toFixed(3)} {inventoryUom}</strong> · </>
+                  <>Deducts <strong className="text-gray-700">{lossInventory.toFixed(3)} {inventoryUom?.toUpperCase()}</strong> · </>
                 )}
-                After adjustment: <strong className="text-gray-700">{(pack.remainingQty - lossInventory).toFixed(3)} {inventoryUom}</strong> remaining
+                After adjustment: <strong className="text-gray-700">{(pack.remainingQty - lossInventory).toFixed(3)} {inventoryUom?.toUpperCase()}</strong> remaining
               </p>
             )}
           </div>

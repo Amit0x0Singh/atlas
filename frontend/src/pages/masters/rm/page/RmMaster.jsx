@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { Plus, Package } from 'lucide-react'
 import { useRmMaster, useCreateRm, useUpdateRm, useDeleteRm } from '../../../../hooks/inventory/useRmMaster.js'
-import { usePackingMaterials } from '../../../../hooks/masters/usePackingMaterials.js'
+import { useOptionValues } from '../../../../hooks/useOptionValues.js'
+import { normalizeUom } from '../../../../utils/uom.js'
+import { toTitleCase } from '../../../../utils/textDisplay.js'
 import './RmMaster.css'
 import { Button, BackButton, PageHeader } from '../../../../components/ui'
 import { Can } from '../../../../components/common/Can.jsx'
@@ -11,8 +12,6 @@ import RmForm  from '../components/rm-form/RmForm.jsx'
 import RmDetailModal from '../components/rm-detail-modal/RmDetailModal.jsx'
 
 export default function RmMaster() {
-  const navigate = useNavigate()
-
   const [filters, setFilters]   = useState({ itemCode: '', itemName: '', conversionRequired: '' })
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing]   = useState(null)
@@ -22,15 +21,21 @@ export default function RmMaster() {
   const [page, setPage]         = useState(1)
   const [limit, setLimit]       = useState(15)
 
-  // Both lists load in full, cached for 30 min (CACHE.MASTER) — every filter
-  // (code, name, conversion required) is then applied client-side below.
-  // Packing materials live in their own table (packing_materials) — fetched
-  // here purely so they can be *displayed* alongside RM items in one unified
-  // overview table. Nothing about the two schemas merges; editing a packing
-  // item still only happens on the dedicated Packing Materials page.
+  // Loads in full, cached for 30 min (CACHE.MASTER) — every filter (code,
+  // name, conversion required) is then applied client-side below.
   const { data: items = [], isLoading: loading, error: rmError } = useRmMaster()
-  const { data: packingItems = [], isLoading: loadingPacking } = usePackingMaterials()
   const error = rmError?.message || ''
+
+  // Category / Sub Category dropdown options — admin-managed (Settings >
+  // Select Options), sourced from the CATEGORY / SUB_CATEGORY option groups
+  // instead of derived from existing RM records. Values are stored lowercase
+  // (text-normalization standard) but shown Title Case here — the form's
+  // initial value below is Title-Cased to match so the <select> can find it,
+  // and whatever the user picks is re-lowercased on save by the backend.
+  const { data: categoryOptions = [] }    = useOptionValues('CATEGORY')
+  const { data: subCategoryOptions = [] } = useOptionValues('SUB_CATEGORY')
+  const categories    = useMemo(() => categoryOptions.map(o => o.label), [categoryOptions])
+  const subCategories = useMemo(() => subCategoryOptions.map(o => o.label), [subCategoryOptions])
 
   const createRm = useCreateRm()
   const updateRm = useUpdateRm()
@@ -45,8 +50,17 @@ export default function RmMaster() {
   const openEdit = (item) => {
     setEditing(item)
     setForm({
-      itemCode: item.itemCode, itemName: item.itemName, inventoryUom: item.inventoryUom, operationalUom: item.operationalUom || '', trackingType: item.trackingType || 'PACK',
-      category: item.category || '', subCategory: item.subCategory || '', state: item.state || '', density: item.density ?? '',
+      // Both UOM selects only offer CANONICAL_UNITS ('KG'/'L'/'NOS') as
+      // options — re-running the stored value through normalizeUom() before
+      // populating the form guards against older/imported rows that saved a
+      // non-canonical casing/alias (e.g. "Kg"), which would otherwise match
+      // no <option> and silently fall back to the placeholder instead of
+      // showing the item's actual value.
+      itemCode: item.itemCode, itemName: toTitleCase(item.itemName),
+      inventoryUom: normalizeUom(item.inventoryUom) || item.inventoryUom,
+      operationalUom: item.operationalUom ? (normalizeUom(item.operationalUom) || item.operationalUom) : '',
+      trackingType: item.trackingType || 'PACK',
+      category: toTitleCase(item.category) || '', subCategory: toTitleCase(item.subCategory) || '', state: (item.state || '').toUpperCase(), density: item.density ?? '',
       conversionRequired: !!item.conversionRequired,
       lowStockLevel: item.lowStockLevel ?? '', highStockLevel: item.highStockLevel ?? '',
     })
@@ -81,20 +95,7 @@ export default function RmMaster() {
     try { await deleteRm.mutateAsync(code) } catch (e) { alert(e.message) }
   }
 
-  const goToPacking = () => navigate('/packing-master')
-
   const matchesText = (val, q) => !q || (val || '').toLowerCase().includes(q)
-
-  // Conversion Required is an RM-only concept — packing rows have no such
-  // attribute, so they drop out of the list whenever that filter is active.
-  const visiblePacking = useMemo(() => {
-    if (filters.conversionRequired) return []
-    const code = filters.itemCode.trim().toLowerCase()
-    const name = filters.itemName.trim().toLowerCase()
-    return packingItems
-      .filter(p => matchesText(p.itemCode, code) && matchesText(p.itemName, name))
-      .map(p => ({ ...p, kind: 'packing' }))
-  }, [packingItems, filters])
 
   const visibleRm = useMemo(() => {
     const code = filters.itemCode.trim().toLowerCase()
@@ -108,7 +109,7 @@ export default function RmMaster() {
       .map(i => ({ ...i, kind: 'rm' }))
   }, [items, filters])
 
-  const visibleItems = [...visibleRm, ...visiblePacking]
+  const visibleItems = visibleRm
 
   const setFilter = (field, value) => { setFilters(f => ({ ...f, [field]: value })); setPage(1) }
   const clearFilters = () => { setFilters({ itemCode: '', itemName: '', conversionRequired: '' }); setPage(1) }
@@ -132,7 +133,7 @@ export default function RmMaster() {
       <div className="p-6">
         <RmTable
           visibleItems={visibleItems}
-          loading={loading || loadingPacking}
+          loading={loading}
           error={error}
           page={page}
           limit={limit}
@@ -141,7 +142,6 @@ export default function RmMaster() {
           onClearFilters={clearFilters}
           onEdit={openEdit}
           onDelete={del}
-          onViewPacking={goToPacking}
           onRowClick={setViewing}
           onPageChange={setPage}
           onLimitChange={l => { setLimit(l); setPage(1) }}
@@ -162,6 +162,8 @@ export default function RmMaster() {
           msg={msg}
           onSave={save}
           onClose={() => setShowForm(false)}
+          categories={categories}
+          subCategories={subCategories}
         />
       )}
 
