@@ -13,19 +13,33 @@ import prisma from '../db.js'
 // untouched — this only governs what actually reaches this Prisma call).
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
+// AuditLog's VarChar columns (see prisma/model/system/system.prisma) — some
+// callers pass values that can legitimately outgrow these, e.g.
+// data-management's delete-execution.service.js writes tables.join(',') into
+// tableName, which for a MODULE-scope delete with cascade-expansion can run
+// to 1000+ chars against a VarChar(100) column. Truncating here (rather than
+// at every call site) fixes all of them at once, same rationale as the
+// safeUserId check below — a write that would otherwise silently fail
+// (writeAudit swallows its own errors) is far worse than a truncated note.
+function truncate(value, maxLen) {
+  if (value == null) return null
+  const s = String(value)
+  return s.length > maxLen ? s.slice(0, maxLen - 1) + '…' : s
+}
+
 export async function writeAudit({ userId, username, action, tableName, recordId, oldValue, newValue, notes, ip } = {}) {
   try {
     const safeUserId = typeof userId === 'string' && UUID_RE.test(userId) ? userId : null
     await prisma.auditLog.create({
       data: {
         userId:    safeUserId,
-        username:  username  || null,
-        action,
-        tableName: tableName || null,
-        recordId:  recordId?.toString() || null,
+        username:  truncate(username, 100),
+        action:    truncate(action, 50),
+        tableName: truncate(tableName, 100),
+        recordId:  truncate(recordId, 200),
         oldValue:  oldValue  || undefined,
         newValue:  newValue  || undefined,
-        ipAddress: ip        || null,
+        ipAddress: truncate(ip, 50),
         notes:     notes     || null,
       },
     })
