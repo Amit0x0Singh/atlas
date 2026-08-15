@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { UserCog, Plus, Pencil, Power, KeyRound, Users2, ShieldCheck, Trash2, Lock } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { UserCog, Plus, Pencil, Users2, ShieldCheck, Trash2, Lock } from 'lucide-react'
 import {
   useUsers, useRoles, usePermissionsCatalog,
   useCreateUser, useUpdateUser, useSetUserActive, useResetPassword, useSetUserRoles,
@@ -9,6 +9,8 @@ import { Button, BackButton, IconButton, PageHeader } from '../../../../componen
 import { Can } from '../../../../components/common/Can.jsx'
 import UserFormDrawer from '../components/UserFormDrawer.jsx'
 import RoleEditorDrawer from '../components/RoleEditorDrawer.jsx'
+import UsersToolbar, { EMPTY_USER_FILTERS, DEFAULT_USER_SORT } from '../components/UsersToolbar.jsx'
+import UsersTable from '../components/UsersTable.jsx'
 
 const emptyUserForm = { email: '', fullName: '', phone: '', password: '', plants: [], roleIds: [] }
 
@@ -116,6 +118,64 @@ export default function UserRoles() {
 
   const activeUsers = users.filter(u => u.isActive).length
 
+  // ── Users table toolbar: search + filter + sort ─────────────────────────
+  const [search, setSearch] = useState('')
+  const [filters, setFilters] = useState(EMPTY_USER_FILTERS)
+  const [sort, setSort] = useState(DEFAULT_USER_SORT)
+
+  const visibleUsers = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    const kw = filters.keyword.trim().toLowerCase()
+
+    let list = users.filter(u => {
+      if (q) {
+        const haystack = `${u.fullName} ${u.email} ${u.phone || ''}`.toLowerCase()
+        if (!haystack.includes(q)) return false
+      }
+      if (kw) {
+        const haystack = `${u.fullName} ${u.email} ${u.phone || ''}`.toLowerCase()
+        if (!haystack.includes(kw)) return false
+      }
+      const signupDate = u.createdAt?.slice(0, 10) || ''
+      if (filters.dateFrom && signupDate < filters.dateFrom) return false
+      if (filters.dateTo && signupDate > filters.dateTo) return false
+      if (filters.roleId && !u.roles.some(r => r.roleId === filters.roleId)) return false
+      if (filters.plant && !(u.plants || []).includes(filters.plant)) return false
+      if (filters.status === 'active' && !u.isActive) return false
+      if (filters.status === 'disabled' && u.isActive) return false
+      return true
+    })
+
+    const dir = sort.direction === 'asc' ? 1 : -1
+    list = [...list].sort((a, b) => {
+      if (sort.field === 'signupDate') return dir * a.createdAt.localeCompare(b.createdAt)
+      if (sort.field === 'role') return dir * (a.roles[0]?.name || '').localeCompare(b.roles[0]?.name || '')
+      if (sort.field === 'plantScope') return dir * (a.plants?.[0] || '').localeCompare(b.plants?.[0] || '')
+      if (sort.field === 'status') return dir * (Number(a.isActive) - Number(b.isActive))
+      return dir * a.fullName.localeCompare(b.fullName) // 'name'
+    })
+
+    return list
+  }, [users, search, filters, sort])
+
+  function exportUsersCsv() {
+    if (!visibleUsers.length) { alert('No users to export — adjust your filters.'); return }
+    const headers = ['Client ID', 'Name', 'Email', 'Phone', 'Roles', 'Plant Scope', 'Status', 'Sign-up Date']
+    const rows = visibleUsers.map(u => [
+      u.userId, u.fullName, u.email, u.phone || '',
+      u.roles.map(r => r.name).join('; '),
+      u.plants?.length ? u.plants.join('; ') : 'All plants',
+      u.isActive ? 'Active' : 'Disabled',
+      u.createdAt?.slice(0, 10) || '',
+    ].map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','))
+    const csv = [headers.join(','), ...rows].join('\n')
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }))
+    a.download = `users_${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(a.href)
+  }
+
   return (
     <div className="flex flex-col h-full">
       <PageHeader
@@ -164,63 +224,24 @@ export default function UserRoles() {
         {/* ── Users tab ────────────────────────────────────────────────── */}
         {tab === 'users' && (
           <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-slate-700 text-white text-xs">
-                  <tr>
-                    <th className="text-left px-4 py-3 font-semibold">User</th>
-                    <th className="text-left px-4 py-3 font-semibold">Roles</th>
-                    <th className="text-left px-4 py-3 font-semibold">Plant Scope</th>
-                    <th className="text-left px-4 py-3 font-semibold">Status</th>
-                    <th className="text-right px-4 py-3 font-semibold">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(loadingUsers || loadingRoles) ? (
-                    <tr><td colSpan={5} className="text-center py-10 text-gray-400">Loading…</td></tr>
-                  ) : users.length === 0 ? (
-                    <tr><td colSpan={5} className="text-center py-10 text-gray-400">No users yet.</td></tr>
-                  ) : users.map(u => (
-                    <tr key={u.userId} className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${!u.isActive ? 'opacity-50' : ''}`}>
-                      <td className="px-4 py-3">
-                        <div className="font-semibold text-gray-800">{u.fullName}</div>
-                        <div className="text-xs text-gray-400">{u.email}</div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex flex-wrap gap-1">
-                          {u.roles.length === 0
-                            ? <span className="text-xs text-gray-400">— none —</span>
-                            : u.roles.map(r => (
-                              <span key={r.roleId} className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-violet-100 text-violet-700">{r.name}</span>
-                            ))}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-xs text-gray-600">
-                        {u.plants?.length > 0 ? u.plants.join(', ') : <span className="text-gray-400">All plants</span>}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${u.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-500'}`}>
-                          {u.isActive ? 'Active' : 'Disabled'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex justify-end gap-1">
-                          <Can permission="admin.users.update">
-                            <IconButton icon={Pencil} tooltip="Edit / Assign Roles" onClick={() => openEditUser(u)} />
-                          </Can>
-                          <Can permission="admin.users.update">
-                            <IconButton icon={KeyRound} tooltip="Reset Password" onClick={() => doResetPassword(u)} />
-                          </Can>
-                          <Can permission="admin.users.disable">
-                            <IconButton icon={Power} variant={u.isActive ? 'danger' : 'success'} tooltip={u.isActive ? 'Disable' : 'Re-enable'} onClick={() => toggleActive(u)} />
-                          </Can>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <UsersToolbar
+              search={search} onSearchChange={setSearch}
+              filters={filters} onFiltersChange={setFilters}
+              sort={sort} onSortChange={setSort}
+              roles={roles} onExport={exportUsersCsv}
+              resultCount={visibleUsers.length}
+            />
+            <UsersTable
+              users={visibleUsers}
+              loading={loadingUsers || loadingRoles}
+              empty={users.length === 0 || visibleUsers.length === 0}
+              emptyMessage={users.length === 0 ? 'No users yet.' : 'No users match your search/filters.'}
+              sort={sort}
+              onSortChange={setSort}
+              onEdit={openEditUser}
+              onResetPassword={doResetPassword}
+              onToggleActive={toggleActive}
+            />
           </div>
         )}
 
