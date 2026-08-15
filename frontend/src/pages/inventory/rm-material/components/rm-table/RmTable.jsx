@@ -1,10 +1,28 @@
 ﻿import './RmTable.css'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Pagination from '../../../../../components/pagination/Pagination.jsx'
 import { Button } from '../../../../../components/ui'
 import { ChevronRight } from 'lucide-react'
+import RmToolbar from './RmToolbar.jsx'
 
 import { toTitleCase } from '../../../../../utils/textDisplay.js'
+
+// Resizable columns — same drag-handle mechanism as UsersTable.jsx. "Details"
+// stays a fixed width since it only ever holds one button.
+const COLUMN_DEFS = [
+  { key: 'idx',       label: '#',             align: 'left',   defaultWidth: 56  },
+  { key: 'name',      label: 'Raw Material',  align: 'left',   defaultWidth: 280 },
+  { key: 'uom',       label: 'UOM',           align: 'center', defaultWidth: 100 },
+  { key: 'inPack',    label: 'In Pack',       align: 'right',  defaultWidth: 140 },
+  { key: 'inContainer', label: 'In Container', align: 'right', defaultWidth: 140 },
+  { key: 'totalQty',  label: 'Total Qty',     align: 'right',  defaultWidth: 160 },
+]
+const DETAILS_COL_WIDTH = 150
+const MIN_COL_WIDTH = 60
+// Tailwind's JIT scans for literal class strings, so `text-${align}` would
+// never match — needs a lookup instead.
+const ALIGN_CLASS = { left: 'text-left', center: 'text-center', right: 'text-right' }
 function fmt(n, dec = 3) {
   if (n == null) return '—'
   const v = Number(n)
@@ -33,8 +51,31 @@ function SkeletonRow() {
   )
 }
 
-export default function RmTable({ loading, items, filtered, paginated, page, limit, onPageChange, onLimitChange }) {
+export default function RmTable({
+  loading, items, filtered, paginated, page, limit, onPageChange, onLimitChange,
+  search, onSearchChange, filters, onFiltersChange, sort, onSortChange, uomOptions, onExport,
+}) {
   const navigate = useNavigate()
+
+  const [columnWidths, setColumnWidths] = useState(() =>
+    Object.fromEntries(COLUMN_DEFS.map(c => [c.key, c.defaultWidth])))
+
+  function startResize(key) {
+    return (e) => {
+      e.preventDefault()
+      const startX = e.clientX
+      const startWidth = columnWidths[key]
+      function onMove(ev) {
+        setColumnWidths(w => ({ ...w, [key]: Math.max(MIN_COL_WIDTH, startWidth + (ev.clientX - startX)) }))
+      }
+      function onUp() {
+        document.removeEventListener('mousemove', onMove)
+        document.removeEventListener('mouseup', onUp)
+      }
+      document.addEventListener('mousemove', onMove)
+      document.addEventListener('mouseup', onUp)
+    }
+  }
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
@@ -47,17 +88,32 @@ export default function RmTable({ loading, items, filtered, paginated, page, lim
         )}
       </div>
 
+      <RmToolbar
+        search={search} onSearchChange={onSearchChange}
+        filters={filters} onFiltersChange={onFiltersChange}
+        sort={sort} onSortChange={onSortChange}
+        uomOptions={uomOptions} onExport={onExport}
+        resultCount={filtered.length}
+      />
+
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-sm" style={{ tableLayout: 'fixed' }}>
           <thead>
-            <tr className="bg-slate-700 text-white text-xs">
-              <th className="text-left px-4 py-3 font-semibold">#</th>
-              <th className="text-left px-4 py-3 font-semibold">Raw Material</th>
-              <th className="text-center px-4 py-3 font-semibold">UOM</th>
-              <th className="text-right px-4 py-3 font-semibold">In Pack</th>
-              <th className="text-right px-4 py-3 font-semibold">In Container</th>
-              <th className="text-right px-4 py-3 font-semibold">Total Qty</th>
-              <th className="text-center px-4 py-3 font-semibold">Details</th>
+            <tr className="text-gray-600 text-xs" style={{ backgroundColor: 'rgb(226, 235, 240)' }}>
+              {COLUMN_DEFS.map(c => (
+                <th
+                  key={c.key}
+                  style={{ width: columnWidths[c.key] }}
+                  className={`relative px-4 py-3 font-semibold select-none ${ALIGN_CLASS[c.align]}`}
+                >
+                  {c.label}
+                  <div
+                    onMouseDown={startResize(c.key)}
+                    className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize select-none touch-none hover:bg-blue-400/50"
+                  />
+                </th>
+              ))}
+              <th style={{ width: DETAILS_COL_WIDTH }} className="text-center px-4 py-3 font-semibold">Details</th>
             </tr>
           </thead>
           <tbody>
@@ -72,30 +128,30 @@ export default function RmTable({ loading, items, filtered, paginated, page, lim
                 const hasStock = it.totalStock > 0
                 return (
                   <tr key={it.itemCode} className="border-t border-gray-100 hover:bg-gray-50 transition-colors group">
-                    <td className="px-4 py-3 text-xs text-gray-400 tabular-nums">{idx + 1}</td>
-                    <td className="px-4 py-3">
-                      <div className="font-semibold text-gray-900 group-hover:text-indigo-700 transition-colors">{toTitleCase(it.itemName)}</div>
-                      <div className="text-xs text-gray-400 font-mono mt-0.5">{it.itemCode}</div>
+                    <td style={{ width: columnWidths.idx }} className="px-4 py-3 text-xs text-gray-400 tabular-nums overflow-hidden">{idx + 1}</td>
+                    <td style={{ width: columnWidths.name }} className="px-4 py-3 overflow-hidden">
+                      <div className="font-semibold text-gray-900 group-hover:text-indigo-700 transition-colors truncate">{toTitleCase(it.itemName)}</div>
+                      <div className="text-xs text-gray-400 font-mono mt-0.5 truncate">{it.itemCode}</div>
                     </td>
-                    <td className="px-4 py-3 text-center">
+                    <td style={{ width: columnWidths.uom }} className="px-4 py-3 text-center overflow-hidden">
                       <span className="bg-gray-100 text-gray-600 text-xs font-medium px-2 py-0.5 rounded-md">{it.uom ? it.uom.toUpperCase() : '—'}</span>
                     </td>
-                    <td className="px-4 py-3 text-right tabular-nums">
+                    <td style={{ width: columnWidths.inPack }} className="px-4 py-3 text-right tabular-nums overflow-hidden">
                       <div><StockBadge value={it.stockInPacks} /></div>
                       {it.activePacks > 0 && (
                         <div className="text-xs text-gray-400 mt-0.5">{it.activePacks} bag{it.activePacks !== 1 ? 's' : ''}</div>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-right tabular-nums">
+                    <td style={{ width: columnWidths.inContainer }} className="px-4 py-3 text-right tabular-nums overflow-hidden">
                       <StockBadge value={it.stockInContainer} />
                     </td>
-                    <td className="px-4 py-3 text-right tabular-nums">
+                    <td style={{ width: columnWidths.totalQty }} className="px-4 py-3 text-right tabular-nums overflow-hidden">
                       <div className={`text-base font-bold tabular-nums ${hasStock ? 'text-gray-900' : 'text-red-400'}`}>
                         {fmt(it.totalStock)}{it.uom && <span className="text-xs font-medium text-gray-400 ml-1">{it.uom.toUpperCase()}</span>}
                       </div>
                       {!hasStock && <div className="text-[10px] text-red-400 font-medium">OUT OF STOCK</div>}
                     </td>
-                    <td className="px-4 py-3 text-center">
+                    <td style={{ width: DETAILS_COL_WIDTH }} className="px-4 py-3 text-center">
                       <Button
                         variant="primary"
                         size="xs"

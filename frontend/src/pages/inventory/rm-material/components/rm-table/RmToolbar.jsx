@@ -1,0 +1,57 @@
+import { useState } from 'react'
+import { Search, Filter, ArrowUpDown, Download } from 'lucide-react'
+import { Button } from '../../../../../components/ui'
+import RmFilterModal, { EMPTY_RM_FILTERS } from './RmFilterModal.jsx'
+import RmSortModal, { DEFAULT_RM_SORT } from './RmSortModal.jsx'
+
+function countActiveFilters(f) {
+  return Object.values(f).filter(v => (v ?? '').toString().trim()).length
+}
+
+/**
+ * Search + Sort by + Filter + Export, all on one row directly above the
+ * table header — same toolbar used on the User Roles page, brought here so
+ * both tables share the same interaction pattern.
+ */
+export default function RmToolbar({ search, onSearchChange, filters, onFiltersChange, sort, onSortChange, uomOptions, onExport, resultCount }) {
+  const [showFilter, setShowFilter] = useState(false)
+  const [showSort, setShowSort] = useState(false)
+  const activeFilterCount = countActiveFilters(filters)
+  const sortIsDefault = sort.field === DEFAULT_RM_SORT.field && sort.direction === DEFAULT_RM_SORT.direction
+
+  return (
+    <div className="flex flex-wrap items-center gap-2 px-4 py-3 border-b border-gray-100">
+      <div className="relative flex-1 min-w-[200px]">
+        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+        <input
+          type="text"
+          value={search}
+          onChange={e => onSearchChange(e.target.value)}
+          placeholder="Search by raw material name or code…"
+          className="w-full border border-gray-200 rounded-lg pl-8 pr-3 py-2 text-[13px] text-gray-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white"
+        />
+      </div>
+
+      <span className="text-[11px] text-gray-400 font-medium whitespace-nowrap px-1 hidden sm:inline">
+        {resultCount} {resultCount === 1 ? 'item' : 'items'}
+      </span>
+
+      <div className="flex items-center gap-2 ml-auto">
+        <Button variant={sortIsDefault ? 'outline-gray' : 'outline'} size="sm" icon={ArrowUpDown} onClick={() => setShowSort(true)}>
+          Sort by
+        </Button>
+        <Button variant={activeFilterCount ? 'outline' : 'outline-gray'} size="sm" icon={Filter} onClick={() => setShowFilter(true)}>
+          Filter{activeFilterCount > 0 && ` (${activeFilterCount})`}
+        </Button>
+        <Button variant="secondary" size="sm" icon={Download} onClick={onExport}>
+          Export
+        </Button>
+      </div>
+
+      <RmFilterModal open={showFilter} onClose={() => setShowFilter(false)} value={filters} onApply={onFiltersChange} uomOptions={uomOptions} />
+      <RmSortModal open={showSort} onClose={() => setShowSort(false)} value={sort} onApply={onSortChange} />
+    </div>
+  )
+}
+
+export { EMPTY_RM_FILTERS, DEFAULT_RM_SORT }

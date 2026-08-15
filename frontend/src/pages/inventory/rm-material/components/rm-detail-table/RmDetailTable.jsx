@@ -32,7 +32,7 @@ export default function RmDetailTable({ loading, filteredGroups, paginatedGroups
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-slate-700 text-white text-xs">
+              <tr className="text-gray-600 text-xs" style={{ backgroundColor: 'rgb(226, 235, 240)' }}>
                 <th className="w-8 px-3 py-2.5" />
                 <th className="text-left px-3 py-2.5 font-semibold">Lot / Invoice</th>
                 <th className="text-left px-3 py-2.5 font-semibold">Batch Code</th>
