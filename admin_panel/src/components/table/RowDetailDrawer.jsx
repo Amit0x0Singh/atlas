@@ -54,7 +54,7 @@ function renderValue(value, fieldName, fieldType, titleCase) {
   return <span>{str}</span>;
 }
 
-export default function RowDetailDrawer({ resource, record, onClose, onEdit, onDelete, isPinned, onTogglePin }) {
+export default function RowDetailDrawer({ resource, record, onClose, onEdit, onDelete, isPinned, onTogglePin, canWrite = true }) {
   const titleField = resource.fields.find(
     (f) => f.name.toLowerCase().includes('name') || f.name.toLowerCase().includes('id')
   );
@@ -105,8 +105,12 @@ export default function RowDetailDrawer({ resource, record, onClose, onEdit, onD
                   {isPinned ? 'Unpin' : 'Pin'}
                 </Button>
               )}
-              <Button variant="secondary" icon={Pencil} onClick={() => onEdit(record)}>Edit</Button>
-              <Button variant="danger" icon={Trash2} onClick={() => onDelete(record)} className="ml-auto">Delete</Button>
+              {canWrite && (
+                <>
+                  <Button variant="secondary" icon={Pencil} onClick={() => onEdit(record)}>Edit</Button>
+                  <Button variant="danger" icon={Trash2} onClick={() => onDelete(record)} className="ml-auto">Delete</Button>
+                </>
+              )}
             </div>
           </motion.div>
         </>

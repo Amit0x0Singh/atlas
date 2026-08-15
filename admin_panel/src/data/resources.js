@@ -24,6 +24,7 @@ export const resources = [
       field('requestDelete', 'Request Delete', 'select', { options: ['false', 'true'] }),
       field('createdAt',     'Created At', 'datetime-local', { readOnly: true }),
       field('updatedAt',     'Updated At', 'datetime-local', { readOnly: true }),
+      field('updatedBy',     'Updated By'),
     ],
   },
   {
@@ -43,6 +44,7 @@ export const resources = [
       field('requestDelete', 'Request Delete', 'select', { options: ['false', 'true'] }),
       field('createdAt',     'Created At', 'datetime-local', { readOnly: true }),
       field('updatedAt',     'Updated At', 'datetime-local', { readOnly: true }),
+      field('updatedBy',     'Updated By'),
     ],
   },
 
@@ -76,6 +78,8 @@ export const resources = [
       field('highStockLevel', 'High Stock Level', 'number'),
       field('createdAt', 'Created At', 'datetime-local', { readOnly: true }),
       field('updatedAt', 'Updated At', 'datetime-local', { readOnly: true }),
+      field('createdBy', 'Created By'),
+      field('updatedBy', 'Updated By'),
     ],
   },
   {
@@ -104,6 +108,9 @@ export const resources = [
       field('numberOfBags', 'Number Of Bags', 'number'),
       field('uom', 'UOM'),
       field('createdAt', 'Created At', 'datetime-local', { readOnly: true }),
+      field('updatedAt', 'Updated At', 'datetime-local', { readOnly: true }),
+      field('createdBy', 'Created By'),
+      field('updatedBy', 'Updated By'),
     ],
   },
   {
@@ -125,6 +132,10 @@ export const resources = [
       field('expiryDate', 'Expiry Date', 'date'),
       field('scannedAt', 'Scanned At', 'datetime-local'),
       field('inwardedAt', 'Inwarded At', 'datetime-local'),
+      field('createdAt', 'Created At', 'datetime-local', { readOnly: true }),
+      field('updatedAt', 'Updated At', 'datetime-local', { readOnly: true }),
+      field('createdBy', 'Created By'),
+      field('updatedBy', 'Updated By'),
     ],
   },
   {
@@ -139,6 +150,10 @@ export const resources = [
       field('capacity', 'Capacity', 'number'),
       field('currentQty', 'Current Qty', 'number'),
       field('uom', 'UOM'),
+      field('createdAt', 'Created At', 'datetime-local', { readOnly: true }),
+      field('updatedAt', 'Updated At', 'datetime-local', { readOnly: true }),
+      field('createdBy', 'Created By'),
+      field('updatedBy', 'Updated By'),
     ],
   },
   {
@@ -170,8 +185,14 @@ export const resources = [
       field('sourceType', 'Source Type', 'select', { options: ['PACK', 'BULK', 'CONTAINER'] }),
       field('rmCode', 'RM Code'),
       field('qtyIssued', 'Qty Issued', 'number'),
+      field('operationalQty', 'Operational Qty', 'number'),
+      field('operationalUom', 'Operational UOM'),
       field('remarks', 'Remarks', 'textarea'),
       field('timestamp', 'Timestamp', 'datetime-local'),
+      field('createdAt', 'Created At', 'datetime-local', { readOnly: true }),
+      field('updatedAt', 'Updated At', 'datetime-local', { readOnly: true }),
+      field('createdBy', 'Created By'),
+      field('updatedBy', 'Updated By'),
     ],
   },
   {
@@ -191,6 +212,9 @@ export const resources = [
       field('bomLines', 'BOM Lines (RM required/issued)', 'json', { readOnly: true }),
       field('startedAt', 'Started At', 'datetime-local', { readOnly: true }),
       field('updatedAt', 'Updated At', 'datetime-local', { readOnly: true }),
+      field('createdAt', 'Created At', 'datetime-local', { readOnly: true }),
+      field('createdBy', 'Created By'),
+      field('updatedBy', 'Updated By'),
     ],
   },
 
@@ -222,6 +246,9 @@ export const resources = [
       field('dispatchedBy', 'Dispatched By'),
       field('remarks', 'Remarks', 'textarea'),
       field('createdAt', 'Created At', 'datetime-local', { readOnly: true }),
+      field('updatedAt', 'Updated At', 'datetime-local', { readOnly: true }),
+      field('createdBy', 'Created By'),
+      field('updatedBy', 'Updated By'),
     ],
   },
   {
@@ -255,6 +282,9 @@ export const resources = [
       field('expDate', 'EXP Date', 'date'),
       field('status', 'Status', 'select', { options: ['PENDING', 'PLANNED', 'UNDER_PRODUCTION', 'PACKED', 'IN_INVENTORY', 'READY_TO_DISPATCH', 'DISPATCHED'] }),
       field('createdAt', 'Created At', 'datetime-local', { readOnly: true }),
+      field('updatedAt', 'Updated At', 'datetime-local', { readOnly: true }),
+      field('createdBy', 'Created By'),
+      field('updatedBy', 'Updated By'),
     ],
   },
   {
@@ -321,7 +351,7 @@ export const resources = [
       field('rowsIn', 'Rows In', 'number'),
       field('imported', 'Imported', 'number'),
       field('skipped', 'Skipped', 'number'),
-      field('errors', 'Errors', 'textarea', { readOnly: true }),
+      field('errors', 'Errors (JSON)', 'json', { readOnly: true }),
       field('createdAt', 'Created At', 'datetime-local', { readOnly: true }),
     ],
   },
@@ -345,6 +375,8 @@ export const resources = [
       field('totalRecipe', 'Total Recipe', 'number', { readOnly: true }),
       field('createdAt', 'Created At', 'datetime-local', { readOnly: true }),
       field('updatedAt', 'Updated At', 'datetime-local', { readOnly: true }),
+      field('createdBy', 'Created By'),
+      field('updatedBy', 'Updated By'),
     ],
   },
   {
@@ -364,6 +396,8 @@ export const resources = [
       field('plant', 'Plant'),
       field('createdAt', 'Created At', 'datetime-local', { readOnly: true }),
       field('updatedAt', 'Updated At', 'datetime-local', { readOnly: true }),
+      field('createdBy', 'Created By'),
+      field('updatedBy', 'Updated By'),
     ],
   },
   {
@@ -415,6 +449,8 @@ export const resources = [
       field('microbeIssueStartedAt', 'Microbe Issue Started At', 'datetime-local'),
       field('createdAt', 'Created At', 'datetime-local', { readOnly: true }),
       field('updatedAt', 'Updated At', 'datetime-local', { readOnly: true }),
+      field('createdBy', 'Created By'),
+      field('updatedBy', 'Updated By'),
     ],
   },
   {
@@ -437,6 +473,8 @@ export const resources = [
       field('requiredCfu', 'Required CFU', 'number'),
       field('createdAt', 'Created At', 'datetime-local', { readOnly: true }),
       field('updatedAt', 'Updated At', 'datetime-local', { readOnly: true }),
+      field('createdBy', 'Created By'),
+      field('updatedBy', 'Updated By'),
     ],
   },
   {
@@ -460,6 +498,9 @@ export const resources = [
       field('status', 'Status', 'select', { options: ['OPEN', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'] }),
       field('poSentAt', 'PO Sent At', 'datetime-local'),
       field('createdAt', 'Created At', 'datetime-local', { readOnly: true }),
+      field('updatedAt', 'Updated At', 'datetime-local', { readOnly: true }),
+      field('createdBy', 'Created By'),
+      field('updatedBy', 'Updated By'),
     ],
   },
   {
@@ -475,6 +516,10 @@ export const resources = [
       field('requiredQty', 'Required Qty', 'number'),
       field('issuedQty', 'Issued Qty', 'number'),
       field('balanceQty', 'Balance Qty', 'number'),
+      field('createdAt', 'Created At', 'datetime-local', { readOnly: true }),
+      field('updatedAt', 'Updated At', 'datetime-local', { readOnly: true }),
+      field('createdBy', 'Created By'),
+      field('updatedBy', 'Updated By'),
     ],
   },
   {
@@ -494,6 +539,9 @@ export const resources = [
       field('status', 'Status', 'select', { options: ['OPEN', 'IN_USE', 'COMPLETED'] }),
       field('remarks', 'Remarks', 'textarea'),
       field('createdAt', 'Created At', 'datetime-local', { readOnly: true }),
+      field('updatedAt', 'Updated At', 'datetime-local', { readOnly: true }),
+      field('createdBy', 'Created By'),
+      field('updatedBy', 'Updated By'),
     ],
   },
   {
@@ -525,6 +573,9 @@ export const resources = [
       field('packingFlag', 'Packing Flag', 'select', { options: ['false', 'true'] }),
       field('qcFlag', 'QC Flag', 'select', { options: ['false', 'true'] }),
       field('createdAt', 'Created At', 'datetime-local', { readOnly: true }),
+      field('updatedAt', 'Updated At', 'datetime-local', { readOnly: true }),
+      field('createdBy', 'Created By'),
+      field('updatedBy', 'Updated By'),
     ],
   },
   {
@@ -546,6 +597,10 @@ export const resources = [
       field('receivedDate', 'Received Date', 'date'),
       field('receivedTime', 'Received Time'),
       field('flagged', 'Flagged', 'select', { options: ['false', 'true'] }),
+      field('createdAt', 'Created At', 'datetime-local', { readOnly: true }),
+      field('updatedAt', 'Updated At', 'datetime-local', { readOnly: true }),
+      field('createdBy', 'Created By'),
+      field('updatedBy', 'Updated By'),
     ],
   },
   {
@@ -568,6 +623,10 @@ export const resources = [
       field('qtyAfterSieving', 'Qty After Sieving', 'number'),
       field('wastage', 'Wastage', 'number'),
       field('flagged', 'Flagged', 'select', { options: ['false', 'true'] }),
+      field('createdAt', 'Created At', 'datetime-local', { readOnly: true }),
+      field('updatedAt', 'Updated At', 'datetime-local', { readOnly: true }),
+      field('createdBy', 'Created By'),
+      field('updatedBy', 'Updated By'),
     ],
   },
   {
@@ -590,6 +649,10 @@ export const resources = [
       field('carrierType', 'Carrier Type'),
       field('inchargeName', 'Incharge Name', 'text', { titleCase: true }),
       field('flagged', 'Flagged', 'select', { options: ['false', 'true'] }),
+      field('createdAt', 'Created At', 'datetime-local', { readOnly: true }),
+      field('updatedAt', 'Updated At', 'datetime-local', { readOnly: true }),
+      field('createdBy', 'Created By'),
+      field('updatedBy', 'Updated By'),
     ],
   },
   {
@@ -606,6 +669,10 @@ export const resources = [
       field('noOfWorkers', 'No. of Workers', 'number'),
       field('inchargeName', 'Incharge Name', 'text', { titleCase: true }),
       field('flagged', 'Flagged', 'select', { options: ['false', 'true'] }),
+      field('createdAt', 'Created At', 'datetime-local', { readOnly: true }),
+      field('updatedAt', 'Updated At', 'datetime-local', { readOnly: true }),
+      field('createdBy', 'Created By'),
+      field('updatedBy', 'Updated By'),
     ],
   },
   {
@@ -623,6 +690,10 @@ export const resources = [
       field('noOfWorkers', 'No. of Workers', 'number'),
       field('inchargeName', 'Incharge Name', 'text', { titleCase: true }),
       field('flagged', 'Flagged', 'select', { options: ['false', 'true'] }),
+      field('createdAt', 'Created At', 'datetime-local', { readOnly: true }),
+      field('updatedAt', 'Updated At', 'datetime-local', { readOnly: true }),
+      field('createdBy', 'Created By'),
+      field('updatedBy', 'Updated By'),
     ],
   },
   {
@@ -650,6 +721,10 @@ export const resources = [
       field('noOfWorkers', 'No. of Workers', 'number'),
       field('inchargeName', 'Incharge Name', 'text', { titleCase: true }),
       field('flagged', 'Flagged', 'select', { options: ['false', 'true'] }),
+      field('createdAt', 'Created At', 'datetime-local', { readOnly: true }),
+      field('updatedAt', 'Updated At', 'datetime-local', { readOnly: true }),
+      field('createdBy', 'Created By'),
+      field('updatedBy', 'Updated By'),
     ],
   },
   {
@@ -666,6 +741,10 @@ export const resources = [
       field('submittedOn', 'Submitted On'),
       field('rxAttached', 'RX Attached', 'select', { options: ['false', 'true'] }),
       field('flagged', 'Flagged', 'select', { options: ['false', 'true'] }),
+      field('createdAt', 'Created At', 'datetime-local', { readOnly: true }),
+      field('updatedAt', 'Updated At', 'datetime-local', { readOnly: true }),
+      field('createdBy', 'Created By'),
+      field('updatedBy', 'Updated By'),
     ],
   },
   {
@@ -680,6 +759,10 @@ export const resources = [
       field('handedOverTo', 'Handed Over To'),
       field('leftoverQtyAt', 'Leftover Qty At'),
       field('sfgUpdated', 'SFG Updated', 'select', { options: ['false', 'true'] }),
+      field('createdAt', 'Created At', 'datetime-local', { readOnly: true }),
+      field('updatedAt', 'Updated At', 'datetime-local', { readOnly: true }),
+      field('createdBy', 'Created By'),
+      field('updatedBy', 'Updated By'),
     ],
   },
 
@@ -734,6 +817,8 @@ export const resources = [
       field('remarks', 'Remarks', 'textarea'),
       field('createdAt', 'Created At', 'datetime-local', { readOnly: true }),
       field('updatedAt', 'Updated At', 'datetime-local', { readOnly: true }),
+      field('createdBy', 'Created By'),
+      field('updatedBy', 'Updated By'),
     ],
   },
   {
@@ -784,6 +869,10 @@ export const resources = [
       field('sentAt', 'Sent At', 'datetime-local', { readOnly: true }),
       field('pickedAt', 'Picked At', 'datetime-local'),
       field('issuedAt', 'Issued At', 'datetime-local'),
+      field('createdAt', 'Created At', 'datetime-local', { readOnly: true }),
+      field('updatedAt', 'Updated At', 'datetime-local', { readOnly: true }),
+      field('createdBy', 'Created By'),
+      field('updatedBy', 'Updated By'),
     ],
   },
 
@@ -800,6 +889,9 @@ export const resources = [
       field('name', 'Name', 'text', { titleCase: true }),
       field('isActive', 'Active', 'select', { options: ['true', 'false'] }),
       field('createdAt', 'Created At', 'datetime-local', { readOnly: true }),
+      field('updatedAt', 'Updated At', 'datetime-local', { readOnly: true }),
+      field('createdBy', 'Created By'),
+      field('updatedBy', 'Updated By'),
     ],
   },
   {
@@ -817,6 +909,9 @@ export const resources = [
       field('section', 'Section', 'select', { options: ['NANO', 'BOTANICAL', 'LIQUID', 'POWDER', 'GRANULES'] }),
       field('isActive', 'Active', 'select', { options: ['true', 'false'] }),
       field('createdAt', 'Created At', 'datetime-local', { readOnly: true }),
+      field('updatedAt', 'Updated At', 'datetime-local', { readOnly: true }),
+      field('createdBy', 'Created By'),
+      field('updatedBy', 'Updated By'),
     ],
   },
   {
@@ -829,6 +924,10 @@ export const resources = [
       field('role', 'Role'),
       field('pagePath', 'Page Path'),
       field('pageLabel', 'Page Label'),
+      field('createdAt', 'Created At', 'datetime-local', { readOnly: true }),
+      field('updatedAt', 'Updated At', 'datetime-local', { readOnly: true }),
+      field('createdBy', 'Created By'),
+      field('updatedBy', 'Updated By'),
     ],
   },
 
@@ -904,6 +1003,8 @@ export const resources = [
       field('uom', 'UOM'),
       field('createdAt', 'Created At', 'datetime-local', { readOnly: true }),
       field('updatedAt', 'Updated At', 'datetime-local', { readOnly: true }),
+      field('createdBy', 'Created By'),
+      field('updatedBy', 'Updated By'),
     ],
   },
   {
@@ -943,6 +1044,8 @@ export const resources = [
       field('inactiveLocation', 'Inactive Location', 'text', { titleCase: true }),
       field('createdAt', 'Created At', 'datetime-local', { readOnly: true }),
       field('updatedAt', 'Updated At', 'datetime-local', { readOnly: true }),
+      field('createdBy', 'Created By'),
+      field('updatedBy', 'Updated By'),
     ],
   },
   {
@@ -974,6 +1077,8 @@ export const resources = [
       field('status', 'Status', 'select', { options: ['ACTIVE', 'EXHAUSTED'] }),
       field('createdAt', 'Created At', 'datetime-local', { readOnly: true }),
       field('updatedAt', 'Updated At', 'datetime-local', { readOnly: true }),
+      field('createdBy', 'Created By'),
+      field('updatedBy', 'Updated By'),
     ],
   },
   {
@@ -997,6 +1102,9 @@ export const resources = [
       field('status', 'Status', 'select', { options: ['RESERVED', 'ISSUED', 'CANCELLED'] }),
       field('notifiedAt', 'Notified At', 'datetime-local'),
       field('createdAt', 'Created At', 'datetime-local', { readOnly: true }),
+      field('updatedAt', 'Updated At', 'datetime-local', { readOnly: true }),
+      field('createdBy', 'Created By'),
+      field('updatedBy', 'Updated By'),
     ],
   },
   {
@@ -1016,6 +1124,9 @@ export const resources = [
       field('receiverName', 'Receiver Name', 'text', { titleCase: true }),
       field('issuedAt', 'Issued At', 'datetime-local'),
       field('createdAt', 'Created At', 'datetime-local', { readOnly: true }),
+      field('updatedAt', 'Updated At', 'datetime-local', { readOnly: true }),
+      field('createdBy', 'Created By'),
+      field('updatedBy', 'Updated By'),
     ],
   },
   {
@@ -1040,6 +1151,9 @@ export const resources = [
       field('balanceAfterKg', 'Balance After (Kg)', 'number'),
       field('isPartial', 'Is Partial', 'select', { options: ['false', 'true'] }),
       field('createdAt', 'Created At', 'datetime-local', { readOnly: true }),
+      field('updatedAt', 'Updated At', 'datetime-local', { readOnly: true }),
+      field('createdBy', 'Created By'),
+      field('updatedBy', 'Updated By'),
     ],
   },
   {
@@ -1054,6 +1168,9 @@ export const resources = [
       field('rows', 'Rows (JSON)', 'json', { readOnly: true }),
       field('startedAt', 'Started At', 'datetime-local', { readOnly: true }),
       field('updatedAt', 'Updated At', 'datetime-local', { readOnly: true }),
+      field('createdAt', 'Created At', 'datetime-local', { readOnly: true }),
+      field('createdBy', 'Created By'),
+      field('updatedBy', 'Updated By'),
     ],
   },
 
@@ -1063,16 +1180,23 @@ export const resources = [
     key: 'user', group: 'system',
     title: 'Users', model: 'User', path: 'users',
     idField: 'userId',
-    description: 'App users with role-based access (auth via password or PIN).',
+    description: 'App users. Role/permission assignment now lives in Role -> UserRole -> RolePermissionMap -> Permission (see the User Roles page in the main app, backed by /api/admin/rbac) — manage that there, not here. This raw table is for the login row itself: identity, plant scope, active flag.',
     fields: [
       field('userId', 'User ID', 'text', { readOnly: true }),
       field('username', 'Username'),
       field('email', 'Email', 'email'),
-      field('passwordHash', 'Password Hash'),
+      // The backend never returns these two (redactSecretFields) and silently
+      // drops them from any write (sanitizeWriteBody) — shown read-only so
+      // the form doesn't imply an edit here does anything.
+      field('passwordHash', 'Password Hash', 'text', { readOnly: true }),
+      field('pinHash', 'PIN Hash', 'text', { readOnly: true }),
       field('fullName', 'Full Name', 'text', { titleCase: true }),
       field('phone', 'Phone'),
-      field('pinHash', 'PIN Hash'),
-      field('role', 'Role', 'select', { options: ['gate_staff', 'store_person', 'store_manager', 'planner', 'planning_manager', 'plant_supervisor', 'qc_person', 'sales_team', 'admin'] }),
+      // Deprecated — superseded by the Role/UserRole tables. Kept on the
+      // schema (and here) only so old rows remain visible; don't rely on it.
+      field('role', 'Role (deprecated)', 'text'),
+      field('plants', 'Plant Scope', 'tags'),
+      field('employeeId', 'Employee ID (HR link)'),
       field('isActive', 'Active', 'select', { options: ['true', 'false'] }),
       field('createdAt', 'Created At', 'datetime-local', { readOnly: true }),
       field('updatedAt', 'Updated At', 'datetime-local', { readOnly: true }),

@@ -25,7 +25,8 @@ const Row = ({ label, children }) => (
 // the existing, unmodified Backup & Restore RestoreBackupModal preset to the
 // backup this delete automatically created — one restore flow, reused.
 export default function DeleteDetailsDrawer({ deleteJobId, onClose, onRestoreBackup }) {
-  const { isReadOnly } = useAuth();
+  const { hasPermission } = useAuth();
+  const isReadOnly = !hasPermission('admin.data-management.manage');
   const [job, setJob] = useState(null);
 
   useEffect(() => {

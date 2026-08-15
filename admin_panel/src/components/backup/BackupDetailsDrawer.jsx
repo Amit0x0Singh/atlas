@@ -31,7 +31,8 @@ const Row = ({ label, children }) => (
 );
 
 export default function BackupDetailsDrawer({ backupId, onClose, onRestore, onDelete }) {
-  const { isReadOnly } = useAuth();
+  const { hasPermission } = useAuth();
+  const isReadOnly = !hasPermission('admin.backup.manage');
   const [job, setJob] = useState(null);
 
   useEffect(() => {

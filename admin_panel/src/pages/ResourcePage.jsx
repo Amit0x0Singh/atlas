@@ -24,6 +24,7 @@ import { usePinnedRecords } from '../hooks/usePinnedRecords.js';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts.js';
 import { useDebouncedValue } from '../hooks/useDebouncedValue.js';
 import { useToast } from '../components/common/Toast.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 import { listRecords } from '../api/http.js';
 
 function isFilterableSelectField(field) {
@@ -67,6 +68,15 @@ function recordIdsFor(resource, records) {
 
 export default function ResourcePage({ resource }) {
   const { quickCreateRequestId } = useOutletContext();
+  const { hasPermission } = useAuth();
+  // Three distinct permissions cover this page's write surface: single-record
+  // add/edit/delete goes through the generic panel CRUD (admin.panel.manage),
+  // "Delete selected"/"Delete all" go through the Data Management pipeline
+  // (admin.data-management.manage), and "Transform text" goes through the
+  // bulk-transform API (admin.bulk-transform.manage) — see backend/src/routers/routers.js.
+  const canWrite = hasPermission('admin.panel.manage');
+  const canBulkTransform = hasPermission('admin.bulk-transform.manage');
+  const canManageData = hasPermission('admin.data-management.manage');
 
   const [query, setQuery] = useState('');
   const debouncedQuery = useDebouncedValue(query, 350);
@@ -206,7 +216,9 @@ export default function ResourcePage({ resource }) {
         action={
           <div className="flex items-center gap-2">
             <Button variant="secondary" icon={Database} onClick={() => setSchemaOpen(true)}>Schema</Button>
-            <Button icon={Plus} onClick={() => setModalState({ mode: 'create' })}>Add Record</Button>
+            {canWrite && (
+              <Button icon={Plus} onClick={() => setModalState({ mode: 'create' })}>Add Record</Button>
+            )}
           </div>
         }
       />
@@ -234,6 +246,7 @@ export default function ResourcePage({ resource }) {
             onImport={() => setImportOpen(true)}
             onRefresh={reload}
             onReset={resetFilters}
+            canImport={canWrite}
           />
         </div>
 
@@ -241,28 +254,33 @@ export default function ResourcePage({ resource }) {
           <div className="flex items-center gap-3 px-4 py-2.5 bg-blue-50 dark:bg-blue-950/40 border-b border-blue-100 dark:border-blue-900 text-sm text-blue-700 dark:text-blue-300">
             <span className="font-medium">{selectedIds.size} selected</span>
             <button type="button" onClick={() => setSelectedIds(new Set())} className="text-blue-500 hover:underline">Clear</button>
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={Type}
-              className="ml-auto"
-              onClick={() => setTransformFlow({
-                ids: recordIdsFor(resource, records.filter((rec) => selectedIds.has(getLocalId(resource, rec)))),
-              })}
-            >
-              Transform text
-            </Button>
-            <Button
-              variant="danger"
-              size="sm"
-              onClick={() => setDeleteFlow({
-                deleteType: 'RECORD',
-                table: modelAccessorFor(resource),
-                ids: recordIdsFor(resource, records.filter((rec) => selectedIds.has(getLocalId(resource, rec)))),
-              })}
-            >
-              Delete selected
-            </Button>
+            {canBulkTransform && (
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={Type}
+                className="ml-auto"
+                onClick={() => setTransformFlow({
+                  ids: recordIdsFor(resource, records.filter((rec) => selectedIds.has(getLocalId(resource, rec)))),
+                })}
+              >
+                Transform text
+              </Button>
+            )}
+            {canManageData && (
+              <Button
+                variant="danger"
+                size="sm"
+                className={canBulkTransform ? '' : 'ml-auto'}
+                onClick={() => setDeleteFlow({
+                  deleteType: 'RECORD',
+                  table: modelAccessorFor(resource),
+                  ids: recordIdsFor(resource, records.filter((rec) => selectedIds.has(getLocalId(resource, rec)))),
+                })}
+              >
+                Delete selected
+              </Button>
+            )}
           </div>
         )}
 
@@ -305,6 +323,7 @@ export default function ResourcePage({ resource }) {
           someSelected={somePageSelected}
           onToggleAll={handleToggleAll}
           selectingAll={selectingAll}
+          canWrite={canWrite}
         />
 
         {!loading && records.length > 0 && (
@@ -314,16 +333,18 @@ export default function ResourcePage({ resource }) {
         )}
       </Card>
 
-      <div className="flex justify-end">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setDeleteFlow({ deleteType: 'TABLE', table: modelAccessorFor(resource) })}
-          disabled={total === 0}
-        >
-          Delete all {total.toLocaleString()} records
-        </Button>
-      </div>
+      {canManageData && (
+        <div className="flex justify-end">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setDeleteFlow({ deleteType: 'TABLE', table: modelAccessorFor(resource) })}
+            disabled={total === 0}
+          >
+            Delete all {total.toLocaleString()} records
+          </Button>
+        </div>
+      )}
 
       <RowDetailDrawer
         resource={resource}
@@ -333,6 +354,7 @@ export default function ResourcePage({ resource }) {
         onDelete={setDeleteTarget}
         isPinned={drawerRecord ? isPinned(getLocalId(resource, drawerRecord)) : false}
         onTogglePin={drawerRecord ? () => togglePin(getLocalId(resource, drawerRecord)) : undefined}
+        canWrite={canWrite}
       />
 
       {modalState && (

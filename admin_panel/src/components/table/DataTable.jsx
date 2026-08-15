@@ -58,6 +58,9 @@ export default function DataTable({
   // the whole resource, not just the rows loaded on this page, so the
   // parent (which owns pagination + filters) decides what "all" means.
   allSelected, someSelected, onToggleAll, selectingAll,
+  // Gates edit/duplicate/delete in the row action menu behind
+  // admin.panel.manage — view stays available to anyone with admin.panel.access.
+  canWrite = true,
 }) {
   const [sorting, setSorting] = useState([]);
   const [columnVisibility, setColumnVisibility] = useState(() => {
@@ -218,9 +221,9 @@ export default function DataTable({
                   <td className="px-2.5 py-1.5 text-right" onClick={(e) => e.stopPropagation()}>
                     <ActionMenu
                       onView={() => onRowClick(row.original)}
-                      onEdit={() => onEdit(row.original)}
-                      onDuplicate={() => onDuplicate(row.original)}
-                      onDelete={() => onDelete(row.original)}
+                      onEdit={canWrite ? () => onEdit(row.original) : undefined}
+                      onDuplicate={canWrite ? () => onDuplicate(row.original) : undefined}
+                      onDelete={canWrite ? () => onDelete(row.original) : undefined}
                     />
                   </td>
                 </tr>

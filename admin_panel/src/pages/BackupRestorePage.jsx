@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { DatabaseBackup, RotateCcw } from 'lucide-react';
+import { DatabaseBackup, RotateCcw, ShieldAlert } from 'lucide-react';
 import PageHeader from '../components/layout/PageHeader.jsx';
 import Button from '../components/common/Button.jsx';
 import DeleteDialog from '../components/common/DeleteDialog.jsx';
+import EmptyState from '../components/common/EmptyState.jsx';
 import BackupHistoryTable from '../components/backup/BackupHistoryTable.jsx';
 import BackupDetailsDrawer from '../components/backup/BackupDetailsDrawer.jsx';
 import CreateBackupModal from '../components/backup/CreateBackupModal.jsx';
@@ -13,7 +14,11 @@ import { getTablesMetadata, deleteBackup } from '../api/backup.js';
 
 export default function BackupRestorePage() {
   const showToast = useToast();
-  const { isReadOnly } = useAuth();
+  const { hasPermission } = useAuth();
+  // Every /api/admin/backup/* route requires admin.backup.manage — there's
+  // no separate view-only permission for this feature, so lacking .manage
+  // means no access to the page at all, not merely read-only within it.
+  const canAccess = hasPermission('admin.backup.manage');
 
   const [tables, setTables] = useState([]);
   const [refreshSignal, setRefreshSignal] = useState(0);
@@ -25,8 +30,19 @@ export default function BackupRestorePage() {
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
+    if (!canAccess) return;
     getTablesMetadata().then(setTables).catch(() => setTables([]));
-  }, []);
+  }, [canAccess]);
+
+  if (!canAccess) {
+    return (
+      <EmptyState
+        icon={ShieldAlert}
+        title="Access denied"
+        description='This page requires the "admin.backup.manage" permission, which your account does not hold.'
+      />
+    );
+  }
 
   function bumpRefresh() {
     setRefreshSignal((n) => n + 1);
@@ -60,14 +76,12 @@ export default function BackupRestorePage() {
         title="Backup & Restore"
         description="Create full, module-wise, or selected-table backups, and restore data from a previous backup or an uploaded file."
         action={
-          !isReadOnly && (
-            <div className="flex items-center gap-2">
-              <Button variant="secondary" icon={RotateCcw} onClick={() => { setRestorePreset(null); setRestoreOpen(true); }}>
-                Restore Backup
-              </Button>
-              <Button icon={DatabaseBackup} onClick={() => setCreateOpen(true)}>Create Backup</Button>
-            </div>
-          )
+          <div className="flex items-center gap-2">
+            <Button variant="secondary" icon={RotateCcw} onClick={() => { setRestorePreset(null); setRestoreOpen(true); }}>
+              Restore Backup
+            </Button>
+            <Button icon={DatabaseBackup} onClick={() => setCreateOpen(true)}>Create Backup</Button>
+          </div>
         }
       />
 

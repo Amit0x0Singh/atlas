@@ -15,7 +15,8 @@ const TYPE_LABEL = { RECORD: 'Record-wise', TABLE: 'Table-wise', MODULE: 'Module
 
 export default function DeleteHistoryTable({ refreshSignal, onViewDetails }) {
   const showToast = useToast();
-  const { isReadOnly } = useAuth();
+  const { hasPermission } = useAuth();
+  const isReadOnly = !hasPermission('admin.data-management.manage');
 
   const [records, setRecords] = useState([]);
   const [total, setTotal] = useState(0);

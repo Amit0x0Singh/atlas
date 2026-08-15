@@ -26,7 +26,8 @@ const TYPE_LABEL = { FULL: 'Full', MODULE: 'Module', SELECTED: 'Selected Tables'
 
 export default function BackupHistoryTable({ refreshSignal, onViewDetails, onRestore }) {
   const showToast = useToast();
-  const { isReadOnly } = useAuth();
+  const { hasPermission } = useAuth();
+  const isReadOnly = !hasPermission('admin.backup.manage');
 
   const [records, setRecords] = useState([]);
   const [total, setTotal] = useState(0);

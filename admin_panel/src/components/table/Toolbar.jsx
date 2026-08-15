@@ -14,6 +14,9 @@ export default function Toolbar({
   searchRef, query, onQueryChange,
   filterFields = [], filterValues = {}, onFilterChange,
   onExport, onImport, onRefresh, onReset,
+  // Import creates records via the same generic panel CRUD as Add Record —
+  // hide it alongside that action rather than let it 403 on submit.
+  canImport = true,
 }) {
   const [filterOpen, setFilterOpen] = useState(false);
   const activeFilterCount = Object.values(filterValues).filter(isActiveFilterValue).length;
@@ -56,9 +59,11 @@ export default function Toolbar({
             <span className="hidden sm:inline">Reset</span>
           </Button>
         )}
-        <Button variant="secondary" icon={Upload} onClick={onImport}>
-          <span className="hidden sm:inline">Import</span>
-        </Button>
+        {canImport && (
+          <Button variant="secondary" icon={Upload} onClick={onImport}>
+            <span className="hidden sm:inline">Import</span>
+          </Button>
+        )}
         <Button variant="secondary" icon={Download} onClick={onExport}>
           <span className="hidden sm:inline">Export</span>
         </Button>

@@ -129,7 +129,9 @@ export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onClo
   const [openGroups, setOpenGroups] = useState(() => new Set(INITIALLY_OPEN));
   const { favorites, isFavorite, toggleFavorite } = useFavorites();
   const { recent } = useRecentPages();
-  const { user, logout, isReadOnly } = useAuth();
+  const { user, logout, isReadOnly, hasPermission } = useAuth();
+  const canBackup = hasPermission('admin.backup.manage');
+  const canManageData = hasPermission('admin.data-management.manage');
   const location = useLocation();
 
   const resourceByKey = useMemo(() => Object.fromEntries(resources.map((r) => [r.key, r])), []);
@@ -246,35 +248,39 @@ export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onClo
             {!collapsed && 'Dashboard'}
           </NavLink>
 
-          <NavLink
-            to="/backup-restore"
-            title={collapsed ? 'Backup & Restore' : undefined}
-            className={({ isActive }) => [
-              'flex items-center gap-2.5 rounded-lg pl-2.5 pr-2 py-2 text-sm font-medium transition-colors border-l-2 mb-3',
-              isActive
-                ? 'border-blue-600 bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-400'
-                : 'border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/60',
-              collapsed ? 'justify-center px-2' : '',
-            ].join(' ')}
-          >
-            <DatabaseBackup size={16} className="flex-shrink-0" />
-            {!collapsed && 'Backup & Restore'}
-          </NavLink>
+          {canBackup && (
+            <NavLink
+              to="/backup-restore"
+              title={collapsed ? 'Backup & Restore' : undefined}
+              className={({ isActive }) => [
+                'flex items-center gap-2.5 rounded-lg pl-2.5 pr-2 py-2 text-sm font-medium transition-colors border-l-2 mb-3',
+                isActive
+                  ? 'border-blue-600 bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-400'
+                  : 'border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/60',
+                collapsed ? 'justify-center px-2' : '',
+              ].join(' ')}
+            >
+              <DatabaseBackup size={16} className="flex-shrink-0" />
+              {!collapsed && 'Backup & Restore'}
+            </NavLink>
+          )}
 
-          <NavLink
-            to="/data-management"
-            title={collapsed ? 'Data Management' : undefined}
-            className={({ isActive }) => [
-              'flex items-center gap-2.5 rounded-lg pl-2.5 pr-2 py-2 text-sm font-medium transition-colors border-l-2 mb-3',
-              isActive
-                ? 'border-blue-600 bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-400'
-                : 'border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/60',
-              collapsed ? 'justify-center px-2' : '',
-            ].join(' ')}
-          >
-            <Trash2 size={16} className="flex-shrink-0" />
-            {!collapsed && 'Data Management'}
-          </NavLink>
+          {canManageData && (
+            <NavLink
+              to="/data-management"
+              title={collapsed ? 'Data Management' : undefined}
+              className={({ isActive }) => [
+                'flex items-center gap-2.5 rounded-lg pl-2.5 pr-2 py-2 text-sm font-medium transition-colors border-l-2 mb-3',
+                isActive
+                  ? 'border-blue-600 bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-400'
+                  : 'border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/60',
+                collapsed ? 'justify-center px-2' : '',
+              ].join(' ')}
+            >
+              <Trash2 size={16} className="flex-shrink-0" />
+              {!collapsed && 'Data Management'}
+            </NavLink>
+          )}
 
           {!collapsed && favoriteResources.length > 0 && (
             <div className="mb-3">
