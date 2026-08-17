@@ -3,26 +3,28 @@ import { ledgerApi } from '../../../../../api/inventory.js'
 import { BackButton, Button, PageHeader } from '../../../../../components/ui'
 import Pagination from '../../../../../components/pagination/Pagination.jsx'
 import LedgerTable             from '../components/ledger-table/LedgerTable.jsx'
-import LedgerFilters           from '../components/ledger-filters/LedgerFilters.jsx'
+import LedgerToolbar, { EMPTY_LEDGER_FILTERS, DEFAULT_LEDGER_SORT } from '../components/ledger-filters/LedgerToolbar.jsx'
 import TransactionDetailModal  from '../components/transaction-detail-modal/TransactionDetailModal.jsx'
 import { RefreshCw, ScrollText } from 'lucide-react'
 import { useLedger } from '../../../../../hooks/inventory/useLedger.js'
 import { useDebouncedValue } from '../../../../../hooks/useDebouncedValue.js'
+import { toTitleCase } from '../../../../../utils/textDisplay.js'
 import './Ledger.css'
 
-const BLANK_FILTERS = { search: '', transactionType: '', fromDate: '', toDate: '', warehouse: '', reference: '', direction: '' }
-
 export default function Ledger() {
-  const [filters, setFilters] = useState(BLANK_FILTERS)
+  const [search,  setSearch]  = useState('')
+  const [filters, setFilters] = useState(EMPTY_LEDGER_FILTERS)
+  const [sort,    setSort]    = useState(DEFAULT_LEDGER_SORT)
   const [page,    setPage]    = useState(1)
   const [limit,   setLimit]   = useState(50)
   const [detail,  setDetail]  = useState(null)
+  const [exporting, setExporting] = useState(false)
 
   // Debounce the free-text fields before they hit the query key, so typing
   // doesn't fire a request per keystroke — select/date fields already only
   // change on discrete user actions, but debouncing the whole object keeps
   // this one simple rule instead of splitting text vs. non-text filters.
-  const debouncedFilters = useDebouncedValue(filters, 300)
+  const debouncedFilters = useDebouncedValue({ ...filters, search }, 300)
   useEffect(() => { setPage(1) }, [debouncedFilters])
 
   const ledgerQuery = useLedger({ page, limit, ...debouncedFilters })
@@ -40,8 +42,49 @@ export default function Ledger() {
     }
   }
 
-  const setFilter    = (key, value) => setFilters(f => ({ ...f, [key]: value }))
-  const clearFilters  = () => setFilters(BLANK_FILTERS)
+  // The ledger's backend always paginates (no opt-in "give me everything"
+  // mode like product-master/equipment-master — see ledger.controller.js,
+  // `page`/`limit` default to 1/50 and skip/take are applied unconditionally)
+  // and has no clampInt ceiling on `limit`, so export fetches with a very
+  // large limit instead, matching the current filters but not the current page.
+  async function exportLedgerCsv() {
+    setExporting(true)
+    try {
+      const r = await ledgerApi.all({ ...debouncedFilters, page: 1, limit: 100000 })
+      const all = r.data || []
+      if (!all.length) { alert('No transactions to export — adjust your filters.'); return }
+      const headers = ['Date & Time', 'Item Name', 'Transaction Type', 'Qty', 'Reference']
+      const csvRows = all.map(row => {
+        const isIn  = row.inQty  > 0
+        const isOut = row.outQty > 0
+        const invQty = isIn ? row.inQty : row.outQty
+        const showOperational = row.operationalUom && Number(row.operationalQty) !== Number(invQty)
+        const sign = isIn ? '+' : isOut ? '-' : ''
+        const qty = !isIn && !isOut
+          ? ''
+          : showOperational
+            ? `${sign}${Number(row.operationalQty).toFixed(3)} ${row.operationalUom?.toUpperCase() || ''}`
+            : `${sign}${Number(invQty).toFixed(3)} ${(row.uom || '').toUpperCase()}`
+        return [
+          new Date(row.timestamp).toLocaleString('en-IN'),
+          toTitleCase(row.itemName) || row.itemCode,
+          row.transactionType.replace(/_/g, ' '),
+          qty,
+          row.reference || '',
+        ].map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')
+      })
+      const csv = [headers.join(','), ...csvRows].join('\n')
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }))
+      a.download = `stock_ledger_${new Date().toISOString().slice(0, 10)}.csv`
+      a.click()
+      URL.revokeObjectURL(a.href)
+    } catch (e) {
+      alert(e.message)
+    } finally {
+      setExporting(false)
+    }
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -56,14 +99,14 @@ export default function Ledger() {
       />
 
       <div className="p-6">
-      <LedgerFilters
-        values={filters}
+      <LedgerTable
+        loading={loading} rows={rows} onOpenDetail={openDetail}
+        search={search} onSearchChange={setSearch}
+        filters={filters} onFiltersChange={setFilters}
+        sort={sort} onSortChange={setSort}
+        onExport={exportLedgerCsv} exporting={exporting}
         resultCount={total}
-        onChange={setFilter}
-        onClear={clearFilters}
       />
-
-      <LedgerTable loading={loading} rows={rows} onOpenDetail={openDetail} />
 
       <div className="flex items-center justify-between">
         <span className="text-xs text-gray-400">

@@ -3,7 +3,6 @@ import { Button } from "../../../../../../components/ui";
 export default function PackTableToolbar({
   loading, pendingGroups, completedGroups, allGroups, packs,
   showCompleted, setShowCompleted,
-  filterCode, setFilterCode,
   onExpandAll, onCollapseAll,
 }) {
   return (
@@ -38,12 +37,6 @@ export default function PackTableToolbar({
       <div className="flex items-center gap-2">
         <Button variant="outline" size="xs" onClick={onExpandAll}>Expand all</Button>
         <Button variant="outline-gray" size="xs" onClick={onCollapseAll}>Collapse all</Button>
-        <input
-          value={filterCode}
-          onChange={(e) => setFilterCode(e.target.value)}
-          placeholder="Filter by item code…"
-          className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 w-48"
-        />
       </div>
     </div>
   );

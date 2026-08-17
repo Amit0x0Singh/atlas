@@ -66,21 +66,37 @@
 .it-table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
 }
 
 .it-thead-row {
-  background: #f8fafc;
+  background: rgb(226, 235, 240);
 }
 
 .it-th {
+  position: relative;
   padding: 11px 14px;
   text-align: left;
-  font-size: 11px;
-  font-weight: 700;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  font-size: 12px;
+  font-weight: 600;
+  color: #4b5563;
   white-space: nowrap;
+  user-select: none;
+}
+
+.it-th-resize {
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 100%;
+  width: 6px;
+  cursor: col-resize;
+  user-select: none;
+  touch-action: none;
+}
+
+.it-th-resize:hover {
+  background: rgba(96, 165, 250, 0.5);
 }
 
 .it-row {
@@ -92,7 +108,7 @@
 .it-row--odd  { background: #fafafa; }
 .it-row:hover { background: #f0f9ff; }
 
-.it-td { padding: 12px 14px; }
+.it-td { padding: 12px 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .it-td-supplier {
   font-size: 13px;

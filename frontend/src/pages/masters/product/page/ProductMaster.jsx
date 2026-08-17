@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react'
 import { Plus, Tags } from 'lucide-react'
-import { Button, BackButton, PageHeader, MasterFilters } from '../../../../components/ui'
+import { Button, BackButton, PageHeader } from '../../../../components/ui'
 import ProductTable from '../components/product-table/ProductTable.jsx'
 import ProductForm from '../components/product-form/ProductForm.jsx'
 import ProductDetailModal from '../components/product-detail-modal/ProductDetailModal.jsx'
+import { EMPTY_PRODUCT_FILTERS, DEFAULT_PRODUCT_SORT } from '../components/product-table/ProductToolbar.jsx'
 import { useProducts, useProductFilterMeta, useCreateProduct, useUpdateProduct, useDeleteProduct } from '../../../../hooks/masters/useProducts.js'
 import { useDebouncedValue } from '../../../../hooks/useDebouncedValue.js'
 import { toTitleCase } from '../../../../utils/textDisplay.js'
 import { normalizeUom, CANONICAL_UNITS } from '../../../../utils/uom.js'
+import { productApi } from '../../../../api/masters.js'
 
-const BLANK_FILTERS = { productCode: '', productName: '', plant: '', uom: '', state: '' }
 const STATE_OPTIONS = [
   { value: 'SOLID',  label: 'Solid' },
   { value: 'LIQUID', label: 'Liquid' },
@@ -23,13 +24,17 @@ export default function ProductMaster() {
   const [viewing, setViewing]  = useState(null)
   const [form, setForm]        = useState({ productCode: '', productName: '', uom: '', state: '', plant: [] })
   const [msg, setMsg]          = useState('')
-  const [filters, setFilters]  = useState(BLANK_FILTERS)
+  const [search, setSearch]    = useState('')
+  const [filters, setFilters]  = useState(EMPTY_PRODUCT_FILTERS)
+  const [sort, setSort]        = useState(DEFAULT_PRODUCT_SORT)
   const [page, setPage]        = useState(1)
   const [limit, setLimit]      = useState(15)
+  const [exporting, setExporting] = useState(false)
 
   // Debounce filters before they hit the query key, so we don't refetch on
-  // every keystroke.
-  const debouncedFilters = useDebouncedValue(filters, 300)
+  // every keystroke. `search` maps to the backend's `productName` param —
+  // the toolbar's single search box is this table's primary quick filter.
+  const debouncedFilters = useDebouncedValue({ ...filters, productName: search }, 300)
   useEffect(() => { setPage(1) }, [debouncedFilters])
 
   const { data: result, isLoading: loading } = useProducts({ ...debouncedFilters, page, limit })
@@ -42,6 +47,33 @@ export default function ProductMaster() {
   const createProduct = useCreateProduct()
   const updateProduct = useUpdateProduct()
   const deleteProduct = useDeleteProduct()
+
+  // Fetches every row matching the current filters (omitting page/limit —
+  // the backend treats that as "give me everything", see product-master.
+  // controller.js) rather than exporting just the page on screen.
+  async function exportProductsCsv() {
+    setExporting(true)
+    try {
+      const r = await productApi.list(debouncedFilters)
+      const all = r.data || []
+      if (!all.length) { alert('No products to export — adjust your filters.'); return }
+      const headers = ['Product Code', 'Product Name', 'UOM', 'State', 'Plant', 'Total Recipe']
+      const rows = all.map(it => [
+        it.productCode, toTitleCase(it.productName), it.uom || '', it.state || '',
+        it.plant?.length ? it.plant.join('; ') : '', it.totalRecipe ?? 0,
+      ].map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','))
+      const csv = [headers.join(','), ...rows].join('\n')
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }))
+      a.download = `product_master_${new Date().toISOString().slice(0, 10)}.csv`
+      a.click()
+      URL.revokeObjectURL(a.href)
+    } catch (e) {
+      alert(e.message)
+    } finally {
+      setExporting(false)
+    }
+  }
 
   const openAdd  = () => { setEditing(null); setForm({ productCode: '', productName: '', uom: '', state: '', plant: [] }); setShowForm(true); setMsg('') }
   const openEdit = (item) => {
@@ -69,9 +101,6 @@ export default function ProductMaster() {
     try { await deleteProduct.mutateAsync(code) } catch (e) { alert(e.message) }
   }
 
-  const setFilter = (key, value) => setFilters(f => ({ ...f, [key]: value }))
-  const clearFilters = () => setFilters(BLANK_FILTERS)
-
   return (
     <div className="flex flex-col h-full">
       <PageHeader
@@ -85,21 +114,18 @@ export default function ProductMaster() {
       />
 
       <div className="p-6">
-      <MasterFilters
-        fields={[
-          { key: 'productCode', label: 'Product Code', type: 'text', placeholder: 'Search code…' },
-          { key: 'productName', label: 'Product Name', type: 'text', placeholder: 'Search name…' },
-          { key: 'plant',       label: 'Plant',         type: 'select', options: plantOptions, allLabel: 'All Plants' },
-          { key: 'uom',         label: 'UOM',           type: 'select', options: UOM_OPTIONS,   allLabel: 'All UOM' },
-          { key: 'state',       label: 'State',         type: 'select', options: STATE_OPTIONS, allLabel: 'All States' },
-        ]}
-        values={filters}
-        resultCount={total}
-        onChange={setFilter}
-        onClear={clearFilters}
-      />
-
       <ProductTable
+        search={search}
+        onSearchChange={setSearch}
+        filters={filters}
+        onFiltersChange={setFilters}
+        sort={sort}
+        onSortChange={setSort}
+        plantOptions={plantOptions}
+        uomOptions={UOM_OPTIONS}
+        stateOptions={STATE_OPTIONS}
+        onExport={exportProductsCsv}
+        exporting={exporting}
         items={items}
         total={total}
         loading={loading}

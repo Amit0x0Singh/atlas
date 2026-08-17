@@ -3,9 +3,26 @@ import { packsApi, inwardApi } from '../../../../../../../api/inventory.js'
 import Pagination from '../../../../../../../components/pagination/Pagination.jsx'
 import { Button } from '../../../../../../../components/ui'
 import { groupPacks } from '../utils/groupPacks.js'
-import HistoryFilters from '../components/HistoryFilters.jsx'
 import HistoryRow from '../components/HistoryRow.jsx'
+import InwardHistoryToolbar, { EMPTY_INWARD_HISTORY_FILTERS, DEFAULT_INWARD_HISTORY_SORT } from '../components/InwardHistoryToolbar.jsx'
 import './InwardHistory.css'
+
+// Resizable columns — same drag-handle mechanism as the Item/Product/
+// Equipment Master tables. The leading expand-arrow column and the trailing
+// "Print All QRs" column stay fixed width; HistoryRow.jsx needs no changes —
+// it inherits column widths from the header row under table-layout:fixed.
+const COLUMN_DEFS = [
+  { key: 'item',        label: 'Item',           defaultWidth: 220 },
+  { key: 'lotInvoice',  label: 'Lot / Invoice',  defaultWidth: 160 },
+  { key: 'supplier',    label: 'Supplier',       defaultWidth: 140 },
+  { key: 'bags',        label: 'Bags',           defaultWidth: 80  },
+  { key: 'totalQty',    label: 'Total Qty',      defaultWidth: 120 },
+  { key: 'received',    label: 'Received',       defaultWidth: 120 },
+  { key: 'warehouse',   label: 'Warehouse(s)',   defaultWidth: 140 },
+]
+const EXPAND_COL_WIDTH = 32
+const PRINT_COL_WIDTH  = 150
+const MIN_COL_WIDTH = 60
 
 export default function InwardHistory() {
   const [packs, setPacks]           = useState([])
@@ -13,12 +30,31 @@ export default function InwardHistory() {
   const [expandedKeys, setExpandedKeys] = useState(new Set())
 
   // Filters
-  const [searchText, setSearchText]       = useState('')
-  const [supplierFilter, setSupplierFilter] = useState('')
-  const [dateFrom, setDateFrom]           = useState('')
-  const [dateTo, setDateTo]               = useState('')
-  const [page, setPage]                   = useState(1)
-  const [limit, setLimit]                 = useState(15)
+  const [searchText, setSearchText] = useState('')
+  const [filters, setFilters]       = useState(EMPTY_INWARD_HISTORY_FILTERS)
+  const [sort, setSort]             = useState(DEFAULT_INWARD_HISTORY_SORT)
+  const [page, setPage]             = useState(1)
+  const [limit, setLimit]           = useState(15)
+
+  const [columnWidths, setColumnWidths] = useState(() =>
+    Object.fromEntries(COLUMN_DEFS.map(c => [c.key, c.defaultWidth])))
+
+  function startResize(key) {
+    return (e) => {
+      e.preventDefault()
+      const startX = e.clientX
+      const startWidth = columnWidths[key]
+      function onMove(ev) {
+        setColumnWidths(w => ({ ...w, [key]: Math.max(MIN_COL_WIDTH, startWidth + (ev.clientX - startX)) }))
+      }
+      function onUp() {
+        document.removeEventListener('mousemove', onMove)
+        document.removeEventListener('mouseup', onUp)
+      }
+      document.addEventListener('mousemove', onMove)
+      document.addEventListener('mouseup', onUp)
+    }
+  }
 
   useEffect(() => { load() }, [])
 
@@ -47,9 +83,9 @@ export default function InwardHistory() {
     Array.from(new Set(allGroups.map(g => g.supplier).filter(Boolean))).sort()
   , [allGroups])
 
-  // Apply filters
+  // Apply filters + sort
   const filteredGroups = useMemo(() => {
-    return allGroups.filter(g => {
+    let list = allGroups.filter(g => {
       if (searchText) {
         const q = searchText.toLowerCase()
         if (
@@ -59,34 +95,54 @@ export default function InwardHistory() {
           !g.invoiceNo?.toLowerCase().includes(q)
         ) return false
       }
-      if (supplierFilter && g.supplier !== supplierFilter) return false
-      if (dateFrom && g.receivedDate && new Date(g.receivedDate) < new Date(dateFrom)) return false
-      if (dateTo  && g.receivedDate && new Date(g.receivedDate) > new Date(dateTo + 'T23:59:59')) return false
+      if (filters.supplier && g.supplier !== filters.supplier) return false
+      if (filters.dateFrom && g.receivedDate && new Date(g.receivedDate) < new Date(filters.dateFrom)) return false
+      if (filters.dateTo  && g.receivedDate && new Date(g.receivedDate) > new Date(filters.dateTo + 'T23:59:59')) return false
       return true
     })
-  }, [allGroups, searchText, supplierFilter, dateFrom, dateTo])
+
+    const dir = sort.direction === 'asc' ? 1 : -1
+    list = [...list].sort((a, b) => {
+      if (sort.field === 'itemName') return dir * (a.itemName || '').localeCompare(b.itemName || '')
+      if (sort.field === 'supplier') return dir * (a.supplier || '').localeCompare(b.supplier || '')
+      return dir * (new Date(a.receivedDate || 0) - new Date(b.receivedDate || 0)) // 'receivedDate'
+    })
+
+    return list
+  }, [allGroups, searchText, filters, sort])
 
   const toggle      = (key) => setExpandedKeys(prev => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n })
   const expandAll   = () => setExpandedKeys(new Set(filteredGroups.map(g => g.key)))
   const collapseAll = () => setExpandedKeys(new Set())
 
-  const hasFilters = searchText || supplierFilter || dateFrom || dateTo
-  const clearFilters = () => { setSearchText(''); setSupplierFilter(''); setDateFrom(''); setDateTo(''); setPage(1) }
+  const hasFilters = searchText || filters.supplier || filters.dateFrom || filters.dateTo
 
-  useEffect(() => { setPage(1) }, [searchText, supplierFilter, dateFrom, dateTo])
+  useEffect(() => { setPage(1) }, [searchText, filters, sort])
 
   const totalBags = filteredGroups.reduce((s, g) => s + g.bags.length, 0)
   const paginatedGroups = filteredGroups.slice((page - 1) * limit, page * limit)
 
+  function exportInwardHistoryCsv() {
+    if (!filteredGroups.length) { alert('No records to export — adjust your filters.'); return }
+    const headers = ['Item Name', 'Item Code', 'Lot No', 'Invoice No', 'Supplier', 'Bags', 'Received Date', 'Warehouse(s)']
+    const rows = filteredGroups.map(g => {
+      const warehouses = [...new Set(g.bags.map(b => b.warehouse).filter(Boolean))]
+      return [
+        g.itemName || '', g.itemCode || '', g.lotNo || '', g.invoiceNo || '', g.supplier || '',
+        g.bags.length, g.receivedDate ? new Date(g.receivedDate).toLocaleDateString('en-IN') : '',
+        warehouses.join('; '),
+      ].map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')
+    })
+    const csv = [headers.join(','), ...rows].join('\n')
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }))
+    a.download = `inward_history_${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(a.href)
+  }
+
   return (
     <div className="p-6">
-      <HistoryFilters
-        searchText={searchText} setSearchText={setSearchText}
-        supplierFilter={supplierFilter} setSupplierFilter={setSupplierFilter} suppliers={suppliers}
-        dateFrom={dateFrom} setDateFrom={setDateFrom} dateTo={dateTo} setDateTo={setDateTo}
-        hasFilters={hasFilters} onClear={clearFilters} onRefresh={load}
-      />
-
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         {/* Table toolbar */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
@@ -107,23 +163,38 @@ export default function InwardHistory() {
           </div>
         </div>
 
+        <InwardHistoryToolbar
+          search={searchText} onSearchChange={setSearchText}
+          filters={filters} onFiltersChange={setFilters}
+          sort={sort} onSortChange={setSort}
+          suppliers={suppliers}
+          onExport={exportInwardHistoryCsv}
+          resultCount={filteredGroups.length}
+        />
+
         {loading ? (
           <p className="text-gray-400 text-center py-14">Loading inward history?</p>
         ) : (
           <>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-slate-700 text-white text-xs">
-                <tr>
-                  <th className="w-8 px-3 py-2.5" />
-                  <th className="text-left px-3 py-2.5 font-semibold">Item</th>
-                  <th className="text-left px-3 py-2.5 font-semibold">Lot / Invoice</th>
-                  <th className="text-left px-3 py-2.5 font-semibold">Supplier</th>
-                  <th className="text-center px-3 py-2.5 font-semibold">Bags</th>
-                  <th className="text-left px-3 py-2.5 font-semibold">Total Qty</th>
-                  <th className="text-left px-3 py-2.5 font-semibold">Received</th>
-                  <th className="text-left px-3 py-2.5 font-semibold">Warehouse(s)</th>
-                  <th className="text-left px-3 py-2.5 font-semibold">Print All QRs</th>
+            <table className="w-full text-sm" style={{ tableLayout: 'fixed' }}>
+              <thead style={{ backgroundColor: 'rgb(226, 235, 240)' }}>
+                <tr className="text-gray-600 text-xs">
+                  <th style={{ width: EXPAND_COL_WIDTH }} className="px-3 py-2.5" />
+                  {COLUMN_DEFS.map(c => (
+                    <th
+                      key={c.key}
+                      style={{ width: columnWidths[c.key] }}
+                      className="relative text-left px-3 py-2.5 font-semibold select-none"
+                    >
+                      {c.label}
+                      <div
+                        onMouseDown={startResize(c.key)}
+                        className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize select-none touch-none hover:bg-blue-400/50"
+                      />
+                    </th>
+                  ))}
+                  <th style={{ width: PRINT_COL_WIDTH }} className="text-left px-3 py-2.5 font-semibold">Print All QRs</th>
                 </tr>
               </thead>
               <tbody>

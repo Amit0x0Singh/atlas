@@ -12,15 +12,16 @@ function StatusBadge({ status }) {
   );
 }
 
-const HEADERS = [
-  "Company",
-  "Supplier Name",
-  "Invoice No.",
-  "Vehicle No.",
-  "Date & Time",
-  "Status",
-  "Actions",
+const COLUMNS = [
+  { key: "company",  label: "Company",       defaultWidth: 150 },
+  { key: "supplier", label: "Supplier Name", defaultWidth: 180 },
+  { key: "invoice",  label: "Invoice No.",   defaultWidth: 130 },
+  { key: "vehicle",  label: "Vehicle No.",   defaultWidth: 120 },
+  { key: "date",     label: "Date & Time",   defaultWidth: 160 },
+  { key: "status",   label: "Status",        defaultWidth: 100 },
 ];
+const ACTIONS_COL_WIDTH = 160;
+const MIN_COL_WIDTH = 60;
 
 function DeleteRequestBadge() {
   return <span className="it-del-badge">Delete Requested</span>;
@@ -30,6 +31,26 @@ export default function InwardTable({ list, total, onRequestDelete }) {
   const [limit, setLimit] = useState(15);
   const [page, setPage] = useState(1);
   const paginated = list.slice((page - 1) * limit, page * limit);
+
+  const [columnWidths, setColumnWidths] = useState(() =>
+    Object.fromEntries(COLUMNS.map(c => [c.key, c.defaultWidth])));
+
+  function startResize(key) {
+    return (e) => {
+      e.preventDefault();
+      const startX = e.clientX;
+      const startWidth = columnWidths[key];
+      function onMove(ev) {
+        setColumnWidths(w => ({ ...w, [key]: Math.max(MIN_COL_WIDTH, startWidth + (ev.clientX - startX)) }));
+      }
+      function onUp() {
+        document.removeEventListener("mousemove", onMove);
+        document.removeEventListener("mouseup", onUp);
+      }
+      document.addEventListener("mousemove", onMove);
+      document.addEventListener("mouseup", onUp);
+    };
+  }
 
   if (!list.length) {
     return (
@@ -52,11 +73,13 @@ export default function InwardTable({ list, total, onRequestDelete }) {
         <table className="it-table">
           <thead>
             <tr className="it-thead-row">
-              {HEADERS.map((h) => (
-                <th key={h} className="it-th">
-                  {h}
+              {COLUMNS.map((c) => (
+                <th key={c.key} className="it-th" style={{ width: columnWidths[c.key] }}>
+                  {c.label}
+                  <div className="it-th-resize" onMouseDown={startResize(c.key)} />
                 </th>
               ))}
+              <th className="it-th" style={{ width: ACTIONS_COL_WIDTH }}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -65,27 +88,27 @@ export default function InwardTable({ list, total, onRequestDelete }) {
                 key={item.inward_id || item.inwardId}
                 className={`it-row ${idx % 2 === 0 ? "it-row--even" : "it-row--odd"}`}
               >
-                <td className="it-td it-td-text">
+                <td className="it-td it-td-text" style={{ width: columnWidths.company }}>
                   {toTitleCase(item.company_name || item.companyName) || "—"}
                 </td>
-                <td className="it-td it-td-supplier">
+                <td className="it-td it-td-supplier" style={{ width: columnWidths.supplier }}>
                   {toTitleCase(item.supplier_name || item.supplierName)}
                 </td>
-                <td className="it-td it-td-text">
+                <td className="it-td it-td-text" style={{ width: columnWidths.invoice }}>
                   {item.invoice_no || item.invoiceNo || "—"}
                 </td>
-                <td className="it-td it-td-text">
+                <td className="it-td it-td-text" style={{ width: columnWidths.vehicle }}>
                   {item.vehicle_no || item.vehicleNo || "—"}
                 </td>
-                <td className="it-td it-td-date">
+                <td className="it-td it-td-date" style={{ width: columnWidths.date }}>
                   {new Date(item.created_at || item.createdAt).toLocaleString(
                     "en-IN",
                   )}
                 </td>
-                <td className="it-td">
+                <td className="it-td" style={{ width: columnWidths.status }}>
                   <StatusBadge status={item.status} />
                 </td>
-                <td className="it-td">
+                <td className="it-td" style={{ width: ACTIONS_COL_WIDTH }}>
                   <div className="it-actions">
                     {item.request_delete ? (
                       <DeleteRequestBadge />

@@ -9,7 +9,7 @@ import { useAuth } from "../../../../components/auth/AuthContext.jsx";
 import { Button, BackButton, PageHeader, ErrorModal, ConfirmModal } from '../../../../components/ui'
 import { DoorOpen } from "lucide-react";
 import GateTabs from "../component/gate-tabs/GateTabs.jsx";
-import GateFilterBar from "../component/gate-filter-bar/GateFilterBar.jsx";
+import GateToolbar, { DEFAULT_GATE_SORT } from "../component/gate-filter-bar/GateToolbar.jsx";
 import InwardForm from "../component/inward-form/InwardForm.jsx";
 import OutwardForm from "../component/outward-form/OutwardForm.jsx";
 import InwardTable from "../component/inward-table/InwardTable.jsx";
@@ -34,6 +34,7 @@ export default function GateEntry() {
   // free-text fields (search/invoice_no) so we don't refetch per keystroke.
   const [filters, setFilters]           = useState(EMPTY_FILTERS);
   const [queryFilters, setQueryFilters] = useState(EMPTY_FILTERS);
+  const [sort, setSort]                 = useState(DEFAULT_GATE_SORT);
   const [errModal, setErrModal]           = useState({ open: false, message: '' });
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [successMsg, setSuccessMsg]       = useState('');
@@ -45,10 +46,24 @@ export default function GateEntry() {
   const inwardQuery  = useGateInward(queryFilters, view === "inward-list");
   const outwardQuery = useGateOutward(queryFilters, view === "outward-list");
   const activeQuery  = listType === "inward" ? inwardQuery : outwardQuery;
-  const list    = activeQuery.data?.rows ?? [];
+  const rawList = activeQuery.data?.rows ?? [];
   const total   = activeQuery.data?.total ?? 0;
   const loading = activeQuery.isLoading;
   const error   = activeQuery.error?.message ?? null;
+
+  // Sorted client-side over whatever the server returned (capped at the
+  // hook's `limit: 100` — see useGate.js) — same "Sort by" popup pattern as
+  // the master-data tables.
+  const list = (() => {
+    const dir = sort.direction === "asc" ? 1 : -1
+    return [...rawList].sort((a, b) => {
+      if (sort.field === "company") return dir * (toTitleCase(a.company_name || a.companyName) || "").localeCompare(toTitleCase(b.company_name || b.companyName) || "")
+      if (sort.field === "status") return dir * (a.status || "").localeCompare(b.status || "")
+      const ad = new Date(a.created_at || a.createdAt || 0).getTime()
+      const bd = new Date(b.created_at || b.createdAt || 0).getTime()
+      return dir * (ad - bd)
+    })
+  })()
 
   const createInwardMutation  = useCreateGateInward();
   const createOutwardMutation = useCreateGateOutward();
@@ -60,8 +75,31 @@ export default function GateEntry() {
     if (view === "inward-list" || view === "outward-list") {
       setFilters(EMPTY_FILTERS);
       setQueryFilters(EMPTY_FILTERS);
+      setSort(DEFAULT_GATE_SORT);
     }
   }, [view]);
+
+  // Exports exactly what's currently sorted/filtered on screen — the same
+  // up-to-100-row batch the table itself is drawing from (see useGate.js).
+  function exportGateCsv() {
+    if (!list.length) { alert("No records to export — adjust your filters."); return }
+    const isInward = listType === "inward"
+    const headers = ["Company", isInward ? "Supplier Name" : "Receiver Name", "Invoice No.", "Vehicle No.", "Date & Time", "Status"]
+    const rows = list.map(item => [
+      toTitleCase(item.company_name || item.companyName) || "",
+      toTitleCase(isInward ? (item.supplier_name || item.supplierName) : (item.receiver_name || item.receiverName)) || "",
+      item.invoice_no || item.invoiceNo || "",
+      item.vehicle_no || item.vehicleNo || "",
+      new Date(item.created_at || item.createdAt).toLocaleString("en-IN"),
+      item.status || "",
+    ].map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(","))
+    const csv = [headers.join(","), ...rows].join("\n")
+    const a = document.createElement("a")
+    a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }))
+    a.download = `gate_${listType}_${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(a.href)
+  }
 
   function openList(type) {
     setView(type === "inward" ? "inward-list" : "outward-list");
@@ -193,11 +231,14 @@ export default function GateEntry() {
           <PageHeader icon={ArrowDown} title="Inward Entries" actions={<BackButton onClick={goHome} />} />
 
           <div className="ge-body">
-            <GateFilterBar
+            <GateToolbar
               tab="inward"
               filters={filters}
               onChange={handleFilterChange}
               onClear={handleClearFilters}
+              sort={sort}
+              onSortChange={setSort}
+              onExport={exportGateCsv}
               total={total}
             />
 
@@ -223,11 +264,14 @@ export default function GateEntry() {
           <PageHeader icon={ArrowUp} title="Outward Entries" actions={<BackButton onClick={goHome} />} />
 
           <div className="ge-body">
-            <GateFilterBar
+            <GateToolbar
               tab="outward"
               filters={filters}
               onChange={handleFilterChange}
               onClear={handleClearFilters}
+              sort={sort}
+              onSortChange={setSort}
+              onExport={exportGateCsv}
               total={total}
             />
 

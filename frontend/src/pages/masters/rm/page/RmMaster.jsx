@@ -10,9 +10,12 @@ import { Can } from '../../../../components/common/Can.jsx'
 import RmTable from '../components/rm-table/page/RmTable.jsx'
 import RmForm  from '../components/rm-form/RmForm.jsx'
 import RmDetailModal from '../components/rm-detail-modal/RmDetailModal.jsx'
+import { EMPTY_RM_MASTER_FILTERS, DEFAULT_RM_MASTER_SORT } from '../components/rm-table/components/RmMasterToolbar.jsx'
 
 export default function RmMaster() {
-  const [filters, setFilters]   = useState({ itemCode: '', itemName: '', conversionRequired: '' })
+  const [search, setSearch]     = useState('')
+  const [filters, setFilters]   = useState(EMPTY_RM_MASTER_FILTERS)
+  const [sort, setSort]         = useState(DEFAULT_RM_MASTER_SORT)
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing]   = useState(null)
   const [viewing, setViewing]   = useState(null)
@@ -95,24 +98,48 @@ export default function RmMaster() {
     try { await deleteRm.mutateAsync(code) } catch (e) { alert(e.message) }
   }
 
-  const matchesText = (val, q) => !q || (val || '').toLowerCase().includes(q)
-
   const visibleRm = useMemo(() => {
-    const code = filters.itemCode.trim().toLowerCase()
-    const name = filters.itemName.trim().toLowerCase()
-    return items
-      .filter(i =>
-        matchesText(i.itemCode, code) &&
-        matchesText(i.itemName, name) &&
-        (!filters.conversionRequired || !!i.conversionRequired === (filters.conversionRequired === 'YES'))
-      )
-      .map(i => ({ ...i, kind: 'rm' }))
-  }, [items, filters])
+    const q = search.trim().toLowerCase()
+    let list = items.filter(i => {
+      if (q && !(i.itemCode?.toLowerCase().includes(q) || i.itemName?.toLowerCase().includes(q))) return false
+      if (filters.category && toTitleCase(i.category) !== filters.category) return false
+      if (filters.subCategory && toTitleCase(i.subCategory) !== filters.subCategory) return false
+      if (filters.trackingType && (i.trackingType || 'PACK') !== filters.trackingType) return false
+      if (filters.state && (i.state || '').toUpperCase() !== filters.state) return false
+      if (filters.conversionRequired && !!i.conversionRequired !== (filters.conversionRequired === 'YES')) return false
+      return true
+    })
+
+    const dir = sort.direction === 'asc' ? 1 : -1
+    list = [...list].sort((a, b) => {
+      if (sort.field === 'itemCode') return dir * (a.itemCode || '').localeCompare(b.itemCode || '')
+      if (sort.field === 'lowStockLevel') return dir * ((a.lowStockLevel || 0) - (b.lowStockLevel || 0))
+      return dir * (a.itemName || '').localeCompare(b.itemName || '') // 'name'
+    })
+
+    return list.map(i => ({ ...i, kind: 'rm' }))
+  }, [items, search, filters, sort])
 
   const visibleItems = visibleRm
 
-  const setFilter = (field, value) => { setFilters(f => ({ ...f, [field]: value })); setPage(1) }
-  const clearFilters = () => { setFilters({ itemCode: '', itemName: '', conversionRequired: '' }); setPage(1) }
+  const handleFilters = (f) => { setFilters(f); setPage(1) }
+  const handleSearch  = (v) => { setSearch(v); setPage(1) }
+
+  function exportRmMasterCsv() {
+    if (!visibleItems.length) { alert('No items to export — adjust your filters.'); return }
+    const headers = ['Item Code', 'Item Name', 'Inventory UOM', 'Operational UOM', 'Tracking Type', 'Category', 'Sub Category', 'State', 'Conversion Required', 'Density', 'Low Stock Level', 'High Stock Level']
+    const rows = visibleItems.map(i => [
+      i.itemCode, toTitleCase(i.itemName), i.inventoryUom || '', i.operationalUom || '', i.trackingType || 'PACK',
+      toTitleCase(i.category) || '', toTitleCase(i.subCategory) || '', i.state || '',
+      i.conversionRequired ? 'Yes' : 'No', i.density ?? '', i.lowStockLevel ?? '', i.highStockLevel ?? '',
+    ].map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','))
+    const csv = [headers.join(','), ...rows].join('\n')
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }))
+    a.download = `item_master_${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(a.href)
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -137,9 +164,15 @@ export default function RmMaster() {
           error={error}
           page={page}
           limit={limit}
+          search={search}
+          onSearchChange={handleSearch}
           filters={filters}
-          onFilterChange={setFilter}
-          onClearFilters={clearFilters}
+          onFiltersChange={handleFilters}
+          sort={sort}
+          onSortChange={setSort}
+          categories={categories}
+          subCategories={subCategories}
+          onExport={exportRmMasterCsv}
           onEdit={openEdit}
           onDelete={del}
           onRowClick={setViewing}

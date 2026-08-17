@@ -1,7 +1,9 @@
+import { useMemo, useState } from 'react'
 import { Pencil, Trash2, Loader2, PackageX } from 'lucide-react'
 import { IconButton } from '../../../../../components/ui'
 import Pagination from '../../../../../components/pagination/Pagination.jsx'
 import { toTitleCase } from '../../../../../utils/textDisplay.js'
+import ProductToolbar from './ProductToolbar.jsx'
 
 const STATE_BADGE = {
   solid:  'bg-stone-50 text-stone-700 ring-stone-200',
@@ -9,22 +11,83 @@ const STATE_BADGE = {
   gas:    'bg-violet-50 text-violet-700 ring-violet-200',
 }
 
+// Resizable columns — same drag-handle mechanism as the other master tables.
+// "Actions" stays a fixed width since it only holds icons.
+const COLUMN_DEFS = [
+  { key: 'productCode', label: 'Product Code', defaultWidth: 150 },
+  { key: 'productName', label: 'Product Name', defaultWidth: 240 },
+  { key: 'uom',          label: 'UOM',          defaultWidth: 90  },
+  { key: 'state',        label: 'State',        defaultWidth: 110 },
+  { key: 'plant',        label: 'Plant',        defaultWidth: 160 },
+  { key: 'totalRecipe',  label: 'Total Recipe', defaultWidth: 120 },
+]
+const ACTIONS_COL_WIDTH = 90
+const MIN_COL_WIDTH = 60
+
 // `items` is already the current page's rows (filtering + pagination happen
-// server-side) — `total` is the server-reported match count.
-export default function ProductTable({ items, total, loading, page, limit, onEdit, onDelete, onRowClick, onPageChange, onLimitChange }) {
+// server-side) — `total` is the server-reported match count. Sort is applied
+// client-side to whatever page is currently loaded (see ProductSortModal).
+export default function ProductTable({
+  items, total, loading, page, limit, onEdit, onDelete, onRowClick, onPageChange, onLimitChange,
+  search, onSearchChange, filters, onFiltersChange, sort, onSortChange, plantOptions, uomOptions, stateOptions, onExport, exporting,
+}) {
+  const [columnWidths, setColumnWidths] = useState(() =>
+    Object.fromEntries(COLUMN_DEFS.map(c => [c.key, c.defaultWidth])))
+
+  function startResize(key) {
+    return (e) => {
+      e.preventDefault()
+      const startX = e.clientX
+      const startWidth = columnWidths[key]
+      function onMove(ev) {
+        setColumnWidths(w => ({ ...w, [key]: Math.max(MIN_COL_WIDTH, startWidth + (ev.clientX - startX)) }))
+      }
+      function onUp() {
+        document.removeEventListener('mousemove', onMove)
+        document.removeEventListener('mouseup', onUp)
+      }
+      document.addEventListener('mousemove', onMove)
+      document.addEventListener('mouseup', onUp)
+    }
+  }
+
+  const sortedItems = useMemo(() => {
+    const dir = sort.direction === 'asc' ? 1 : -1
+    return [...items].sort((a, b) => {
+      if (sort.field === 'productCode') return dir * (a.productCode || '').localeCompare(b.productCode || '')
+      if (sort.field === 'totalRecipe') return dir * ((a.totalRecipe || 0) - (b.totalRecipe || 0))
+      return dir * (a.productName || '').localeCompare(b.productName || '') // 'name'
+    })
+  }, [items, sort])
+
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <ProductToolbar
+        search={search} onSearchChange={onSearchChange}
+        filters={filters} onFiltersChange={onFiltersChange}
+        sort={sort} onSortChange={onSortChange}
+        plantOptions={plantOptions} uomOptions={uomOptions} stateOptions={stateOptions}
+        onExport={onExport} exporting={exporting}
+        resultCount={total}
+      />
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-slate-700 text-white">
+        <table className="w-full text-sm" style={{ tableLayout: 'fixed' }}>
+          <thead style={{ backgroundColor: 'rgb(226, 235, 240)' }}>
             <tr>
-              <th className="text-left px-4 py-3 font-semibold whitespace-nowrap">Product Code</th>
-              <th className="text-left px-4 py-3 font-semibold whitespace-nowrap">Product Name</th>
-              <th className="text-left px-4 py-3 font-semibold whitespace-nowrap">UOM</th>
-              <th className="text-left px-4 py-3 font-semibold whitespace-nowrap">State</th>
-              <th className="text-left px-4 py-3 font-semibold whitespace-nowrap">Plant</th>
-              <th className="text-left px-4 py-3 font-semibold whitespace-nowrap">Total Recipe</th>
-              <th className="text-left px-4 py-3 font-semibold whitespace-nowrap">Actions</th>
+              {COLUMN_DEFS.map(c => (
+                <th
+                  key={c.key}
+                  style={{ width: columnWidths[c.key] }}
+                  className="relative text-left px-4 py-3 font-semibold text-gray-600 whitespace-nowrap select-none"
+                >
+                  {c.label}
+                  <div
+                    onMouseDown={startResize(c.key)}
+                    className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize select-none touch-none hover:bg-blue-400/50"
+                  />
+                </th>
+              ))}
+              <th style={{ width: ACTIONS_COL_WIDTH }} className="text-left px-4 py-3 font-semibold text-gray-600 whitespace-nowrap">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -42,20 +105,20 @@ export default function ProductTable({ items, total, loading, page, limit, onEdi
                   No products found.
                 </td>
               </tr>
-            ) : items.map(item => (
+            ) : sortedItems.map(item => (
               <tr key={item.productCode} className="group hover:bg-green-50/60 transition-colors cursor-pointer" onClick={() => onRowClick(item)}>
-                <td className="px-4 py-3 font-mono text-green-700 font-medium whitespace-nowrap">{item.productCode}</td>
-                <td className="px-4 py-3 text-gray-800">{toTitleCase(item.productName)}</td>
-                <td className="px-4 py-3 text-gray-500">{item.uom ? item.uom.toUpperCase() : '—'}</td>
-                <td className="px-4 py-3">
+                <td className="px-4 py-3 font-mono text-green-700 font-medium truncate">{item.productCode}</td>
+                <td className="px-4 py-3 text-gray-800 truncate">{toTitleCase(item.productName)}</td>
+                <td className="px-4 py-3 text-gray-500 truncate">{item.uom ? item.uom.toUpperCase() : '—'}</td>
+                <td className="px-4 py-3 overflow-hidden">
                   {item.state ? (
                     <span className={`text-xs font-semibold px-2 py-0.5 rounded-md ring-1 ring-inset ${STATE_BADGE[item.state.toLowerCase()] || 'bg-gray-100 text-gray-600 ring-gray-200'}`}>
                       {item.state.toUpperCase()}
                     </span>
                   ) : <span className="text-gray-300">—</span>}
                 </td>
-                <td className="px-4 py-3 text-gray-500">{item.plant?.length ? item.plant.join(', ') : '—'}</td>
-                <td className="px-4 py-3 text-gray-500">{item.totalRecipe ?? 0}</td>
+                <td className="px-4 py-3 text-gray-500 truncate">{item.plant?.length ? item.plant.join(', ') : '—'}</td>
+                <td className="px-4 py-3 text-gray-500 truncate">{item.totalRecipe ?? 0}</td>
                 <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                     <IconButton icon={Pencil} tooltip="Edit" onClick={() => onEdit(item)} />
@@ -68,11 +131,6 @@ export default function ProductTable({ items, total, loading, page, limit, onEdi
         </table>
       </div>
 
-      {!loading && (
-        <div className="px-4 py-2.5 bg-gray-50 border-t border-gray-200 text-xs text-gray-400">
-          {total} product{total !== 1 ? 's' : ''}
-        </div>
-      )}
       <div className="px-4 pb-3">
         <Pagination page={page} total={total} limit={limit} onChange={onPageChange} onLimitChange={onLimitChange} />
       </div>

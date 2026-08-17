@@ -12,7 +12,16 @@ function StatusBadge({ status }) {
   );
 }
 
-const HEADERS = ["Company", "Receiver Name", "Invoice No.", "Vehicle No.", "Date & Time", "Status", "Actions"];
+const COLUMNS = [
+  { key: "company",  label: "Company",       defaultWidth: 150 },
+  { key: "receiver", label: "Receiver Name", defaultWidth: 180 },
+  { key: "invoice",  label: "Invoice No.",   defaultWidth: 130 },
+  { key: "vehicle",  label: "Vehicle No.",   defaultWidth: 120 },
+  { key: "date",     label: "Date & Time",   defaultWidth: 160 },
+  { key: "status",   label: "Status",        defaultWidth: 100 },
+];
+const ACTIONS_COL_WIDTH = 160;
+const MIN_COL_WIDTH = 60;
 
 function DeleteRequestBadge() {
   return <span className="ot-del-badge">Delete Requested</span>;
@@ -22,6 +31,26 @@ export default function OutwardTable({ list, total, onRequestDelete }) {
   const [limit, setLimit] = useState(15);
   const [page, setPage] = useState(1);
   const paginated = list.slice((page - 1) * limit, page * limit);
+
+  const [columnWidths, setColumnWidths] = useState(() =>
+    Object.fromEntries(COLUMNS.map(c => [c.key, c.defaultWidth])));
+
+  function startResize(key) {
+    return (e) => {
+      e.preventDefault();
+      const startX = e.clientX;
+      const startWidth = columnWidths[key];
+      function onMove(ev) {
+        setColumnWidths(w => ({ ...w, [key]: Math.max(MIN_COL_WIDTH, startWidth + (ev.clientX - startX)) }));
+      }
+      function onUp() {
+        document.removeEventListener("mousemove", onMove);
+        document.removeEventListener("mouseup", onUp);
+      }
+      document.addEventListener("mousemove", onMove);
+      document.addEventListener("mouseup", onUp);
+    };
+  }
 
   if (!list.length) {
     return (
@@ -44,9 +73,13 @@ export default function OutwardTable({ list, total, onRequestDelete }) {
         <table className="ot-table">
           <thead>
             <tr className="ot-thead-row">
-              {HEADERS.map((h) => (
-                <th key={h} className="ot-th">{h}</th>
+              {COLUMNS.map((c) => (
+                <th key={c.key} className="ot-th" style={{ width: columnWidths[c.key] }}>
+                  {c.label}
+                  <div className="ot-th-resize" onMouseDown={startResize(c.key)} />
+                </th>
               ))}
+              <th className="ot-th" style={{ width: ACTIONS_COL_WIDTH }}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -55,25 +88,25 @@ export default function OutwardTable({ list, total, onRequestDelete }) {
                 key={item.outward_id || item.outwardId}
                 className={`ot-row ${idx % 2 === 0 ? "ot-row--even" : "ot-row--odd"}`}
               >
-                <td className="ot-td ot-td-text">
+                <td className="ot-td ot-td-text" style={{ width: columnWidths.company }}>
                   {toTitleCase(item.company_name || item.companyName) || "—"}
                 </td>
-                <td className="ot-td ot-td-receiver">
+                <td className="ot-td ot-td-receiver" style={{ width: columnWidths.receiver }}>
                   {toTitleCase(item.receiver_name || item.receiverName) || "—"}
                 </td>
-                <td className="ot-td ot-td-text">
+                <td className="ot-td ot-td-text" style={{ width: columnWidths.invoice }}>
                   {item.invoice_no || item.invoiceNo || "—"}
                 </td>
-                <td className="ot-td ot-td-text">
+                <td className="ot-td ot-td-text" style={{ width: columnWidths.vehicle }}>
                   {item.vehicle_no || item.vehicleNo || "—"}
                 </td>
-                <td className="ot-td ot-td-date">
+                <td className="ot-td ot-td-date" style={{ width: columnWidths.date }}>
                   {new Date(item.created_at || item.createdAt).toLocaleString("en-IN")}
                 </td>
-                <td className="ot-td">
+                <td className="ot-td" style={{ width: columnWidths.status }}>
                   <StatusBadge status={item.status} />
                 </td>
-                <td className="ot-td">
+                <td className="ot-td" style={{ width: ACTIONS_COL_WIDTH }}>
                   {item.request_delete ? (
                     <DeleteRequestBadge />
                   ) : (
