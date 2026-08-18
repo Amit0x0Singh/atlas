@@ -1,18 +1,15 @@
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { UserCog, Plus, Pencil, Users2, ShieldCheck, Trash2, Lock } from 'lucide-react'
 import {
-  useUsers, useRoles, usePermissionsCatalog,
-  useCreateUser, useUpdateUser, useSetUserActive, useResetPassword, useSetUserRoles,
-  useCreateRole, useUpdateRole, useDeleteRole, useSetRolePermissions,
+  useUsers, useRoles, useSetUserActive, useResetPassword, useDeleteRole,
 } from '../../../../hooks/masters/useUserRoles.js'
 import { Button, BackButton, IconButton, PageHeader } from '../../../../components/ui'
 import { Can } from '../../../../components/common/Can.jsx'
-import UserFormDrawer from '../components/UserFormDrawer.jsx'
-import RoleEditorDrawer from '../components/RoleEditorDrawer.jsx'
 import UsersToolbar, { EMPTY_USER_FILTERS, DEFAULT_USER_SORT } from '../components/UsersToolbar.jsx'
 import UsersTable from '../components/UsersTable.jsx'
-
-const emptyUserForm = { email: '', fullName: '', phone: '', password: '', plants: [], roleIds: [] }
+import RoleDetailModal from '../components/RoleDetailModal.jsx'
+import { roleModuleLabels } from '../../../../constants/permissionMatrix.js'
 
 function StatCard({ label, value, tone }) {
   return (
@@ -23,51 +20,50 @@ function StatCard({ label, value, tone }) {
   )
 }
 
+const TONE_CLASSES = {
+  indigo: 'bg-indigo-50 text-indigo-600',
+  emerald: 'bg-emerald-50 text-emerald-600',
+}
+
+function ChipList({ items, tone = 'indigo', max = 3, emptyLabel = '—' }) {
+  if (!items.length) return <span className="text-gray-300">{emptyLabel}</span>
+  const shown = items.slice(0, max)
+  const extra = items.length - shown.length
+  return (
+    <div className="flex flex-wrap gap-1">
+      {shown.map(m => (
+        <span key={m} className={`text-[10px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${TONE_CLASSES[tone]}`}>
+          {m}
+        </span>
+      ))}
+      {extra > 0 && (
+        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 whitespace-nowrap">
+          +{extra} more
+        </span>
+      )}
+    </div>
+  )
+}
+
 export default function UserRoles() {
+  const navigate = useNavigate()
   const [tab, setTab] = useState('users') // 'users' | 'roles'
 
   const { data: users = [], isLoading: loadingUsers, error: usersError } = useUsers()
   const { data: roles = [], isLoading: loadingRoles } = useRoles()
-  const { data: catalog = [] } = usePermissionsCatalog()
 
-  // ── User drawer ─────────────────────────────────────────────────────────
-  const [showUserForm, setShowUserForm] = useState(false)
-  const [editingUser, setEditingUser]   = useState(null)
-  const [userForm, setUserForm]         = useState(emptyUserForm)
-  const [userMsg, setUserMsg]           = useState('')
+  const [viewingRole, setViewingRole] = useState(null)
 
-  const createUser    = useCreateUser()
-  const updateUser    = useUpdateUser()
-  const setUserRoles  = useSetUserRoles()
+  // New User / Edit User and New Role / Edit Role now live on their own
+  // pages (not popups — see UserFormPage.jsx / RoleFormPage.jsx) since a
+  // form this size read poorly as a centered modal.
+  const openAddUser  = () => navigate('/user-roles/users/new')
+  const openEditUser = (u) => navigate(`/user-roles/users/${u.userId}`)
+  const openAddRole  = () => navigate('/user-roles/roles/new')
+  const openEditRole = (r) => navigate(`/user-roles/roles/${r.roleId}`)
+
   const setUserActive = useSetUserActive()
   const resetPassword = useResetPassword()
-  const savingUser = createUser.isPending || updateUser.isPending || setUserRoles.isPending
-
-  const openAddUser = () => { setEditingUser(null); setUserForm(emptyUserForm); setUserMsg(''); setShowUserForm(true) }
-  const openEditUser = (u) => {
-    setEditingUser(u)
-    setUserForm({
-      email: u.email || '', fullName: u.fullName || '', phone: u.phone || '',
-      password: '', plants: u.plants || [], roleIds: u.roles.map(r => r.roleId),
-    })
-    setUserMsg(''); setShowUserForm(true)
-  }
-
-  const saveUser = async () => {
-    if (!userForm.fullName.trim() || (!editingUser && (!userForm.email.trim() || !userForm.password))) {
-      setUserMsg('Fill all required fields'); return
-    }
-    setUserMsg('')
-    try {
-      if (editingUser) {
-        await updateUser.mutateAsync({ userId: editingUser.userId, data: { fullName: userForm.fullName, phone: userForm.phone || null, plants: userForm.plants } })
-        await setUserRoles.mutateAsync({ userId: editingUser.userId, roleIds: userForm.roleIds })
-      } else {
-        await createUser.mutateAsync({ email: userForm.email, fullName: userForm.fullName, password: userForm.password, plants: userForm.plants, roleIds: userForm.roleIds })
-      }
-      setShowUserForm(false)
-    } catch (e) { setUserMsg(e.message) }
-  }
 
   const toggleActive = async (u) => {
     if (!confirm(`${u.isActive ? 'Disable' : 'Re-enable'} login for ${u.email}?`)) return
@@ -80,33 +76,6 @@ export default function UserRoles() {
     if (!pw) return
     try { await resetPassword.mutateAsync({ userId: u.userId, password: pw }); alert('Password updated.') }
     catch (e) { alert(e.message) }
-  }
-
-  // ── Role drawer ──────────────────────────────────────────────────────────
-  const [showRoleForm, setShowRoleForm] = useState(false)
-  const [editingRole, setEditingRole]   = useState(null)
-  const [roleMsg, setRoleMsg]           = useState('')
-
-  const createRole = useCreateRole()
-  const updateRole = useUpdateRole()
-  const setRolePermissions = useSetRolePermissions()
-  const savingRole = createRole.isPending || updateRole.isPending || setRolePermissions.isPending
-
-  const openAddRole = () => { setEditingRole(null); setRoleMsg(''); setShowRoleForm(true) }
-  const openEditRole = (r) => { setEditingRole(r); setRoleMsg(''); setShowRoleForm(true) }
-
-  const saveRole = async ({ name, description, permissionKeys }) => {
-    if (!name.trim()) { setRoleMsg('Role name is required'); return }
-    setRoleMsg('')
-    try {
-      if (editingRole) {
-        if (!editingRole.isSystem) await updateRole.mutateAsync({ roleId: editingRole.roleId, data: { name, description } })
-        await setRolePermissions.mutateAsync({ roleId: editingRole.roleId, permissionKeys })
-      } else {
-        await createRole.mutateAsync({ name, description, permissionKeys })
-      }
-      setShowRoleForm(false)
-    } catch (e) { setRoleMsg(e.message) }
   }
 
   const deleteRole = useDeleteRole()
@@ -247,62 +216,70 @@ export default function UserRoles() {
 
         {/* ── Roles tab ────────────────────────────────────────────────── */}
         {tab === 'roles' && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {loadingRoles ? (
-              <div className="col-span-full text-center py-10 text-gray-400">Loading…</div>
-            ) : roles.map(r => (
-              <div key={r.roleId} className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm flex flex-col">
-                <div className="flex items-start justify-between gap-2 mb-1">
-                  <div className="font-bold text-sm text-gray-800 flex items-center gap-1.5">
-                    {r.name}
-                    {r.isSystem && <Lock size={11} className="text-gray-300" title="System role — name is locked" />}
-                  </div>
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 whitespace-nowrap">
-                    {r._count?.users ?? 0} user{r._count?.users !== 1 ? 's' : ''}
-                  </span>
-                </div>
-                <p className="text-xs text-gray-400 mb-3 flex-1">{r.description || '—'}</p>
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] text-gray-500">{r.permissions?.length ?? 0} permissions</span>
-                  <div className="flex gap-1">
-                    <Can permission="admin.roles.assign-permissions">
-                      <IconButton icon={Pencil} tooltip="Edit permissions" onClick={() => openEditRole(r)} />
-                    </Can>
-                    <Can permission="admin.roles.delete">
-                      <IconButton icon={Trash2} variant="danger" tooltip={r.isSystem ? 'System roles cannot be deleted' : 'Delete role'}
-                        disabled={r.isSystem} onClick={() => doDeleteRole(r)} />
-                    </Can>
-                  </div>
-                </div>
-              </div>
-            ))}
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-gray-600 text-xs" style={{ backgroundColor: 'rgb(226, 235, 240)' }}>
+                    <th className="text-left px-4 py-3 font-semibold">Role</th>
+                    <th className="text-left px-4 py-3 font-semibold">Modules</th>
+                    <th className="text-left px-4 py-3 font-semibold">Users</th>
+                    <th className="text-left px-4 py-3 font-semibold">Permissions</th>
+                    <th className="text-right px-4 py-3 font-semibold">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loadingRoles ? (
+                    <tr><td colSpan={5} className="text-center py-10 text-gray-400">Loading…</td></tr>
+                  ) : roles.length === 0 ? (
+                    <tr><td colSpan={5} className="text-center py-10 text-gray-400">No roles yet.</td></tr>
+                  ) : roles.map(r => (
+                    <tr
+                      key={r.roleId}
+                      onClick={() => setViewingRole(r)}
+                      className="border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
+                    >
+                      <td className="px-4 py-3">
+                        <span className="font-semibold text-gray-800 flex items-center gap-1.5">
+                          {r.name}
+                          {r.isSystem && <Lock size={11} className="text-gray-300" />}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <ChipList items={roleModuleLabels(r)} tone="indigo" max={4} />
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 whitespace-nowrap">
+                          {r._count?.users ?? 0} user{r._count?.users !== 1 ? 's' : ''}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-gray-500">{r.permissions?.length ?? 0}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                          <Can permission="admin.roles.assign-permissions">
+                            <IconButton icon={Pencil} tooltip="Edit permissions" onClick={() => openEditRole(r)} />
+                          </Can>
+                          <Can permission="admin.roles.delete">
+                            <IconButton icon={Trash2} variant="danger" tooltip={r.isSystem ? 'System roles cannot be deleted' : 'Delete role'}
+                              disabled={r.isSystem} onClick={() => doDeleteRole(r)} />
+                          </Can>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>
 
-      {showUserForm && (
-        <UserFormDrawer
-          editing={editingUser}
-          form={userForm}
-          roles={roles}
-          onChange={(field, val) => setUserForm(f => ({ ...f, [field]: val }))}
-          saving={savingUser}
-          msg={userMsg}
-          onSave={saveUser}
-          onClose={() => setShowUserForm(false)}
-        />
-      )}
-
-      {showRoleForm && (
-        <RoleEditorDrawer
-          editing={editingRole}
-          catalog={catalog}
-          saving={savingRole}
-          msg={roleMsg}
-          onSave={saveRole}
-          onClose={() => setShowRoleForm(false)}
-        />
-      )}
+      <RoleDetailModal
+        role={viewingRole}
+        onClose={() => setViewingRole(null)}
+        onEdit={openEditRole}
+        onDelete={doDeleteRole}
+      />
     </div>
   )
 }

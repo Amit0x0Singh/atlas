@@ -1,93 +1,90 @@
-﻿import { DSection, DGrid, DRow } from '../detail-modal/DetailModal.jsx'
-import { IconButton } from '../../../../../../components/ui'
-import { X } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { DSection, DRow } from '../detail-modal/DetailModal.jsx'
+import { Modal, IconButton } from '../../../../../../components/ui'
+import { X, Clock, Package, Warehouse, ClipboardList, FlaskConical } from 'lucide-react'
 import './TransactionDetailModal.css'
 
 import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 export default function TransactionDetailModal({ detail, onClose }) {
-  if (!detail) return null
+  // Keep rendering the last non-null detail while Modal fades out — `detail`
+  // itself goes null the instant the parent starts closing, and rendering
+  // nothing at that point would leave an empty white panel visible for the
+  // remainder of the close animation.
+  const [shown, setShown] = useState(detail)
+  useEffect(() => { if (detail) setShown(detail) }, [detail])
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto"
-        onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-6 py-4 border-b sticky top-0 bg-white">
-          <h2 className="text-lg font-bold text-gray-900">Transaction Detail</h2>
-          <IconButton icon={X} onClick={onClose} variant="ghost" size="sm" tooltip="Close" />
-        </div>
+    <Modal open={!!detail} onClose={onClose} size="xl">
+      {shown && (
+        <>
+          <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100">
+            <h2 className="text-[13px] font-bold text-gray-900">Transaction Detail</h2>
+            <IconButton icon={X} onClick={onClose} variant="ghost" size="sm" tooltip="Close" />
+          </div>
 
-        <div className="px-6 py-5 space-y-4">
-          {detail.loading ? (
-            <p className="text-gray-400">Loading details...</p>
-          ) : detail.error ? (
-            <p className="text-red-500">{detail.error}</p>
-          ) : (
-            <>
-              <DSection title="Transaction">
-                <DGrid>
-                  <DRow label="Date & Time"      value={new Date(detail.entry.timestamp).toLocaleString('en-IN')} />
-                  <DRow label="Item Code"        value={detail.entry.itemCode} mono />
-                  <DRow label="Type"             value={detail.entry.transactionType} />
-                  <DRow label="Source / Pack ID" value={detail.entry.sourceId} mono />
-                  <DRow label="In Qty"           value={detail.entry.inQty  > 0 ? `+${Number(detail.entry.inQty).toFixed(3)}`  : '—'} />
-                  <DRow label="Out Qty"          value={detail.entry.outQty > 0 ? `-${Number(detail.entry.outQty).toFixed(3)}` : '—'} />
-                  {detail.detail?.outward?.operationalUom && Number(detail.detail.outward.operationalQty) !== Number(detail.detail.outward.qtyIssued) && (
-                    <DRow label="Issued (Operational UOM)" value={`${Number(detail.detail.outward.operationalQty).toFixed(3)} ${(detail.detail.outward.operationalUom || '').toUpperCase()}`} />
+          <div className="px-4 py-3 space-y-2.5 max-h-[75vh] overflow-y-auto text-[13px]">
+            {shown.loading ? (
+              <p className="text-gray-400">Loading details...</p>
+            ) : shown.error ? (
+              <p className="text-red-500">{shown.error}</p>
+            ) : (
+              <>
+                <DSection icon={Clock} title="Transaction">
+                  <DRow label="Date & Time"      value={new Date(shown.entry.timestamp).toLocaleString('en-IN')} />
+                  <DRow label="Item Code"        value={shown.entry.itemCode} mono />
+                  <DRow label="Type"             value={shown.entry.transactionType} badge />
+                  <DRow label="Source / Pack ID" value={shown.entry.sourceId} mono />
+                  <DRow label="In Qty"           value={shown.entry.inQty  > 0 ? `+${Number(shown.entry.inQty).toFixed(3)}`  : '—'} tone="in" />
+                  <DRow label="Out Qty"          value={shown.entry.outQty > 0 ? `-${Number(shown.entry.outQty).toFixed(3)}` : '—'} tone="out" />
+                  {shown.detail?.outward?.operationalUom && Number(shown.detail.outward.operationalQty) !== Number(shown.detail.outward.qtyIssued) && (
+                    <DRow label="Issued (Operational UOM)" value={`${Number(shown.detail.outward.operationalQty).toFixed(3)} ${(shown.detail.outward.operationalUom || '').toUpperCase()}`} />
                   )}
-                  <DRow label="Balance After"    value={Number(detail.entry.balance).toFixed(3)} />
-                  <DRow label="Reference"        value={detail.entry.reference || '—'} />
-                </DGrid>
-              </DSection>
-
-              {detail.detail?.pack && (
-                <DSection title="Pack / Bag Details">
-                  <DGrid>
-                    <DRow label="Pack ID"   value={detail.detail.pack.packId} mono />
-                    <DRow label="Item Name" value={toTitleCase(detail.detail.pack.itemName)} />
-                    <DRow label="Lot No"    value={detail.detail.pack.lotNo} />
-                    <DRow label="Bag No"    value={`#${detail.detail.pack.bagNo}`} />
-                    <DRow label="Pack Qty"  value={`${detail.detail.pack.packQty} ${(detail.detail.pack.uom || '').toUpperCase()}`} />
-                    {detail.detail.pack.supplier  && <DRow label="Supplier"   value={detail.detail.pack.supplier} />}
-                    {detail.detail.pack.invoiceNo && <DRow label="Invoice No" value={detail.detail.pack.invoiceNo} />}
-                  </DGrid>
+                  <DRow label="Balance After"    value={Number(shown.entry.balance).toFixed(3)} />
+                  <DRow label="Reference"        value={shown.entry.reference || '—'} full />
                 </DSection>
-              )}
 
-              {detail.detail?.inward && (
-                <DSection title="Inward Details">
-                  <DGrid>
-                    <DRow label="Warehouse"   value={toTitleCase(detail.detail.inward.warehouse)} />
-                    <DRow label="Inward Time" value={new Date(detail.detail.inward.inwardTime).toLocaleString('en-IN')} />
-                  </DGrid>
-                </DSection>
-              )}
+                {shown.detail?.pack && (
+                  <DSection icon={Package} title="Pack / Bag Details">
+                    <DRow label="Pack ID"   value={shown.detail.pack.packId} mono />
+                    <DRow label="Item Name" value={toTitleCase(shown.detail.pack.itemName)} />
+                    <DRow label="Lot No"    value={shown.detail.pack.lotNo} />
+                    <DRow label="Bag No"    value={`#${shown.detail.pack.bagNo}`} />
+                    <DRow label="Pack Qty"  value={`${shown.detail.pack.packQty} ${(shown.detail.pack.uom || '').toUpperCase()}`} />
+                    {shown.detail.pack.supplier  && <DRow label="Supplier"   value={shown.detail.pack.supplier} />}
+                    {shown.detail.pack.invoiceNo && <DRow label="Invoice No" value={shown.detail.pack.invoiceNo} />}
+                  </DSection>
+                )}
 
-              {detail.detail?.indent && (
-                <DSection title="Production Indent">
-                  <DGrid>
-                    <DRow label="Indent ID" value={detail.detail.indent.indentId} mono />
-                    <DRow label="Product"   value={toTitleCase(detail.detail.indent.productName)} />
-                    <DRow label="DI No"     value={detail.detail.indent.diNo} />
-                    <DRow label="Batch No"  value={detail.detail.indent.batchNo} />
-                    <DRow label="Status"    value={detail.detail.indent.status} />
-                  </DGrid>
-                </DSection>
-              )}
+                {shown.detail?.inward && (
+                  <DSection icon={Warehouse} title="Inward Details">
+                    <DRow label="Warehouse"   value={toTitleCase(shown.detail.inward.warehouse)} />
+                    <DRow label="Inward Time" value={new Date(shown.detail.inward.inwardTime).toLocaleString('en-IN')} />
+                  </DSection>
+                )}
 
-              {detail.detail?.sfg && (
-                <DSection title="SFG Status">
-                  <DGrid>
-                    <DRow label="Formulated Qty" value={Number(detail.detail.sfg.formulatedQty).toFixed(2)} />
-                    <DRow label="Packed Qty"     value={Number(detail.detail.sfg.packedQty).toFixed(2)} />
-                    <DRow label="SFG Balance"    value={Number(detail.detail.sfg.sfgQty).toFixed(2)} />
-                    <DRow label="SFG Status"     value={detail.detail.sfg.status} />
-                  </DGrid>
-                </DSection>
-              )}
-            </>
-          )}
-        </div>
-      </div>
-    </div>
+                {shown.detail?.indent && (
+                  <DSection icon={ClipboardList} title="Production Indent">
+                    <DRow label="Indent ID" value={shown.detail.indent.indentId} mono />
+                    <DRow label="Product"   value={toTitleCase(shown.detail.indent.productName)} />
+                    <DRow label="DI No"     value={shown.detail.indent.diNo} />
+                    <DRow label="Batch No"  value={shown.detail.indent.batchNo} />
+                    <DRow label="Status"    value={shown.detail.indent.status} />
+                  </DSection>
+                )}
+
+                {shown.detail?.sfg && (
+                  <DSection icon={FlaskConical} title="SFG Status">
+                    <DRow label="Formulated Qty" value={Number(shown.detail.sfg.formulatedQty).toFixed(2)} />
+                    <DRow label="Packed Qty"     value={Number(shown.detail.sfg.packedQty).toFixed(2)} />
+                    <DRow label="SFG Balance"    value={Number(shown.detail.sfg.sfgQty).toFixed(2)} />
+                    <DRow label="SFG Status"     value={shown.detail.sfg.status} />
+                  </DSection>
+                )}
+              </>
+            )}
+          </div>
+        </>
+      )}
+    </Modal>
   )
 }

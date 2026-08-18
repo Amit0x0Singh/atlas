@@ -15,6 +15,8 @@ const all = (...prefixes) => PERMISSION_KEYS.filter((k) => prefixes.some((p) => 
 const viewOnly = (keys) => keys.filter((k) => k.endsWith('.view') || k === 'admin.panel.access')
 
 const inventoryAll = all('inventory')
+const plantModules = ['plant-microbial', 'plant-nano', 'plant-botanical', 'plant-liquid', 'plant-powder', 'plant-granules']
+const plantAll = all(...plantModules)
 const productionAll = all('production', 'planning', 'microbial')
 const salesAll = all('sales')
 
@@ -75,6 +77,11 @@ export const ROLE_SEEDS = [
       // Microbe Master CRUD, by contrast, WAS production-operation-gated
       // before this migration — full access preserved here.
       'masters.microbe.view', 'masters.microbe.create', 'masters.microbe.update', 'masters.microbe.delete',
+      // This one role is shared by all 6 plant-scoped accounts (Microbial,
+      // Nano, Botanical, ...) — it carries full capability across every
+      // plant module; which plant(s) a given login can actually reach is
+      // narrowed separately by that user's own `plants[]`.
+      ...plantAll,
     ],
   },
   {
@@ -84,6 +91,7 @@ export const ROLE_SEEDS = [
     permissions: viewOnly([
       ...productionAll,
       'masters.recipe.view', 'masters.product.view', 'masters.equipment.view', 'masters.microbe.view',
+      ...plantAll,
     ]),
   },
   // ── Optional / forward-looking — unused by any legacy account, assignable later ──

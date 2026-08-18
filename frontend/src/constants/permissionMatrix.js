@@ -11,9 +11,15 @@
  * "module" or "operation class" needs to exist beyond the catalog's own
  * `module`/`action` fields already returned by GET /admin/rbac/permissions.
  *
- * Plant scope is NOT part of this matrix — plants stay a per-user on/off
- * toggle (User.plants[]), set on the New/Edit User form, independent of
- * which module operations a role's permissions grant.
+ * Plants (Microbial, Nano, Botanical, ...) are catalog modules too — see
+ * PLANT_MODULE_ORDER below — with the exact same Read/Write/Update/Delete/
+ * Export shape as Gate/Store/QC/etc. Granting a plant permission is a role-
+ * level capability grant; which plant *instances* a given login can reach
+ * is still governed separately by that user's own `User.plants[]` scope,
+ * set on the New/Edit User form. There is no separate "default plant scope"
+ * field on Role anymore — a role's plant access is just whatever plant-
+ * module permissions it holds, read straight off `role.permissions` like
+ * every other module, via roleModuleLabels()/rolePlantLabels() below.
  */
 
 // Display order + friendly labels for each catalog `module` value.
@@ -29,6 +35,21 @@ export const MODULE_LABELS = {
   microbial: 'Microbial Store',
   sales: 'Sales',
   admin: 'Administration',
+}
+
+// Plant modules — kept as a separate list (not folded into MODULE_ORDER) so
+// the Role editor can render them under their own "Plant modules" divider
+// for readability, while using the exact same generic cellState/toggleCell
+// mechanics as every other module.
+export const PLANT_MODULE_ORDER = ['plant-microbial', 'plant-nano', 'plant-botanical', 'plant-liquid', 'plant-powder', 'plant-granules']
+
+export const PLANT_MODULE_LABELS = {
+  'plant-microbial': 'Microbial',
+  'plant-nano': 'Nano',
+  'plant-botanical': 'Botanical',
+  'plant-liquid': 'Liquid',
+  'plant-powder': 'Powder',
+  'plant-granules': 'Granules',
 }
 
 // Coarse operation columns, and which real catalog actions each one covers.
@@ -87,4 +108,18 @@ export function toggleCell(selectedKeys, perms, nextChecked) {
   const next = new Set(selectedKeys)
   for (const p of perms) (nextChecked ? next.add(p.key) : next.delete(p.key))
   return next
+}
+
+const ALL_LABELS = { ...MODULE_LABELS, ...PLANT_MODULE_LABELS }
+
+/** Every module (real + plant) a role's permissions actually touch, as display labels — one shared source for the Roles table and its detail popup. */
+export function roleModuleLabels(role) {
+  const present = new Set((role.permissions || []).map((rp) => rp.permission?.module).filter(Boolean))
+  return [...MODULE_ORDER, ...PLANT_MODULE_ORDER].filter((m) => present.has(m)).map((m) => ALL_LABELS[m] || m)
+}
+
+/** Just the plant modules a role's permissions touch — feeds the New User form's plant-scope pre-fill when a role is picked. */
+export function rolePlantLabels(role) {
+  const present = new Set((role.permissions || []).map((rp) => rp.permission?.module).filter(Boolean))
+  return PLANT_MODULE_ORDER.filter((m) => present.has(m)).map((m) => PLANT_MODULE_LABELS[m])
 }

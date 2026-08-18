@@ -9,6 +9,8 @@ import PackEntries from "../../pages/inventory/print-master/page/PackEntries.jsx
 import EmployeeMaster from "../../pages/hr/employee/page/EmployeeMaster.jsx";
 import SupplierMaster from "../../pages/masters/supplier/page/SupplierMaster.jsx";
 import UserRoles from "../../pages/masters/user-roles/page/UserRoles.jsx";
+import UserFormPage from "../../pages/masters/user-roles/page/UserFormPage.jsx";
+import RoleFormPage from "../../pages/masters/user-roles/page/RoleFormPage.jsx";
 
 export const masterRoutes = [
   <Route key="rm-master"        path="/rm-master"        element={<RmMaster />} />,
@@ -21,4 +23,8 @@ export const masterRoutes = [
   <Route key="employee-master"  path="/employee-master"  element={<EmployeeMaster />} />,
   <Route key="recipe"           path="/recipe"           element={<RecipeDB />} />,
   <Route key="user-roles"       path="/user-roles"       element={<UserRoles />} />,
+  <Route key="user-roles-new-user"  path="/user-roles/users/new"      element={<UserFormPage />} />,
+  <Route key="user-roles-edit-user" path="/user-roles/users/:userId"  element={<UserFormPage />} />,
+  <Route key="user-roles-new-role"  path="/user-roles/roles/new"      element={<RoleFormPage />} />,
+  <Route key="user-roles-edit-role" path="/user-roles/roles/:roleId"  element={<RoleFormPage />} />,
 ];

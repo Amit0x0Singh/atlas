@@ -133,6 +133,21 @@ export const PERMISSIONS = [
   ...group('production', 'reports', ['export'], () => 'Export Production records — reserved, no endpoint exists yet'),
   ...group('microbial', 'reports', ['export'], () => 'Export Microbial Store records — reserved, no endpoint exists yet'),
   ...group('sales', 'reports', ['export'], () => 'Export Sales records — reserved, no endpoint exists yet'),
+
+  // ─── Plant modules ──────────────────────────────────────────────────────
+  // Plants (Microbial, Nano, Botanical, Liquid, Powder, Granules) are
+  // modules in their own right, exactly like Gate/Store/QC/etc — each gets
+  // its own full view/create/update/delete/export permission set instead of
+  // a single on/off toggle. Granting these is a role-level capability grant
+  // (same as every other module); which plant *instances* a given login can
+  // actually reach is still governed separately by that user's own
+  // `User.plants[]` scope (see middleware/scope.js) — unaffected by this.
+  ...group('plant-microbial', 'scope', ['view', 'create', 'update', 'delete', 'export'], (a) => `${a} Microbial plant data`),
+  ...group('plant-nano', 'scope', ['view', 'create', 'update', 'delete', 'export'], (a) => `${a} Nano plant data`),
+  ...group('plant-botanical', 'scope', ['view', 'create', 'update', 'delete', 'export'], (a) => `${a} Botanical plant data`),
+  ...group('plant-liquid', 'scope', ['view', 'create', 'update', 'delete', 'export'], (a) => `${a} Liquid plant data`),
+  ...group('plant-powder', 'scope', ['view', 'create', 'update', 'delete', 'export'], (a) => `${a} Powder plant data`),
+  ...group('plant-granules', 'scope', ['view', 'create', 'update', 'delete', 'export'], (a) => `${a} Granules plant data`),
 ]
 
 export const PERMISSION_KEYS = PERMISSIONS.map((p) => p.key)
