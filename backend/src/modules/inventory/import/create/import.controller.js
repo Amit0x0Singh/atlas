@@ -6,6 +6,7 @@ import { normalizeUom, CANONICAL_UNITS } from '../../../../utils/uom.js'
 import { getMaxMicrobeCodeNum, formatMicrobeCode } from '../../../../utils/microbe-code.js'
 import { getMaxProductCodeNum, formatProductCode } from '../../../../utils/product-code.js'
 import { getMaxEquipCodeNum, formatEquipCode } from '../../../../utils/equip-code.js'
+import { writeAudit, auditUser } from '../../../../middleware/audit.js'
 
 function col(row, ...keys) {
   for (const key of keys) {
@@ -874,6 +875,12 @@ export const executeImport = async (req, res) => {
       }
     }
 
+    // Summary only, not a per-row dump — this single call can rewrite most
+    // of the master-data estate at once (suppliers, microbes, products,
+    // equipment, RM, recipe/BOM, gate/print/inward/outward), so `results`
+    // (already the per-table counts this response returns) is exactly the
+    // right level of detail for the audit trail.
+    await writeAudit({ ...auditUser(req), action: 'IMPORT', module: 'admin', tableName: 'bulk_import', newValue: results })
     return res.json({
       success: true,
       data: results,

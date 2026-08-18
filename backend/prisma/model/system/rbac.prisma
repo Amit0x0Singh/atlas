@@ -22,6 +22,11 @@ model Role {
   description String?
   // Seeded roles — block delete/rename of these in the future Admin Panel.
   isSystem    Boolean  @default(false) @map("is_system")
+  // Plain email string, same convention as every other createdBy/updatedBy
+  // in this schema — auto-stamped by the Prisma audit-stamp extension
+  // (utils/prisma-audit-extension.js), not by application code.
+  createdBy   String?  @map("created_by")
+  updatedBy   String?  @map("updated_by")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
 
@@ -31,6 +36,8 @@ model Role {
   @@map("roles")
 }
 
+// Seeded from backend/src/constants/permissions.catalog.js, never
+// hand-edited — no createdBy/updatedBy, it isn't a user-created record.
 model Permission {
   permissionId String  @id @default(cuid()) @map("permission_id")
   key          String  @unique @db.VarChar(150) // "inventory.inward.create"
@@ -45,6 +52,9 @@ model Permission {
   @@map("permissions")
 }
 
+// Join table — no createdBy/updatedBy; the mutating action itself is
+// already captured by writeAudit() at the rbac.service.js layer that
+// changes these rows.
 model RolePermissionMap {
   roleId       String
   permissionId String
@@ -56,6 +66,9 @@ model RolePermissionMap {
   @@map("role_permission_map")
 }
 
+// Join table — no createdBy/updatedBy, same reasoning as RolePermissionMap
+// above; setUserRoles/assignRoleToUser/removeRoleFromUser already audit
+// the change itself.
 model UserRole {
   userId     String   @db.Uuid
   roleId     String

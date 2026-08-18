@@ -27,6 +27,9 @@ import BulkTransformRouter from "../modules/admin_panel/bulk-transform/router.js
 // Admin Panel UI. See modules/admin/rbac/router.js.
 import RbacRouter from "../modules/admin/rbac/router.js";
 
+// Audit Logs — read-only, admin.audit.view gated. See modules/admin/audit/router.js.
+import AuditRouter from "../modules/admin/audit/router.js";
+
 // Settings — Select Options Management Router
 import OptionsAdminRouter from "../modules/options/admin-router.js";
 import OptionsPublicRouter from "../modules/options/public-router.js";
@@ -95,6 +98,13 @@ router.use("/options", authenticate, OptionsPublicRouter);
 // inside RbacRouter carries its own specific admin.users.*/admin.roles.*
 // permission check, not one blanket gate here.
 router.use("/admin/rbac", RbacRouter);
+
+// ---- Audit Logs (read-only) ────────────────────────────────────────────────
+// Same reason as RbacRouter above — must precede AdminPanelRouter's /:resource
+// catch-all. Read-only; every route inside AuditRouter is gated by
+// admin.audit.view (not the broader admin.panel.access the generic Admin
+// Panel CRUD uses for the same underlying table).
+router.use("/admin/audit", AuditRouter);
 
 // ---- data management (delete) routes ─────────────────────────────────────────
 // Must be registered before AdminPanelRouter for the same reason as

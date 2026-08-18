@@ -1,6 +1,7 @@
 import { X, Wrench, Gauge, Settings2, MapPin, Package, Clock, Hash } from 'lucide-react'
 import { Modal } from '../../../../../components/ui'
 import { toTitleCase } from '../../../../../utils/textDisplay.js'
+import { useUserDisplayNames } from '../../../../../hooks/masters/useUserDisplayNames.js'
 
 const fmtDateTime = (d) => d
   ? new Date(d).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })
@@ -35,6 +36,7 @@ function StatCard({ icon: Icon, label, value, empty }) {
 }
 
 export default function EquipmentDetailModal({ item, onClose }) {
+  const displayName = useUserDisplayNames()
   if (!item) return null
   const volume = `${item.workingVolume ?? 0}${item.workingUnit ? ` ${item.workingUnit.toUpperCase()}` : ''}`
   const plantColor = PLANT_COLORS[item.plant] || DEFAULT_PLANT_COLOR
@@ -76,10 +78,10 @@ export default function EquipmentDetailModal({ item, onClose }) {
         </div>
       </div>
 
-      {/* Footer — timestamps */}
+      {/* Footer — who/when */}
       <div className="flex items-center justify-between px-6 py-3 bg-gray-50 border-t border-gray-100 text-xs text-gray-400">
-        <span className="flex items-center gap-1.5"><Clock size={12} /> Created {fmtDateTime(item.createdAt)}</span>
-        <span className="flex items-center gap-1.5"><Clock size={12} /> Updated {fmtDateTime(item.updatedAt)}</span>
+        <span className="flex items-center gap-1.5"><Clock size={12} /> Created by {displayName(item.createdBy)} · {fmtDateTime(item.createdAt)}</span>
+        <span className="flex items-center gap-1.5"><Clock size={12} /> Updated by {displayName(item.updatedBy)} · {fmtDateTime(item.updatedAt)}</span>
       </div>
     </Modal>
   )

@@ -39,12 +39,21 @@ model AuditLog {
   id        BigInt   @id @default(autoincrement())
   userId    String?  @map("user_id") @db.Uuid
   username  String?  @db.VarChar(100)
+  // Point-in-time snapshot of the actor's display name, captured at write
+  // time — audit rows must stay self-contained and readable even if the
+  // user's name (or the user itself) changes later.
+  fullName  String?  @map("full_name") @db.VarChar(150)
   action    String   @db.VarChar(50)
+  // Coarse module grouping (mirrors the permission catalog's module
+  // vocabulary, e.g. "masters"/"inventory"/"sales"/"admin") — lets the
+  // Audit Logs page filter by module without parsing tableName.
+  module    String?  @db.VarChar(50)
   tableName String?  @map("table_name") @db.VarChar(100)
   recordId  String?  @map("record_id") @db.VarChar(200)
   oldValue  Json?    @map("old_value")
   newValue  Json?    @map("new_value")
   ipAddress String?  @map("ip_address") @db.VarChar(50)
+  userAgent String?  @map("user_agent")
   notes     String?
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
 

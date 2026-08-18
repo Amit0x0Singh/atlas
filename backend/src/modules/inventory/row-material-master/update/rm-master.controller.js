@@ -1,5 +1,6 @@
 import prisma from '../../../../db.js'
 import { normalizeUom, CANONICAL_UNITS } from '../../../../utils/uom.js'
+import { writeAudit, auditUser } from '../../../../middleware/audit.js'
 
 export const updateRm = async (req, res) => {
   try {
@@ -47,6 +48,7 @@ export const updateRm = async (req, res) => {
     if (lowStockLevel !== undefined) data.lowStockLevel = lowStockLevel ? parseFloat(lowStockLevel) : null
     if (highStockLevel !== undefined) data.highStockLevel = highStockLevel ? parseFloat(highStockLevel) : null
     const item = await prisma.rmMaster.update({ where: { itemCode: req.params.itemCode }, data })
+    await writeAudit({ ...auditUser(req), action: 'UPDATE', module: 'masters', tableName: 'rm_master', recordId: item.itemCode, oldValue: existing, newValue: item })
     return res.json({ success: true, data: item })
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })

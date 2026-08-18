@@ -79,6 +79,9 @@ model SoSequence {
 // ─── CUSTOMER MEMORY LAYER ────────────────────────────────────────────────────
 // Auto-fills fields on new Sales Orders based on past order history.
 
+// Auto-upserted as a side-effect of placing sales orders (see
+// upsertCustomerProfile) — a system-derived cache, not a record a user
+// directly creates/edits, so no createdBy/updatedBy here.
 model CustomerProfile {
   id           String   @id @default(cuid())
   customerName String   @unique @map("customer_name")
@@ -165,6 +168,8 @@ model ErpSalesOrder {
   notes             String?
   totalUnitsFp      Int?      @map("total_units_fp")
   excelSyncedAt     DateTime? @map("excel_synced_at") @db.Timestamptz()
+  createdBy         String?   @map("created_by")
+  updatedBy         String?   @map("updated_by")
   createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
 

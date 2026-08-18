@@ -6,10 +6,19 @@ import { validateLogin } from "./login/login.middleware.js";
 import { login } from "./login/login.controller.js";
 import { verifyPassword } from "./verify-password/verify-password.controller.js";
 import { resolveEffectivePermissions } from "../../services/permission-resolver.js";
+import { writeAudit, auditUser } from "../../middleware/audit.js";
 
 const UserRouter = express.Router();
 
 UserRouter.post("/login", authLimiter, validateLogin, login);
+
+// Stateless JWT — there's no server-side session to invalidate, so this
+// route's only job is recording the action; the frontend calls it right
+// before discarding the token.
+UserRouter.post("/logout", authenticate, async (req, res) => {
+  await writeAudit({ ...auditUser(req), action: "LOGOUT", module: "admin", tableName: "users", recordId: req.user.userId });
+  res.json({ success: true });
+});
 
 // The client's explicit "check for a permission change" poll (called on app
 // load + tab-focus) — always resolves fresh (bypasses the TTL cache) so an

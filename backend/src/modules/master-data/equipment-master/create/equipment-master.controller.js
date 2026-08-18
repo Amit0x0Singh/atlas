@@ -1,5 +1,6 @@
 import prisma from '../../../../db.js'
 import { getMaxEquipCodeNum, formatEquipCode } from '../../../../utils/equip-code.js'
+import { writeAudit, auditUser } from '../../../../middleware/audit.js'
 
 export const createEquipment = async (req, res) => {
   try {
@@ -24,6 +25,7 @@ export const createEquipment = async (req, res) => {
         workingUnit: workingUnit || null,
       }
     })
+    await writeAudit({ ...auditUser(req), action: 'CREATE', module: 'masters', tableName: 'equipment_master', recordId: item.equipCode, newValue: item })
     return res.status(201).json({ success: true, data: item })
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })

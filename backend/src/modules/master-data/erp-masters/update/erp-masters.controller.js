@@ -14,7 +14,9 @@ export const updateSupplier = async (req, res) => {
     if (address !== undefined)       data.address      = address
     if (is_active !== undefined)     data.isActive     = is_active
 
+    const existing = await prisma.erpSupplier.findUnique({ where: { supplierId: req.params.id } })
     await prisma.erpSupplier.update({ where: { supplierId: req.params.id }, data })
+    await writeAudit({ ...auditUser(req), action: 'UPDATE', module: 'masters', tableName: 'erp_suppliers', recordId: req.params.id, oldValue: existing, newValue: req.body })
     return res.json({ success: true, message: 'Supplier updated' })
   } catch (err) {
     if (err.code === 'P2025') return res.status(404).json({ success: false, error: 'Supplier not found', code: 'NOT_FOUND' })
@@ -34,7 +36,7 @@ export const patchErpEquipment = async (req, res) => {
     if (cleaning_time_hrs !== undefined) data.cleaningTimeHrs = cleaning_time_hrs
 
     await prisma.erpEquipment.update({ where: { equipmentId: req.params.id }, data })
-    await writeAudit({ ...auditUser(req), action: 'UPDATE', tableName: 'erp_equipment', recordId: req.params.id, newValue: req.body })
+    await writeAudit({ ...auditUser(req), action: 'UPDATE', module: 'masters', tableName: 'erp_equipment', recordId: req.params.id, newValue: req.body })
     return res.json({ success: true, message: 'Equipment updated' })
   } catch (err) {
     if (err.code === 'P2025') return res.status(404).json({ success: false, error: 'Equipment not found', code: 'NOT_FOUND' })

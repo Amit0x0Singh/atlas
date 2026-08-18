@@ -39,6 +39,10 @@ export function groupPacks(packs) {
         supplier:     p.supplier,
         receivedDate: p.receivedDate,
         uom:          p.uom,
+        createdBy:    p.createdBy,
+        updatedBy:    p.updatedBy,
+        createdAt:    p.createdAt,
+        updatedAt:    p.updatedAt,
         bags:         [],
       });
     }

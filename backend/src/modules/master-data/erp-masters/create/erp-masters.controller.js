@@ -18,7 +18,7 @@ export const createSupplier = async (req, res) => {
         address: address || null,
       },
     })
-    await writeAudit({ ...auditUser(req), action: 'CREATE', tableName: 'erp_suppliers', recordId: row.supplierId, newValue: req.body })
+    await writeAudit({ ...auditUser(req), action: 'CREATE', module: 'masters', tableName: 'erp_suppliers', recordId: row.supplierId, newValue: req.body })
     return res.status(201).json({ success: true, data: row })
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
@@ -41,7 +41,7 @@ export const createPlant = async (req, res) => {
         plantType: plant_type,
       },
     })
-    await writeAudit({ ...auditUser(req), action: 'CREATE', tableName: 'erp_plants', recordId: row.plantId, newValue: req.body })
+    await writeAudit({ ...auditUser(req), action: 'CREATE', module: 'masters', tableName: 'erp_plants', recordId: row.plantId, newValue: req.body })
     return res.status(201).json({ success: true, data: row })
   } catch (err) {
     if (err.code === 'P2002') return res.status(409).json({ success: false, error: 'Plant code already exists', code: 'CONFLICT' })
@@ -84,7 +84,7 @@ export const createErpEquipment = async (req, res) => {
         requiresSterilisation: requires_sterilisation || false,
       },
     })
-    await writeAudit({ ...auditUser(req), action: 'CREATE', tableName: 'erp_equipment', recordId: row.equipmentId, newValue: req.body })
+    await writeAudit({ ...auditUser(req), action: 'CREATE', module: 'masters', tableName: 'erp_equipment', recordId: row.equipmentId, newValue: req.body })
     return res.status(201).json({ success: true, data: row })
   } catch (err) {
     if (err.code === 'P2002') return res.status(409).json({ success: false, error: 'Equipment code already exists', code: 'CONFLICT' })
@@ -109,7 +109,7 @@ export const createStrain = async (req, res) => {
         notes: notes || null,
       },
     })
-    await writeAudit({ ...auditUser(req), action: 'CREATE', tableName: 'microbial_strains', recordId: row.strainId, newValue: req.body })
+    await writeAudit({ ...auditUser(req), action: 'CREATE', module: 'masters', tableName: 'microbial_strains', recordId: row.strainId, newValue: req.body })
     return res.status(201).json({ success: true, data: row })
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
@@ -134,6 +134,7 @@ export const createCustomer = async (req, res) => {
         email: email || null,
       },
     })
+    await writeAudit({ ...auditUser(req), action: 'CREATE', module: 'masters', tableName: 'customers', recordId: row.customerId, newValue: req.body })
     return res.status(201).json({ success: true, data: row })
   } catch (err) {
     if (err.code === 'P2002') return res.status(409).json({ success: false, error: 'Customer code already exists', code: 'CONFLICT' })

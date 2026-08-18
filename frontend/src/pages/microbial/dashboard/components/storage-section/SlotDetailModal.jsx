@@ -1,10 +1,16 @@
 import { Modal, Button } from '../../../../../components/ui'
-import { PauseCircle } from 'lucide-react'
+import { PauseCircle, Clock } from 'lucide-react'
 import { stockStatusBadgeCls } from '../../../transaction/utils/format.js'
 import { useMarkContainerInactive } from '../../../../../hooks/microbial/useMicrobialStorage.js'
+import { useUserDisplayNames } from '../../../../../hooks/masters/useUserDisplayNames.js'
+
+const fmtDateTime = (d) => d
+  ? new Date(d).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })
+  : '—'
 
 export default function SlotDetailModal({ cell, onClose }) {
   const markInactive = useMarkContainerInactive()
+  const displayName = useUserDisplayNames()
 
   const handleMarkInactive = async () => {
     if (!cell) return
@@ -46,6 +52,11 @@ export default function SlotDetailModal({ cell, onClose }) {
           <Button variant="outline-gray" icon={PauseCircle} size="sm" disabled={markInactive.isPending} loading={markInactive.isPending} onClick={handleMarkInactive}>
             Mark Inactive
           </Button>
+
+          <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100 text-xs text-gray-400">
+            <span className="flex items-center gap-1.5"><Clock size={12} /> Created by {displayName(cell.created_by)} · {fmtDateTime(cell.created_at)}</span>
+            <span className="flex items-center gap-1.5"><Clock size={12} /> Updated by {displayName(cell.updated_by)} · {fmtDateTime(cell.updated_at)}</span>
+          </div>
         </div>
       )}
     </Modal>

@@ -1,6 +1,7 @@
 import { X, FlaskConical, Hash, Beaker, MapPin, GitBranch, Clock } from 'lucide-react'
 import { Modal } from '../../../../../components/ui'
 import { toTitleCase } from '../../../../../utils/textDisplay.js'
+import { useUserDisplayNames } from '../../../../../hooks/masters/useUserDisplayNames.js'
 
 const fmtDateTime = (d) => d
   ? new Date(d).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })
@@ -29,6 +30,7 @@ function StatCard({ icon: Icon, label, value, empty }) {
 }
 
 export default function ProductDetailModal({ item, onClose }) {
+  const displayName = useUserDisplayNames()
   if (!item) return null
   const stateColor = STATE_BADGE[(item.state || '').toLowerCase()] || 'bg-gray-100 text-gray-600 ring-gray-200'
   const plants = item.plant?.length ? item.plant.join(', ') : null
@@ -69,14 +71,10 @@ export default function ProductDetailModal({ item, onClose }) {
         </div>
       </div>
 
-      {/* Footer — timestamps */}
+      {/* Footer — who/when */}
       <div className="flex items-center justify-between px-6 py-3 bg-gray-50 border-t border-gray-100 text-xs text-gray-400">
-        <span className="flex items-center gap-1.5">
-          <Clock size={12} /> Created {fmtDateTime(item.createdAt)}{item.createdBy ? ` by ${item.createdBy}` : ''}
-        </span>
-        <span className="flex items-center gap-1.5">
-          <Clock size={12} /> Updated {fmtDateTime(item.updatedAt)}{item.updatedBy ? ` by ${item.updatedBy}` : ''}
-        </span>
+        <span className="flex items-center gap-1.5"><Clock size={12} /> Created by {displayName(item.createdBy)} · {fmtDateTime(item.createdAt)}</span>
+        <span className="flex items-center gap-1.5"><Clock size={12} /> Updated by {displayName(item.updatedBy)} · {fmtDateTime(item.updatedAt)}</span>
       </div>
     </Modal>
   )

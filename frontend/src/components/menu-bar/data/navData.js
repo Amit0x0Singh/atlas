@@ -6,7 +6,7 @@ import {
   ClipboardList, Snowflake, MapPin, ListChecks,
   ShoppingBag,
   Factory, CalendarDays, Beaker, Activity, Cog, TestTube2,
-  ScanLine, FileBarChart, BarChart3, Upload, UserCog, Settings,
+  ScanLine, FileBarChart, BarChart3, Upload, UserCog, Settings, ShieldAlert,
 } from 'lucide-react'
 
 export const APP_NAV = [
@@ -85,6 +85,7 @@ export const APP_NAV = [
     group: 'SETTINGS',
     items: [
       { to: '/settings', label: 'Settings', Icon: Settings },
+      { to: '/audit-logs', label: 'Audit Logs', Icon: ShieldAlert },
     ],
   },
 ]

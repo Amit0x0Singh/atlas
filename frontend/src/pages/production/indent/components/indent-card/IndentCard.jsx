@@ -1,6 +1,11 @@
 import './IndentCard.css'
+import { Clock } from 'lucide-react'
+import { useUserDisplayNames } from '../../../../../hooks/masters/useUserDisplayNames.js'
 
 import { toTitleCase } from '../../../../../utils/textDisplay.js'
+const fmtDateTime = (d) => d
+  ? new Date(d).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })
+  : '—'
 const STATUS_BADGE = {
   OPEN:          'bg-blue-100 text-blue-800',
   PARTIAL:       'bg-orange-100 text-orange-800',
@@ -10,6 +15,7 @@ const STATUS_BADGE = {
 }
 
 export default function IndentCard({ indent, selected, setSelected }) {
+  const displayName = useUserDisplayNames()
   const isSelected = selected?.indentId === indent.indentId
 
   return (
@@ -72,6 +78,11 @@ export default function IndentCard({ indent, selected, setSelected }) {
           ) : (
             <p className="text-xs text-gray-400">No item details available.</p>
           )}
+
+          <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-200 text-xs text-gray-400">
+            <span className="flex items-center gap-1.5"><Clock size={12} /> Created by {displayName(indent.createdBy)} · {fmtDateTime(indent.createdAt)}</span>
+            <span className="flex items-center gap-1.5"><Clock size={12} /> Updated by {displayName(indent.updatedBy)} · {fmtDateTime(indent.updatedAt)}</span>
+          </div>
         </div>
       )}
     </div>

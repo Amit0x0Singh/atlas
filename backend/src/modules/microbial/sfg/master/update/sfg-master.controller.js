@@ -1,5 +1,6 @@
 import prisma from '../../../../../db.js'
 import { normalizeUom, CANONICAL_UNITS } from '../../../../../utils/uom.js'
+import { writeAudit, auditUser } from '../../../../../middleware/audit.js'
 
 export const updateMicrobe = async (req, res) => {
   try {
@@ -15,10 +16,12 @@ export const updateMicrobe = async (req, res) => {
       data.uom = canonicalUom
     }
 
+    const existing = await prisma.microbeMaster.findUnique({ where: { microbeId: req.params.id } })
     const row = await prisma.microbeMaster.update({
       where: { microbeId: req.params.id },
       data,
     })
+    await writeAudit({ ...auditUser(req), action: 'UPDATE', module: 'masters', tableName: 'microbe_master', recordId: row.microbeCode, oldValue: existing, newValue: row })
     return res.json({ success: true, data: row })
   } catch (e) {
     if (e.code === 'P2025') return res.status(404).json({ success: false, error: 'Microbe not found', code: 'NOT_FOUND' })

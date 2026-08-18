@@ -1,10 +1,16 @@
 import { Fragment } from "react";
+import { Clock } from "lucide-react";
 import { packsApi } from "../../../../../../api/inventory.js";
 import { openAuthedFile } from "../../../../../../utils/authedFile.js";
 import { groupStatus, statusColor, fmtDate } from "../utils/groupPacks.js";
+import { useUserDisplayNames } from "../../../../../../hooks/masters/useUserDisplayNames.js";
 
 import { toTitleCase } from '../../../../../../utils/textDisplay.js'
+const fmtDateTime = (d) => d
+  ? new Date(d).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })
+  : '—'
 export default function PackTableRow({ group: g, isOpen, onToggle }) {
+  const displayName = useUserDisplayNames();
   const totalQty = g.bags.reduce((s, b) => s + (b.packQty || 0), 0);
   const status   = groupStatus(g.bags);
 
@@ -127,6 +133,17 @@ export default function PackTableRow({ group: g, isOpen, onToggle }) {
             </td>
           </tr>
         ))}
+
+      {isOpen && (
+        <tr className="bg-indigo-50/30 border-t border-indigo-100/60">
+          <td colSpan={9} className="px-8 py-2">
+            <div className="flex items-center justify-between text-xs text-gray-400">
+              <span className="flex items-center gap-1.5"><Clock size={12} /> Created by {displayName(g.createdBy)} · {fmtDateTime(g.createdAt)}</span>
+              <span className="flex items-center gap-1.5"><Clock size={12} /> Updated by {displayName(g.updatedBy)} · {fmtDateTime(g.updatedAt)}</span>
+            </div>
+          </td>
+        </tr>
+      )}
     </Fragment>
   );
 }

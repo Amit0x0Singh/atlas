@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { sfgApi } from '../../../../api/inventory.js'
 import { Button, BackButton } from '../../../../components/ui'
 import { RefreshCw, Save } from 'lucide-react'
+import { useUserDisplayNames } from '../../../../hooks/masters/useUserDisplayNames.js'
 import './SFG.css'
 
 import { toTitleCase } from '../../../../utils/textDisplay.js'
@@ -12,6 +13,7 @@ const STATUS_COLOR = {
 }
 
 export default function SFG() {
+  const displayName = useUserDisplayNames()
   const [entries, setEntries] = useState([])
   const [summary, setSummary] = useState([])
   const [loading, setLoading] = useState(true)
@@ -252,7 +254,7 @@ export default function SFG() {
                       )}
                     </div>
                     <p className="text-xs text-gray-400 mt-3">
-                      Indent: {sfg.indentId} · Created: {new Date(sfg.createdAt).toLocaleString('en-IN')} · Updated: {new Date(sfg.updatedAt).toLocaleString('en-IN')}
+                      Indent: {sfg.indentId} · Created by {displayName(sfg.createdBy)} {new Date(sfg.createdAt).toLocaleString('en-IN')} · Updated by {displayName(sfg.updatedBy)} {new Date(sfg.updatedAt).toLocaleString('en-IN')}
                     </p>
                   </div>
                 )}

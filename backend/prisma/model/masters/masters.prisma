@@ -10,11 +10,15 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 model ReasonCode {
-  codeId   Int     @id @default(autoincrement()) @map("code_id")
-  category String  @db.VarChar(100)
-  code     String  @db.VarChar(50)
-  label    String  @db.VarChar(200)
-  isActive Boolean @default(true) @map("is_active")
+  codeId    Int      @id @default(autoincrement()) @map("code_id")
+  category  String   @db.VarChar(100)
+  code      String   @db.VarChar(50)
+  label     String   @db.VarChar(200)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdBy String?  @map("created_by")
+  updatedBy String?  @map("updated_by")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
 
   @@unique([category, code])
   @@map("reason_codes")
@@ -28,6 +32,8 @@ model ErpSupplier {
   email        String?  @db.VarChar(200)
   address      String?
   isActive     Boolean  @default(true) @map("is_active")
+  createdBy    String?  @map("created_by")
+  updatedBy    String?  @map("updated_by")
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
 
@@ -42,7 +48,10 @@ model ErpPlant {
   plantType String   @map("plant_type") @db.VarChar(50)
   // formulation / packing / both
   isActive  Boolean  @default(true) @map("is_active")
+  createdBy String?  @map("created_by")
+  updatedBy String?  @map("updated_by")
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
 
   equipment ErpEquipment[]
 
@@ -60,6 +69,8 @@ model ErpEquipment {
   cleaningTimeHrs       Decimal  @default(0) @map("cleaning_time_hrs") @db.Decimal(5, 2)
   requiresSterilisation Boolean  @default(false) @map("requires_sterilisation")
   status                String   @default("active") @db.VarChar(30)
+  createdBy             String?  @map("created_by")
+  updatedBy             String?  @map("updated_by")
   createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt             DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
 
@@ -79,7 +90,10 @@ model Customer {
   phone        String?  @db.VarChar(20)
   email        String?  @db.VarChar(200)
   isActive     Boolean  @default(true) @map("is_active")
+  createdBy    String?  @map("created_by")
+  updatedBy    String?  @map("updated_by")
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
 
   @@map("customers")
 }

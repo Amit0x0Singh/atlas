@@ -24,6 +24,17 @@ export const login = async (req, res) => {
   const ok = await bcrypt.compare(password || "", user?.passwordHash ?? DUMMY_HASH);
 
   if (!user || !ok) {
+    // No userId — the account may not exist at all. Logged under the
+    // attempted email so repeated failures (wrong password or
+    // enumeration attempts against unknown addresses) are still visible.
+    await writeAudit({
+      username: needle,
+      action: "LOGIN_FAILED",
+      module: "admin",
+      tableName: "users",
+      ip: req.ip,
+      userAgent: req.headers["user-agent"],
+    });
     return res.status(401).json({ success: false, error: "Invalid credentials", code: "UNAUTHORIZED" });
   }
 
@@ -33,10 +44,13 @@ export const login = async (req, res) => {
   await writeAudit({
     userId: user.userId,
     username: user.username,
+    fullName: user.fullName,
     action: "LOGIN",
+    module: "admin",
     tableName: "users",
     recordId: user.userId,
     ip: req.ip,
+    userAgent: req.headers["user-agent"],
   });
 
   return res.json({

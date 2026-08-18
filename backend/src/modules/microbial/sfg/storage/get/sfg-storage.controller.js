@@ -19,6 +19,10 @@ async function loadOccupiedSlots() {
       microbeType: c.microbeType,
       balanceKg: balance,
       status,
+      createdBy: c.createdBy,
+      updatedBy: c.updatedBy,
+      createdAt: c.createdAt,
+      updatedAt: c.updatedAt,
     }
   }
   return bySlot

@@ -1,7 +1,12 @@
-import { Lock, ShieldCheck, Pencil, Trash2 } from 'lucide-react'
+import { Lock, ShieldCheck, Pencil, Trash2, Clock } from 'lucide-react'
 import { Modal, Button } from '../../../../components/ui'
 import { Can } from '../../../../components/common/Can.jsx'
 import { roleModuleLabels } from '../../../../constants/permissionMatrix.js'
+import { useUserDisplayNames } from '../../../../hooks/masters/useUserDisplayNames.js'
+
+const fmtDateTime = (d) => d
+  ? new Date(d).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })
+  : '—'
 
 /**
  * Centered popup showing everything the old role card used to show inline
@@ -9,6 +14,7 @@ import { roleModuleLabels } from '../../../../constants/permissionMatrix.js'
  * Roles table instead of it taking up permanent space in every row.
  */
 export default function RoleDetailModal({ role, onClose, onEdit, onDelete }) {
+  const displayName = useUserDisplayNames()
   if (!role) return null
   const modules = roleModuleLabels(role)
 
@@ -58,6 +64,11 @@ export default function RoleDetailModal({ role, onClose, onEdit, onDelete }) {
             <div className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mt-0.5">Permissions</div>
           </div>
         </div>
+      </div>
+
+      <div className="flex items-center justify-between px-5 py-2.5 border-t border-gray-100 text-xs text-gray-400">
+        <span className="flex items-center gap-1.5"><Clock size={12} /> Created by {displayName(role.createdBy)} · {fmtDateTime(role.createdAt)}</span>
+        <span className="flex items-center gap-1.5"><Clock size={12} /> Updated by {displayName(role.updatedBy)} · {fmtDateTime(role.updatedAt)}</span>
       </div>
 
       <div className="flex items-center justify-between gap-2 px-5 py-4 border-t border-gray-100 bg-gray-50/60">

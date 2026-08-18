@@ -1,4 +1,5 @@
 import prisma from '../../../../db.js'
+import { writeAudit, auditUser } from '../../../../middleware/audit.js'
 
 const VALID_STATUSES = ['pending', 'approved', 'rejected']
 
@@ -9,6 +10,7 @@ const requestDeleteGateInward = async (req, res) => {
       where: { inwardId: id },
       data: { requestDelete: true },
     })
+    await writeAudit({ ...auditUser(req), action: 'UPDATE', module: 'gate', tableName: 'gate_inward', recordId: id, newValue: { requestDelete: true }, notes: 'delete requested' })
     return res.json({ success: true, data: row })
   } catch (err) {
     if (err.code === 'P2025') return res.status(404).json({ success: false, error: 'Gate inward not found', code: 'NOT_FOUND' })
@@ -25,6 +27,7 @@ const requestDeleteGateOutward = async (req, res) => {
       where: { outwardId: id },
       data: { requestDelete: true },
     })
+    await writeAudit({ ...auditUser(req), action: 'UPDATE', module: 'gate', tableName: 'gate_outward', recordId: id, newValue: { requestDelete: true }, notes: 'delete requested' })
     return res.json({ success: true, data: row })
 
   } catch (err) {
@@ -49,6 +52,7 @@ const updateGateInwardStatus = async (req, res) => {
       where: { inwardId: req.params.id },
       data: { status },
     })
+    await writeAudit({ ...auditUser(req), action: 'UPDATE', module: 'gate', tableName: 'gate_inward', recordId: req.params.id, newValue: { status } })
     return res.json({ success: true, data: row })
 
   } catch (err) {
@@ -75,6 +79,7 @@ const updateGateOutwardStatus = async (req, res) => {
       data: { status },
     })
 
+    await writeAudit({ ...auditUser(req), action: 'UPDATE', module: 'gate', tableName: 'gate_outward', recordId: id, newValue: { status } })
     return res.json({ success: true, data: row })
 
   } catch (err) {

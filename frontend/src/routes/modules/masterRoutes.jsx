@@ -11,6 +11,7 @@ import SupplierMaster from "../../pages/masters/supplier/page/SupplierMaster.jsx
 import UserRoles from "../../pages/masters/user-roles/page/UserRoles.jsx";
 import UserFormPage from "../../pages/masters/user-roles/page/UserFormPage.jsx";
 import RoleFormPage from "../../pages/masters/user-roles/page/RoleFormPage.jsx";
+import AuditLogs from "../../pages/admin/audit-logs/page/AuditLogs.jsx";
 
 export const masterRoutes = [
   <Route key="rm-master"        path="/rm-master"        element={<RmMaster />} />,
@@ -27,4 +28,5 @@ export const masterRoutes = [
   <Route key="user-roles-edit-user" path="/user-roles/users/:userId"  element={<UserFormPage />} />,
   <Route key="user-roles-new-role"  path="/user-roles/roles/new"      element={<RoleFormPage />} />,
   <Route key="user-roles-edit-role" path="/user-roles/roles/:roleId"  element={<RoleFormPage />} />,
+  <Route key="audit-logs"       path="/audit-logs"       element={<AuditLogs />} />,
 ];

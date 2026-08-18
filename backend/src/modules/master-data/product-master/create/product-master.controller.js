@@ -2,6 +2,7 @@ import prisma from '../../../../db.js'
 import { normalizePlant } from '../../../../utils/plant.js'
 import { normalizeUom, CANONICAL_UNITS } from '../../../../utils/uom.js'
 import { getMaxProductCodeNum, formatProductCode } from '../../../../utils/product-code.js'
+import { writeAudit, auditUser } from '../../../../middleware/audit.js'
 
 export const createProduct = async (req, res) => {
   try {
@@ -25,6 +26,7 @@ export const createProduct = async (req, res) => {
     const item = await prisma.productMaster.create({
       data: { productCode: formatProductCode(nextNum + 1), productName, plant: normalizePlant(plant), uom: canonicalUom, state: state || null }
     })
+    await writeAudit({ ...auditUser(req), action: 'CREATE', module: 'masters', tableName: 'product_master', recordId: item.productCode, newValue: item })
     return res.status(201).json({ success: true, data: item })
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })

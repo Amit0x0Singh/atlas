@@ -20,7 +20,10 @@ model MicrobialStrain {
   minViableCfuPerMl Decimal? @map("min_viable_cfu_per_ml") @db.Decimal(15, 2)
   notes             String?
   isActive          Boolean  @default(true) @map("is_active")
+  createdBy         String?  @map("created_by")
+  updatedBy         String?  @map("updated_by")
   createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
 
   containers MicrobialContainer[]
 
@@ -39,6 +42,8 @@ model MicrobialContainer {
   storageTempC     Decimal? @map("storage_temp_c") @db.Decimal(5, 2)
   status           String   @default("healthy") @db.VarChar(20)
   notes            String?
+  createdBy        String?  @map("created_by")
+  updatedBy        String?  @map("updated_by")
   createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt        DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
 

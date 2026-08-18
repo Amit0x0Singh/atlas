@@ -1,9 +1,15 @@
 ﻿import { Fragment, useState } from 'react'
+import { Clock } from 'lucide-react'
 import Pagination from '../../../../../components/pagination/Pagination.jsx'
 import { STATUS_STYLE, STATUS_LABELS } from '../../shared/constants.js'
 import { fmtDate, etdDays } from '../../shared/utils.js'
 import { Button } from '../../../../../components/ui'
 import { toTitleCase } from '../../../../../utils/textDisplay.js'
+import { useUserDisplayNames } from '../../../../../hooks/masters/useUserDisplayNames.js'
+
+const fmtDateTime = (d) => d
+  ? new Date(d).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })
+  : '—'
 
 function TypeBadge({ type }) {
   const isExport = type === 'EXPORT'
@@ -33,6 +39,7 @@ function EtdCell({ date }) {
 }
 
 export default function OrderHistory({ orders, loading, onOpenDispatch }) {
+  const displayName = useUserDisplayNames()
   const [limit,        setLimit]        = useState(15)
   const [page,         setPage]         = useState(1)
   const [expandedKeys, setExpandedKeys] = useState(new Set())
@@ -206,6 +213,18 @@ export default function OrderHistory({ orders, loading, onOpenDispatch }) {
                         </td>
                       </tr>
                     ))}
+
+                    {/* ── Created/Updated by-and-at footer row (visible when expanded) ── */}
+                    {isOpen && (
+                      <tr className="bg-indigo-50/30 border-t border-indigo-100/60">
+                        <td colSpan={10} className="px-8 py-2">
+                          <div className="flex items-center justify-between text-xs text-gray-400">
+                            <span className="flex items-center gap-1.5"><Clock size={12} /> Created by {displayName(order.createdBy)} · {fmtDateTime(order.createdAt)}</span>
+                            <span className="flex items-center gap-1.5"><Clock size={12} /> Updated by {displayName(order.updatedBy)} · {fmtDateTime(order.updatedAt)}</span>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
                   </Fragment>
                 )
               })}

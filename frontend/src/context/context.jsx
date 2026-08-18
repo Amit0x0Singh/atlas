@@ -59,6 +59,10 @@ export function AppProvider({ children }) {
   }, [])
 
   const logout = useCallback(() => {
+    // Best-effort — stateless JWT means there's nothing server-side to
+    // invalidate, this call exists purely to record the action. A user
+    // must always be able to log out locally even if this fails/is offline.
+    api.post('/auth/logout').catch(() => {})
     localStorage.removeItem('erp_token')
     localStorage.removeItem('erp_user')
     setUser(null)

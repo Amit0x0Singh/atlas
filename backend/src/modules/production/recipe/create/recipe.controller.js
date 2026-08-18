@@ -1,6 +1,7 @@
 import prisma from '../../../../db.js'
 import { toCanonical } from '../../../../utils/uom.js'
 import { syncTotalRecipe } from '../recipe-utils.js'
+import { writeAudit, auditUser } from '../../../../middleware/audit.js'
 
 export const bulkSaveRecipe = async (req, res) => {
   try {
@@ -54,6 +55,9 @@ export const bulkSaveRecipe = async (req, res) => {
       saved++
     }
     for (const productCode of touchedProductCodes) await syncTotalRecipe(productCode)
+    // One summary entry per bulk save rather than one per row — a save can
+    // touch dozens of BOM lines at once.
+    await writeAudit({ ...auditUser(req), action: 'UPDATE', module: 'masters', tableName: 'recipe_db', recordId: [...touchedProductCodes].join(','), newValue: { savedRows: saved, productCodes: [...touchedProductCodes] } })
     return res.json({ success: true, saved, message: `${saved} rows saved` })
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
@@ -107,6 +111,7 @@ export const fixRmMapping = async (req, res) => {
       }
       log.push({ from: m.fromCode, to: m.toCode, fixed: affected.length })
     }
+    await writeAudit({ ...auditUser(req), action: 'UPDATE', module: 'masters', tableName: 'recipe_db', notes: 'fix-rm-mapping', newValue: { totalFixed, mappings, log } })
     return res.json({ success: true, totalFixed, log })
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })

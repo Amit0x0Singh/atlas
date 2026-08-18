@@ -1,10 +1,17 @@
 import { Fragment } from "react";
+import { Clock } from "lucide-react";
 import { Button } from "../../../../../components/ui";
 import { STATUS_STYLE, STATUS_LABELS } from "../../shared/constants.js";
 import { fmtDate, etdDays } from "../../shared/utils.js";
 import { toTitleCase } from "../../../../../utils/textDisplay.js";
+import { useUserDisplayNames } from "../../../../../hooks/masters/useUserDisplayNames.js";
+
+const fmtDateTime = (d) => d
+  ? new Date(d).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })
+  : '—'
 
 export default function DispatchRow({ order, expanded, onToggle, onDispatch }) {
+  const displayName = useUserDisplayNames();
   const days = etdDays(order.estimatedDispatchDate);
   const overdue = days !== null && days < 0;
   const totalQty = order.items.reduce(
@@ -171,6 +178,23 @@ export default function DispatchRow({ order, expanded, onToggle, onDispatch }) {
                   ))}
                 </tbody>
               </table>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginTop: "8px",
+                fontSize: "11px",
+                color: "#94a3b8",
+              }}
+            >
+              <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <Clock size={11} /> Created by {displayName(order.createdBy)} · {fmtDateTime(order.createdAt)}
+              </span>
+              <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <Clock size={11} /> Updated by {displayName(order.updatedBy)} · {fmtDateTime(order.updatedAt)}
+              </span>
             </div>
           </td>
         </tr>

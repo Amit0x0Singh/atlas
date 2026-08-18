@@ -1,8 +1,10 @@
 import { useState } from 'react'
-import { ChevronDown, ChevronRight } from 'lucide-react'
+import { ChevronDown, ChevronRight, Clock } from 'lucide-react'
 import { fmtCfu, fmtDateTime } from '../../utils/format.js'
+import { useUserDisplayNames } from '../../../../../hooks/masters/useUserDisplayNames.js'
 
 export default function RecentIssuances({ items }) {
+  const displayName = useUserDisplayNames()
   const [expanded, setExpanded] = useState(null)
 
   return (
@@ -43,6 +45,10 @@ export default function RecentIssuances({ items }) {
                         <div className="font-bold text-gray-900">{Number(l.qty_issued_kg).toFixed(3)} kg</div>
                       </div>
                     ))}
+                    <div className="flex items-center justify-between text-[11px] text-gray-400 pt-1">
+                      <span className="flex items-center gap-1.5"><Clock size={11} /> Created by {displayName(o.created_by)} · {fmtDateTime(o.created_at)}</span>
+                      <span className="flex items-center gap-1.5"><Clock size={11} /> Updated by {displayName(o.updated_by)} · {fmtDateTime(o.updated_at)}</span>
+                    </div>
                   </div>
                 )}
               </div>

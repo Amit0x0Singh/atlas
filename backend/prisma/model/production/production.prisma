@@ -495,6 +495,8 @@ model ErpProductionJob {
   status            String    @default("pending") @db.VarChar(30)
   delayReasonCode   String?   @map("delay_reason_code") @db.VarChar(50)
   delayNotes        String?   @map("delay_notes")
+  createdBy         String?   @map("created_by")
+  updatedBy         String?   @map("updated_by")
   createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
 

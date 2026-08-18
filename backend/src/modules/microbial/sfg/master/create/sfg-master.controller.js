@@ -1,6 +1,7 @@
 import prisma from '../../../../../db.js'
 import { normalizeUom, CANONICAL_UNITS } from '../../../../../utils/uom.js'
 import { getMaxMicrobeCodeNum, formatMicrobeCode } from '../../../../../utils/microbe-code.js'
+import { writeAudit, auditUser } from '../../../../../middleware/audit.js'
 
 export const migrateTables = async (req, res) => {
   return res.json({ success: true, message: 'Microbial SFG tables managed by Prisma — no migration needed' })
@@ -28,6 +29,7 @@ export const createMicrobe = async (req, res) => {
     const row = await prisma.microbeMaster.create({
       data: { microbeName: microbe_name.trim(), microbeCode: formatMicrobeCode(nextNum + 1), uom: canonicalUom },
     })
+    await writeAudit({ ...auditUser(req), action: 'CREATE', module: 'masters', tableName: 'microbe_master', recordId: row.microbeCode, newValue: row })
     return res.status(201).json({ success: true, data: row })
   } catch (e) {
     if (e.code === 'P2002')
@@ -87,6 +89,7 @@ export const importMicrobes = async (req, res) => {
       }
     }
 
+    await writeAudit({ ...auditUser(req), action: 'IMPORT', module: 'masters', tableName: 'microbe_master', newValue: { imported, skipped, errorCount: errors.length } })
     return res.json({ success: true, imported, skipped, errors })
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })

@@ -1,4 +1,5 @@
 import prisma from "../../../../db.js";
+import { writeAudit, auditUser } from "../../../../middleware/audit.js";
 
 const nextSoId = async () => {
   const year = new Date().getFullYear();
@@ -115,6 +116,7 @@ const createSalesOrder = async (req, res) => {
       include: { items: true },
     });
 
+    await writeAudit({ ...auditUser(req), action: 'CREATE', module: 'sales', tableName: 'sales_orders', recordId: order.id, newValue: order });
     return res.status(201).json({ success: true, data: order });
   } catch (err) {
     console.error('[createSalesOrder]', err);

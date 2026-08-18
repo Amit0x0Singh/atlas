@@ -1,12 +1,18 @@
 ﻿import { useState, useEffect } from 'react'
+import { Clock } from 'lucide-react'
 import { trackerApi } from '../../../../api/sales.js'
 import { BackButton } from '../../../../components/ui'
 import InfoChip from '../components/info-chip/InfoChip.jsx'
 import Stat from '../components/stat/Stat.jsx'
+import { useUserDisplayNames } from '../../../../hooks/masters/useUserDisplayNames.js'
 import './Tracker.css'
 
 import { toTitleCase } from '../../../../utils/textDisplay.js'
+const fmtDateTime = (d) => d
+  ? new Date(d).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })
+  : '—'
 export default function Tracker() {
+  const displayName = useUserDisplayNames()
   const [diNo, setDiNo] = useState('')
   const [allIndents, setAllIndents] = useState([])
   const [filtered, setFiltered] = useState([])
@@ -260,6 +266,11 @@ export default function Tracker() {
                 </div>
               </div>
             )}
+
+            <div className="flex items-center justify-between px-1 text-xs text-gray-400">
+              <span className="flex items-center gap-1.5"><Clock size={12} /> Created by {displayName(detail.indent.createdBy)} · {fmtDateTime(detail.indent.createdAt)}</span>
+              <span className="flex items-center gap-1.5"><Clock size={12} /> Updated by {displayName(detail.indent.updatedBy)} · {fmtDateTime(detail.indent.updatedAt)}</span>
+            </div>
           </div>
         )}
       </div>

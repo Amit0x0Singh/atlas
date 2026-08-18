@@ -46,5 +46,8 @@ export function flattenPack(bag) {
     scannedAt: bag.scannedAt ?? null,
     inwardedAt: bag.inwardedAt ?? null,
     createdAt: pm?.createdAt,
+    createdBy: pm?.createdBy ?? null,
+    updatedBy: pm?.updatedBy ?? null,
+    updatedAt: pm?.updatedAt ?? null,
   }
 }

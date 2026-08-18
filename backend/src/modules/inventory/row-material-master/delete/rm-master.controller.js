@@ -1,8 +1,10 @@
 import prisma from '../../../../db.js'
+import { writeAudit, auditUser } from '../../../../middleware/audit.js'
 
 export const deleteRm = async (req, res) => {
   try {
-    await prisma.rmMaster.delete({ where: { itemCode: req.params.itemCode } })
+    const deleted = await prisma.rmMaster.delete({ where: { itemCode: req.params.itemCode } })
+    await writeAudit({ ...auditUser(req), action: 'DELETE', module: 'masters', tableName: 'rm_master', recordId: deleted.itemCode, oldValue: deleted })
     return res.json({ success: true, message: 'Deleted' })
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })

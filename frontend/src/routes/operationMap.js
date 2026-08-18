@@ -50,6 +50,7 @@ export const PERMISSION_ROUTES = [
   { prefix: '/microbes-master', permission: 'masters.microbe.view' },
   { prefix: '/import',          permission: 'admin.import.execute' },
   { prefix: '/settings',        permission: 'admin.settings.access' },
+  { prefix: '/audit-logs',      permission: 'admin.audit.view' },
 ]
 
 // Longest matching prefix wins, so more specific routes (e.g. /erp/microbial)

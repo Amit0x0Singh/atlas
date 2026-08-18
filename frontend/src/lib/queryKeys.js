@@ -160,4 +160,11 @@ export const queryKeys = {
     groups: ()           => ['options', 'groups'],
     group:  (groupCode)  => ['options', 'groups', groupCode],
   },
+
+  // ── Audit Logs ──────────────────────────────────────────────────────────
+  auditLogs: {
+    all:    (filters) => filters ? ['audit-logs', filters] : ['audit-logs'],
+    detail: (id)       => ['audit-log', id],
+    meta:   () => ['audit-logs', 'meta'],
+  },
 }

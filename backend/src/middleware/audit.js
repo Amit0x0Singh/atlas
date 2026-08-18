@@ -27,19 +27,22 @@ function truncate(value, maxLen) {
   return s.length > maxLen ? s.slice(0, maxLen - 1) + '…' : s
 }
 
-export async function writeAudit({ userId, username, action, tableName, recordId, oldValue, newValue, notes, ip } = {}) {
+export async function writeAudit({ userId, username, fullName, action, module, tableName, recordId, oldValue, newValue, notes, ip, userAgent } = {}) {
   try {
     const safeUserId = typeof userId === 'string' && UUID_RE.test(userId) ? userId : null
     await prisma.auditLog.create({
       data: {
         userId:    safeUserId,
         username:  truncate(username, 100),
+        fullName:  truncate(fullName, 150),
         action:    truncate(action, 50),
+        module:    truncate(module, 50),
         tableName: truncate(tableName, 100),
         recordId:  truncate(recordId, 200),
         oldValue:  oldValue  || undefined,
         newValue:  newValue  || undefined,
         ipAddress: truncate(ip, 50),
+        userAgent: userAgent || null,
         notes:     notes     || null,
       },
     })
@@ -58,8 +61,10 @@ export async function writeAudit({ userId, username, action, tableName, recordId
 // straight through — see its own comment.
 export function auditUser(request) {
   return {
-    userId:   request.user?.user_id  || null,
-    username: request.user?.username || 'unknown',
-    ip:       request.ip             || null,
+    userId:    request.user?.user_id   || null,
+    username:  request.user?.username  || 'unknown',
+    fullName:  request.user?.full_name || null,
+    ip:        request.ip              || null,
+    userAgent: request.headers?.['user-agent'] || null,
   }
 }

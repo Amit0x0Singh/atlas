@@ -1,4 +1,5 @@
 import prisma from '../../../../db.js'
+import { writeAudit, auditUser } from '../../../../middleware/audit.js'
 
 
 
@@ -8,7 +9,8 @@ const deleteGateInward = async (req, res) => {
 
   try {
 
-    await prisma.gateInward.delete({ where: { inwardId: id } })
+    const deleted = await prisma.gateInward.delete({ where: { inwardId: id } })
+    await writeAudit({ ...auditUser(req), action: 'DELETE', module: 'gate', tableName: 'gate_inward', recordId: id, oldValue: deleted })
     return res.json({ success: true, message: 'Gate inward deleted' })
 
   } catch (err) {
@@ -25,7 +27,8 @@ const deleteGateOutward = async (req, res) => {
   const { id } = req.params
 
   try {
-    await prisma.gateOutward.delete({ where: { outwardId: id } })
+    const deleted = await prisma.gateOutward.delete({ where: { outwardId: id } })
+    await writeAudit({ ...auditUser(req), action: 'DELETE', module: 'gate', tableName: 'gate_outward', recordId: id, oldValue: deleted })
     return res.json({ success: true, message: 'Gate outward deleted' })
 
   } catch (err) {
