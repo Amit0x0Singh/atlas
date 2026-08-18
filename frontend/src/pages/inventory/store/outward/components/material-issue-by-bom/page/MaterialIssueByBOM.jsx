@@ -60,7 +60,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
 
   // Load products
   useEffect(() => {
-    productApi.list().then(r => setProducts(r.data || [])).catch(() => {})
+    productApi.search().then(r => setProducts(r.data || [])).catch(() => {})
   }, [])
 
   // RM master lookup — used only to know each line's Operational UOM/density
@@ -68,7 +68,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
   // validates the actual conversion before deducting stock.
   const [rmByCode, setRmByCode] = useState(new Map())
   useEffect(() => {
-    rmApi.list().then(r => setRmByCode(new Map((r.data || []).map(rm => [rm.itemCode, rm])))).catch(() => {})
+    rmApi.search().then(r => setRmByCode(new Map((r.data || []).map(rm => [rm.itemCode, rm])))).catch(() => {})
   }, [])
 
   // The unit the operator should enter a line's issue qty in — Operational

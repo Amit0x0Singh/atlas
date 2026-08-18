@@ -1,5 +1,5 @@
 import express from "express";
-import { authorize } from "../../../middleware/auth.js";
+import { authorize, authenticate } from "../../../middleware/auth.js";
 import { listRecipe, listRecipeProducts, checkRmMapping } from "./get/recipe.controller.js";
 import { bulkSaveRecipe, fixRmMapping } from "./create/recipe.controller.js";
 import { deleteRecipeRow, deleteProductRecipe } from "./delete/recipe.controller.js";
@@ -7,6 +7,11 @@ import { deleteRecipeRow, deleteProductRecipe } from "./delete/recipe.controller
 const RecipeRouter = express.Router();
 const canView = authorize("masters.recipe.view");
 
+// Any logged-in user can look recipe products up by name to power the
+// autosuggest on Production Planning's Issue BOM form — a lookup needed to
+// fill out a form they already have permission for, not a request to browse
+// Recipe Master itself.
+RecipeRouter.get("/recipe/products/search", authenticate, listRecipeProducts);
 RecipeRouter.get("/recipe/products", canView, listRecipeProducts);
 RecipeRouter.get("/recipe/check-rm-mapping", canView, checkRmMapping);
 RecipeRouter.post("/recipe/fix-rm-mapping", authorize("masters.recipe.update"), fixRmMapping);

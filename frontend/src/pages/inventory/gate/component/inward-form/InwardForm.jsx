@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ArrowDown } from "lucide-react";
 import { Button } from "../../../../../components/ui";
 import { COMPANIES } from "../../data/companies.js";
-import { useSuppliers } from "../../../../../hooks/masters/useSuppliers.js";
+import { useSupplierSuggestions } from "../../../../../hooks/masters/useSuppliers.js";
 import SupplierAutocomplete from "./SupplierAutocomplete.jsx";
 import "./InwardForm.css";
 
@@ -22,7 +22,7 @@ const FIELDS = [
 export default function InwardForm({ onSubmit, onCancel }) {
   const [form, setForm] = useState(EMPTY);
   const [fieldErrors, setFieldErrors] = useState({});
-  const { data: suppliersResult } = useSuppliers();
+  const { data: suppliersResult } = useSupplierSuggestions();
   const suppliers = suppliersResult?.items ?? [];
 
   // Both are business codes the backend always stores uppercase — matching

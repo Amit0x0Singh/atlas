@@ -70,10 +70,10 @@ export default function BomIssuance() {
   const [meta, setMeta]                 = useState(() => readMeta())
 
   useEffect(() => {
-    recipeApi.products().then(r => setRecipeProducts(r.data || [])).catch(() => {})
-    rmApi.list({}).then(r => setRmList(r.data || [])).catch(() => {})
-    productApi.list().then(r => setProducts(r.data || [])).catch(() => {})
-    microbialSfgApi.listMicrobes().then(r => setMicrobes(r.data || [])).catch(() => {})
+    recipeApi.productsSearch().then(r => setRecipeProducts(r.data || [])).catch(() => {})
+    rmApi.search({}).then(r => setRmList(r.data || [])).catch(() => {})
+    productApi.search().then(r => setProducts(r.data || [])).catch(() => {})
+    microbialSfgApi.searchMicrobes().then(r => setMicrobes(r.data || [])).catch(() => {})
   }, [])
 
   // Keep the shared print-template settings singleton in sync with the React toggles.
@@ -175,7 +175,7 @@ export default function BomIssuance() {
         const hit = corrections.find(c => c.fromCode === r.rmCode)
         return hit ? { ...r, rmCode: hit.toCode } : r
       }))
-      rmApi.list({}).then(r => setRmList(r.data || [])).catch(() => {})
+      rmApi.search({}).then(r => setRmList(r.data || [])).catch(() => {})
     } catch (e) {
       setBanner({ type: 'error', msg: `Failed to save corrections: ${e.message}` })
     } finally {

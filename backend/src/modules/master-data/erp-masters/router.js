@@ -1,5 +1,5 @@
 import express from 'express'
-import { authorize } from '../../../middleware/auth.js'
+import { authorize, authenticate } from '../../../middleware/auth.js'
 import {
   listSuppliers, listPlants, listErpEquipment,
   listStrains, listCustomers, listReasonCodes,
@@ -19,6 +19,10 @@ import { validateUpdateSupplier, validateUpdateErpEquipment } from './update/erp
 const ErpMastersRouter = express.Router()
 
 // ── ERP Suppliers ─────────────────────────────────────────────────────────────
+// Any logged-in user can look suppliers up by name to power the Supplier
+// Name autosuggest on Gate Inward — a lookup needed to fill out a form they
+// already have permission for, not a request to browse Supplier Master.
+ErpMastersRouter.get('/masters/suppliers/search', authenticate, validateSupplierListQuery, listSuppliers)
 ErpMastersRouter.get('/masters/suppliers', authorize('masters.erp-supplier.view'), validateSupplierListQuery, listSuppliers)
 ErpMastersRouter.post('/masters/suppliers', authorize('masters.erp-supplier.create'), validateCreateSupplier, createSupplier)
 ErpMastersRouter.put('/masters/suppliers/:id', authorize('masters.erp-supplier.update'), validateUpdateSupplier, updateSupplier)

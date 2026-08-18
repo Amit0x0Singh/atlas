@@ -1,5 +1,5 @@
 import express from 'express'
-import { authorize } from '../../../middleware/auth.js'
+import { authorize, authenticate } from '../../../middleware/auth.js'
 import { listRm, getRm, listWarehouses } from './get/rm-master.controller.js'
 import { createRm } from './create/rm-master.controller.js'
 import { validateCreateRm } from './create/rm-master.middleware.js'
@@ -13,6 +13,13 @@ const canView = authorize('masters.rm.view')
 
 RmRouter.get('/', canView, listRm)
 RmRouter.get('/warehouses', canView, listWarehouses)
+// Any logged-in user can look items up by name/code to power an autosuggest
+// field elsewhere (Gate/Print Master/Store/Recipe/Production forms) — that's
+// a lookup needed to fill out a form they already have permission for, not
+// a request to browse the Item Master screen itself, so it isn't gated by
+// masters.rm.view. Must come before /:itemCode or "search" would be read as
+// an item code.
+RmRouter.get('/search', authenticate, listRm)
 RmRouter.get('/:itemCode', canView, getRm)
 RmRouter.post('/', authorize('masters.rm.create'), validateCreateRm, createRm)
 RmRouter.put('/:itemCode', authorize('masters.rm.update'), validateUpdateItemCodeParam, validateUpdateRm, updateRm)

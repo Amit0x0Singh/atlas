@@ -13,6 +13,18 @@ export function useSuppliers(filters) {
   })
 }
 
+// For autosuggest fields elsewhere (e.g. Gate Inward's Supplier Name) — hits
+// the authenticate-only /search endpoint instead of masters.erp-supplier.view,
+// since those callers are filling out a form they already have permission
+// for, not browsing Supplier Master itself. Same response shape as useSuppliers().
+export function useSupplierSuggestions() {
+  return useQuery({
+    queryKey: queryKeys.suppliers.all({ suggestions: true }),
+    queryFn: () => erpSuppliersApi.search().then(r => ({ items: r.data, total: r.total })),
+    ...CACHE.MASTER,
+  })
+}
+
 export function useCreateSupplier() {
   const qc = useQueryClient()
   return useMutation({

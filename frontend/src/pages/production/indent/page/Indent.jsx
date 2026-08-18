@@ -57,8 +57,8 @@ export default function Indent() {
     try {
       const [indentRes, prodRes, equipRes] = await Promise.all([
         indentApi.list({ page, limit: LIMIT }),
-        productApi.list({}),
-        equipmentApi.list(),
+        productApi.search({}),
+        equipmentApi.search(),
       ])
       setIndents(indentRes.data || [])
       setTotal(indentRes.total || 0)

@@ -44,7 +44,7 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed, onUnlin
 
   // Load RM list once
   useEffect(() => {
-    rmApi.list({}).then(r => setRmList(r.data || [])).catch(console.error);
+    rmApi.search({}).then(r => setRmList(r.data || [])).catch(console.error);
   }, []);
 
   // Auto-fill header from gate inward selection

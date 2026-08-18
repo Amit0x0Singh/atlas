@@ -11,6 +11,18 @@ export function useMicrobes() {
   })
 }
 
+// For autosuggest fields elsewhere (Microbial Transaction inward/history) —
+// hits the authenticate-only /search endpoint instead of masters.microbe.view,
+// since those callers are filling out a form they already have permission
+// for, not browsing Microbe Master itself. Same response shape as useMicrobes().
+export function useMicrobeSuggestions() {
+  return useQuery({
+    queryKey: queryKeys.microbes.all({ suggestions: true }),
+    queryFn: () => microbialSfgApi.searchMicrobes().then(r => r.data),
+    ...CACHE.MASTER,
+  })
+}
+
 export function useCreateMicrobe() {
   const qc = useQueryClient()
   return useMutation({

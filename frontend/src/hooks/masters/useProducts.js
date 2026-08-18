@@ -13,6 +13,18 @@ export function useProducts(filters) {
   })
 }
 
+// For autosuggest fields elsewhere (Sales Order line items) — hits the
+// authenticate-only /search endpoint instead of masters.product.view, since
+// those callers are filling out a form they already have permission for,
+// not browsing Product Master itself. Same response shape as useProducts().
+export function useProductSuggestions(filters) {
+  return useQuery({
+    queryKey: queryKeys.products.all({ ...filters, suggestions: true }),
+    queryFn: () => productApi.search(filters).then(r => ({ items: r.data, total: r.total })),
+    ...CACHE.MASTER,
+  })
+}
+
 export function useProductFilterMeta() {
   return useQuery({
     queryKey: queryKeys.products.meta(),

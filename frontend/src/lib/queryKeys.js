@@ -40,7 +40,7 @@ export const queryKeys = {
     detail: (code)     => ['rm-master', code],
   },
   microbes: {
-    all: () => ['microbes'],
+    all: (suffix) => suffix ? ['microbes', suffix] : ['microbes'],
   },
   microbialContainers: {
     all: (filters) => filters ? ['microbial-containers', filters] : ['microbial-containers'],

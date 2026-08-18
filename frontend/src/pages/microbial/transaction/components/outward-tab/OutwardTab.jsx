@@ -60,7 +60,7 @@ export default function OutwardTab() {
   }, [])
 
   useEffect(() => {
-    productApi.list().then((r) => setProducts(r.data || [])).catch(() => {})
+    productApi.search().then((r) => setProducts(r.data || [])).catch(() => {})
   }, [])
 
   const loadSessions = () => {

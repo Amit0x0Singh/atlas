@@ -1,5 +1,5 @@
 import express from 'express'
-import { authorize } from '../../../middleware/auth.js'
+import { authorize, authenticate } from '../../../middleware/auth.js'
 import { listEquipment, listEquipmentFilterMeta } from './get/equipment-master.controller.js'
 import { validateEquipmentListQuery } from './get/equipment-master.middleware.js'
 import { createEquipment } from './create/equipment-master.controller.js'
@@ -13,6 +13,10 @@ const EquipmentMasterRouter = express.Router()
 const canView = authorize('masters.equipment.view')
 
 EquipmentMasterRouter.get('/equipment/meta/filters', canView, listEquipmentFilterMeta)
+// Any logged-in user can look equipment up by name to power a picker
+// elsewhere (Production Indent) — a lookup needed to fill out a form they
+// already have permission for, not a request to browse Equipment Master.
+EquipmentMasterRouter.get('/equipment/search', authenticate, validateEquipmentListQuery, listEquipment)
 EquipmentMasterRouter.get('/equipment', canView, validateEquipmentListQuery, listEquipment)
 EquipmentMasterRouter.post('/equipment', authorize('masters.equipment.create'), validateCreateEquipment, createEquipment)
 EquipmentMasterRouter.put('/equipment/:equipId', authorize('masters.equipment.update'), validateUpdateEquipIdParam, validateUpdateEquipment, updateEquipment)

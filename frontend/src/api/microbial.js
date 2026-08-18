@@ -4,6 +4,11 @@ import { api } from '../context/context.jsx'
 export const microbialSfgApi = {
   // Microbe master
   listMicrobes:       ()        => api.get('/microbial-sfg/masters/microbes'),
+  // Autosuggest lookup (Microbial Inward, Production's BOM issuance) — same
+  // data/shape as listMicrobes(), just authenticate-only instead of gated
+  // by masters.microbe.view, since these callers are filling out a form
+  // they already have permission for, not browsing Microbe Master.
+  searchMicrobes:     ()        => api.get('/microbial-sfg/masters/microbes/search'),
   createMicrobe:      (data)    => api.post('/microbial-sfg/masters/microbes', data),
   updateMicrobe:      (id, d)   => api.put(`/microbial-sfg/masters/microbes/${id}`, d),
   deleteMicrobe:      (id)      => api.delete(`/microbial-sfg/masters/microbes/${id}`),

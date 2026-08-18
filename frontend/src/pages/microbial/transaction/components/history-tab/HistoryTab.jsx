@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { ArrowDownCircle, ArrowUpCircle } from 'lucide-react'
-import { useMicrobes } from '../../../../../hooks/masters/useMicrobes.js'
+import { useMicrobeSuggestions } from '../../../../../hooks/masters/useMicrobes.js'
 import { useMicrobialHistory } from '../../../../../hooks/microbial/useMicrobialHistory.js'
 import { fmtCfu, fmtDateTime } from '../../utils/format.js'
 
@@ -10,7 +10,7 @@ export default function HistoryTab() {
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
 
-  const { data: microbes = [] } = useMicrobes()
+  const { data: microbes = [] } = useMicrobeSuggestions()
   const filters = useMemo(() => ({
     microbe_code: microbeCode || undefined,
     from: from || undefined,

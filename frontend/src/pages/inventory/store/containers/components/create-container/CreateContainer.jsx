@@ -19,7 +19,7 @@ export default function CreateContainer({ onCreated }) {
   useEffect(() => {
     // Containers are only created for raw materials — items tagged with the
     // "Packing Material" category in RM Master shouldn't appear here.
-    rmApi.list().then(r => {
+    rmApi.search().then(r => {
       const rms = (r.data || []).filter(rm => (rm.category || '').trim().toLowerCase() !== 'packing material')
       setAllRms(rms)
     }).catch(() => {})

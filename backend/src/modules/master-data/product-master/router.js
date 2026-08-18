@@ -1,5 +1,5 @@
 import express from 'express'
-import { authorize } from '../../../middleware/auth.js'
+import { authorize, authenticate } from '../../../middleware/auth.js'
 import { listProducts, listProductFilterMeta, getProduct } from './get/product-master.controller.js'
 import { validateProductListQuery } from './get/product-master.middleware.js'
 import { createProduct } from './create/product-master.controller.js'
@@ -13,8 +13,13 @@ const ProductMasterRouter = express.Router()
 const canView = authorize('masters.product.view')
 
 // Must come before the /:productCode route below, or Express would match
-// "meta" as a product code.
+// "meta"/"search" as a product code.
 ProductMasterRouter.get('/products/meta/plants', canView, listProductFilterMeta)
+// Any logged-in user can look products up by name/code to power an
+// autosuggest field elsewhere (Sales Order, Production Indent, Recipe BOM
+// editor) — a lookup needed to fill out a form they already have permission
+// for, not a request to browse the Product Master screen itself.
+ProductMasterRouter.get('/products/search', authenticate, listProducts)
 ProductMasterRouter.get('/products', canView, validateProductListQuery, listProducts)
 ProductMasterRouter.get('/products/:productCode', canView, getProduct)
 ProductMasterRouter.post('/products', authorize('masters.product.create'), validateCreateProduct, createProduct)

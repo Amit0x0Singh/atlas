@@ -5,7 +5,7 @@ import { STATIC_CUSTOMER_PROFILES } from "../../../../data/customerProfiles";
 import {
   useSalesOrders, useCreateSalesOrder, useUpdateSalesOrder, useDeleteSalesOrder,
 } from "../../../../hooks/sales/useSalesOrders.js";
-import { useProducts } from "../../../../hooks/masters/useProducts.js";
+import { useProductSuggestions } from "../../../../hooks/masters/useProducts.js";
 import { useCustomerProfiles } from "../../../../hooks/sales/useCustomerProfiles.js";
 import { queryKeys } from "../../../../lib/queryKeys.js";
 import { STATUSES } from "../shared/constants.js";
@@ -40,7 +40,7 @@ const SalesOrder = () => {
   const loading = ordersQuery.isLoading;
   const err = ordersQuery.error?.message ?? "";
 
-  const { data: productsResult } = useProducts();
+  const { data: productsResult } = useProductSuggestions();
   const products = productsResult?.items ?? [];
 
   const { data: fetchedProfiles = [] } = useCustomerProfiles();

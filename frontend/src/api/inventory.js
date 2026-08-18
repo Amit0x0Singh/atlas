@@ -3,6 +3,12 @@ import { api } from '../context/context.jsx'
 
 export const rmApi = {
   list:       (params)     => api.get('/rm', { params }),
+  // Autosuggest lookup (Print Master, Store Container creation, Recipe BOM
+  // editor, Production's BOM issuance) — same data/shape as list(), just
+  // authenticate-only instead of gated by masters.rm.view, since these
+  // callers are filling out a form they already have permission for, not
+  // browsing Item Master.
+  search:     (params)     => api.get('/rm/search', { params }),
   get:        (code)       => api.get(`/rm/${code}`),
   create:     (data)       => api.post('/rm', data),
   update:     (code, data) => api.put(`/rm/${code}`, data),
