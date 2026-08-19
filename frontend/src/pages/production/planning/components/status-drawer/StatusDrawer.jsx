@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { PLANT_CONFIG } from '../../data/plantConfig.js'
 import StatusBadge from '../ui/status-badge/StatusBadge.jsx'
 import { Button, IconButton } from '../../../../../components/ui'
+import { Can } from '../../../../../components/common/Can.jsx'
 import { X, Check } from 'lucide-react'
 import { planTasksApi } from '../../../../../api/production.js'
 import './StatusDrawer.css'
@@ -78,9 +79,11 @@ export default function StatusDrawer({ task, onSave, onClose }) {
 
         <div className="px-5 py-4 border-t flex gap-2.5 justify-end sticky bottom-0 bg-white">
           <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button variant="success" icon={Check} onClick={handleSave} loading={saving}>
-            {saving ? 'Saving…' : 'Update'}
-          </Button>
+          <Can permission="production.tasks.update">
+            <Button variant="success" icon={Check} onClick={handleSave} loading={saving}>
+              {saving ? 'Saving…' : 'Update'}
+            </Button>
+          </Can>
         </div>
       </div>
     </div>

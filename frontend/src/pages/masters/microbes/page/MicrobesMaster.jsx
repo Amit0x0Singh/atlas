@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { Plus, Microscope } from 'lucide-react'
 import { Button, BackButton, PageHeader, Modal } from '../../../../components/ui'
+import { Can } from '../../../../components/common/Can.jsx'
 import MicrobeList   from '../components/microbe-list/MicrobeList.jsx'
 import MicrobeForm   from '../components/microbe-form/MicrobeForm.jsx'
 import { useMicrobes, useCreateMicrobe, useUpdateMicrobe, useDeleteMicrobe } from '../../../../hooks/masters/useMicrobes.js'
@@ -67,9 +68,11 @@ export default function MicrobesMaster() {
         title="Microbes Master"
         description="Manage microbe names and codes used across the SFG module"
         actions={<>
-          <Button variant="primary" icon={Plus} onClick={() => { setForm(EMPTY_FORM); setEditId(null); setShowForm(true) }}>
-            Add Microbe
-          </Button>
+          <Can permission="masters.microbe.create">
+            <Button variant="primary" icon={Plus} onClick={() => { setForm(EMPTY_FORM); setEditId(null); setShowForm(true) }}>
+              Add Microbe
+            </Button>
+          </Can>
           <BackButton />
         </>}
       />

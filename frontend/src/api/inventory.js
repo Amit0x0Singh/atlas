@@ -123,15 +123,26 @@ export const gateApi = {
   createManualInward:   (data)     => api.post('/gate/inward/manual', data),
   inwardList:           (params)   => api.get('/gate/inward', { params }),
   updateInward:         (id, data) => api.patch(`/gate/inward/${id}/status`, data),
+  editInward:           (id, data) => api.patch(`/gate/inward/${id}`, data),
   requestDeleteInward:  (id)       => api.patch(`/gate/inward/${id}/request-delete`),
   deleteInward:         (id)       => api.delete(`/gate/inward/${id}`),
-  
-  
+  uploadInwardInvoiceDoc: (id, file) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    return api.post(`/gate/inward/${id}/invoice-document`, fd);
+  },
+  // Same-origin authenticated endpoint — open with openAuthedFile()
+  // (utils/authedFile.js), not a plain <a href>, since a raw browser
+  // navigation can't carry the Bearer token this route requires.
+  invoiceDocUrl: (id) => `/api/gate/inward/${encodeURIComponent(id)}/invoice-document`,
+
+
   // Outward
   createOutward:        (data)     => api.post('/gate/outward', data),
   outwardList:          (params)   => api.get('/gate/outward', { params }),
   outwardDetail:        (id)       => api.get(`/gate/outward/${id}`),
   updateOutward:        (id, data) => api.patch(`/gate/outward/${id}/status`, data),
+  editOutward:          (id, data) => api.patch(`/gate/outward/${id}`, data),
   requestDeleteOutward: (id)       => api.patch(`/gate/outward/${id}/request-delete`),
   deleteOutward: (id) => api.delete(`/gate/outward/${id}`),
   

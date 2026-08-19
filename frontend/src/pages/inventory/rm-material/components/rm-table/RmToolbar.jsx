@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Search, Filter, ArrowUpDown, Download } from 'lucide-react'
 import { Button } from '../../../../../components/ui'
+import { Can } from '../../../../../components/common/Can.jsx'
 import RmFilterModal, { EMPTY_RM_FILTERS } from './RmFilterModal.jsx'
 import RmSortModal, { DEFAULT_RM_SORT } from './RmSortModal.jsx'
 
@@ -43,9 +44,11 @@ export default function RmToolbar({ search, onSearchChange, filters, onFiltersCh
         <Button variant={activeFilterCount ? 'outline' : 'outline-gray'} size="sm" icon={Filter} onClick={() => setShowFilter(true)}>
           Filter{activeFilterCount > 0 && ` (${activeFilterCount})`}
         </Button>
-        <Button variant="secondary" size="sm" icon={Download} onClick={onExport}>
-          Export
-        </Button>
+        <Can permission="inventory.reports.export">
+          <Button variant="secondary" size="sm" icon={Download} onClick={onExport}>
+            Export
+          </Button>
+        </Can>
       </div>
 
       <RmFilterModal open={showFilter} onClose={() => setShowFilter(false)} value={filters} onApply={onFiltersChange} uomOptions={uomOptions} />

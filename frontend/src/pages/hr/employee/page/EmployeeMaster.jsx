@@ -6,6 +6,7 @@ import {
   useCompanies, useAddCompany,
 } from '../../../../hooks/hr/useEmployees.js'
 import { BackButton, Button, ConfirmModal } from '../../../../components/ui'
+import { Can } from '../../../../components/common/Can.jsx'
 import Pagination from '../../../../components/pagination/Pagination.jsx'
 import { normalizeEmailInput, normalizePhoneInput } from '../../../../utils/textNormalize.js'
 import { toTitleCase } from '../../../../utils/textDisplay.js'
@@ -263,9 +264,11 @@ export default function EmployeeMaster() {
           <p className="text-sm text-gray-500 mt-0.5">{activeCount} active employees · Role-based access control</p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="primary" onClick={() => { setEditing(null); setShowForm(true) }}>
-            + Add Employee
-          </Button>
+          <Can permission="masters.employee.create">
+            <Button variant="primary" onClick={() => { setEditing(null); setShowForm(true) }}>
+              + Add Employee
+            </Button>
+          </Can>
           <BackButton />
         </div>
       </div>
@@ -336,8 +339,12 @@ export default function EmployeeMaster() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex gap-2 justify-end">
-                          <Button variant="outline" size="xs" onClick={() => { setEditing({ ...emp, name: toTitleCase(emp.name) }); setShowForm(true) }}>Edit</Button>
-                          <Button variant="danger" size="xs" onClick={() => handleDelete(emp)}>Remove</Button>
+                          <Can permission="masters.employee.update">
+                            <Button variant="outline" size="xs" onClick={() => { setEditing({ ...emp, name: toTitleCase(emp.name) }); setShowForm(true) }}>Edit</Button>
+                          </Can>
+                          <Can permission="masters.employee.delete">
+                            <Button variant="danger" size="xs" onClick={() => handleDelete(emp)}>Remove</Button>
+                          </Can>
                         </div>
                       </td>
                     </tr>

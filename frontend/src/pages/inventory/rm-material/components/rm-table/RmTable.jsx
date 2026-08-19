@@ -1,10 +1,10 @@
 ﻿import './RmTable.css'
-import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Pagination from '../../../../../components/pagination/Pagination.jsx'
-import { Button } from '../../../../../components/ui'
+import { Button, ColumnsMenu } from '../../../../../components/ui'
 import { ChevronRight } from 'lucide-react'
 import RmToolbar from './RmToolbar.jsx'
+import { useColumnPreferences } from '../../../../../hooks/useColumnPreferences.js'
 
 import { toTitleCase } from '../../../../../utils/textDisplay.js'
 
@@ -19,7 +19,6 @@ const COLUMN_DEFS = [
   { key: 'totalQty',  label: 'Total Qty',     align: 'right',  defaultWidth: 160 },
 ]
 const DETAILS_COL_WIDTH = 150
-const MIN_COL_WIDTH = 60
 // Tailwind's JIT scans for literal class strings, so `text-${align}` would
 // never match — needs a lookup instead.
 const ALIGN_CLASS = { left: 'text-left', center: 'text-center', right: 'text-right' }
@@ -57,25 +56,7 @@ export default function RmTable({
 }) {
   const navigate = useNavigate()
 
-  const [columnWidths, setColumnWidths] = useState(() =>
-    Object.fromEntries(COLUMN_DEFS.map(c => [c.key, c.defaultWidth])))
-
-  function startResize(key) {
-    return (e) => {
-      e.preventDefault()
-      const startX = e.clientX
-      const startWidth = columnWidths[key]
-      function onMove(ev) {
-        setColumnWidths(w => ({ ...w, [key]: Math.max(MIN_COL_WIDTH, startWidth + (ev.clientX - startX)) }))
-      }
-      function onUp() {
-        document.removeEventListener('mousemove', onMove)
-        document.removeEventListener('mouseup', onUp)
-      }
-      document.addEventListener('mousemove', onMove)
-      document.addEventListener('mouseup', onUp)
-    }
-  }
+  const { columnWidths, columnVisibility, visibleColumns, startResize, toggleColumn } = useColumnPreferences('rm-material-stock', COLUMN_DEFS)
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
@@ -96,11 +77,15 @@ export default function RmTable({
         resultCount={filtered.length}
       />
 
+      <div className="flex justify-end px-4 py-1.5 border-b border-gray-100">
+        <ColumnsMenu columns={COLUMN_DEFS} visibility={columnVisibility} onToggle={toggleColumn} />
+      </div>
+
       <div className="overflow-x-auto">
         <table className="w-full text-sm" style={{ tableLayout: 'fixed' }}>
           <thead>
             <tr className="text-gray-600 text-xs" style={{ backgroundColor: 'rgb(226, 235, 240)' }}>
-              {COLUMN_DEFS.map(c => (
+              {visibleColumns.map(c => (
                 <th
                   key={c.key}
                   style={{ width: columnWidths[c.key] }}
@@ -121,36 +106,46 @@ export default function RmTable({
               [...Array(8)].map((_, i) => <SkeletonRow key={i} />)
             ) : filtered.length === 0 ? (
               <tr>
-                <td colSpan={7} className="text-center py-14 text-gray-400">No raw materials found.</td>
+                <td colSpan={visibleColumns.length + 1} className="text-center py-14 text-gray-400">No raw materials found.</td>
               </tr>
             ) : (
               paginated.map((it, idx) => {
                 const hasStock = it.totalStock > 0
                 return (
                   <tr key={it.itemCode} className="border-t border-gray-100 hover:bg-gray-50 transition-colors group">
-                    <td style={{ width: columnWidths.idx }} className="px-4 py-3 text-xs text-gray-400 tabular-nums overflow-hidden">{idx + 1}</td>
-                    <td style={{ width: columnWidths.name }} className="px-4 py-3 overflow-hidden">
-                      <div className="font-semibold text-gray-900 group-hover:text-indigo-700 transition-colors truncate">{toTitleCase(it.itemName)}</div>
-                      <div className="text-xs text-gray-400 font-mono mt-0.5 truncate">{it.itemCode}</div>
-                    </td>
-                    <td style={{ width: columnWidths.uom }} className="px-4 py-3 text-center overflow-hidden">
-                      <span className="bg-gray-100 text-gray-600 text-xs font-medium px-2 py-0.5 rounded-md">{it.uom ? it.uom.toUpperCase() : '—'}</span>
-                    </td>
-                    <td style={{ width: columnWidths.inPack }} className="px-4 py-3 text-right tabular-nums overflow-hidden">
-                      <div><StockBadge value={it.stockInPacks} /></div>
-                      {it.activePacks > 0 && (
-                        <div className="text-xs text-gray-400 mt-0.5">{it.activePacks} bag{it.activePacks !== 1 ? 's' : ''}</div>
-                      )}
-                    </td>
-                    <td style={{ width: columnWidths.inContainer }} className="px-4 py-3 text-right tabular-nums overflow-hidden">
-                      <StockBadge value={it.stockInContainer} />
-                    </td>
-                    <td style={{ width: columnWidths.totalQty }} className="px-4 py-3 text-right tabular-nums overflow-hidden">
-                      <div className={`text-base font-bold tabular-nums ${hasStock ? 'text-gray-900' : 'text-red-400'}`}>
-                        {fmt(it.totalStock)}{it.uom && <span className="text-xs font-medium text-gray-400 ml-1">{it.uom.toUpperCase()}</span>}
-                      </div>
-                      {!hasStock && <div className="text-[10px] text-red-400 font-medium">OUT OF STOCK</div>}
-                    </td>
+                    {columnVisibility.idx && <td style={{ width: columnWidths.idx }} className="px-4 py-3 text-xs text-gray-400 tabular-nums overflow-hidden">{idx + 1}</td>}
+                    {columnVisibility.name && (
+                      <td style={{ width: columnWidths.name }} className="px-4 py-3 overflow-hidden">
+                        <div className="font-semibold text-gray-900 group-hover:text-indigo-700 transition-colors truncate">{toTitleCase(it.itemName)}</div>
+                        <div className="text-xs text-gray-400 font-mono mt-0.5 truncate">{it.itemCode}</div>
+                      </td>
+                    )}
+                    {columnVisibility.uom && (
+                      <td style={{ width: columnWidths.uom }} className="px-4 py-3 text-center overflow-hidden">
+                        <span className="bg-gray-100 text-gray-600 text-xs font-medium px-2 py-0.5 rounded-md">{it.uom ? it.uom.toUpperCase() : '—'}</span>
+                      </td>
+                    )}
+                    {columnVisibility.inPack && (
+                      <td style={{ width: columnWidths.inPack }} className="px-4 py-3 text-right tabular-nums overflow-hidden">
+                        <div><StockBadge value={it.stockInPacks} /></div>
+                        {it.activePacks > 0 && (
+                          <div className="text-xs text-gray-400 mt-0.5">{it.activePacks} bag{it.activePacks !== 1 ? 's' : ''}</div>
+                        )}
+                      </td>
+                    )}
+                    {columnVisibility.inContainer && (
+                      <td style={{ width: columnWidths.inContainer }} className="px-4 py-3 text-right tabular-nums overflow-hidden">
+                        <StockBadge value={it.stockInContainer} />
+                      </td>
+                    )}
+                    {columnVisibility.totalQty && (
+                      <td style={{ width: columnWidths.totalQty }} className="px-4 py-3 text-right tabular-nums overflow-hidden">
+                        <div className={`text-base font-bold tabular-nums ${hasStock ? 'text-gray-900' : 'text-red-400'}`}>
+                          {fmt(it.totalStock)}{it.uom && <span className="text-xs font-medium text-gray-400 ml-1">{it.uom.toUpperCase()}</span>}
+                        </div>
+                        {!hasStock && <div className="text-[10px] text-red-400 font-medium">OUT OF STOCK</div>}
+                      </td>
+                    )}
                     <td style={{ width: DETAILS_COL_WIDTH }} className="px-4 py-3 text-center">
                       <Button
                         variant="primary"

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Search, Filter, ArrowUpDown, Download } from 'lucide-react'
 import { Button } from '../../../../../../../components/ui'
+import { Can } from '../../../../../../../components/common/Can.jsx'
 import InwardHistoryFilterModal, { EMPTY_INWARD_HISTORY_FILTERS } from './InwardHistoryFilterModal.jsx'
 import InwardHistorySortModal, { DEFAULT_INWARD_HISTORY_SORT } from './InwardHistorySortModal.jsx'
 
@@ -39,9 +40,11 @@ export default function InwardHistoryToolbar({ search, onSearchChange, filters, 
         <Button variant={activeFilterCount ? 'outline' : 'outline-gray'} size="sm" icon={Filter} onClick={() => setShowFilter(true)}>
           Filter{activeFilterCount > 0 && ` (${activeFilterCount})`}
         </Button>
-        <Button variant="secondary" size="sm" icon={Download} onClick={onExport}>
-          Export
-        </Button>
+        <Can permission="inventory.reports.export">
+          <Button variant="secondary" size="sm" icon={Download} onClick={onExport}>
+            Export
+          </Button>
+        </Can>
       </div>
 
       <InwardHistoryFilterModal open={showFilter} onClose={() => setShowFilter(false)} value={filters} onApply={onFiltersChange} suppliers={suppliers} />

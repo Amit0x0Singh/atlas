@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import { outwardApi } from '../../../../../../api/inventory.js'
 import { Button } from '../../../../../../components/ui'
+import { Can } from '../../../../../../components/common/Can.jsx'
 import ScannerPanel from '../../../../../../components/ScannerPanel/ScannerPanel.jsx'
 import { useOptionValues } from '../../../../../../hooks/useOptionValues.js'
 import './WarehouseToWarehouse.css'
@@ -128,9 +129,11 @@ export default function WarehouseToWarehouse() {
           />
         </div>
 
-        <Button onClick={submit} disabled={submitting || !packId.trim() || !to} loading={submitting} variant="primary" fullWidth>
-          {submitting ? 'Recording…' : 'Record Warehouse Transfer'}
-        </Button>
+        <Can permission="inventory.outward.create">
+          <Button onClick={submit} disabled={submitting || !packId.trim() || !to} loading={submitting} variant="primary" fullWidth>
+            {submitting ? 'Recording…' : 'Record Warehouse Transfer'}
+          </Button>
+        </Can>
       </div>
     </div>
   )

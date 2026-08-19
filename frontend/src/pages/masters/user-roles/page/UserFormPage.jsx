@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { UserCog, Shield } from 'lucide-react'
 import { Button, BackButton, PageHeader } from '../../../../components/ui'
+import { Can } from '../../../../components/common/Can.jsx'
 import { useUsers, useRoles, useCreateUser, useUpdateUser, useSetUserRoles } from '../../../../hooks/masters/useUserRoles.js'
 import { rolePlantLabels } from '../../../../constants/permissionMatrix.js'
 
@@ -186,7 +187,9 @@ export default function UserFormPage() {
 
         <div className="flex justify-end gap-2 mt-6">
           <Button variant="secondary" onClick={goBack}>Cancel</Button>
-          <Button variant="primary" loading={saving} onClick={save}>{editing ? 'Save Changes' : 'Create User'}</Button>
+          <Can anyOf={['admin.users.create', 'admin.users.update']}>
+            <Button variant="primary" loading={saving} onClick={save}>{editing ? 'Save Changes' : 'Create User'}</Button>
+          </Can>
         </div>
       </div>
     </div>

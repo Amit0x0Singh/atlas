@@ -1,8 +1,10 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { Pencil, Trash2, Loader2, PackageX } from 'lucide-react'
-import { IconButton } from '../../../../../components/ui'
+import { IconButton, ColumnsMenu } from '../../../../../components/ui'
 import Pagination from '../../../../../components/pagination/Pagination.jsx'
 import { toTitleCase } from '../../../../../utils/textDisplay.js'
+import { useColumnPreferences } from '../../../../../hooks/useColumnPreferences.js'
+import { Can } from '../../../../../components/common/Can.jsx'
 import ProductToolbar from './ProductToolbar.jsx'
 
 const STATE_BADGE = {
@@ -22,7 +24,6 @@ const COLUMN_DEFS = [
   { key: 'totalRecipe',  label: 'Total Recipe', defaultWidth: 120 },
 ]
 const ACTIONS_COL_WIDTH = 90
-const MIN_COL_WIDTH = 60
 
 // `items` is already the current page's rows (filtering + pagination happen
 // server-side) — `total` is the server-reported match count. Sort is applied
@@ -31,25 +32,7 @@ export default function ProductTable({
   items, total, loading, page, limit, onEdit, onDelete, onRowClick, onPageChange, onLimitChange,
   search, onSearchChange, filters, onFiltersChange, sort, onSortChange, plantOptions, uomOptions, stateOptions, onExport, exporting,
 }) {
-  const [columnWidths, setColumnWidths] = useState(() =>
-    Object.fromEntries(COLUMN_DEFS.map(c => [c.key, c.defaultWidth])))
-
-  function startResize(key) {
-    return (e) => {
-      e.preventDefault()
-      const startX = e.clientX
-      const startWidth = columnWidths[key]
-      function onMove(ev) {
-        setColumnWidths(w => ({ ...w, [key]: Math.max(MIN_COL_WIDTH, startWidth + (ev.clientX - startX)) }))
-      }
-      function onUp() {
-        document.removeEventListener('mousemove', onMove)
-        document.removeEventListener('mouseup', onUp)
-      }
-      document.addEventListener('mousemove', onMove)
-      document.addEventListener('mouseup', onUp)
-    }
-  }
+  const { columnWidths, columnVisibility, visibleColumns, startResize, toggleColumn } = useColumnPreferences('product-master', COLUMN_DEFS)
 
   const sortedItems = useMemo(() => {
     const dir = sort.direction === 'asc' ? 1 : -1
@@ -70,11 +53,14 @@ export default function ProductTable({
         onExport={onExport} exporting={exporting}
         resultCount={total}
       />
+      <div className="flex justify-end px-4 py-1.5 border-b border-gray-100">
+        <ColumnsMenu columns={COLUMN_DEFS} visibility={columnVisibility} onToggle={toggleColumn} />
+      </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm" style={{ tableLayout: 'fixed' }}>
           <thead style={{ backgroundColor: 'rgb(226, 235, 240)' }}>
             <tr>
-              {COLUMN_DEFS.map(c => (
+              {visibleColumns.map(c => (
                 <th
                   key={c.key}
                   style={{ width: columnWidths[c.key] }}
@@ -93,36 +79,42 @@ export default function ProductTable({
           <tbody className="divide-y divide-gray-100">
             {loading ? (
               <tr>
-                <td colSpan={7} className="py-14 text-center text-gray-400">
+                <td colSpan={visibleColumns.length + 1} className="py-14 text-center text-gray-400">
                   <Loader2 size={22} className="animate-spin mx-auto mb-2" />
                   Loading products…
                 </td>
               </tr>
             ) : items.length === 0 ? (
               <tr>
-                <td colSpan={7} className="py-14 text-center text-gray-400">
+                <td colSpan={visibleColumns.length + 1} className="py-14 text-center text-gray-400">
                   <PackageX size={26} className="mx-auto mb-2 text-gray-300" />
                   No products found.
                 </td>
               </tr>
             ) : sortedItems.map(item => (
               <tr key={item.productCode} className="group hover:bg-green-50/60 transition-colors cursor-pointer" onClick={() => onRowClick(item)}>
-                <td className="px-4 py-3 font-mono text-green-700 font-medium truncate">{item.productCode}</td>
-                <td className="px-4 py-3 text-gray-800 truncate">{toTitleCase(item.productName)}</td>
-                <td className="px-4 py-3 text-gray-500 truncate">{item.uom ? item.uom.toUpperCase() : '—'}</td>
-                <td className="px-4 py-3 overflow-hidden">
-                  {item.state ? (
-                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-md ring-1 ring-inset ${STATE_BADGE[item.state.toLowerCase()] || 'bg-gray-100 text-gray-600 ring-gray-200'}`}>
-                      {item.state.toUpperCase()}
-                    </span>
-                  ) : <span className="text-gray-300">—</span>}
-                </td>
-                <td className="px-4 py-3 text-gray-500 truncate">{item.plant?.length ? item.plant.join(', ') : '—'}</td>
-                <td className="px-4 py-3 text-gray-500 truncate">{item.totalRecipe ?? 0}</td>
+                {columnVisibility.productCode && <td className="px-4 py-3 font-mono text-green-700 font-medium truncate">{item.productCode}</td>}
+                {columnVisibility.productName && <td className="px-4 py-3 text-gray-800 truncate">{toTitleCase(item.productName)}</td>}
+                {columnVisibility.uom && <td className="px-4 py-3 text-gray-500 truncate">{item.uom ? item.uom.toUpperCase() : '—'}</td>}
+                {columnVisibility.state && (
+                  <td className="px-4 py-3 overflow-hidden">
+                    {item.state ? (
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-md ring-1 ring-inset ${STATE_BADGE[item.state.toLowerCase()] || 'bg-gray-100 text-gray-600 ring-gray-200'}`}>
+                        {item.state.toUpperCase()}
+                      </span>
+                    ) : <span className="text-gray-300">—</span>}
+                  </td>
+                )}
+                {columnVisibility.plant && <td className="px-4 py-3 text-gray-500 truncate">{item.plant?.length ? item.plant.join(', ') : '—'}</td>}
+                {columnVisibility.totalRecipe && <td className="px-4 py-3 text-gray-500 truncate">{item.totalRecipe ?? 0}</td>}
                 <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
-                    <IconButton icon={Pencil} tooltip="Edit" onClick={() => onEdit(item)} />
-                    <IconButton icon={Trash2} variant="danger" tooltip="Delete" onClick={() => onDelete(item.productCode)} />
+                    <Can permission="masters.product.update">
+                      <IconButton icon={Pencil} tooltip="Edit" onClick={() => onEdit(item)} />
+                    </Can>
+                    <Can permission="masters.product.delete">
+                      <IconButton icon={Trash2} variant="danger" tooltip="Delete" onClick={() => onDelete(item.productCode)} />
+                    </Can>
                   </div>
                 </td>
               </tr>

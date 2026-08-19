@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Search, Filter, ArrowUpDown, Download } from 'lucide-react'
 import { Button } from '../../../../../../components/ui'
+import { Can } from '../../../../../../components/common/Can.jsx'
 import LedgerFilterModal, { EMPTY_LEDGER_FILTERS } from './LedgerFilterModal.jsx'
 import LedgerSortModal, { DEFAULT_LEDGER_SORT } from './LedgerSortModal.jsx'
 
@@ -39,9 +40,11 @@ export default function LedgerToolbar({ search, onSearchChange, filters, onFilte
         <Button variant={activeFilterCount ? 'outline' : 'outline-gray'} size="sm" icon={Filter} onClick={() => setShowFilter(true)}>
           Filter{activeFilterCount > 0 && ` (${activeFilterCount})`}
         </Button>
-        <Button variant="secondary" size="sm" icon={Download} loading={exporting} onClick={onExport}>
-          Export
-        </Button>
+        <Can permission="inventory.reports.export">
+          <Button variant="secondary" size="sm" icon={Download} loading={exporting} onClick={onExport}>
+            Export
+          </Button>
+        </Can>
       </div>
 
       <LedgerFilterModal open={showFilter} onClose={() => setShowFilter(false)} value={filters} onApply={onFiltersChange} />

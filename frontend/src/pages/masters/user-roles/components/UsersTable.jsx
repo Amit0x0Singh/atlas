@@ -1,7 +1,7 @@
-import { useState } from 'react'
-import { ChevronUp, ChevronDown, ChevronsUpDown, Columns3, Pencil, KeyRound, Power } from 'lucide-react'
-import { IconButton } from '../../../../components/ui'
+import { ChevronUp, ChevronDown, ChevronsUpDown, Pencil, KeyRound, Power } from 'lucide-react'
+import { IconButton, ColumnsMenu } from '../../../../components/ui'
 import { Can } from '../../../../components/common/Can.jsx'
+import { useColumnPreferences } from '../../../../hooks/useColumnPreferences.js'
 
 // key, header label, the shared `sort.field` value clicking this header
 // sets (so header-click sorting and the Sort-by modal stay in sync), and
@@ -13,7 +13,6 @@ const COLUMN_DEFS = [
   { key: 'status',     label: 'Status',      sortField: 'status',     defaultWidth: 120 },
 ]
 
-const MIN_COL_WIDTH = 90
 const ACTIONS_COL_WIDTH = 140
 
 function SortCaret({ active, direction }) {
@@ -28,35 +27,9 @@ function SortCaret({ active, direction }) {
  * that write into the same `sort` state the Sort-by popup uses.
  */
 export default function UsersTable({ users, loading, empty, emptyMessage, sort, onSortChange, onEdit, onResetPassword, onToggleActive }) {
-  const [columnVisibility, setColumnVisibility] = useState(() =>
-    Object.fromEntries(COLUMN_DEFS.map(c => [c.key, true])))
-  const [columnWidths, setColumnWidths] = useState(() =>
-    Object.fromEntries(COLUMN_DEFS.map(c => [c.key, c.defaultWidth])))
-  const [showColumnMenu, setShowColumnMenu] = useState(false)
+  const { columnWidths, columnVisibility, visibleColumns, startResize, toggleColumn } = useColumnPreferences('user-roles-users', COLUMN_DEFS)
 
-  const visibleColumns = COLUMN_DEFS.filter(c => columnVisibility[c.key])
   const colCount = visibleColumns.length + 1 // + Actions
-
-  function toggleColumn(key) {
-    setColumnVisibility(v => ({ ...v, [key]: !v[key] }))
-  }
-
-  function startResize(key) {
-    return (e) => {
-      e.preventDefault()
-      const startX = e.clientX
-      const startWidth = columnWidths[key]
-      function onMove(ev) {
-        setColumnWidths(w => ({ ...w, [key]: Math.max(MIN_COL_WIDTH, startWidth + (ev.clientX - startX)) }))
-      }
-      function onUp() {
-        document.removeEventListener('mousemove', onMove)
-        document.removeEventListener('mouseup', onUp)
-      }
-      document.addEventListener('mousemove', onMove)
-      document.addEventListener('mouseup', onUp)
-    }
-  }
 
   function handleHeaderClick(sortField) {
     onSortChange(prev => ({
@@ -67,32 +40,8 @@ export default function UsersTable({ users, loading, empty, emptyMessage, sort, 
 
   return (
     <>
-      <div className="flex justify-end px-4 py-1.5 border-b border-gray-100 relative">
-        <button
-          type="button"
-          onClick={() => setShowColumnMenu(s => !s)}
-          className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded-md hover:bg-gray-100"
-        >
-          <Columns3 size={13} /> Columns
-        </button>
-        {showColumnMenu && (
-          <>
-            <div className="fixed inset-0 z-10" onClick={() => setShowColumnMenu(false)} />
-            <div className="absolute right-4 top-full mt-1 w-52 bg-white border border-gray-200 rounded-lg shadow-lg z-20 py-1.5">
-              {COLUMN_DEFS.map(c => (
-                <label key={c.key} className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={columnVisibility[c.key]}
-                    onChange={() => toggleColumn(c.key)}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  {c.label}
-                </label>
-              ))}
-            </div>
-          </>
-        )}
+      <div className="flex justify-end px-4 py-1.5 border-b border-gray-100">
+        <ColumnsMenu columns={COLUMN_DEFS} visibility={columnVisibility} onToggle={toggleColumn} />
       </div>
 
       <div className="overflow-x-auto">

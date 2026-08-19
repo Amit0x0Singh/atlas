@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 // Shared with Planning (production/planning) — kept there, not duplicated.
 import { sfgAddEntry } from '../../../../planning/utils/storage.js'
 import { planTasksApi } from '../../../../../../api/production.js'
+import { Can } from '../../../../../../components/common/Can.jsx'
 import NanoBMR from '../components/NanoBMR.jsx'
 import PowderBMR from '../components/PowderBMR.jsx'
 import QCHandoffModal from '../components/QCHandoffModal.jsx'
@@ -162,10 +163,12 @@ export default function BMROverlay({ openTasks, onClose, onTasksChange }) {
                   <div>Equipment: {task.equipment||'—'}</div>
                   <div>Shift: {task.shift||'General'}</div>
                 </div>
-                <button onClick={() => handleSubmit(task.id)}
-                  className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-[13px] font-bold transition">
-                  ✓ Submit BMR
-                </button>
+                <Can permission="production.batch.update">
+                  <button onClick={() => handleSubmit(task.id)}
+                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-[13px] font-bold transition">
+                    ✓ Submit BMR
+                  </button>
+                </Can>
               </div>
             </div>
 
@@ -175,14 +178,18 @@ export default function BMROverlay({ openTasks, onClose, onTasksChange }) {
             <div className="sticky bottom-0 bg-white border-t border-gray-200 px-7 py-3 flex items-center justify-between shadow-[0_-4px_16px_rgba(0,0,0,.06)]">
               <span className={`text-[12px] ${saveStatus.startsWith('✓') ? 'text-green-600 font-semibold' : 'text-gray-400'}`}>{saveStatus}</span>
               <div className="flex gap-2.5">
-                <button onClick={() => handleCloseTask(task.id)}
-                  className="px-4 py-2 border border-gray-200 rounded-lg text-[13px] font-medium hover:bg-gray-50 transition">
-                  Save &amp; Close
-                </button>
-                <button onClick={() => handleSubmit(task.id)}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg text-[13px] font-bold hover:bg-green-700 transition">
-                  ✓ Submit BMR
-                </button>
+                <Can permission="production.batch.update">
+                  <button onClick={() => handleCloseTask(task.id)}
+                    className="px-4 py-2 border border-gray-200 rounded-lg text-[13px] font-medium hover:bg-gray-50 transition">
+                    Save &amp; Close
+                  </button>
+                </Can>
+                <Can permission="production.batch.update">
+                  <button onClick={() => handleSubmit(task.id)}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg text-[13px] font-bold hover:bg-green-700 transition">
+                    ✓ Submit BMR
+                  </button>
+                </Can>
               </div>
             </div>
           </div>

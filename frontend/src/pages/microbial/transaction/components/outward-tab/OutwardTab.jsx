@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Send, RotateCcw, ArrowLeft } from 'lucide-react'
 import { Button } from '../../../../../components/ui'
+import { Can } from '../../../../../components/common/Can.jsx'
 import { usePreviewOutward, useCreateOutward, useMicrobialOutward, useEligibleBatches } from '../../../../../hooks/microbial/useMicrobialOutward.js'
 import { microbialSfgApi } from '../../../../../api/microbial.js'
 import { planTasksApi } from '../../../../../api/production.js'
@@ -369,9 +370,11 @@ export default function OutwardTab() {
       <GrandSummary rows={rows} />
 
       <div className="flex gap-3">
-        <Button type="button" variant="primary" icon={Send} disabled={createOutward.isPending} loading={createOutward.isPending} onClick={handleSubmit}>
-          Confirm & Issue All
-        </Button>
+        <Can permission="microbial.sfg-outward.create">
+          <Button type="button" variant="primary" icon={Send} disabled={createOutward.isPending} loading={createOutward.isPending} onClick={handleSubmit}>
+            Confirm & Issue All
+          </Button>
+        </Can>
         <Button type="button" variant="outline-gray" icon={RotateCcw} onClick={backToSelect}>Cancel</Button>
       </div>
 

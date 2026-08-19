@@ -2,6 +2,7 @@
 import { outwardApi, rmApi } from '../../../../../../api/inventory.js'
 import { indentApi } from '../../../../../../api/production.js'
 import { Button } from '../../../../../../components/ui'
+import { Can } from '../../../../../../components/common/Can.jsx'
 import { convertByDensity } from '../../../../../../utils/uom.js'
 import './WarehouseToPlant.css'
 
@@ -222,9 +223,11 @@ export default function WarehouseToPlant() {
             </div>
           )}
 
-          <Button onClick={submit} disabled={submitting || !selectedPack || !qty} loading={submitting} variant="primary" fullWidth className="mt-4">
-            {submitting ? 'Issuing…' : 'Issue to Plant'}
-          </Button>
+          <Can permission="inventory.outward.create">
+            <Button onClick={submit} disabled={submitting || !selectedPack || !qty} loading={submitting} variant="primary" fullWidth className="mt-4">
+              {submitting ? 'Issuing…' : 'Issue to Plant'}
+            </Button>
+          </Can>
         </div>
       </div>
     </div>

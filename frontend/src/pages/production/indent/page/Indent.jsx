@@ -3,6 +3,7 @@ import { indentApi } from '../../../../api/production.js'
 import './Indent.css'
 import { productApi, equipmentApi } from '../../../../api/masters.js'
 import { Button, BackButton } from '../../../../components/ui'
+import { Can } from '../../../../components/common/Can.jsx'
 import { Plus } from 'lucide-react'
 import ProductionIndentTab from '../components/production-indent-tab/ProductionIndentTab.jsx'
 import PurchaseIndentTab from '../components/purchase-indent-tab/PurchaseIndentTab.jsx'
@@ -205,9 +206,11 @@ export default function Indent() {
         </div>
         <div className="flex items-center gap-3">
           {tab === 0 && (
-            <Button variant="primary" icon={Plus} onClick={() => { setShowForm(true); setError('') }}>
-              New Production Indent
-            </Button>
+            <Can permission="production.indent.create">
+              <Button variant="primary" icon={Plus} onClick={() => { setShowForm(true); setError('') }}>
+                New Production Indent
+              </Button>
+            </Can>
           )}
           <BackButton />
         </div>

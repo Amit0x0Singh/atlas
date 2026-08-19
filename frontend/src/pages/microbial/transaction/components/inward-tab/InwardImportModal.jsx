@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import * as XLSX from 'xlsx'
 import { Download, FolderOpen, Upload, X } from 'lucide-react'
 import { Modal, Button } from '../../../../../components/ui'
+import { Can } from '../../../../../components/common/Can.jsx'
 
 export default function InwardImportModal({ open, onClose, onImport, importing }) {
   const fileRef = useRef(null)
@@ -68,9 +69,11 @@ export default function InwardImportModal({ open, onClose, onImport, importing }
               </table>
               {rows.length > 6 && <p className="text-xs text-gray-400 mt-1.5">…and {rows.length - 6} more rows</p>}
             </div>
-            <Button variant="success" icon={Upload} onClick={handleImport} disabled={importing} loading={importing}>
-              {importing ? 'Importing...' : `Import ${rows.length} Record(s)`}
-            </Button>
+            <Can permission="microbial.sfg-inward.import">
+              <Button variant="success" icon={Upload} onClick={handleImport} disabled={importing} loading={importing}>
+                {importing ? 'Importing...' : `Import ${rows.length} Record(s)`}
+              </Button>
+            </Can>
           </>
         )}
 

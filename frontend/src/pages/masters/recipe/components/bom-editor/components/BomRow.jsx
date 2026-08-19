@@ -1,5 +1,6 @@
 import { Pencil, Trash2 } from 'lucide-react'
 import { IconButton } from '../../../../../../components/ui'
+import { Can } from '../../../../../../components/common/Can.jsx'
 import { formatMeasurement } from '../../../../../../utils/measurement/formatMeasurement.js'
 
 import { toTitleCase } from '../../../../../../utils/textDisplay.js'
@@ -76,8 +77,12 @@ export default function BomRow({ row, idx, isProductCode, isMicrobeCode, onEdit,
 
       <td className="px-2 py-1">
         <div className="flex items-center justify-center gap-1.5">
-          <IconButton icon={Pencil} variant="outline" tooltip="Edit row" onClick={() => onEdit(idx)} />
-          <IconButton icon={Trash2} variant="danger" tooltip="Remove row" onClick={() => onRemoveRow(idx)} />
+          <Can permission="masters.recipe.update">
+            <IconButton icon={Pencil} variant="outline" tooltip="Edit row" onClick={() => onEdit(idx)} />
+          </Can>
+          <Can permission="masters.recipe.delete">
+            <IconButton icon={Trash2} variant="danger" tooltip="Remove row" onClick={() => onRemoveRow(idx)} />
+          </Can>
         </div>
       </td>
     </tr>

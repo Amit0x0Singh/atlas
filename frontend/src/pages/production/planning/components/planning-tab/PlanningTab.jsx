@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { todayISO, addDays, fmtDateLabel } from '../../utils/date.js'
 import { Button } from '../../../../../components/ui'
+import { Can } from '../../../../../components/common/Can.jsx'
 import { Plus, Send, Pencil, Trash2 } from 'lucide-react'
 import { planTasksApi } from '../../../../../api/production.js'
 import StatusBadge from '../ui/status-badge/StatusBadge.jsx'
@@ -46,7 +47,9 @@ export default function PlanningTab({ tasks, onRefresh, onAdd, onEdit, onDelete,
         <div className="flex items-center gap-2.5">
           <input type="date" value={planDate} onChange={e => { setPlanDate(e.target.value); setDateOffset(null) }}
             className="px-3 py-2 rounded-lg text-[13px] text-gray-800 border-0 focus:outline-none" />
-          <Button variant="warning" icon={Plus} size="sm" onClick={() => onAdd(planDate)}>Add Task</Button>
+          <Can permission="production.tasks.create">
+            <Button variant="warning" icon={Plus} size="sm" onClick={() => onAdd(planDate)}>Add Task</Button>
+          </Can>
           <Button variant="success" icon={Send} size="sm" onClick={sendSchedule} loading={sending}>Send Schedule</Button>
         </div>
       </div>
@@ -104,8 +107,12 @@ export default function PlanningTab({ tasks, onRefresh, onAdd, onEdit, onDelete,
                     </td>
                     <td className="px-3 py-2.5">
                       <div className="flex gap-1.5">
-                        <Button variant="secondary" size="xs" icon={Pencil} onClick={() => onEdit(t)}>Edit</Button>
-                        <Button variant="danger" size="xs" icon={Trash2} onClick={() => onDelete(t)}>Del</Button>
+                        <Can permission="production.tasks.update">
+                          <Button variant="secondary" size="xs" icon={Pencil} onClick={() => onEdit(t)}>Edit</Button>
+                        </Can>
+                        <Can permission="production.tasks.delete">
+                          <Button variant="danger" size="xs" icon={Trash2} onClick={() => onDelete(t)}>Del</Button>
+                        </Can>
                       </div>
                     </td>
                   </tr>

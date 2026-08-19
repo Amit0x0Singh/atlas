@@ -1,3 +1,4 @@
+import fs from 'fs'
 import prisma from '../../../../db.js'
 import { writeAudit, auditUser } from '../../../../middleware/audit.js'
 
@@ -10,6 +11,7 @@ const deleteGateInward = async (req, res) => {
   try {
 
     const deleted = await prisma.gateInward.delete({ where: { inwardId: id } })
+    if (deleted.invoiceDocPath) fs.unlink(deleted.invoiceDocPath, () => {})
     await writeAudit({ ...auditUser(req), action: 'DELETE', module: 'gate', tableName: 'gate_inward', recordId: id, oldValue: deleted })
     return res.json({ success: true, message: 'Gate inward deleted' })
 

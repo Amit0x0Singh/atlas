@@ -4,6 +4,7 @@ import jsQR from 'jsqr'
 import { containerApi, rmApi } from '../../../../../../api/inventory.js'
 import { indentApi } from '../../../../../../api/production.js'
 import { Button } from '../../../../../../components/ui'
+import { Can } from '../../../../../../components/common/Can.jsx'
 
 import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 export default function IssueFromContainer({ preselected, onDone }) {
@@ -245,15 +246,17 @@ export default function IssueFromContainer({ preselected, onDone }) {
                 />
               </div>
 
-              <Button
-                variant="success"
-                fullWidth
-                loading={submitting}
-                disabled={!qty}
-                onClick={submit}
-              >
-                Issue from Container
-              </Button>
+              <Can permission="inventory.outward.create">
+                <Button
+                  variant="success"
+                  fullWidth
+                  loading={submitting}
+                  disabled={!qty}
+                  onClick={submit}
+                >
+                  Issue from Container
+                </Button>
+              </Can>
             </div>
           )}
         </>

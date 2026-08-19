@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { BackButton, Button, PageHeader } from '../../../../components/ui'
+import { Can } from '../../../../components/common/Can.jsx'
 import { Repeat, ArrowDown, ArrowUp, ArrowLeft, ClipboardList, Plus, Upload } from 'lucide-react'
 import InwardTab from '../components/inward-tab/InwardTab.jsx'
 import OutwardTab from '../components/outward-tab/OutwardTab.jsx'
@@ -57,8 +58,12 @@ export default function MicrobeTransaction() {
 
           {tab === 'inward' && (
             <div className="flex gap-3">
-              <Button variant="outline-gray" icon={Upload} onClick={() => setShowInwardImport(true)}>Import Excel</Button>
-              <Button variant="primary" icon={Plus} onClick={() => setShowInwardForm(true)}>New Inward Entry</Button>
+              <Can permission="microbial.sfg-inward.import">
+                <Button variant="outline-gray" icon={Upload} onClick={() => setShowInwardImport(true)}>Import Excel</Button>
+              </Can>
+              <Can permission="microbial.sfg-inward.create">
+                <Button variant="primary" icon={Plus} onClick={() => setShowInwardForm(true)}>New Inward Entry</Button>
+              </Can>
             </div>
           )}
         </div>

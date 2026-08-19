@@ -3,6 +3,7 @@ import { Download } from 'lucide-react'
 import { PLANT_KEYS } from '../../../planning/data/plantConfig.js'
 import { todayISO } from '../../../planning/utils/date.js'
 import { Button } from '../../../../../components/ui'
+import { Can } from '../../../../../components/common/Can.jsx'
 import StatusBadge from '../../../planning/components/ui/status-badge/StatusBadge.jsx'
 import PlantBadge from '../../../planning/components/ui/plant-badge/PlantBadge.jsx'
 
@@ -58,7 +59,9 @@ export default function HistoryTab({ tasks }) {
           className="px-3 py-2 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-blue-400" />
         <input type="date" value={toDate} onChange={e => setToDate(e.target.value)}
           className="px-3 py-2 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-blue-400" />
-        <Button variant="secondary" icon={Download} size="sm" onClick={exportCSV}>Export CSV</Button>
+        <Can permission="production.reports.export">
+          <Button variant="secondary" icon={Download} size="sm" onClick={exportCSV}>Export CSV</Button>
+        </Can>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">

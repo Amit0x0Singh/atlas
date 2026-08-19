@@ -1,4 +1,5 @@
 import { Button } from "../../../../../components/ui";
+import { Can } from "../../../../../components/common/Can.jsx";
 import { Plus } from "lucide-react";
 import { STATUSES, STATUS_STYLE, STATUS_LABELS } from "../../shared/constants.js";
 
@@ -22,9 +23,11 @@ export default function OrdersTab({ summary, onNewOrder }) {
 
       {/* "+ New Order" button */}
       <div className="flex items-center justify-between mb-5">
-        <Button variant="success" icon={Plus} onClick={onNewOrder}>
-          New Order
-        </Button>
+        <Can permission="sales.order.create">
+          <Button variant="success" icon={Plus} onClick={onNewOrder}>
+            New Order
+          </Button>
+        </Can>
       </div>
     </div>
   );

@@ -12,6 +12,7 @@ const matchUom = (raw) => UOMS.find((u) => u.toLowerCase() === (raw || "").toLow
 import OrderHeaderFields from "./components/OrderHeaderFields.jsx";
 import LineItemRow from "../line-item-row/LineItemRow.jsx";
 import { Button } from "../../../../../components/ui";
+import { Can } from "../../../../../components/common/Can.jsx";
 import { Plus, Save } from "lucide-react";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -232,20 +233,22 @@ export default function CreateSalesOrder({
 
       {/* ── Submit / Cancel ───────────────────────────────────────────── */}
       <div className="flex gap-3 pt-2">
-        <Button
-          type="submit"
-          variant="success"
-          icon={Save}
-          fullWidth
-          loading={saving}
-          disabled={saving}
-        >
-          {saving
-            ? "Saving…"
-            : initial?.id
-              ? "Update Order"
-              : "Create Sales Order"}
-        </Button>
+        <Can anyOf={['sales.order.create', 'sales.order.update']}>
+          <Button
+            type="submit"
+            variant="success"
+            icon={Save}
+            fullWidth
+            loading={saving}
+            disabled={saving}
+          >
+            {saving
+              ? "Saving…"
+              : initial?.id
+                ? "Update Order"
+                : "Create Sales Order"}
+          </Button>
+        </Can>
         <Button
           type="button"
           variant="secondary"

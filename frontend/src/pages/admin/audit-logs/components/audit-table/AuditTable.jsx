@@ -1,6 +1,7 @@
-import { useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import Pagination from '../../../../../components/pagination/Pagination.jsx'
+import { ColumnsMenu } from '../../../../../components/ui'
+import { useColumnPreferences } from '../../../../../hooks/useColumnPreferences.js'
 import AuditToolbar from './AuditToolbar.jsx'
 
 const ACTION_COLORS = {
@@ -26,8 +27,6 @@ const COLUMN_DEFS = [
   { key: 'recordId',  label: 'Record ID', defaultWidth: 200 },
   { key: 'createdAt', label: 'Date',     defaultWidth: 170 },
 ]
-const MIN_COL_WIDTH = 60
-
 // `items` is already the current page's rows (filtering + sorting +
 // pagination all happen server-side — see backend/src/services/audit-log.service.js).
 export default function AuditTable({
@@ -35,25 +34,7 @@ export default function AuditTable({
   search, onSearchChange, filters, onFiltersChange, sort, onSortChange,
   userOptions, actionOptions, moduleOptions, tableOptions, onExport, exporting,
 }) {
-  const [columnWidths, setColumnWidths] = useState(() =>
-    Object.fromEntries(COLUMN_DEFS.map(c => [c.key, c.defaultWidth])))
-
-  function startResize(key) {
-    return (e) => {
-      e.preventDefault()
-      const startX = e.clientX
-      const startWidth = columnWidths[key]
-      function onMove(ev) {
-        setColumnWidths(w => ({ ...w, [key]: Math.max(MIN_COL_WIDTH, startWidth + (ev.clientX - startX)) }))
-      }
-      function onUp() {
-        document.removeEventListener('mousemove', onMove)
-        document.removeEventListener('mouseup', onUp)
-      }
-      document.addEventListener('mousemove', onMove)
-      document.addEventListener('mouseup', onUp)
-    }
-  }
+  const { columnWidths, columnVisibility, visibleColumns, startResize, toggleColumn } = useColumnPreferences('audit-logs', COLUMN_DEFS)
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -65,11 +46,14 @@ export default function AuditTable({
         onExport={onExport} exporting={exporting}
         resultCount={total}
       />
+      <div className="flex justify-end px-4 py-1.5 border-b border-gray-100">
+        <ColumnsMenu columns={COLUMN_DEFS} visibility={columnVisibility} onToggle={toggleColumn} />
+      </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm" style={{ tableLayout: 'fixed' }}>
           <thead style={{ backgroundColor: 'rgb(226, 235, 240)' }}>
             <tr>
-              {COLUMN_DEFS.map(c => (
+              {visibleColumns.map(c => (
                 <th
                   key={c.key}
                   style={{ width: columnWidths[c.key] }}
@@ -87,29 +71,31 @@ export default function AuditTable({
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={COLUMN_DEFS.length} className="py-14 text-center text-gray-400">
+                <td colSpan={visibleColumns.length} className="py-14 text-center text-gray-400">
                   <Loader2 size={22} className="animate-spin mx-auto mb-2" />
                   Loading audit logs…
                 </td>
               </tr>
             ) : items.length === 0 ? (
               <tr>
-                <td colSpan={COLUMN_DEFS.length} className="text-center py-10 text-gray-400">
+                <td colSpan={visibleColumns.length} className="text-center py-10 text-gray-400">
                   No audit records found.
                 </td>
               </tr>
             ) : items.map(row => (
               <tr key={row.id} className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer" onClick={() => onRowClick(row)}>
-                <td className="px-4 py-3 font-medium text-gray-800 truncate">{row.fullName || row.username || '—'}</td>
-                <td className="px-4 py-3 truncate">
-                  <span className={`inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${ACTION_COLORS[row.action] || 'bg-gray-100 text-gray-600'}`}>
-                    {row.action}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-gray-500 truncate capitalize">{row.module || '—'}</td>
-                <td className="px-4 py-3 text-gray-500 truncate font-mono text-xs">{row.tableName || '—'}</td>
-                <td className="px-4 py-3 text-gray-500 truncate font-mono text-xs">{row.recordId || '—'}</td>
-                <td className="px-4 py-3 text-gray-500 truncate">{new Date(row.createdAt).toLocaleString('en-IN')}</td>
+                {columnVisibility.user && <td className="px-4 py-3 font-medium text-gray-800 truncate">{row.fullName || row.username || '—'}</td>}
+                {columnVisibility.action && (
+                  <td className="px-4 py-3 truncate">
+                    <span className={`inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${ACTION_COLORS[row.action] || 'bg-gray-100 text-gray-600'}`}>
+                      {row.action}
+                    </span>
+                  </td>
+                )}
+                {columnVisibility.module && <td className="px-4 py-3 text-gray-500 truncate capitalize">{row.module || '—'}</td>}
+                {columnVisibility.tableName && <td className="px-4 py-3 text-gray-500 truncate font-mono text-xs">{row.tableName || '—'}</td>}
+                {columnVisibility.recordId && <td className="px-4 py-3 text-gray-500 truncate font-mono text-xs">{row.recordId || '—'}</td>}
+                {columnVisibility.createdAt && <td className="px-4 py-3 text-gray-500 truncate">{new Date(row.createdAt).toLocaleString('en-IN')}</td>}
               </tr>
             ))}
           </tbody>

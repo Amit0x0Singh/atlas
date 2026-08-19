@@ -55,6 +55,30 @@ export function useUpdateGateInwardStatus() {
   })
 }
 
+export function useEditGateInward() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, data }) => gateApi.editInward(id, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['gate-inward'] }),
+  })
+}
+
+export function useEditGateOutward() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, data }) => gateApi.editOutward(id, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['gate-outward'] }),
+  })
+}
+
+export function useUploadGateInwardInvoiceDoc() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, file }) => gateApi.uploadInwardInvoiceDoc(id, file),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['gate-inward'] }),
+  })
+}
+
 export function useRequestDeleteGateInward() {
   const qc = useQueryClient()
   return useMutation({

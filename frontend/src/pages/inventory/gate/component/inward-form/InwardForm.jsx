@@ -1,26 +1,33 @@
 import { useState } from "react";
 import { ArrowDown } from "lucide-react";
 import { Button } from "../../../../../components/ui";
+import { Can } from "../../../../../components/common/Can.jsx";
 import { COMPANIES } from "../../data/companies.js";
 import { useSupplierSuggestions } from "../../../../../hooks/masters/useSuppliers.js";
 import SupplierAutocomplete from "./SupplierAutocomplete.jsx";
+import InvoiceDocumentField from "./InvoiceDocumentField.jsx";
 import "./InwardForm.css";
 
-const EMPTY = { supplier_name: "", invoice_no: "", vehicle_no: "", company: "" };
+const EMPTY = { supplier_name: "", invoice_no: "", vehicle_no: "", company: "", invoice_document: null };
 
-// Supplier Name gets its own autocomplete widget (below), not the generic
-// select/input rendering — everything else stays config-driven. All four
-// fields are required — mirrors OutwardForm so both gate forms enforce the
-// same completeness rules.
+// Supplier Name gets its own autocomplete widget, Invoice Document its own
+// camera-first widget (below) — neither fits the generic select/input
+// rendering. The four business fields are required — mirrors OutwardForm so
+// both gate forms enforce the same completeness rules. Invoice Document is
+// optional — not every supplier hands over a digital copy on the spot.
 const FIELDS = [
   { key: "company", label: "Company", type: "select", options: COMPANIES, placeholder: "Select company", required: true },
   { key: "supplier_name", label: "Supplier Name", type: "supplier", placeholder: "Type to search supplier...", required: true },
   { key: "invoice_no", label: "Invoice No.", placeholder: "e.g. INV-2024-001", uppercase: true, required: true },
   { key: "vehicle_no", label: "Vehicle No.", placeholder: "e.g. MH-12-AB-1234", uppercase: true, required: true },
+  { key: "invoice_document", label: "Invoice Document", type: "file", accept: ".pdf,.jpg,.jpeg,.png", required: false },
 ];
 
-export default function InwardForm({ onSubmit, onCancel }) {
-  const [form, setForm] = useState(EMPTY);
+// `embedded` drops this component's own card border/shadow/margin — used
+// when it's rendered inside the Edit modal, whose panel already draws that
+// chrome; keeping both caused the two borders to visibly clash at the edges.
+export default function InwardForm({ onSubmit, onCancel, mode = "create", initialValues = null, existingDocument = null, onViewDocument = null, embedded = false }) {
+  const [form, setForm] = useState(initialValues ? { ...EMPTY, ...initialValues } : EMPTY);
   const [fieldErrors, setFieldErrors] = useState({});
   const { data: suppliersResult } = useSupplierSuggestions();
   const suppliers = suppliersResult?.items ?? [];
@@ -49,20 +56,22 @@ export default function InwardForm({ onSubmit, onCancel }) {
     const errors = validate();
     if (Object.keys(errors).length) { setFieldErrors(errors); return; }
     await onSubmit(form);
-    setForm(EMPTY);
-    setFieldErrors({});
+    if (mode !== "edit") {
+      setForm(EMPTY);
+      setFieldErrors({});
+    }
   };
 
   return (
-    <div className="if-wrap">
+    <div className={`if-wrap${embedded ? " if-wrap--embedded" : ""}`}>
       <div className="if-header">
         <ArrowDown size={18} className="if-header-icon" />
-        <h3 className="if-title">New Gate Inward</h3>
+        <h3 className="if-title">{mode === "edit" ? "Edit Gate Inward" : "New Gate Inward"}</h3>
       </div>
 
       <div className="if-grid">
-        {FIELDS.map(({ key, label, placeholder, type, options, uppercase, required }) => (
-          <div key={key}>
+        {FIELDS.map(({ key, label, placeholder, type, options, uppercase, required, accept }) => (
+          <div key={key} className={type === "file" ? "if-span-full" : undefined}>
             <label className="if-label">{label}{required && " *"}</label>
             {type === "select" ? (
               <select
@@ -83,6 +92,14 @@ export default function InwardForm({ onSubmit, onCancel }) {
                 placeholder={placeholder}
                 hasError={!!fieldErrors[key]}
               />
+            ) : type === "file" ? (
+              <InvoiceDocumentField
+                value={form[key]}
+                onChange={(file) => setForm((f) => ({ ...f, [key]: file }))}
+                accept={accept}
+                existingDocument={existingDocument}
+                onViewDocument={onViewDocument}
+              />
             ) : (
               <input
                 value={form[key]}
@@ -98,9 +115,11 @@ export default function InwardForm({ onSubmit, onCancel }) {
       </div>
 
       <div className="if-actions">
-        <Button variant="primary" onClick={handleSubmit}>
-          Create Inward Entry
-        </Button>
+        <Can permission={mode === "edit" ? "gate.inward.update" : "gate.inward.create"}>
+          <Button variant="primary" onClick={handleSubmit}>
+            {mode === "edit" ? "Save Changes" : "Create Inward Entry"}
+          </Button>
+        </Can>
         <Button variant="secondary" onClick={onCancel}>
           Cancel
         </Button>

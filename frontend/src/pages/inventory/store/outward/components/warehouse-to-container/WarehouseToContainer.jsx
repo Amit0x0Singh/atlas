@@ -1,6 +1,7 @@
 ﻿import { useState } from 'react'
 import { containerApi, outwardApi, packsApi } from '../../../../../../api/inventory.js'
 import { Button, IconButton } from '../../../../../../components/ui'
+import { Can } from '../../../../../../components/common/Can.jsx'
 import ScannerPanel from '../../../../../../components/ScannerPanel/ScannerPanel.jsx'
 import { X } from 'lucide-react'
 import './WarehouseToContainer.css'
@@ -193,9 +194,11 @@ export default function WarehouseToContainer() {
               value={qty} onChange={e => setQty(e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-orange-400 mb-3"
             />
-            <Button onClick={submit} disabled={submitting || !qty} loading={submitting} variant="warning" fullWidth>
-              {submitting ? 'Filling…' : 'Fill Container'}
-            </Button>
+            <Can permission="inventory.outward.create">
+              <Button onClick={submit} disabled={submitting || !qty} loading={submitting} variant="warning" fullWidth>
+                {submitting ? 'Filling…' : 'Fill Container'}
+              </Button>
+            </Can>
           </div>
 
         </div>

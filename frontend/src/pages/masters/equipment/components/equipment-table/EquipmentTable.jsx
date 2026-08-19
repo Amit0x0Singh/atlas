@@ -1,8 +1,10 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { Pencil, Trash2, Loader2 } from 'lucide-react'
-import { IconButton } from '../../../../../components/ui'
+import { IconButton, ColumnsMenu } from '../../../../../components/ui'
 import Pagination from '../../../../../components/pagination/Pagination.jsx'
 import { toTitleCase } from '../../../../../utils/textDisplay.js'
+import { useColumnPreferences } from '../../../../../hooks/useColumnPreferences.js'
+import { Can } from '../../../../../components/common/Can.jsx'
 import EquipmentToolbar from './EquipmentToolbar.jsx'
 
 // Resizable columns — same drag-handle mechanism as the other master tables.
@@ -15,7 +17,6 @@ const COLUMN_DEFS = [
   { key: 'plant',          label: 'Plant',           defaultWidth: 140 },
 ]
 const ACTIONS_COL_WIDTH = 90
-const MIN_COL_WIDTH = 60
 
 // `items` is already the current page's rows (filtering + pagination happen
 // server-side) — `total` is the server-reported match count, used only by
@@ -25,25 +26,7 @@ export default function EquipmentTable({
   items, total, loading, page, limit, onEdit, onDelete, onRowClick, onPageChange, onLimitChange,
   search, onSearchChange, filters, onFiltersChange, sort, onSortChange, operationOptions, plantOptions, onExport, exporting,
 }) {
-  const [columnWidths, setColumnWidths] = useState(() =>
-    Object.fromEntries(COLUMN_DEFS.map(c => [c.key, c.defaultWidth])))
-
-  function startResize(key) {
-    return (e) => {
-      e.preventDefault()
-      const startX = e.clientX
-      const startWidth = columnWidths[key]
-      function onMove(ev) {
-        setColumnWidths(w => ({ ...w, [key]: Math.max(MIN_COL_WIDTH, startWidth + (ev.clientX - startX)) }))
-      }
-      function onUp() {
-        document.removeEventListener('mousemove', onMove)
-        document.removeEventListener('mouseup', onUp)
-      }
-      document.addEventListener('mousemove', onMove)
-      document.addEventListener('mouseup', onUp)
-    }
-  }
+  const { columnWidths, columnVisibility, visibleColumns, startResize, toggleColumn } = useColumnPreferences('equipment-master', COLUMN_DEFS)
 
   const sortedItems = useMemo(() => {
     const dir = sort.direction === 'asc' ? 1 : -1
@@ -64,11 +47,14 @@ export default function EquipmentTable({
         onExport={onExport} exporting={exporting}
         resultCount={total}
       />
+      <div className="flex justify-end px-4 py-1.5 border-b border-gray-100">
+        <ColumnsMenu columns={COLUMN_DEFS} visibility={columnVisibility} onToggle={toggleColumn} />
+      </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm" style={{ tableLayout: 'fixed' }}>
           <thead style={{ backgroundColor: 'rgb(226, 235, 240)' }}>
             <tr>
-              {COLUMN_DEFS.map(c => (
+              {visibleColumns.map(c => (
                 <th
                   key={c.key}
                   style={{ width: columnWidths[c.key] }}
@@ -87,27 +73,31 @@ export default function EquipmentTable({
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={6} className="py-14 text-center text-gray-400">
+                <td colSpan={visibleColumns.length + 1} className="py-14 text-center text-gray-400">
                   <Loader2 size={22} className="animate-spin mx-auto mb-2" />
                   Loading equipment…
                 </td>
               </tr>
             ) : items.length === 0 ? (
               <tr>
-                <td colSpan={6} className="text-center py-10 text-gray-400">
+                <td colSpan={visibleColumns.length + 1} className="text-center py-10 text-gray-400">
                   No equipment found.
                 </td>
               </tr>
             ) : sortedItems.map(item => (
               <tr key={item.equipId} className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer" onClick={() => onRowClick(item)}>
-                <td className="px-4 py-3 font-mono text-gray-500 truncate">{item.equipCode}</td>
-                <td className="px-4 py-3 font-medium truncate">{toTitleCase(item.equipName)}</td>
-                <td className="px-4 py-3 text-gray-500 truncate">{item.workingVolume ?? 0}{item.workingUnit ? ` ${item.workingUnit.toUpperCase()}` : ''}</td>
-                <td className="px-4 py-3 text-gray-500 truncate">{item.operation || '—'}</td>
-                <td className="px-4 py-3 text-gray-500 truncate">{item.plant || '—'}</td>
+                {columnVisibility.equipCode && <td className="px-4 py-3 font-mono text-gray-500 truncate">{item.equipCode}</td>}
+                {columnVisibility.equipName && <td className="px-4 py-3 font-medium truncate">{toTitleCase(item.equipName)}</td>}
+                {columnVisibility.workingVolume && <td className="px-4 py-3 text-gray-500 truncate">{item.workingVolume ?? 0}{item.workingUnit ? ` ${item.workingUnit.toUpperCase()}` : ''}</td>}
+                {columnVisibility.operation && <td className="px-4 py-3 text-gray-500 truncate">{item.operation || '—'}</td>}
+                {columnVisibility.plant && <td className="px-4 py-3 text-gray-500 truncate">{item.plant || '—'}</td>}
                 <td className="px-4 py-3 flex gap-1" onClick={(e) => e.stopPropagation()}>
-                  <IconButton icon={Pencil} tooltip="Edit" onClick={() => onEdit(item)} />
-                  <IconButton icon={Trash2} variant="danger" tooltip="Delete" onClick={() => onDelete(item.equipId, item.equipName)} />
+                  <Can permission="masters.equipment.update">
+                    <IconButton icon={Pencil} tooltip="Edit" onClick={() => onEdit(item)} />
+                  </Can>
+                  <Can permission="masters.equipment.delete">
+                    <IconButton icon={Trash2} variant="danger" tooltip="Delete" onClick={() => onDelete(item.equipId, item.equipName)} />
+                  </Can>
                 </td>
               </tr>
             ))}

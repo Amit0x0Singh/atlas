@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Plus, Building } from 'lucide-react'
 import { Button, BackButton, PageHeader, MasterFilters } from '../../../../components/ui'
+import { Can } from '../../../../components/common/Can.jsx'
 import SupplierTable from '../components/supplier-table/SupplierTable.jsx'
 import SupplierForm from '../components/supplier-form/SupplierForm.jsx'
 import { useSuppliers, useCreateSupplier, useUpdateSupplier } from '../../../../hooks/masters/useSuppliers.js'
@@ -64,7 +65,9 @@ export default function SupplierMaster() {
         title="Supplier Master"
         description="Manage suppliers used for gate inward and other supply-chain suggestions"
         actions={<>
-          <Button variant="primary" icon={Plus} onClick={openAdd}>Add Supplier</Button>
+          <Can permission="masters.erp-supplier.create">
+            <Button variant="primary" icon={Plus} onClick={openAdd}>Add Supplier</Button>
+          </Can>
           <BackButton />
         </>}
       />

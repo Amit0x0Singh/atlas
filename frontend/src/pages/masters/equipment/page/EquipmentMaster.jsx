@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Plus, Wrench } from 'lucide-react'
 import { Button, BackButton, PageHeader } from '../../../../components/ui'
+import { Can } from '../../../../components/common/Can.jsx'
 import EquipmentTable from '../components/equipment-table/EquipmentTable.jsx'
 import EquipmentForm from '../components/equipment-form/EquipmentForm.jsx'
 import EquipmentDetailModal from '../components/equipment-detail-modal/EquipmentDetailModal.jsx'
@@ -91,7 +92,9 @@ export default function EquipmentMaster() {
         title="Equipment Master"
         description="Manage production equipment for indent selection"
         actions={<>
-          <Button variant="warning" icon={Plus} onClick={openAdd}>Add Equipment</Button>
+          <Can permission="masters.equipment.create">
+            <Button variant="warning" icon={Plus} onClick={openAdd}>Add Equipment</Button>
+          </Can>
           <BackButton />
         </>}
       />

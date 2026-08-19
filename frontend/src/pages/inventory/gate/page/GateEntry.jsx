@@ -3,10 +3,12 @@ import { ArrowDown, ArrowUp, CheckCircle } from "lucide-react";
 import {
   useGateInward, useGateOutward,
   useCreateGateInward, useCreateGateOutward,
+  useEditGateInward, useEditGateOutward,
+  useUploadGateInwardInvoiceDoc,
   useRequestDeleteGateInward, useRequestDeleteGateOutward,
 } from "../../../../hooks/inventory/useGate.js";
 import { useAuth } from "../../../../components/auth/AuthContext.jsx";
-import { Button, BackButton, PageHeader, ErrorModal, ConfirmModal } from '../../../../components/ui'
+import { Button, BackButton, PageHeader, ErrorModal, ConfirmModal, Modal } from '../../../../components/ui'
 import { DoorOpen } from "lucide-react";
 import GateTabs from "../component/gate-tabs/GateTabs.jsx";
 import GateToolbar, { DEFAULT_GATE_SORT } from "../component/gate-filter-bar/GateToolbar.jsx";
@@ -17,7 +19,16 @@ import OutwardTable from "../component/outward-table/OutwardTable.jsx";
 import "./GateEntry.css";
 
 import { toTitleCase } from '../../../../utils/textDisplay.js'
+import { COMPANIES } from "../data/companies.js";
+import { gateApi } from "../../../../api/inventory.js";
+import { openAuthedFile } from "../../../../utils/authedFile.js";
 const EMPTY_FILTERS = { search: "", invoice_no: "", status: "", company: "", from_date: "", to_date: "" };
+
+// companyName is stored lowercase (see gate.create.middleware's
+// lowercaseFields) — map it back to the display-cased option the <select>
+// in InwardForm/OutwardForm actually expects.
+const matchCompany = (raw) =>
+  COMPANIES.find((c) => c.toLowerCase() === String(raw || "").toLowerCase()) || "";
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function GateEntry() {
@@ -37,6 +48,7 @@ export default function GateEntry() {
   const [sort, setSort]                 = useState(DEFAULT_GATE_SORT);
   const [errModal, setErrModal]           = useState({ open: false, message: '' });
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [editEntry, setEditEntry]         = useState(null); // { type: 'inward'|'outward', item }
   const [successMsg, setSuccessMsg]       = useState('');
 
   const debounceRef = useRef(null);
@@ -67,6 +79,9 @@ export default function GateEntry() {
 
   const createInwardMutation  = useCreateGateInward();
   const createOutwardMutation = useCreateGateOutward();
+  const editInwardMutation    = useEditGateInward();
+  const editOutwardMutation   = useEditGateOutward();
+  const uploadInwardDocMutation = useUploadGateInwardInvoiceDoc();
   const requestDeleteInward   = useRequestDeleteGateInward();
   const requestDeleteOutward  = useRequestDeleteGateOutward();
 
@@ -131,10 +146,22 @@ export default function GateEntry() {
     setTimeout(() => setSuccessMsg(''), 4000);
   };
 
+  // The invoice document (a File, from either the plain picker or the
+  // camera capture) can't travel through the JSON create/update body — it's
+  // stripped off here and uploaded as a separate multipart request once the
+  // entry itself exists (see gateApi.uploadInwardInvoiceDoc).
   const submitInward = async (form) => {
+    const { invoice_document, ...fields } = form;
     try {
-      const res = await createInwardMutation.mutateAsync(form);
+      const res = await createInwardMutation.mutateAsync(fields);
       const entry = res.data;
+      if (invoice_document) {
+        try {
+          await uploadInwardDocMutation.mutateAsync({ id: entry.inwardId, file: invoice_document });
+        } catch (docErr) {
+          setErrModal({ open: true, message: `Entry created, but the invoice document failed to upload: ${docErr.message}` });
+        }
+      }
       showSuccess(`Inward entry created${entry?.companyName ? ` for ${toTitleCase(entry.companyName)}` : ''}${entry?.supplierName ? ` · ${toTitleCase(entry.supplierName)}` : ''}${entry?.invoiceNo ? ` · ${entry.invoiceNo}` : ''}`);
       setFormKey(k => k + 1);
     } catch (e) {
@@ -148,6 +175,43 @@ export default function GateEntry() {
       const entry = res.data;
       showSuccess(`Outward entry recorded${entry?.companyName ? ` for ${toTitleCase(entry.companyName)}` : ''}${entry?.receiverName ? ` · ${toTitleCase(entry.receiverName)}` : ''}${entry?.invoiceNo ? ` · ${entry.invoiceNo}` : ''}`);
       setFormKey(k => k + 1);
+    } catch (e) {
+      setErrModal({ open: true, message: e.message });
+    }
+  };
+
+  const handleEdit = (item, type) => setEditEntry({ type, item });
+
+  const submitEditInward = async (form) => {
+    const { invoice_document, ...fields } = form;
+    const id = editEntry.item.inward_id || editEntry.item.inwardId;
+    try {
+      await editInwardMutation.mutateAsync({ id, data: fields });
+      if (invoice_document) {
+        try {
+          await uploadInwardDocMutation.mutateAsync({ id, file: invoice_document });
+        } catch (docErr) {
+          setErrModal({ open: true, message: `Entry updated, but the invoice document failed to upload: ${docErr.message}` });
+        }
+      }
+      setEditEntry(null);
+      showSuccess("Inward entry updated");
+    } catch (e) {
+      setErrModal({ open: true, message: e.message });
+    }
+  };
+
+  const handleViewInvoiceDoc = (item) => {
+    const id = item.inward_id || item.inwardId;
+    openAuthedFile(gateApi.invoiceDocUrl(id)).catch((e) => setErrModal({ open: true, message: `Could not open the invoice document: ${e.message}` }));
+  };
+
+  const submitEditOutward = async (form) => {
+    const id = editEntry.item.outward_id || editEntry.item.outwardId;
+    try {
+      await editOutwardMutation.mutateAsync({ id, data: form });
+      setEditEntry(null);
+      showSuccess("Outward entry updated");
     } catch (e) {
       setErrModal({ open: true, message: e.message });
     }
@@ -231,6 +295,12 @@ export default function GateEntry() {
           <PageHeader icon={ArrowDown} title="Inward Entries" actions={<BackButton onClick={goHome} />} />
 
           <div className="ge-body">
+            {successMsg && (
+              <div className="ge-success">
+                <CheckCircle size={16} /> {successMsg}
+              </div>
+            )}
+
             <GateToolbar
               tab="inward"
               filters={filters}
@@ -250,6 +320,8 @@ export default function GateEntry() {
                   list={list}
                   total={total}
                   onRequestDelete={(id) => handleRequestDelete(id, "inward")}
+                  onEdit={(item) => handleEdit(item, "inward")}
+                  onViewDocument={handleViewInvoiceDoc}
                 />
             }
           </div>
@@ -264,6 +336,12 @@ export default function GateEntry() {
           <PageHeader icon={ArrowUp} title="Outward Entries" actions={<BackButton onClick={goHome} />} />
 
           <div className="ge-body">
+            {successMsg && (
+              <div className="ge-success">
+                <CheckCircle size={16} /> {successMsg}
+              </div>
+            )}
+
             <GateToolbar
               tab="outward"
               filters={filters}
@@ -283,6 +361,7 @@ export default function GateEntry() {
                   list={list}
                   total={total}
                   onRequestDelete={(id) => handleRequestDelete(id, "outward")}
+                  onEdit={(item) => handleEdit(item, "outward")}
                 />
             }
           </div>
@@ -302,6 +381,41 @@ export default function GateEntry() {
         onAccept={confirmDeleteRequest}
         onCancel={() => setDeleteConfirm(null)}
       />
+
+      <Modal open={!!editEntry} onClose={() => setEditEntry(null)} size="lg">
+        {editEntry?.type === "inward" && (
+          <InwardForm
+            key={editEntry.item.inward_id || editEntry.item.inwardId}
+            mode="edit"
+            embedded
+            initialValues={{
+              supplier_name: editEntry.item.supplier_name || editEntry.item.supplierName || "",
+              invoice_no:    editEntry.item.invoice_no    || editEntry.item.invoiceNo    || "",
+              vehicle_no:    editEntry.item.vehicle_no    || editEntry.item.vehicleNo    || "",
+              company:       matchCompany(editEntry.item.company_name || editEntry.item.companyName),
+            }}
+            existingDocument={{ fileName: editEntry.item.invoice_doc_file_name || editEntry.item.invoiceDocFileName || "" }}
+            onViewDocument={() => handleViewInvoiceDoc(editEntry.item)}
+            onSubmit={submitEditInward}
+            onCancel={() => setEditEntry(null)}
+          />
+        )}
+        {editEntry?.type === "outward" && (
+          <OutwardForm
+            key={editEntry.item.outward_id || editEntry.item.outwardId}
+            mode="edit"
+            embedded
+            initialValues={{
+              receiver_name: editEntry.item.receiver_name || editEntry.item.receiverName || "",
+              invoice_no:    editEntry.item.invoice_no    || editEntry.item.invoiceNo    || "",
+              vehicle_no:    editEntry.item.vehicle_no    || editEntry.item.vehicleNo    || "",
+              company:       matchCompany(editEntry.item.company_name || editEntry.item.companyName),
+            }}
+            onSubmit={submitEditOutward}
+            onCancel={() => setEditEntry(null)}
+          />
+        )}
+      </Modal>
     </div>
   );
 }

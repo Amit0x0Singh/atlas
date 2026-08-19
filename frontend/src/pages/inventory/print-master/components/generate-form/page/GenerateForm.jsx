@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { DoorOpen, X } from "lucide-react";
 import { packsApi, rmApi, gateApi } from "../../../../../../api/inventory.js";
 import { Button, IconButton } from "../../../../../../components/ui";
+import { Can } from "../../../../../../components/common/Can.jsx";
 import { useGateInward, useUpdateGateInwardStatus } from "../../../../../../hooks/inventory/useGate.js";
 import { todayStr, resolveExpiryDate } from "../utils/expiryDate.js";
 import { inp, lbl, withError } from "../utils/formStyles.js";
@@ -291,16 +292,20 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed, onUnlin
         </div>
 
         {/* + Add Item */}
-        <Button variant="outline-gray" fullWidth className="border-dashed mb-3.5" onClick={addItem}>
-          + Add Item
-        </Button>
+        <Can permission="inventory.inward.create">
+          <Button variant="outline-gray" fullWidth className="border-dashed mb-3.5" onClick={addItem}>
+            + Add Item
+          </Button>
+        </Can>
 
         {/* Submit */}
-        <Button type="submit" variant="primary" size="lg" fullWidth loading={loading}>
-          {loading
-            ? "Generating…"
-            : `🖨️ Generate Pack IDs${items.length > 1 ? ` (${items.length} items)` : ""}`}
-        </Button>
+        <Can permission="inventory.inward.create">
+          <Button type="submit" variant="primary" size="lg" fullWidth loading={loading}>
+            {loading
+              ? "Generating…"
+              : `🖨️ Generate Pack IDs${items.length > 1 ? ` (${items.length} items)` : ""}`}
+          </Button>
+        </Can>
       </form>
     </div>
   );

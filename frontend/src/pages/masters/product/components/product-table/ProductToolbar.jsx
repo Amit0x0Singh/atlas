@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Search, Filter, ArrowUpDown, Download } from 'lucide-react'
 import { Button } from '../../../../../components/ui'
+import { Can } from '../../../../../components/common/Can.jsx'
 import ProductFilterModal, { EMPTY_PRODUCT_FILTERS } from './ProductFilterModal.jsx'
 import ProductSortModal, { DEFAULT_PRODUCT_SORT } from './ProductSortModal.jsx'
 
@@ -39,9 +40,11 @@ export default function ProductToolbar({ search, onSearchChange, filters, onFilt
         <Button variant={activeFilterCount ? 'outline' : 'outline-gray'} size="sm" icon={Filter} onClick={() => setShowFilter(true)}>
           Filter{activeFilterCount > 0 && ` (${activeFilterCount})`}
         </Button>
-        <Button variant="secondary" size="sm" icon={Download} loading={exporting} onClick={onExport}>
-          Export
-        </Button>
+        <Can permission="masters.reports.export">
+          <Button variant="secondary" size="sm" icon={Download} loading={exporting} onClick={onExport}>
+            Export
+          </Button>
+        </Can>
       </div>
 
       <ProductFilterModal open={showFilter} onClose={() => setShowFilter(false)} value={filters} onApply={onFiltersChange} plantOptions={plantOptions} uomOptions={uomOptions} stateOptions={stateOptions} />

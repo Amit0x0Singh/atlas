@@ -1,4 +1,5 @@
 import prisma from '../../../../db.js'
+import { stripDocPath } from '../document/gate.controller.js'
 
 /// -------------------   Gate Inward list and get
 
@@ -33,7 +34,7 @@ const listGateInward = async (req, res) => {
     const [rows, total] = await Promise.all([
       prisma.gateInward.findMany({
         where,
-        select: { inwardId: true, supplierName: true, invoiceNo: true, vehicleNo: true, companyName: true, status: true, requestDelete: true, createdAt: true, updatedAt: true },
+        select: { inwardId: true, supplierName: true, invoiceNo: true, vehicleNo: true, companyName: true, status: true, requestDelete: true, invoiceDocFileName: true, invoiceDocMimeType: true, createdAt: true, updatedAt: true },
         orderBy: { createdAt: 'desc' },
         skip: off,
         take: lim,
@@ -58,7 +59,7 @@ const getGateInward = async (req, res) => {
 
     const row = await prisma.gateInward.findUnique({ where: { inwardId: id } })
     if (!row) return res.status(404).json({ success: false, error: 'Gate inward not found', code: 'NOT_FOUND' })
-    return res.json({ success: true, data: row })
+    return res.json({ success: true, data: stripDocPath(row) })
     
   } catch (err) {
     console.error('getGateInward error:', err.message)

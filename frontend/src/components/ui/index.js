@@ -6,6 +6,7 @@ export { default as Loading     } from './Loading/components/Loading.jsx'
 export { default as PageHeader  } from './PageHeader/components/PageHeader.jsx'
 export { default as InfoTooltip } from './InfoTooltip/components/InfoTooltip.jsx'
 export { default as MasterFilters } from './MasterFilters/components/MasterFilters.jsx'
+export { default as ColumnsMenu } from './ColumnsMenu/components/ColumnsMenu.jsx'
 
 // ─── Buttons ──────────────────────────────────────────────────────────────────
 export { default as Button     } from './Buttons/components/Button.jsx'

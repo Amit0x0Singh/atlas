@@ -5,6 +5,7 @@ import { openAuthedFile } from "../../../../../../utils/authedFile.js";
 import { useContainers } from "../../hooks/useContainers.js";
 import Pagination from "../../../../../../components/pagination/Pagination.jsx";
 import { Button, IconButton, Modal } from "../../../../../../components/ui";
+import { Can } from "../../../../../../components/common/Can.jsx";
 import { Pencil } from "lucide-react";
 
 import { toTitleCase } from '../../../../../../utils/textDisplay.js'
@@ -154,7 +155,9 @@ export default function ContainerList() {
 
               {/* Edit capacity */}
               <div className="flex justify-center">
-                <IconButton icon={Pencil} onClick={() => openEdit(c)} tooltip="Edit container size" size="sm" />
+                <Can permission="inventory.containers.update">
+                  <IconButton icon={Pencil} onClick={() => openEdit(c)} tooltip="Edit container size" size="sm" />
+                </Can>
               </div>
             </div>
           );

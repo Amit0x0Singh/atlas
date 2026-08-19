@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Search, Filter, ArrowUpDown, Download } from 'lucide-react'
 import { Button } from '../../../../components/ui'
+import { Can } from '../../../../components/common/Can.jsx'
 import UsersFilterModal, { EMPTY_USER_FILTERS } from './UsersFilterModal.jsx'
 import UsersSortModal, { DEFAULT_USER_SORT } from './UsersSortModal.jsx'
 
@@ -43,9 +44,11 @@ export default function UsersToolbar({ search, onSearchChange, filters, onFilter
         <Button variant={activeFilterCount ? 'outline' : 'outline-gray'} size="sm" icon={Filter} onClick={() => setShowFilter(true)}>
           Filter{activeFilterCount > 0 && ` (${activeFilterCount})`}
         </Button>
-        <Button variant="secondary" size="sm" icon={Download} onClick={onExport}>
-          Export
-        </Button>
+        <Can permission="admin.users.view">
+          <Button variant="secondary" size="sm" icon={Download} onClick={onExport}>
+            Export
+          </Button>
+        </Can>
       </div>
 
       <UsersFilterModal open={showFilter} onClose={() => setShowFilter(false)} value={filters} onApply={onFiltersChange} roles={roles} />

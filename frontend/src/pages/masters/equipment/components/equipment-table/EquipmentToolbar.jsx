@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Search, Filter, ArrowUpDown, Download } from 'lucide-react'
 import { Button } from '../../../../../components/ui'
+import { Can } from '../../../../../components/common/Can.jsx'
 import EquipmentFilterModal, { EMPTY_EQUIPMENT_FILTERS } from './EquipmentFilterModal.jsx'
 import EquipmentSortModal, { DEFAULT_EQUIPMENT_SORT } from './EquipmentSortModal.jsx'
 
@@ -39,9 +40,11 @@ export default function EquipmentToolbar({ search, onSearchChange, filters, onFi
         <Button variant={activeFilterCount ? 'outline' : 'outline-gray'} size="sm" icon={Filter} onClick={() => setShowFilter(true)}>
           Filter{activeFilterCount > 0 && ` (${activeFilterCount})`}
         </Button>
-        <Button variant="secondary" size="sm" icon={Download} loading={exporting} onClick={onExport}>
-          Export
-        </Button>
+        <Can permission="masters.reports.export">
+          <Button variant="secondary" size="sm" icon={Download} loading={exporting} onClick={onExport}>
+            Export
+          </Button>
+        </Can>
       </div>
 
       <EquipmentFilterModal open={showFilter} onClose={() => setShowFilter(false)} value={filters} onApply={onFiltersChange} operationOptions={operationOptions} plantOptions={plantOptions} />

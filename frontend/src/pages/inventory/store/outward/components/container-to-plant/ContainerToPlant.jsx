@@ -3,6 +3,7 @@ import { containerApi, rmApi } from '../../../../../../api/inventory.js'
 import { indentApi } from '../../../../../../api/production.js'
 import { useQrScanner } from '../../../../../../hooks/useQrScanner.js'
 import { Button } from '../../../../../../components/ui'
+import { Can } from '../../../../../../components/common/Can.jsx'
 import './ContainerToPlant.css'
 
 import { toTitleCase } from '../../../../../../utils/textDisplay.js'
@@ -192,9 +193,11 @@ export default function ContainerToPlant({ preselected, onDone }) {
                 />
               </div>
 
-              <Button onClick={submit} disabled={submitting || !qty} loading={submitting} variant="success" fullWidth>
-                {submitting ? 'Issuing…' : 'Issue from Container'}
-              </Button>
+              <Can permission="inventory.outward.create">
+                <Button onClick={submit} disabled={submitting || !qty} loading={submitting} variant="success" fullWidth>
+                  {submitting ? 'Issuing…' : 'Issue from Container'}
+                </Button>
+              </Can>
             </div>
           )}
         </>

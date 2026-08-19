@@ -1,4 +1,5 @@
 import { Button, IconButton } from '../../../../../components/ui'
+import { Can } from '../../../../../components/common/Can.jsx'
 import { X } from 'lucide-react'
 
 import { toTitleCase } from '../../../../../utils/textDisplay.js'
@@ -184,15 +185,17 @@ export default function CreateIndentModal({
         </div>
 
         <div className="px-6 py-4 border-t flex gap-3">
-          <Button variant="primary" fullWidth loading={creating} disabled={creating} onClick={onSubmit}>
-            {creating ? 'Creating...' : checkingStock ? 'Checking Stock...' : (() => {
-              if (form.cycleBatchSize && form.batchSize && parseFloat(form.cycleBatchSize) > 0) {
-                const n = Math.round(parseFloat(form.batchSize) / parseFloat(form.cycleBatchSize))
-                return `Create ${n} Cycle Indent${n !== 1 ? 's' : ''}`
-              }
-              return 'Create Indent'
-            })()}
-          </Button>
+          <Can permission="production.indent.create">
+            <Button variant="primary" fullWidth loading={creating} disabled={creating} onClick={onSubmit}>
+              {creating ? 'Creating...' : checkingStock ? 'Checking Stock...' : (() => {
+                if (form.cycleBatchSize && form.batchSize && parseFloat(form.cycleBatchSize) > 0) {
+                  const n = Math.round(parseFloat(form.batchSize) / parseFloat(form.cycleBatchSize))
+                  return `Create ${n} Cycle Indent${n !== 1 ? 's' : ''}`
+                }
+                return 'Create Indent'
+              })()}
+            </Button>
+          </Can>
           <Button variant="secondary" fullWidth onClick={onClose}>Cancel</Button>
         </div>
       </div>

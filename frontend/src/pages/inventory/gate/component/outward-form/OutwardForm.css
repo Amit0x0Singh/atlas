@@ -10,6 +10,18 @@
   box-sizing: border-box;
 }
 
+/* Used inside the Edit modal — the Modal panel already draws its own
+   white/rounded/shadowed card, so a second nested border+shadow here just
+   causes visible corner/edge overlap. Strip the card chrome and let the
+   content sit flush in the modal's padding. */
+.of-wrap--embedded {
+  border: none;
+  box-shadow: none;
+  margin-bottom: 0;
+  border-radius: 0;
+  padding: 24px 28px;
+}
+
 .of-header {
   display: flex;
   align-items: center;
@@ -80,6 +92,10 @@
 @media (max-width: 640px) {
   .of-wrap {
     padding: 16px;
+  }
+
+  .of-wrap--embedded {
+    padding: 18px;
   }
 
   .of-grid {

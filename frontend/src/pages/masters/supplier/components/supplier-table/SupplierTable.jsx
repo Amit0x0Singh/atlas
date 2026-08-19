@@ -1,5 +1,6 @@
 import { Pencil, Trash2 } from 'lucide-react'
 import { IconButton } from '../../../../../components/ui'
+import { Can } from '../../../../../components/common/Can.jsx'
 import Pagination from '../../../../../components/pagination/Pagination.jsx'
 import { toTitleCase } from '../../../../../utils/textDisplay.js'
 
@@ -35,8 +36,12 @@ export default function SupplierTable({ items, total, page, limit, onEdit, onDea
                 <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{item.gstin || '—'}</td>
                 <td className="px-4 py-3 text-gray-500 max-w-xs truncate">{item.address || '—'}</td>
                 <td className="px-4 py-3 flex gap-1">
-                  <IconButton icon={Pencil} tooltip="Edit" onClick={() => onEdit(item)} />
-                  <IconButton icon={Trash2} variant="danger" tooltip="Deactivate" onClick={() => onDeactivate(item.supplierId, item.supplierName)} />
+                  <Can permission="masters.erp-supplier.update">
+                    <IconButton icon={Pencil} tooltip="Edit" onClick={() => onEdit(item)} />
+                  </Can>
+                  <Can permission="masters.erp-supplier.update">
+                    <IconButton icon={Trash2} variant="danger" tooltip="Deactivate" onClick={() => onDeactivate(item.supplierId, item.supplierName)} />
+                  </Can>
                 </td>
               </tr>
             ))}

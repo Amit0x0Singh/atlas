@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { planTasksApi } from '../../../../../../api/production.js'
+import { Can } from '../../../../../../components/common/Can.jsx'
 import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 
 export default function QCHandoffModal({ task, bmrData, sfgCreated, onClose }) {
@@ -47,7 +48,9 @@ export default function QCHandoffModal({ task, bmrData, sfgCreated, onClose }) {
           </div>
           <div className="flex gap-3 justify-end">
             <button onClick={() => onClose('skip')} className="px-4 py-2 border border-gray-200 rounded-lg text-[13px] font-semibold hover:bg-gray-50">Skip for now</button>
-            <button onClick={confirmSend} className="px-5 py-2 rounded-lg text-[13px] font-bold text-white bo-qc-send-btn">✓ Send to QC</button>
+            <Can permission="production.batch.update">
+              <button onClick={confirmSend} className="px-5 py-2 rounded-lg text-[13px] font-bold text-white bo-qc-send-btn">✓ Send to QC</button>
+            </Can>
           </div>
         </div>
       </div>

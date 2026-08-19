@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Search, Filter, ArrowUpDown, Download } from 'lucide-react'
 import { Button } from '../../../../../components/ui'
+import { Can } from '../../../../../components/common/Can.jsx'
 import GateFilterModal, { EMPTY_GATE_FILTERS } from './GateFilterModal.jsx'
 import GateSortModal, { DEFAULT_GATE_SORT } from './GateSortModal.jsx'
 
@@ -50,9 +51,11 @@ export default function GateToolbar({ tab, filters, onChange, onClear, sort, onS
         <Button variant={activeFilterCount ? 'outline' : 'outline-gray'} size="sm" icon={Filter} onClick={() => setShowFilter(true)}>
           Filter{activeFilterCount > 0 && ` (${activeFilterCount})`}
         </Button>
-        <Button variant="secondary" size="sm" icon={Download} onClick={onExport}>
-          Export
-        </Button>
+        <Can permission="gate.reports.export">
+          <Button variant="secondary" size="sm" icon={Download} onClick={onExport}>
+            Export
+          </Button>
+        </Can>
       </div>
 
       <GateFilterModal open={showFilter} onClose={() => setShowFilter(false)} value={filters} onApply={applyFilterSubset} />

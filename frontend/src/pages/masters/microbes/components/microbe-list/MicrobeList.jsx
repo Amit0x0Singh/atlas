@@ -1,5 +1,6 @@
 import { Pencil, Trash2, Search } from 'lucide-react'
 import { IconButton } from '../../../../../components/ui'
+import { Can } from '../../../../../components/common/Can.jsx'
 import Pagination from '../../../../../components/pagination/Pagination.jsx'
 
 import { toTitleCase } from '../../../../../utils/textDisplay.js'
@@ -62,11 +63,15 @@ export default function MicrobeList({ paginated, total, loading, search, page, l
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex gap-1">
-                        <IconButton icon={Pencil} tooltip="Edit" onClick={() => onEdit(m)} />
+                        <Can permission="masters.microbe.update">
+                          <IconButton icon={Pencil} tooltip="Edit" onClick={() => onEdit(m)} />
+                        </Can>
                         {inStock ? (
                           <span className="text-xs text-gray-400 self-center ml-1">Cannot delete (has stock)</span>
                         ) : (
-                          <IconButton icon={Trash2} variant="danger" tooltip="Delete" onClick={() => onDelete(m.microbeId, m.microbeName)} />
+                          <Can permission="masters.microbe.delete">
+                            <IconButton icon={Trash2} variant="danger" tooltip="Delete" onClick={() => onDelete(m.microbeId, m.microbeName)} />
+                          </Can>
                         )}
                       </div>
                     </td>

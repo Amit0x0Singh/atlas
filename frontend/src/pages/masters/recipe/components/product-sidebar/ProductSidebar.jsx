@@ -1,5 +1,6 @@
 ﻿import { Wrench } from 'lucide-react'
 import { Button } from '../../../../../components/ui'
+import { Can } from '../../../../../components/common/Can.jsx'
 import './ProductSidebar.css'
 
 import { toTitleCase } from '../../../../../utils/textDisplay.js'
@@ -46,7 +47,9 @@ export default function ProductSidebar({ productList, loading, selectedProduct, 
       </div>
 
       <div className="px-3 py-3 border-t border-gray-100 space-y-2">
-        <Button variant="warning" icon={Wrench} onClick={onReconcile} fullWidth size="sm">Fix RM Mapping</Button>
+        <Can permission="masters.recipe.update">
+          <Button variant="warning" icon={Wrench} onClick={onReconcile} fullWidth size="sm">Fix RM Mapping</Button>
+        </Can>
         <p className="text-xs text-gray-400 text-center leading-tight">
           Reconcile recipe RMs that don't match RM Master
         </p>

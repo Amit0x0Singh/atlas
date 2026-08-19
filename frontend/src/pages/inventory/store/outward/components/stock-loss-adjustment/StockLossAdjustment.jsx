@@ -1,6 +1,7 @@
 ﻿import { useState } from 'react'
 import { outwardApi, packsApi, rmApi } from '../../../../../../api/inventory.js'
 import { Button, IconButton } from '../../../../../../components/ui'
+import { Can } from '../../../../../../components/common/Can.jsx'
 import ScannerPanel from '../../../../../../components/ScannerPanel/ScannerPanel.jsx'
 import { convertByDensity } from '../../../../../../utils/uom.js'
 import { X } from 'lucide-react'
@@ -263,14 +264,16 @@ export default function StockLossAdjustment() {
           </div>
 
           {/* Submit */}
-          <Button
-            onClick={submit}
-            disabled={submitting || misconfigured || !lossQty || !reason || (reason === 'Other' && !customReason.trim())}
-            loading={submitting}
-            variant="danger-solid"
-            fullWidth>
-            {submitting ? 'Adjusting…' : 'Record Stock Loss'}
-          </Button>
+          <Can permission="inventory.outward.adjust">
+            <Button
+              onClick={submit}
+              disabled={submitting || misconfigured || !lossQty || !reason || (reason === 'Other' && !customReason.trim())}
+              loading={submitting}
+              variant="danger-solid"
+              fullWidth>
+              {submitting ? 'Adjusting…' : 'Record Stock Loss'}
+            </Button>
+          </Can>
 
         </div>
       )}

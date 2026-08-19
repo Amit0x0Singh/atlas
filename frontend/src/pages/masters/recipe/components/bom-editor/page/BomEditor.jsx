@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Plus, Save } from 'lucide-react'
 import { Button } from '../../../../../../components/ui'
+import { Can } from '../../../../../../components/common/Can.jsx'
 import { formatMeasurement } from '../../../../../../utils/measurement/formatMeasurement.js'
 import { toCanonical } from '../../../../../../utils/uom.js'
 import BomRow from '../components/BomRow.jsx'
@@ -62,10 +63,14 @@ export default function BomEditor({ selectedProduct, bomRows, loadId, rmList, pr
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline-gray" icon={Plus} onClick={onAddRow} size="sm">Add Item Row</Button>
-          <Button variant="primary" icon={Save} onClick={onSaveAll} disabled={saving} loading={saving} size="sm">
-            {saving ? 'Saving...' : 'Save BOM'}
-          </Button>
+          <Can permission="masters.recipe.update">
+            <Button variant="outline-gray" icon={Plus} onClick={onAddRow} size="sm">Add Item Row</Button>
+          </Can>
+          <Can permission="masters.recipe.update">
+            <Button variant="primary" icon={Save} onClick={onSaveAll} disabled={saving} loading={saving} size="sm">
+              {saving ? 'Saving...' : 'Save BOM'}
+            </Button>
+          </Can>
         </div>
       </div>
 
@@ -153,9 +158,11 @@ export default function BomEditor({ selectedProduct, bomRows, loadId, rmList, pr
             <span className="text-xs text-gray-400">
               {bomRows.filter(r => r.rmCode).length} items configured · All quantities per 1 KG finished product
             </span>
-            <Button variant="primary" icon={Save} onClick={onSaveAll} disabled={saving} loading={saving} size="sm">
-              {saving ? 'Saving...' : 'Save BOM'}
-            </Button>
+            <Can permission="masters.recipe.update">
+              <Button variant="primary" icon={Save} onClick={onSaveAll} disabled={saving} loading={saving} size="sm">
+                {saving ? 'Saving...' : 'Save BOM'}
+              </Button>
+            </Can>
           </div>
         </div>
       </div>

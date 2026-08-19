@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ShieldCheck, Lock } from 'lucide-react'
 import { Button, BackButton, PageHeader } from '../../../../components/ui'
+import { Can } from '../../../../components/common/Can.jsx'
 import { useRoles, usePermissionsCatalog, useCreateRole, useUpdateRole, useSetRolePermissions } from '../../../../hooks/masters/useUserRoles.js'
 import { MODULE_ORDER, MODULE_LABELS, PLANT_MODULE_ORDER, PLANT_MODULE_LABELS, COARSE_ACTIONS, buildModuleIndex, cellState, toggleCell } from '../../../../constants/permissionMatrix.js'
 
@@ -234,7 +235,9 @@ export default function RoleFormPage() {
           <span className="text-xs text-gray-400">{selectedKeys.size} permission{selectedKeys.size !== 1 ? 's' : ''} selected</span>
           <div className="flex gap-2">
             <Button variant="secondary" onClick={goBack}>Cancel</Button>
-            <Button variant="primary" loading={saving} onClick={save}>{editing ? 'Save Changes' : 'Create Role'}</Button>
+            <Can anyOf={['admin.roles.create', 'admin.roles.update']}>
+              <Button variant="primary" loading={saving} onClick={save}>{editing ? 'Save Changes' : 'Create Role'}</Button>
+            </Can>
           </div>
         </div>
       </div>

@@ -1,9 +1,10 @@
-import { useState } from 'react'
 import { Loader2, PackageX } from 'lucide-react'
 import RmTableRow from '../components/RmTableRow.jsx'
 import RmMasterToolbar from '../components/RmMasterToolbar.jsx'
 import './RmTable.css'
 import Pagination from '../../../../../../components/pagination/Pagination.jsx'
+import { ColumnsMenu } from '../../../../../../components/ui'
+import { useColumnPreferences } from '../../../../../../hooks/useColumnPreferences.js'
 
 // Resizable columns — same drag-handle mechanism as the User Roles / Raw
 // Materials tables. "Actions" stays a fixed width since it only holds icons.
@@ -19,7 +20,6 @@ const COLUMN_DEFS = [
   { key: 'reorderLevel',label: 'Re-order Level',  defaultWidth: 112 },
 ]
 const ACTIONS_COL_WIDTH = 80
-const MIN_COL_WIDTH = 60
 
 export default function RmTable({
   visibleItems, loading, error, page, limit,
@@ -28,25 +28,7 @@ export default function RmTable({
 }) {
   const paginated = visibleItems.slice((page - 1) * limit, page * limit)
 
-  const [columnWidths, setColumnWidths] = useState(() =>
-    Object.fromEntries(COLUMN_DEFS.map(c => [c.key, c.defaultWidth])))
-
-  function startResize(key) {
-    return (e) => {
-      e.preventDefault()
-      const startX = e.clientX
-      const startWidth = columnWidths[key]
-      function onMove(ev) {
-        setColumnWidths(w => ({ ...w, [key]: Math.max(MIN_COL_WIDTH, startWidth + (ev.clientX - startX)) }))
-      }
-      function onUp() {
-        document.removeEventListener('mousemove', onMove)
-        document.removeEventListener('mouseup', onUp)
-      }
-      document.addEventListener('mousemove', onMove)
-      document.addEventListener('mouseup', onUp)
-    }
-  }
+  const { columnWidths, columnVisibility, visibleColumns, startResize, toggleColumn } = useColumnPreferences('rm-master', COLUMN_DEFS)
 
   return (
     <div className="space-y-4">
@@ -60,11 +42,14 @@ export default function RmTable({
           onExport={onExport}
           resultCount={visibleItems.length}
         />
+        <div className="flex justify-end px-4 py-1.5 border-b border-gray-100">
+          <ColumnsMenu columns={COLUMN_DEFS} visibility={columnVisibility} onToggle={toggleColumn} />
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm table-fixed min-w-[980px]">
             <thead style={{ backgroundColor: 'rgb(226, 235, 240)' }}>
               <tr>
-                {COLUMN_DEFS.map(c => (
+                {visibleColumns.map(c => (
                   <th
                     key={c.key}
                     style={{ width: columnWidths[c.key] }}
@@ -83,18 +68,18 @@ export default function RmTable({
             <tbody className="divide-y divide-gray-100">
               {loading ? (
                 <tr>
-                  <td colSpan={10} className="py-14 text-center text-gray-400">
+                  <td colSpan={visibleColumns.length + 1} className="py-14 text-center text-gray-400">
                     <Loader2 size={22} className="animate-spin mx-auto mb-2" />
                     Loading items…
                   </td>
                 </tr>
               ) : error ? (
                 <tr>
-                  <td colSpan={10} className="py-14 text-center text-red-500">{error}</td>
+                  <td colSpan={visibleColumns.length + 1} className="py-14 text-center text-red-500">{error}</td>
                 </tr>
               ) : visibleItems.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="py-14 text-center text-gray-400">
+                  <td colSpan={visibleColumns.length + 1} className="py-14 text-center text-gray-400">
                     <PackageX size={26} className="mx-auto mb-2 text-gray-300" />
                     No items found. Click "Add New Item" to start.
                   </td>
@@ -103,6 +88,7 @@ export default function RmTable({
                 <RmTableRow
                   key={item.itemCode}
                   item={item}
+                  columnVisibility={columnVisibility}
                   onEdit={onEdit}
                   onDelete={onDelete}
                   onRowClick={onRowClick}

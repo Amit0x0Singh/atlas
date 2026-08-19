@@ -3,6 +3,7 @@ import './CreateContainer.css'
 import { containerApi, rmApi } from '../../../../../../api/inventory.js'
 import { openAuthedFile } from '../../../../../../utils/authedFile.js'
 import { Button } from '../../../../../../components/ui'
+import { Can } from '../../../../../../components/common/Can.jsx'
 
 import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 export default function CreateContainer({ onCreated }) {
@@ -148,15 +149,17 @@ export default function CreateContainer({ onCreated }) {
           <p className="text-xs text-gray-400 mt-1">Maximum amount this container can hold</p>
         </div>
 
-        <Button
-          type="submit"
-          variant="warning"
-          fullWidth
-          loading={submitting}
-          disabled={!selectedRm || !capacity}
-        >
-          Create Container + Generate QR
-        </Button>
+        <Can permission="inventory.containers.create">
+          <Button
+            type="submit"
+            variant="warning"
+            fullWidth
+            loading={submitting}
+            disabled={!selectedRm || !capacity}
+          >
+            Create Container + Generate QR
+          </Button>
+        </Can>
       </form>
     </div>
   )

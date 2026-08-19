@@ -1,6 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import './LedgerTable.css'
 import { toTitleCase } from '../../../../../../utils/textDisplay.js'
+import { ColumnsMenu } from '../../../../../../components/ui'
+import { useColumnPreferences } from '../../../../../../hooks/useColumnPreferences.js'
 import LedgerToolbar from '../ledger-filters/LedgerToolbar.jsx'
 
 const TX_COLORS = {
@@ -21,31 +23,12 @@ const COLUMN_DEFS = [
   { key: 'reference',       label: 'Reference',         defaultWidth: 200 },
 ]
 const DETAIL_COL_WIDTH = 70
-const MIN_COL_WIDTH = 60
 
 export default function LedgerTable({
   loading, rows, onOpenDetail,
   search, onSearchChange, filters, onFiltersChange, sort, onSortChange, onExport, exporting, resultCount,
 }) {
-  const [columnWidths, setColumnWidths] = useState(() =>
-    Object.fromEntries(COLUMN_DEFS.map(c => [c.key, c.defaultWidth])))
-
-  function startResize(key) {
-    return (e) => {
-      e.preventDefault()
-      const startX = e.clientX
-      const startWidth = columnWidths[key]
-      function onMove(ev) {
-        setColumnWidths(w => ({ ...w, [key]: Math.max(MIN_COL_WIDTH, startWidth + (ev.clientX - startX)) }))
-      }
-      function onUp() {
-        document.removeEventListener('mousemove', onMove)
-        document.removeEventListener('mouseup', onUp)
-      }
-      document.addEventListener('mousemove', onMove)
-      document.addEventListener('mouseup', onUp)
-    }
-  }
+  const { columnWidths, columnVisibility, visibleColumns, startResize, toggleColumn } = useColumnPreferences('stock-ledger', COLUMN_DEFS)
 
   // `rows` is only the current page — the backend hardcodes
   // `orderBy: { timestamp: 'desc' }` with no dynamic sort param, so this only
@@ -69,11 +52,14 @@ export default function LedgerTable({
         onExport={onExport} exporting={exporting}
         resultCount={resultCount}
       />
+      <div className="flex justify-end px-4 py-1.5 border-b border-gray-100">
+        <ColumnsMenu columns={COLUMN_DEFS} visibility={columnVisibility} onToggle={toggleColumn} />
+      </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm" style={{ tableLayout: 'fixed' }}>
           <thead style={{ backgroundColor: 'rgb(226, 235, 240)' }}>
             <tr className="text-gray-600 text-xs">
-              {COLUMN_DEFS.map(c => (
+              {visibleColumns.map(c => (
                 <th
                   key={c.key}
                   style={{ width: columnWidths[c.key] }}
@@ -91,9 +77,9 @@ export default function LedgerTable({
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={6} className="text-center py-8 text-gray-400">Loading...</td></tr>
+              <tr><td colSpan={visibleColumns.length + 1} className="text-center py-8 text-gray-400">Loading...</td></tr>
             ) : sortedRows.length === 0 ? (
-              <tr><td colSpan={6} className="text-center py-8 text-gray-400">No transactions found</td></tr>
+              <tr><td colSpan={visibleColumns.length + 1} className="text-center py-8 text-gray-400">No transactions found</td></tr>
             ) : sortedRows.map(row => {
               const isIn  = row.inQty  > 0
               const isOut = row.outQty > 0
@@ -124,17 +110,21 @@ export default function LedgerTable({
               return (
                 <tr key={row.id} className="border-b border-gray-100 hover:bg-blue-50 transition cursor-pointer"
                   onClick={() => onOpenDetail(row)}>
-                  <td className="px-4 py-2.5 text-gray-500 text-xs whitespace-nowrap overflow-hidden">
-                    {new Date(row.timestamp).toLocaleString('en-IN', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' })}
-                  </td>
-                  <td className="px-4 py-2.5 text-sm font-medium text-gray-800 truncate">{toTitleCase(row.itemName) || row.itemCode}</td>
-                  <td className="px-4 py-2.5 overflow-hidden">
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${TX_COLORS[row.transactionType] || 'bg-gray-100 text-gray-600'}`}>
-                      {row.transactionType.replace(/_/g, ' ')}
-                    </span>
-                  </td>
-                  <td className="px-4 py-2.5 text-right overflow-hidden">{qty}</td>
-                  <td className="px-4 py-2.5 text-gray-500 text-xs truncate">{row.reference || '—'}</td>
+                  {columnVisibility.timestamp && (
+                    <td className="px-4 py-2.5 text-gray-500 text-xs whitespace-nowrap overflow-hidden">
+                      {new Date(row.timestamp).toLocaleString('en-IN', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' })}
+                    </td>
+                  )}
+                  {columnVisibility.itemName && <td className="px-4 py-2.5 text-sm font-medium text-gray-800 truncate">{toTitleCase(row.itemName) || row.itemCode}</td>}
+                  {columnVisibility.transactionType && (
+                    <td className="px-4 py-2.5 overflow-hidden">
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${TX_COLORS[row.transactionType] || 'bg-gray-100 text-gray-600'}`}>
+                        {row.transactionType.replace(/_/g, ' ')}
+                      </span>
+                    </td>
+                  )}
+                  {columnVisibility.qty && <td className="px-4 py-2.5 text-right overflow-hidden">{qty}</td>}
+                  {columnVisibility.reference && <td className="px-4 py-2.5 text-gray-500 text-xs truncate">{row.reference || '—'}</td>}
                   <td className="px-4 py-2.5 text-center text-blue-400 hover:text-blue-600">🔍</td>
                 </tr>
               )

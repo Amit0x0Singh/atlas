@@ -9,7 +9,7 @@ import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 const fmtDateTime = (d) => d
   ? new Date(d).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })
   : '—'
-export default function PackTableRow({ group: g, isOpen, onToggle }) {
+export default function PackTableRow({ group: g, isOpen, onToggle, columnVisibility, colSpan }) {
   const displayName = useUserDisplayNames();
   const totalQty = g.bags.reduce((s, b) => s + (b.packQty || 0), 0);
   const status   = groupStatus(g.bags);
@@ -29,44 +29,58 @@ export default function PackTableRow({ group: g, isOpen, onToggle }) {
           {isOpen ? "▼" : "▶"}
         </td>
 
-        <td className="px-3 py-3">
-          <div className="font-semibold text-gray-900">{toTitleCase(g.itemName)}</div>
-          <div className="text-xs text-gray-400 font-mono mt-0.5">{g.itemCode}</div>
-        </td>
+        {columnVisibility.item && (
+          <td className="px-3 py-3">
+            <div className="font-semibold text-gray-900">{toTitleCase(g.itemName)}</div>
+            <div className="text-xs text-gray-400 font-mono mt-0.5">{g.itemCode}</div>
+          </td>
+        )}
 
-        <td className="px-3 py-3">
-          <div className="font-mono text-xs font-semibold text-gray-700">
-            {g.lotNo || "—"}
-          </div>
-          {g.invoiceNo && (
-            <div className="text-xs text-gray-400 mt-0.5">Inv: {g.invoiceNo}</div>
-          )}
-        </td>
+        {columnVisibility.lotInvoice && (
+          <td className="px-3 py-3">
+            <div className="font-mono text-xs font-semibold text-gray-700">
+              {g.lotNo || "—"}
+            </div>
+            {g.invoiceNo && (
+              <div className="text-xs text-gray-400 mt-0.5">Inv: {g.invoiceNo}</div>
+            )}
+          </td>
+        )}
 
-        <td className="px-3 py-3 text-sm text-gray-600">
-          {g.supplier || "—"}
-        </td>
+        {columnVisibility.supplier && (
+          <td className="px-3 py-3 text-sm text-gray-600">
+            {g.supplier || "—"}
+          </td>
+        )}
 
-        <td className="px-3 py-3 text-center">
-          <span className="bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-0.5 rounded-full">
-            {g.bags.length}
-          </span>
-        </td>
+        {columnVisibility.bags && (
+          <td className="px-3 py-3 text-center">
+            <span className="bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-0.5 rounded-full">
+              {g.bags.length}
+            </span>
+          </td>
+        )}
 
-        <td className="px-3 py-3 font-semibold text-gray-800">
-          {totalQty % 1 === 0 ? totalQty : totalQty.toFixed(3)}{" "}
-          <span className="text-gray-400 font-normal text-xs">{g.uom?.toUpperCase()}</span>
-        </td>
+        {columnVisibility.totalQty && (
+          <td className="px-3 py-3 font-semibold text-gray-800">
+            {totalQty % 1 === 0 ? totalQty : totalQty.toFixed(3)}{" "}
+            <span className="text-gray-400 font-normal text-xs">{g.uom?.toUpperCase()}</span>
+          </td>
+        )}
 
-        <td className="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">
-          {fmtDate(g.receivedDate)}
-        </td>
+        {columnVisibility.received && (
+          <td className="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">
+            {fmtDate(g.receivedDate)}
+          </td>
+        )}
 
-        <td className="px-3 py-3">
-          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColor(status)}`}>
-            {status.replace(/_/g, " ")}
-          </span>
-        </td>
+        {columnVisibility.status && (
+          <td className="px-3 py-3">
+            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColor(status)}`}>
+              {status.replace(/_/g, " ")}
+            </span>
+          </td>
+        )}
 
         <td
           className="px-3 py-3"
@@ -89,7 +103,7 @@ export default function PackTableRow({ group: g, isOpen, onToggle }) {
             key={b.packId}
             className="bg-indigo-50/30 border-t border-indigo-100/60"
           >
-            <td colSpan={9} className="px-0 py-0">
+            <td colSpan={colSpan} className="px-0 py-0">
               <div className="flex items-center gap-0 pl-8 pr-3 py-2">
                 <div className="w-px h-8 bg-indigo-300 mr-4 shrink-0" />
 
@@ -136,7 +150,7 @@ export default function PackTableRow({ group: g, isOpen, onToggle }) {
 
       {isOpen && (
         <tr className="bg-indigo-50/30 border-t border-indigo-100/60">
-          <td colSpan={9} className="px-8 py-2">
+          <td colSpan={colSpan} className="px-8 py-2">
             <div className="flex items-center justify-between text-xs text-gray-400">
               <span className="flex items-center gap-1.5"><Clock size={12} /> Created by {displayName(g.createdBy)} · {fmtDateTime(g.createdAt)}</span>
               <span className="flex items-center gap-1.5"><Clock size={12} /> Updated by {displayName(g.updatedBy)} · {fmtDateTime(g.updatedAt)}</span>

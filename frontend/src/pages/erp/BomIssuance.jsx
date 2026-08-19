@@ -14,6 +14,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { bomSendApi } from '../../api/sales.js'
 import Pagination from '../../components/pagination/Pagination.jsx'
 import { Button, IconButton } from '../../components/ui'
+import { Can } from '../../components/common/Can.jsx'
 import { X, RefreshCw } from 'lucide-react'
 
 import { toTitleCase } from '../../utils/textDisplay.js'
@@ -239,14 +240,16 @@ function MaterialLine({ line, bomId, sendId, onIssued }) {
                   className="flex-1 border-2 border-indigo-300 bg-white rounded-lg px-4 py-2.5 text-sm font-mono focus:ring-2 focus:ring-indigo-500 focus:outline-none focus:border-indigo-500 disabled:opacity-50"
                   autoComplete="off"
                 />
-                <Button
-                  variant="primary"
-                  onClick={() => handleScan({ key: 'Enter' })}
-                  disabled={!scanInput.trim()}
-                  loading={scanning}
-                >
-                  {scanning ? '⏳' : 'Issue'}
-                </Button>
+                <Can permission="sales.bom-send.issue">
+                  <Button
+                    variant="primary"
+                    onClick={() => handleScan({ key: 'Enter' })}
+                    disabled={!scanInput.trim()}
+                    loading={scanning}
+                  >
+                    {scanning ? '⏳' : 'Issue'}
+                  </Button>
+                </Can>
               </div>
               <p className="text-xs text-gray-400 mt-1.5">
                 💡 USB QR scanner auto-fills this field and presses Enter. System issues min(pack qty, remaining needed).
@@ -347,14 +350,16 @@ function MaterialLine({ line, bomId, sendId, onIssued }) {
                             autoFocus
                           />
                         </div>
-                        <Button
-                          variant="primary"
-                          onClick={handleManualIssue}
-                          disabled={!manualQty}
-                          loading={issuing}
-                        >
-                          {issuing ? '⏳ Issuing…' : '✅ Confirm Issue'}
-                        </Button>
+                        <Can permission="sales.bom-send.issue">
+                          <Button
+                            variant="primary"
+                            onClick={handleManualIssue}
+                            disabled={!manualQty}
+                            loading={issuing}
+                          >
+                            {issuing ? '⏳ Issuing…' : '✅ Confirm Issue'}
+                          </Button>
+                        </Can>
                         <Button
                           variant="outline-gray"
                           onClick={() => { setManualPack(null); setManualQty('') }}

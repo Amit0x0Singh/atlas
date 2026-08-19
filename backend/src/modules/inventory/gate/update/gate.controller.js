@@ -1,5 +1,6 @@
 import prisma from '../../../../db.js'
 import { writeAudit, auditUser } from '../../../../middleware/audit.js'
+import { stripDocPath } from '../document/gate.controller.js'
 
 const VALID_STATUSES = ['pending', 'approved', 'rejected']
 
@@ -33,6 +34,56 @@ const requestDeleteGateOutward = async (req, res) => {
   } catch (err) {
     if (err.code === 'P2025') return res.status(404).json({ success: false, error: 'Gate outward not found', code: 'NOT_FOUND' })
     console.error('requestDeleteGateOutward error:', err.message)
+    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+  }
+}
+
+const updateGateInward = async (req, res) => {
+  const { id } = req.params
+  const { supplier_name, invoice_no, vehicle_no, company } = req.body || {}
+  try {
+    const before = await prisma.gateInward.findUnique({ where: { inwardId: id } })
+    if (!before) return res.status(404).json({ success: false, error: 'Gate inward not found', code: 'NOT_FOUND' })
+
+    const row = await prisma.gateInward.update({
+      where: { inwardId: id },
+      data: {
+        supplierName: supplier_name.trim(),
+        invoiceNo:    invoice_no.trim(),
+        vehicleNo:    vehicle_no.trim(),
+        companyName:  company.trim(),
+      },
+    })
+    await writeAudit({ ...auditUser(req), action: 'UPDATE', module: 'gate', tableName: 'gate_inward', recordId: id, oldValue: before, newValue: row })
+    return res.json({ success: true, data: stripDocPath(row) })
+  } catch (err) {
+    if (err.code === 'P2025') return res.status(404).json({ success: false, error: 'Gate inward not found', code: 'NOT_FOUND' })
+    console.error('updateGateInward error:', err.message)
+    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+  }
+}
+
+const updateGateOutward = async (req, res) => {
+  const { id } = req.params
+  const { receiver_name, invoice_no, vehicle_no, company } = req.body || {}
+  try {
+    const before = await prisma.gateOutward.findUnique({ where: { outwardId: id } })
+    if (!before) return res.status(404).json({ success: false, error: 'Gate outward not found', code: 'NOT_FOUND' })
+
+    const row = await prisma.gateOutward.update({
+      where: { outwardId: id },
+      data: {
+        receiverName: receiver_name?.trim() || null,
+        invoiceNo:    invoice_no.trim(),
+        vehicleNo:    vehicle_no.trim(),
+        companyName:  company.trim(),
+      },
+    })
+    await writeAudit({ ...auditUser(req), action: 'UPDATE', module: 'gate', tableName: 'gate_outward', recordId: id, oldValue: before, newValue: row })
+    return res.json({ success: true, data: row })
+  } catch (err) {
+    if (err.code === 'P2025') return res.status(404).json({ success: false, error: 'Gate outward not found', code: 'NOT_FOUND' })
+    console.error('updateGateOutward error:', err.message)
     return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
   }
 }
@@ -94,6 +145,8 @@ const updateGateOutwardStatus = async (req, res) => {
 export {
   requestDeleteGateInward,
   requestDeleteGateOutward,
+  updateGateInward,
+  updateGateOutward,
   updateGateInwardStatus,
   updateGateOutwardStatus,
 }

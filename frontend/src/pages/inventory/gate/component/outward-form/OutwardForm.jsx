@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ArrowUp } from "lucide-react";
 import { Button } from "../../../../../components/ui";
+import { Can } from "../../../../../components/common/Can.jsx";
 import { COMPANIES } from "../../data/companies.js";
 import "./OutwardForm.css";
 
@@ -15,8 +16,8 @@ const FIELDS = [
   { key: "vehicle_no",    label: "Vehicle No.",   placeholder: "e.g. MH-12-AB-1234", uppercase: true, required: true },
 ];
 
-export default function OutwardForm({ onSubmit, onCancel }) {
-  const [form, setForm] = useState(EMPTY);
+export default function OutwardForm({ onSubmit, onCancel, mode = "create", initialValues = null, embedded = false }) {
+  const [form, setForm] = useState(initialValues ? { ...EMPTY, ...initialValues } : EMPTY);
   const [fieldErrors, setFieldErrors] = useState({});
 
   // Both are business codes the backend always stores uppercase — matching
@@ -38,15 +39,17 @@ export default function OutwardForm({ onSubmit, onCancel }) {
     const errors = validate();
     if (Object.keys(errors).length) { setFieldErrors(errors); return; }
     await onSubmit(form);
-    setForm(EMPTY);
-    setFieldErrors({});
+    if (mode !== "edit") {
+      setForm(EMPTY);
+      setFieldErrors({});
+    }
   };
 
   return (
-    <div className="of-wrap">
+    <div className={`of-wrap${embedded ? " of-wrap--embedded" : ""}`}>
       <div className="of-header">
         <ArrowUp size={18} className="of-header-icon" />
-        <h3 className="of-title">New Gate Outward</h3>
+        <h3 className="of-title">{mode === "edit" ? "Edit Gate Outward" : "New Gate Outward"}</h3>
       </div>
 
       <div className="of-grid">
@@ -78,9 +81,11 @@ export default function OutwardForm({ onSubmit, onCancel }) {
       </div>
 
       <div className="of-actions">
-        <Button variant="warning" onClick={handleSubmit}>
-          Record Outward
-        </Button>
+        <Can permission={mode === "edit" ? "gate.outward.update" : "gate.outward.create"}>
+          <Button variant="warning" onClick={handleSubmit}>
+            {mode === "edit" ? "Save Changes" : "Record Outward"}
+          </Button>
+        </Can>
         <Button variant="secondary" onClick={onCancel}>
           Cancel
         </Button>

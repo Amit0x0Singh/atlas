@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Download, ChevronDown, ChevronUp, PlayCircle } from 'lucide-react'
 import { Button } from '../../../../../components/ui'
+import { Can } from '../../../../../components/common/Can.jsx'
 import { stockStatusBadgeCls, fmtDate } from '../../../transaction/utils/format.js'
 import { exportCsv } from '../../utils/exportCsv.js'
 import { useReactivateContainer } from '../../../../../hooks/microbial/useMicrobialStorage.js'
@@ -77,7 +78,9 @@ export default function ContainerLedgerTable({ rows, filterSeed }) {
               <option value="">All Statuses</option>
               {statuses.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
-            <Button variant="outline-gray" size="sm" icon={Download} onClick={handleExport} className="ml-auto">Export</Button>
+            <Can permission="microbial.reports.export">
+              <Button variant="outline-gray" size="sm" icon={Download} onClick={handleExport} className="ml-auto">Export</Button>
+            </Can>
           </div>
 
           {!filtered.length ? (

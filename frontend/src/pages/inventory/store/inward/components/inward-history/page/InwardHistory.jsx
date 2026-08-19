@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo } from 'react'
 import { packsApi, inwardApi } from '../../../../../../../api/inventory.js'
 import Pagination from '../../../../../../../components/pagination/Pagination.jsx'
-import { Button } from '../../../../../../../components/ui'
+import { Button, ColumnsMenu } from '../../../../../../../components/ui'
 import { groupPacks } from '../utils/groupPacks.js'
 import HistoryRow from '../components/HistoryRow.jsx'
 import InwardHistoryToolbar, { EMPTY_INWARD_HISTORY_FILTERS, DEFAULT_INWARD_HISTORY_SORT } from '../components/InwardHistoryToolbar.jsx'
+import { useColumnPreferences } from '../../../../../../../hooks/useColumnPreferences.js'
 import './InwardHistory.css'
 
 // Resizable columns — same drag-handle mechanism as the Item/Product/
@@ -22,7 +23,6 @@ const COLUMN_DEFS = [
 ]
 const EXPAND_COL_WIDTH = 32
 const PRINT_COL_WIDTH  = 150
-const MIN_COL_WIDTH = 60
 
 export default function InwardHistory() {
   const [packs, setPacks]           = useState([])
@@ -36,25 +36,7 @@ export default function InwardHistory() {
   const [page, setPage]             = useState(1)
   const [limit, setLimit]           = useState(15)
 
-  const [columnWidths, setColumnWidths] = useState(() =>
-    Object.fromEntries(COLUMN_DEFS.map(c => [c.key, c.defaultWidth])))
-
-  function startResize(key) {
-    return (e) => {
-      e.preventDefault()
-      const startX = e.clientX
-      const startWidth = columnWidths[key]
-      function onMove(ev) {
-        setColumnWidths(w => ({ ...w, [key]: Math.max(MIN_COL_WIDTH, startWidth + (ev.clientX - startX)) }))
-      }
-      function onUp() {
-        document.removeEventListener('mousemove', onMove)
-        document.removeEventListener('mouseup', onUp)
-      }
-      document.addEventListener('mousemove', onMove)
-      document.addEventListener('mouseup', onUp)
-    }
-  }
+  const { columnWidths, columnVisibility, visibleColumns, startResize, toggleColumn } = useColumnPreferences('store-inward-history', COLUMN_DEFS)
 
   useEffect(() => { load() }, [])
 
@@ -172,6 +154,10 @@ export default function InwardHistory() {
           resultCount={filteredGroups.length}
         />
 
+        <div className="flex justify-end px-4 py-1.5 border-b border-gray-100">
+          <ColumnsMenu columns={COLUMN_DEFS} visibility={columnVisibility} onToggle={toggleColumn} />
+        </div>
+
         {loading ? (
           <p className="text-gray-400 text-center py-14">Loading inward history?</p>
         ) : (
@@ -181,7 +167,7 @@ export default function InwardHistory() {
               <thead style={{ backgroundColor: 'rgb(226, 235, 240)' }}>
                 <tr className="text-gray-600 text-xs">
                   <th style={{ width: EXPAND_COL_WIDTH }} className="px-3 py-2.5" />
-                  {COLUMN_DEFS.map(c => (
+                  {visibleColumns.map(c => (
                     <th
                       key={c.key}
                       style={{ width: columnWidths[c.key] }}
@@ -200,13 +186,13 @@ export default function InwardHistory() {
               <tbody>
                 {filteredGroups.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="text-center py-14 text-gray-400">
+                    <td colSpan={visibleColumns.length + 2} className="text-center py-14 text-gray-400">
                       {hasFilters ? 'No records match your filters.' : 'No inward records found.'}
                     </td>
                   </tr>
                 ) : (
                   paginatedGroups.map(g => (
-                    <HistoryRow key={g.key} group={g} isOpen={expandedKeys.has(g.key)} onToggle={() => toggle(g.key)} />
+                    <HistoryRow key={g.key} group={g} isOpen={expandedKeys.has(g.key)} onToggle={() => toggle(g.key)} columnVisibility={columnVisibility} colSpan={visibleColumns.length + 2} />
                   ))
                 )}
               </tbody>

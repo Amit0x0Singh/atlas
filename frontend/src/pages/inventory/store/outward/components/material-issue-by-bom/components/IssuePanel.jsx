@@ -1,5 +1,6 @@
 import ScannerPanel from '../../../../../../../components/ScannerPanel/ScannerPanel.jsx'
 import StockShortageBanner from './StockShortageBanner.jsx'
+import { Can } from '../../../../../../../components/common/Can.jsx'
 import { convertByDensity } from '../../../../../../../utils/uom.js'
 
 import { toTitleCase } from '../../../../../../../utils/textDisplay.js'
@@ -158,16 +159,18 @@ export default function IssuePanel({
                       )}
                     </p>
                   </div>
-                  <button type="button"
-                    onClick={onSubmit}
-                    disabled={issuing || !issueQty || parseFloat(issueQty) <= 0}
-                    className={`shrink-0 mb-5 px-4 py-2 text-xs font-bold text-white rounded-lg transition-colors disabled:opacity-40 ${
-                      foundSource.type === 'pack'
-                        ? 'bg-indigo-600 hover:bg-indigo-700'
-                        : 'bg-orange-500 hover:bg-orange-600'
-                    }`}>
-                    {issuing ? 'Issuing...' : 'Issue'}
-                  </button>
+                  <Can permission="inventory.outward.create">
+                    <button type="button"
+                      onClick={onSubmit}
+                      disabled={issuing || !issueQty || parseFloat(issueQty) <= 0}
+                      className={`shrink-0 mb-5 px-4 py-2 text-xs font-bold text-white rounded-lg transition-colors disabled:opacity-40 ${
+                        foundSource.type === 'pack'
+                          ? 'bg-indigo-600 hover:bg-indigo-700'
+                          : 'bg-orange-500 hover:bg-orange-600'
+                      }`}>
+                      {issuing ? 'Issuing...' : 'Issue'}
+                    </button>
+                  </Can>
                 </div>
                 {issueError && (
                   <p className="text-xs text-red-600 bg-red-50 px-3 py-1.5 rounded border border-red-100 mt-1">

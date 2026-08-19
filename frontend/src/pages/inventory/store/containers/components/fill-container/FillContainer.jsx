@@ -3,6 +3,7 @@ import './FillContainer.css'
 import jsQR from 'jsqr'
 import { containerApi, outwardApi } from '../../../../../../api/inventory.js'
 import { Button } from '../../../../../../components/ui'
+import { Can } from '../../../../../../components/common/Can.jsx'
 
 import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 export default function FillContainer({ preselected, onDone }) {
@@ -246,15 +247,17 @@ export default function FillContainer({ preselected, onDone }) {
             onChange={e => setQty(e.target.value)}
             className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-orange-400 mb-3"
           />
-          <Button
-            variant="warning"
-            fullWidth
-            loading={submitting}
-            disabled={!qty}
-            onClick={submit}
-          >
-            Fill Container
-          </Button>
+          <Can permission="inventory.containers.update">
+            <Button
+              variant="warning"
+              fullWidth
+              loading={submitting}
+              disabled={!qty}
+              onClick={submit}
+            >
+              Fill Container
+            </Button>
+          </Can>
         </div>
       )}
     </div>

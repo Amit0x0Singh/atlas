@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { Pencil } from "lucide-react";
 import Pagination from "../../../../../components/pagination/Pagination.jsx";
-import { Button } from "../../../../../components/ui";
+import { Button, IconButton } from "../../../../../components/ui";
+import { Can } from "../../../../../components/common/Can.jsx";
 import "./OutwardTable.css";
 import { toTitleCase } from "../../../../../utils/textDisplay.js";
 
@@ -20,14 +22,14 @@ const COLUMNS = [
   { key: "date",     label: "Date & Time",   defaultWidth: 160 },
   { key: "status",   label: "Status",        defaultWidth: 100 },
 ];
-const ACTIONS_COL_WIDTH = 160;
+const ACTIONS_COL_WIDTH = 200;
 const MIN_COL_WIDTH = 60;
 
 function DeleteRequestBadge() {
   return <span className="ot-del-badge">Delete Requested</span>;
 }
 
-export default function OutwardTable({ list, total, onRequestDelete }) {
+export default function OutwardTable({ list, total, onRequestDelete, onEdit }) {
   const [limit, setLimit] = useState(15);
   const [page, setPage] = useState(1);
   const paginated = list.slice((page - 1) * limit, page * limit);
@@ -107,17 +109,24 @@ export default function OutwardTable({ list, total, onRequestDelete }) {
                   <StatusBadge status={item.status} />
                 </td>
                 <td className="ot-td" style={{ width: ACTIONS_COL_WIDTH }}>
-                  {item.request_delete ? (
-                    <DeleteRequestBadge />
-                  ) : (
-                    <Button
-                      variant="warning"
-                      size="xs"
-                      onClick={() => onRequestDelete(item.outward_id || item.outwardId)}
-                    >
-                      Request Delete
-                    </Button>
-                  )}
+                  <div className="ot-actions">
+                    <Can permission="gate.outward.update">
+                      <IconButton icon={Pencil} tooltip="Edit" onClick={() => onEdit(item)} />
+                    </Can>
+                    {item.request_delete ? (
+                      <DeleteRequestBadge />
+                    ) : (
+                      <Can permission="gate.outward.delete">
+                        <Button
+                          variant="warning"
+                          size="xs"
+                          onClick={() => onRequestDelete(item.outward_id || item.outwardId)}
+                        >
+                          Request Delete
+                        </Button>
+                      </Can>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}

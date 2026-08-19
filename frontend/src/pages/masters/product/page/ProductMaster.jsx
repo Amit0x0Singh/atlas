@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Plus, Tags } from 'lucide-react'
 import { Button, BackButton, PageHeader } from '../../../../components/ui'
+import { Can } from '../../../../components/common/Can.jsx'
 import ProductTable from '../components/product-table/ProductTable.jsx'
 import ProductForm from '../components/product-form/ProductForm.jsx'
 import ProductDetailModal from '../components/product-detail-modal/ProductDetailModal.jsx'
@@ -108,7 +109,9 @@ export default function ProductMaster() {
         title="Product Master"
         description="Manage finished product codes, names and plant"
         actions={<>
-          <Button variant="success" icon={Plus} onClick={openAdd}>Add New Product</Button>
+          <Can permission="masters.product.create">
+            <Button variant="success" icon={Plus} onClick={openAdd}>Add New Product</Button>
+          </Can>
           <BackButton />
         </>}
       />

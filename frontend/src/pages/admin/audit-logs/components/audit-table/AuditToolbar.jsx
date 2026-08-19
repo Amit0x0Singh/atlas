@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Search, Filter, ArrowUpDown, Download } from 'lucide-react'
 import { Button } from '../../../../../components/ui'
+import { Can } from '../../../../../components/common/Can.jsx'
 import AuditFilterModal, { EMPTY_AUDIT_FILTERS } from './AuditFilterModal.jsx'
 import AuditSortModal, { DEFAULT_AUDIT_SORT } from './AuditSortModal.jsx'
 
@@ -39,9 +40,11 @@ export default function AuditToolbar({ search, onSearchChange, filters, onFilter
         <Button variant={activeFilterCount ? 'outline' : 'outline-gray'} size="sm" icon={Filter} onClick={() => setShowFilter(true)}>
           Filter{activeFilterCount > 0 && ` (${activeFilterCount})`}
         </Button>
-        <Button variant="secondary" size="sm" icon={Download} loading={exporting} onClick={onExport}>
-          Export
-        </Button>
+        <Can permission="admin.audit.view">
+          <Button variant="secondary" size="sm" icon={Download} loading={exporting} onClick={onExport}>
+            Export
+          </Button>
+        </Can>
       </div>
 
       <AuditFilterModal open={showFilter} onClose={() => setShowFilter(false)} value={filters} onApply={onFiltersChange}

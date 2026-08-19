@@ -4,7 +4,7 @@ import { openAuthedFile } from '../../../../../../../utils/authedFile.js'
 import { fmtDate } from '../utils/groupPacks.js'
 
 import { toTitleCase } from '../../../../../../../utils/textDisplay.js'
-export default function HistoryRow({ group: g, isOpen, onToggle }) {
+export default function HistoryRow({ group: g, isOpen, onToggle, columnVisibility, colSpan }) {
   const totalQty        = g.bags.reduce((s, b) => s + (b.packQty || 0), 0)
   const groupWarehouses = [...new Set(g.bags.map(b => b.warehouse).filter(Boolean))]
 
@@ -20,48 +20,60 @@ export default function HistoryRow({ group: g, isOpen, onToggle }) {
           {isOpen ? '-' : '-'}
         </td>
 
-        <td className="px-3 py-3">
-          <div className="font-semibold text-gray-900">{toTitleCase(g.itemName)}</div>
-          <div className="text-xs text-gray-400 font-mono mt-0.5">{g.itemCode}</div>
-        </td>
+        {columnVisibility.item && (
+          <td className="px-3 py-3">
+            <div className="font-semibold text-gray-900">{toTitleCase(g.itemName)}</div>
+            <div className="text-xs text-gray-400 font-mono mt-0.5">{g.itemCode}</div>
+          </td>
+        )}
 
-        <td className="px-3 py-3">
-          <div className="font-mono text-xs font-semibold text-gray-700">{g.lotNo || '—'}</div>
-          {g.invoiceNo && (
-            <div className="text-xs text-gray-400 mt-0.5">Inv: {g.invoiceNo}</div>
-          )}
-        </td>
+        {columnVisibility.lotInvoice && (
+          <td className="px-3 py-3">
+            <div className="font-mono text-xs font-semibold text-gray-700">{g.lotNo || '—'}</div>
+            {g.invoiceNo && (
+              <div className="text-xs text-gray-400 mt-0.5">Inv: {g.invoiceNo}</div>
+            )}
+          </td>
+        )}
 
-        <td className="px-3 py-3 text-sm text-gray-600">{g.supplier || '—'}</td>
+        {columnVisibility.supplier && <td className="px-3 py-3 text-sm text-gray-600">{g.supplier || '—'}</td>}
 
-        <td className="px-3 py-3 text-center">
-          <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">
-            {g.bags.length}
-          </span>
-        </td>
-
-        <td className="px-3 py-3 font-semibold text-gray-800">
-          {totalQty % 1 === 0 ? totalQty : totalQty.toFixed(3)}{' '}
-          <span className="text-gray-400 font-normal text-xs">{g.uom?.toUpperCase()}</span>
-        </td>
-
-        <td className="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">
-          {fmtDate(g.receivedDate)}
-        </td>
-
-        <td className="px-3 py-3">
-          {groupWarehouses.length === 0 ? (
-            <span className="text-gray-300 text-xs">—</span>
-          ) : groupWarehouses.length === 1 ? (
-            <span className="text-xs font-semibold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">
-              {groupWarehouses[0]}
+        {columnVisibility.bags && (
+          <td className="px-3 py-3 text-center">
+            <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">
+              {g.bags.length}
             </span>
-          ) : (
-            <span className="text-xs text-indigo-600 font-medium" title={groupWarehouses.join(', ')}>
-              {groupWarehouses.length} locations
-            </span>
-          )}
-        </td>
+          </td>
+        )}
+
+        {columnVisibility.totalQty && (
+          <td className="px-3 py-3 font-semibold text-gray-800">
+            {totalQty % 1 === 0 ? totalQty : totalQty.toFixed(3)}{' '}
+            <span className="text-gray-400 font-normal text-xs">{g.uom?.toUpperCase()}</span>
+          </td>
+        )}
+
+        {columnVisibility.received && (
+          <td className="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">
+            {fmtDate(g.receivedDate)}
+          </td>
+        )}
+
+        {columnVisibility.warehouse && (
+          <td className="px-3 py-3">
+            {groupWarehouses.length === 0 ? (
+              <span className="text-gray-300 text-xs">—</span>
+            ) : groupWarehouses.length === 1 ? (
+              <span className="text-xs font-semibold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">
+                {groupWarehouses[0]}
+              </span>
+            ) : (
+              <span className="text-xs text-indigo-600 font-medium" title={groupWarehouses.join(', ')}>
+                {groupWarehouses.length} locations
+              </span>
+            )}
+          </td>
+        )}
 
         <td className="px-3 py-3" onClick={e => e.stopPropagation()}>
           <button
@@ -76,7 +88,7 @@ export default function HistoryRow({ group: g, isOpen, onToggle }) {
       {/* Bag sub-rows */}
       {isOpen && g.bags.map(b => (
         <tr key={b.packId} className="bg-blue-50/30 border-t border-blue-100/60">
-          <td colSpan={9} className="px-0 py-0">
+          <td colSpan={colSpan} className="px-0 py-0">
             <div className="flex items-center pl-8 pr-3 py-2 gap-0">
               <div className="w-px h-8 bg-blue-300 mr-4 shrink-0" />
               <span className="text-xs text-gray-400 w-16 shrink-0">

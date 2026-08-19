@@ -16,6 +16,16 @@ model GateInward {
 
   requestDelete Boolean @default(false) @map("request_delete")
 
+  // Digitally-uploaded copy of the paper invoice (PDF/JPEG/PNG), so it can be
+  // reviewed in-app without needing the physical document — see
+  // gate/document/gate.controller.js. invoiceDocPath is a server-side disk
+  // path and is never returned to the frontend (stripped in every response);
+  // only the file name/type/size are exposed for display.
+  invoiceDocPath     String? @map("invoice_doc_path") @db.VarChar(500)
+  invoiceDocFileName String? @map("invoice_doc_file_name") @db.VarChar(255)
+  invoiceDocMimeType String? @map("invoice_doc_mime_type") @db.VarChar(100)
+  invoiceDocSize     Int?    @map("invoice_doc_size")
+
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
 

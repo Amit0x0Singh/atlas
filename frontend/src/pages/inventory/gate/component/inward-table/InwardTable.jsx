@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { Pencil, Paperclip } from "lucide-react";
 import Pagination from "../../../../../components/pagination/Pagination.jsx";
-import { Button } from "../../../../../components/ui";
+import { Button, IconButton } from "../../../../../components/ui";
+import { Can } from "../../../../../components/common/Can.jsx";
 import "./InwardTable.css";
 import { toTitleCase } from "../../../../../utils/textDisplay.js";
 
@@ -20,14 +22,14 @@ const COLUMNS = [
   { key: "date",     label: "Date & Time",   defaultWidth: 160 },
   { key: "status",   label: "Status",        defaultWidth: 100 },
 ];
-const ACTIONS_COL_WIDTH = 160;
+const ACTIONS_COL_WIDTH = 200;
 const MIN_COL_WIDTH = 60;
 
 function DeleteRequestBadge() {
   return <span className="it-del-badge">Delete Requested</span>;
 }
 
-export default function InwardTable({ list, total, onRequestDelete }) {
+export default function InwardTable({ list, total, onRequestDelete, onEdit, onViewDocument }) {
   const [limit, setLimit] = useState(15);
   const [page, setPage] = useState(1);
   const paginated = list.slice((page - 1) * limit, page * limit);
@@ -110,16 +112,24 @@ export default function InwardTable({ list, total, onRequestDelete }) {
                 </td>
                 <td className="it-td" style={{ width: ACTIONS_COL_WIDTH }}>
                   <div className="it-actions">
+                    <Can permission="gate.inward.update">
+                      <IconButton icon={Pencil} tooltip="Edit" onClick={() => onEdit(item)} />
+                    </Can>
+                    {(item.invoice_doc_file_name || item.invoiceDocFileName) && (
+                      <IconButton icon={Paperclip} tooltip="View Invoice" onClick={() => onViewDocument(item)} />
+                    )}
                     {item.request_delete ? (
                       <DeleteRequestBadge />
                     ) : (
-                      <Button
-                        variant="warning"
-                        size="xs"
-                        onClick={() => onRequestDelete(item.inward_id || item.inwardId)}
-                      >
-                        Request Delete
-                      </Button>
+                      <Can permission="gate.inward.delete">
+                        <Button
+                          variant="warning"
+                          size="xs"
+                          onClick={() => onRequestDelete(item.inward_id || item.inwardId)}
+                        >
+                          Request Delete
+                        </Button>
+                      </Can>
                     )}
                   </div>
                 </td>

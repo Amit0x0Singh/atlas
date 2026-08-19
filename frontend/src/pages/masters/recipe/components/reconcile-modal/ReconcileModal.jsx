@@ -2,6 +2,7 @@
 import { X, Link, XCircle } from 'lucide-react'
 import { recipeApi } from '../../../../../api/masters.js'
 import { Button, IconButton } from '../../../../../components/ui'
+import { Can } from '../../../../../components/common/Can.jsx'
 import './ReconcileModal.css'
 
 import { toTitleCase } from '../../../../../utils/textDisplay.js'
@@ -154,16 +155,18 @@ export default function ReconcileModal({ onClose, onFixed }) {
 
         {data?.unmatched?.length > 0 && !fixResult && (
           <div className="px-6 pb-5 pt-3 border-t flex gap-3 flex-shrink-0">
-            <Button
-              variant="purple"
-              icon={Link}
-              onClick={applyFixes}
-              disabled={fixing || Object.keys(pendingMappings).length === 0}
-              loading={fixing}
-              fullWidth
-            >
-              {fixing ? 'Applying…' : `Apply ${Object.keys(pendingMappings).length} Mapping(s)`}
-            </Button>
+            <Can permission="masters.recipe.update">
+              <Button
+                variant="purple"
+                icon={Link}
+                onClick={applyFixes}
+                disabled={fixing || Object.keys(pendingMappings).length === 0}
+                loading={fixing}
+                fullWidth
+              >
+                {fixing ? 'Applying…' : `Apply ${Object.keys(pendingMappings).length} Mapping(s)`}
+              </Button>
+            </Can>
             <Button variant="secondary" icon={XCircle} onClick={handleClose}>Cancel</Button>
           </div>
         )}

@@ -5,6 +5,8 @@ import { groupPacks, groupStatus } from "../utils/groupPacks.js";
 import PackTableToolbar from "../components/PackTableToolbar.jsx";
 import PackTableFilterToolbar, { EMPTY_PACK_TABLE_FILTERS, DEFAULT_PACK_TABLE_SORT } from "../components/PackTableFilterToolbar.jsx";
 import PackTableRow from "../components/PackTableRow.jsx";
+import { ColumnsMenu } from "../../../../../../components/ui/index.js";
+import { useColumnPreferences } from "../../../../../../hooks/useColumnPreferences.js";
 
 // Resizable columns — same drag-handle mechanism as the Item/Product/
 // Equipment Master tables. The leading expand-arrow column and the trailing
@@ -21,7 +23,6 @@ const COLUMN_DEFS = [
 ]
 const EXPAND_COL_WIDTH = 32
 const PRINT_COL_WIDTH  = 150
-const MIN_COL_WIDTH = 60
 
 export default function PackTable({ reloadTrigger }) {
   const [filterCode, setFilterCode]     = useState("");
@@ -32,25 +33,7 @@ export default function PackTable({ reloadTrigger }) {
   const [limit, setLimit]                = useState(15);
   const { packs, loading }              = usePacks(filterCode, reloadTrigger);
 
-  const [columnWidths, setColumnWidths] = useState(() =>
-    Object.fromEntries(COLUMN_DEFS.map(c => [c.key, c.defaultWidth])))
-
-  function startResize(key) {
-    return (e) => {
-      e.preventDefault()
-      const startX = e.clientX
-      const startWidth = columnWidths[key]
-      function onMove(ev) {
-        setColumnWidths(w => ({ ...w, [key]: Math.max(MIN_COL_WIDTH, startWidth + (ev.clientX - startX)) }))
-      }
-      function onUp() {
-        document.removeEventListener('mousemove', onMove)
-        document.removeEventListener('mouseup', onUp)
-      }
-      document.addEventListener('mousemove', onMove)
-      document.addEventListener('mouseup', onUp)
-    }
-  }
+  const { columnWidths, columnVisibility, visibleColumns, startResize, toggleColumn } = useColumnPreferences('print-master-packs', COLUMN_DEFS)
 
   const allGroups = useMemo(() => groupPacks(packs), [packs]);
 
@@ -131,6 +114,10 @@ export default function PackTable({ reloadTrigger }) {
         resultCount={groups.length}
       />
 
+      <div className="flex justify-end px-4 py-1.5 border-b border-gray-100">
+        <ColumnsMenu columns={COLUMN_DEFS} visibility={columnVisibility} onToggle={toggleColumn} />
+      </div>
+
       {loading ? (
         <p className="text-gray-400 py-8 text-center">Loading…</p>
       ) : (
@@ -140,7 +127,7 @@ export default function PackTable({ reloadTrigger }) {
             <thead style={{ backgroundColor: 'rgb(226, 235, 240)' }}>
               <tr className="text-gray-600 text-xs">
                 <th style={{ width: EXPAND_COL_WIDTH }} className="px-3 py-2.5" />
-                {COLUMN_DEFS.map(c => (
+                {visibleColumns.map(c => (
                   <th
                     key={c.key}
                     style={{ width: columnWidths[c.key] }}
@@ -159,7 +146,7 @@ export default function PackTable({ reloadTrigger }) {
             <tbody>
               {groups.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="text-center py-10 text-gray-400">
+                  <td colSpan={visibleColumns.length + 2} className="text-center py-10 text-gray-400">
                     {!showCompleted && completedGroups.length > 0
                       ? `All ${completedGroups.length} invoice(s) are fully scanned.`
                       : "No pack records found."}
@@ -167,7 +154,7 @@ export default function PackTable({ reloadTrigger }) {
                 </tr>
               ) : (
                 paginatedGroups.map((g) => (
-                  <PackTableRow key={g.key} group={g} isOpen={expandedKeys.has(g.key)} onToggle={() => toggle(g.key)} />
+                  <PackTableRow key={g.key} group={g} isOpen={expandedKeys.has(g.key)} onToggle={() => toggle(g.key)} columnVisibility={columnVisibility} colSpan={visibleColumns.length + 2} />
                 ))
               )}
             </tbody>

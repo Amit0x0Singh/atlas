@@ -1,4 +1,5 @@
 import { Button } from '../../../../../components/ui'
+import { Can } from '../../../../../components/common/Can.jsx'
 import { RefreshCw } from 'lucide-react'
 
 import { toTitleCase } from '../../../../../utils/textDisplay.js'
@@ -20,7 +21,9 @@ export default function PurchaseIndentTab({
           </label>
           <Button variant="outline-gray" icon={RefreshCw} size="sm" onClick={onRefresh}>Refresh</Button>
           {purchaseSummary.length > 0 && (
-            <Button variant="success" size="sm" onClick={onGeneratePO}>Generate PO</Button>
+            <Can permission="production.indent.create">
+              <Button variant="success" size="sm" onClick={onGeneratePO}>Generate PO</Button>
+            </Can>
           )}
         </div>
       </div>

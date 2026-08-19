@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Save, X, RotateCcw } from 'lucide-react'
 import { Modal, Button } from '../../../../../components/ui'
+import { Can } from '../../../../../components/common/Can.jsx'
 import { microbialSfgApi } from '../../../../../api/microbial.js'
 import { deriveTypeCode, fmtDate } from '../../utils/format.js'
 import { useAvailableSlots } from '../../../../../hooks/microbial/useMicrobialStorage.js'
@@ -332,7 +333,9 @@ export default function InwardFormModal({ open, onClose, microbes, recentRecords
           </div>
 
           <div className="flex gap-3 mt-2">
-            <Button type="submit" variant="primary" icon={Save} disabled={saving || (needsSlot && slotTaken)} loading={saving}>{saving ? 'Saving…' : 'Save Inward Entry'}</Button>
+            <Can permission="microbial.sfg-inward.create">
+              <Button type="submit" variant="primary" icon={Save} disabled={saving || (needsSlot && slotTaken)} loading={saving}>{saving ? 'Saving…' : 'Save Inward Entry'}</Button>
+            </Can>
             <Button type="button" variant="secondary" icon={X} onClick={onClose}>Cancel</Button>
           </div>
         </form>

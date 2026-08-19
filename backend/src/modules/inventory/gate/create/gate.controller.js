@@ -1,5 +1,6 @@
 import prisma from '../../../../../config/db.js'
 import { writeAudit, auditUser } from '../../../../middleware/audit.js'
+import { stripDocPath } from '../document/gate.controller.js'
 
 // Multiple companies operate out of this same facility — every gate
 // movement must be tagged so stock can be segregated/reported per company.
@@ -37,7 +38,7 @@ const createGateInward = async (req, res) => {
       },
     })
     await writeAudit({ ...auditUser(req), action: 'CREATE', module: 'gate', tableName: 'gate_inward', recordId: row.inwardId, newValue: row })
-    return res.status(201).json({ success: true, data: row })
+    return res.status(201).json({ success: true, data: stripDocPath(row) })
   } catch (err) {
     console.error('createGateInward error:', err.message)
     return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
@@ -76,7 +77,7 @@ const createManualGateInward = async (req, res) => {
       },
     })
     await writeAudit({ ...auditUser(req), action: 'CREATE', module: 'gate', tableName: 'gate_inward', recordId: row.inwardId, newValue: row, notes: 'manual entry (Print Master flow)' })
-    return res.status(201).json({ success: true, data: row })
+    return res.status(201).json({ success: true, data: stripDocPath(row) })
   } catch (err) {
     console.error('createManualGateInward error:', err.message)
     return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
