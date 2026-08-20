@@ -17,13 +17,12 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 
-// If this app is ever deployed behind a reverse proxy (nginx/ALB/etc.),
-// `app.set('trust proxy', 1)` (or the correct hop count) must be added —
-// otherwise express-rate-limit and req.ip (used by audit logging) will see
-// the proxy's IP for every client. Left unset here deliberately: enabling
-// it incorrectly (e.g. blanket `true`) lets any client spoof its own IP via
-// X-Forwarded-For, which is worse than not having it. No reverse proxy is
-// in front of this app in the current deployment shape.
+// This app is deployed behind a reverse proxy (nginx/ALB/etc.) with exactly
+// one hop between the client and this process — `1` tells express-rate-limit
+// and req.ip (used by audit logging) to trust the proxy's X-Forwarded-For
+// exactly one level deep, rather than trusting it unbounded (which would let
+// any client spoof its own IP). If the proxy topology ever changes (e.g. an
+// extra hop added), this hop count must be updated to match.
 
 app.set("trust proxy", 1);
 

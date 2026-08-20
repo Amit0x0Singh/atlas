@@ -73,6 +73,7 @@ model PackDetail {
   @@unique([printMasterId, bagNo])
   @@index([itemCode])
   @@index([status])
+  @@index([warehouse])
   @@map("pack_detail")
 }
 
@@ -105,6 +106,7 @@ model StockLedger {
   @@index([itemCode])
   @@index([transactionType])
   @@index([timestamp])
+  @@index([itemCode, timestamp])
   @@map("stock_ledger")
 }
 
@@ -124,6 +126,9 @@ model Outward {
   createdBy      String?  @map("created_by") @db.VarChar(255)
   updatedBy      String?  @map("updated_by") @db.VarChar(255)
 
+  @@index([sourceId])
+  @@index([rmCode])
+  @@index([timestamp])
   @@map("outward")
 }
 

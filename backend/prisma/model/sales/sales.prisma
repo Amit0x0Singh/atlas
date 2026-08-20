@@ -53,6 +53,8 @@ model SalesOrderItem {
   createdBy           String?    @map("created_by") @db.VarChar(255)
   updatedBy           String?    @map("updated_by") @db.VarChar(255)
 
+  @@index([salesOrderId])
+  @@index([status])
   @@map("sales_order_item")
 }
 

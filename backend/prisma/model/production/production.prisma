@@ -141,6 +141,8 @@ model IndentDetails {
   updatedBy   String?      @map("updated_by") @db.VarChar(255)
   indent      IndentMaster @relation(fields: [indentId], references: [indentId])
 
+  @@index([indentId])
+  @@index([rmCode])
   @@map("indent_details")
 }
 
