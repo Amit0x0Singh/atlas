@@ -13,7 +13,7 @@ const deleteGateInward = async (req, res) => {
   try {
 
     const deleted = await prisma.gateInward.delete({ where: { inwardId: id } })
-    if (deleted.invoiceDocFileName) fs.unlink(path.join(GATE_INWARD_INVOICES_DIR, deleted.invoiceDocFileName), () => {})
+    for (const fileName of deleted.invoiceDocFileNames) fs.unlink(path.join(GATE_INWARD_INVOICES_DIR, fileName), () => {})
     await writeAudit({ ...auditUser(req), action: 'DELETE', module: 'gate', tableName: 'gate_inward', recordId: id, oldValue: deleted })
     return res.json({ success: true, message: 'Gate inward deleted' })
 
@@ -32,7 +32,7 @@ const deleteGateOutward = async (req, res) => {
 
   try {
     const deleted = await prisma.gateOutward.delete({ where: { outwardId: id } })
-    if (deleted.invoiceDocFileName) fs.unlink(path.join(GATE_OUTWARD_INVOICES_DIR, deleted.invoiceDocFileName), () => {})
+    for (const fileName of deleted.invoiceDocFileNames) fs.unlink(path.join(GATE_OUTWARD_INVOICES_DIR, fileName), () => {})
     await writeAudit({ ...auditUser(req), action: 'DELETE', module: 'gate', tableName: 'gate_outward', recordId: id, oldValue: deleted })
     return res.json({ success: true, message: 'Gate outward deleted' })
 

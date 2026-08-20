@@ -126,15 +126,20 @@ export const gateApi = {
   editInward:           (id, data) => api.patch(`/gate/inward/${id}`, data),
   requestDeleteInward:  (id)       => api.patch(`/gate/inward/${id}/request-delete`),
   deleteInward:         (id)       => api.delete(`/gate/inward/${id}`),
-  uploadInwardInvoiceDoc: (id, file) => {
+  // `files` is an array of File objects — an entry can carry several
+  // invoice documents, and uploading appends to that set rather than
+  // replacing it (see gate/document/gate.controller.js).
+  uploadInwardInvoiceDoc: (id, files) => {
     const fd = new FormData();
-    fd.append('file', file);
+    for (const f of files) fd.append('files', f);
     return api.post(`/gate/inward/${id}/invoice-document`, fd);
   },
   // Same-origin authenticated endpoint — open with openAuthedFile()
   // (utils/authedFile.js), not a plain <a href>, since a raw browser
-  // navigation can't carry the Bearer token this route requires.
-  invoiceDocUrl: (id) => `/api/gate/inward/${encodeURIComponent(id)}/invoice-document`,
+  // navigation can't carry the Bearer token this route requires. One entry
+  // can have several documents, so the specific file's generated name is
+  // required (see invoiceDocFileNames on the entry).
+  invoiceDocUrl: (id, fileName) => `/api/gate/inward/${encodeURIComponent(id)}/invoice-document/${encodeURIComponent(fileName)}`,
 
 
   // Outward
@@ -145,14 +150,14 @@ export const gateApi = {
   editOutward:          (id, data) => api.patch(`/gate/outward/${id}`, data),
   requestDeleteOutward: (id)       => api.patch(`/gate/outward/${id}/request-delete`),
   deleteOutward: (id) => api.delete(`/gate/outward/${id}`),
-  uploadOutwardInvoiceDoc: (id, file) => {
+  uploadOutwardInvoiceDoc: (id, files) => {
     const fd = new FormData();
-    fd.append('file', file);
+    for (const f of files) fd.append('files', f);
     return api.post(`/gate/outward/${id}/invoice-document`, fd);
   },
   // Same-origin authenticated endpoint — open with openAuthedFile()
   // (utils/authedFile.js), not a plain <a href> — mirrors invoiceDocUrl above.
-  outwardInvoiceDocUrl: (id) => `/api/gate/outward/${encodeURIComponent(id)}/invoice-document`,
+  outwardInvoiceDocUrl: (id, fileName) => `/api/gate/outward/${encodeURIComponent(id)}/invoice-document/${encodeURIComponent(fileName)}`,
 
 }
 

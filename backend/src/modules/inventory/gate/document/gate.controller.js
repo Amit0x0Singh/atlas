@@ -4,14 +4,12 @@ import prisma from '../../../../db.js'
 import { writeAudit, auditUser } from '../../../../middleware/audit.js'
 import { GATE_INWARD_INVOICES_DIR, GATE_OUTWARD_INVOICES_DIR } from '../utils/storage-paths.js'
 
-// `invoiceDocFileName` stores the *generated* on-disk name (multer's
-// `<record-id>-<timestamp><ext>`, see router.js's invoiceDocUpload), not the
-// original filename the browser/camera assigned — the DB used to also carry
-// invoiceDocPath/invoiceDocMimeType/invoiceDocSize, but each was either
-// redundant (the storage directory is these two fixed constants — the only
-// variable part is the filename, always known at upload time), derivable
-// (content-type from the extension — uploads are already restricted to
-// exactly these 4 types), or unused (size was never read back anywhere).
+// `invoiceDocFileNames` stores the *generated* on-disk names (multer's
+// `<record-id>-<timestamp>-<random><ext>`, see router.js's invoiceDocUpload),
+// not the original filenames the browser/camera assigned — the storage
+// directory is a fixed constant per direction, so only the filename varies.
+// An entry can carry several documents (multiple photos/scans of the same
+// invoice); uploading appends to the array rather than replacing it.
 const CONTENT_TYPE_BY_EXT = {
   '.pdf': 'application/pdf',
   '.jpg': 'image/jpeg',
@@ -22,68 +20,59 @@ function contentTypeFor(filename) {
   return CONTENT_TYPE_BY_EXT[path.extname(filename).toLowerCase()] || 'application/octet-stream'
 }
 
-// Upload (or replace) the invoice document attached to an existing Gate
-// Inward entry. A previous file, if any, is deleted from disk once the new
-// one is safely recorded, so re-uploads don't leak orphaned files.
+// Attach one or more invoice documents to an existing Gate Inward entry.
+// Always appends — never removes an already-attached document (there's no
+// "replace" semantics here anymore now that an entry can hold several).
 const uploadGateInwardInvoiceDocument = async (req, res) => {
   const { id } = req.params
+  const files = req.files || []
   try {
-    if (!req.file) {
-      return res.status(400).json({ success: false, error: 'No file uploaded, or the file type is not supported (PDF, JPEG, PNG only).', code: 'VALIDATION_ERROR' })
+    if (!files.length) {
+      return res.status(400).json({ success: false, error: 'No files uploaded, or the file type is not supported (PDF, JPEG, PNG only).', code: 'VALIDATION_ERROR' })
     }
 
-    const before = await prisma.gateInward.findUnique({ where: { inwardId: id }, select: { invoiceDocFileName: true } })
-    if (!before) {
-      fs.unlink(req.file.path, () => {})
-      return res.status(404).json({ success: false, error: 'Gate inward not found', code: 'NOT_FOUND' })
-    }
-
+    const fileNames = files.map((f) => f.filename)
     const row = await prisma.gateInward.update({
       where: { inwardId: id },
-      data: { invoiceDocFileName: req.file.filename },
+      data: { invoiceDocFileNames: { push: fileNames } },
     })
 
-    if (before.invoiceDocFileName && before.invoiceDocFileName !== req.file.filename) {
-      fs.unlink(path.join(GATE_INWARD_INVOICES_DIR, before.invoiceDocFileName), () => {})
-    }
-
-    // A first-time attach (no prior document — the common case right after
-    // creating the entry) isn't logged separately from the CREATE that just
-    // happened a moment earlier; only a genuine REPLACE of an existing,
-    // already-attached document is audit-worthy on its own, since it
-    // destroys the old file.
-    if (before.invoiceDocFileName) {
-      await writeAudit({
-        ...auditUser(req), action: 'UPDATE', module: 'gate', tableName: 'gate_inward', recordId: id,
-        oldValue: { invoiceDocFileName: before.invoiceDocFileName },
-        newValue: { invoiceDocFileName: req.file.filename },
-        notes: 'invoice document replaced',
-      })
-    }
+    await writeAudit({
+      ...auditUser(req), action: 'UPDATE', module: 'gate', tableName: 'gate_inward', recordId: id,
+      newValue: { invoiceDocFileNamesAdded: fileNames },
+      notes: `${fileNames.length} invoice document(s) attached`,
+    })
 
     return res.json({ success: true, data: row })
   } catch (err) {
-    if (req.file) fs.unlink(req.file.path, () => {})
+    for (const f of files) fs.unlink(f.path, () => {})
     if (err.code === 'P2025') return res.status(404).json({ success: false, error: 'Gate inward not found', code: 'NOT_FOUND' })
     console.error('uploadGateInwardInvoiceDocument error:', err.message)
     return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
   }
 }
 
-// Streams the stored invoice document back inline (not as a forced
+// Streams one stored invoice document back inline (not as a forced
 // download) so the browser renders the PDF/image directly — the "view it
-// in-app instead of needing the physical copy" requirement.
+// in-app instead of needing the physical copy" requirement. `fileName` must
+// be one this entry actually has attached (not just any file on disk in the
+// shared storage dir) — path.basename also strips any directory component
+// out of the client-supplied value as a traversal guard.
 const viewGateInwardInvoiceDocument = async (req, res) => {
-  const { id } = req.params
+  const { id, fileName } = req.params
   try {
-    const row = await prisma.gateInward.findUnique({ where: { inwardId: id }, select: { invoiceDocFileName: true } })
-    const filePath = row?.invoiceDocFileName && path.join(GATE_INWARD_INVOICES_DIR, row.invoiceDocFileName)
-    if (!filePath || !fs.existsSync(filePath)) {
-      return res.status(404).json({ success: false, error: 'No invoice document is attached to this entry.', code: 'NOT_FOUND' })
+    const row = await prisma.gateInward.findUnique({ where: { inwardId: id }, select: { invoiceDocFileNames: true } })
+    const safeName = path.basename(fileName || '')
+    if (!row || !row.invoiceDocFileNames.includes(safeName)) {
+      return res.status(404).json({ success: false, error: 'No matching invoice document is attached to this entry.', code: 'NOT_FOUND' })
+    }
+    const filePath = path.join(GATE_INWARD_INVOICES_DIR, safeName)
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ success: false, error: 'No matching invoice document is attached to this entry.', code: 'NOT_FOUND' })
     }
 
-    res.setHeader('Content-Type', contentTypeFor(row.invoiceDocFileName))
-    res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(row.invoiceDocFileName)}"`)
+    res.setHeader('Content-Type', contentTypeFor(safeName))
+    res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(safeName)}"`)
     fs.createReadStream(filePath).pipe(res)
   } catch (err) {
     console.error('viewGateInwardInvoiceDocument error:', err.message)
@@ -91,63 +80,54 @@ const viewGateInwardInvoiceDocument = async (req, res) => {
   }
 }
 
-// Upload (or replace) the invoice document attached to an existing Gate
-// Outward entry — mirrors uploadGateInwardInvoiceDocument above.
+// Attach one or more invoice documents to an existing Gate Outward entry —
+// mirrors uploadGateInwardInvoiceDocument above.
 const uploadGateOutwardInvoiceDocument = async (req, res) => {
   const { id } = req.params
+  const files = req.files || []
   try {
-    if (!req.file) {
-      return res.status(400).json({ success: false, error: 'No file uploaded, or the file type is not supported (PDF, JPEG, PNG only).', code: 'VALIDATION_ERROR' })
+    if (!files.length) {
+      return res.status(400).json({ success: false, error: 'No files uploaded, or the file type is not supported (PDF, JPEG, PNG only).', code: 'VALIDATION_ERROR' })
     }
 
-    const before = await prisma.gateOutward.findUnique({ where: { outwardId: id }, select: { invoiceDocFileName: true } })
-    if (!before) {
-      fs.unlink(req.file.path, () => {})
-      return res.status(404).json({ success: false, error: 'Gate outward not found', code: 'NOT_FOUND' })
-    }
-
+    const fileNames = files.map((f) => f.filename)
     const row = await prisma.gateOutward.update({
       where: { outwardId: id },
-      data: { invoiceDocFileName: req.file.filename },
+      data: { invoiceDocFileNames: { push: fileNames } },
     })
 
-    if (before.invoiceDocFileName && before.invoiceDocFileName !== req.file.filename) {
-      fs.unlink(path.join(GATE_OUTWARD_INVOICES_DIR, before.invoiceDocFileName), () => {})
-    }
-
-    // Same reasoning as uploadGateInwardInvoiceDocument above — only a
-    // REPLACE of an already-attached document gets its own audit row.
-    if (before.invoiceDocFileName) {
-      await writeAudit({
-        ...auditUser(req), action: 'UPDATE', module: 'gate', tableName: 'gate_outward', recordId: id,
-        oldValue: { invoiceDocFileName: before.invoiceDocFileName },
-        newValue: { invoiceDocFileName: req.file.filename },
-        notes: 'invoice document replaced',
-      })
-    }
+    await writeAudit({
+      ...auditUser(req), action: 'UPDATE', module: 'gate', tableName: 'gate_outward', recordId: id,
+      newValue: { invoiceDocFileNamesAdded: fileNames },
+      notes: `${fileNames.length} invoice document(s) attached`,
+    })
 
     return res.json({ success: true, data: row })
   } catch (err) {
-    if (req.file) fs.unlink(req.file.path, () => {})
+    for (const f of files) fs.unlink(f.path, () => {})
     if (err.code === 'P2025') return res.status(404).json({ success: false, error: 'Gate outward not found', code: 'NOT_FOUND' })
     console.error('uploadGateOutwardInvoiceDocument error:', err.message)
     return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
   }
 }
 
-// Streams the stored invoice document back inline — mirrors
+// Streams one stored invoice document back inline — mirrors
 // viewGateInwardInvoiceDocument above.
 const viewGateOutwardInvoiceDocument = async (req, res) => {
-  const { id } = req.params
+  const { id, fileName } = req.params
   try {
-    const row = await prisma.gateOutward.findUnique({ where: { outwardId: id }, select: { invoiceDocFileName: true } })
-    const filePath = row?.invoiceDocFileName && path.join(GATE_OUTWARD_INVOICES_DIR, row.invoiceDocFileName)
-    if (!filePath || !fs.existsSync(filePath)) {
-      return res.status(404).json({ success: false, error: 'No invoice document is attached to this entry.', code: 'NOT_FOUND' })
+    const row = await prisma.gateOutward.findUnique({ where: { outwardId: id }, select: { invoiceDocFileNames: true } })
+    const safeName = path.basename(fileName || '')
+    if (!row || !row.invoiceDocFileNames.includes(safeName)) {
+      return res.status(404).json({ success: false, error: 'No matching invoice document is attached to this entry.', code: 'NOT_FOUND' })
+    }
+    const filePath = path.join(GATE_OUTWARD_INVOICES_DIR, safeName)
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ success: false, error: 'No matching invoice document is attached to this entry.', code: 'NOT_FOUND' })
     }
 
-    res.setHeader('Content-Type', contentTypeFor(row.invoiceDocFileName))
-    res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(row.invoiceDocFileName)}"`)
+    res.setHeader('Content-Type', contentTypeFor(safeName))
+    res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(safeName)}"`)
     fs.createReadStream(filePath).pipe(res)
   } catch (err) {
     console.error('viewGateOutwardInvoiceDocument error:', err.message)

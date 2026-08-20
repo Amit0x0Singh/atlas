@@ -16,10 +16,10 @@ function countActiveFilters(f) {
  * GateEntry.jsx's handleFilterChange, which debounces search/invoice_no) —
  * this component only changes the presentation, not that wiring.
  */
-export default function GateToolbar({ tab, filters, onChange, onClear, sort, onSortChange, onExport, total }) {
+export default function GateToolbar({ filters, onChange, onClear, sort, onSortChange, onExport, total }) {
   const [showFilter, setShowFilter] = useState(false)
   const [showSort, setShowSort] = useState(false)
-  const searchLabel = tab === 'inward' ? 'Supplier Name' : 'Receiver Name'
+  const searchLabel = 'Supplier / Receiver Name'
   const activeFilterCount = countActiveFilters(filters)
   const sortIsDefault = sort.field === DEFAULT_GATE_SORT.field && sort.direction === DEFAULT_GATE_SORT.direction
 

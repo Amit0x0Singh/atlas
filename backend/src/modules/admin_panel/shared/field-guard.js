@@ -125,14 +125,22 @@ export function sanitizeWriteBody(meta, body, { isUpdate }) {
 // `users` would otherwise echo passwordHash straight back in the HTTP
 // response even with the write-side allowlist above, since that only
 // governs what's accepted, not what Prisma returns).
+//
+// Also stringifies BigInt fields (e.g. AuditLog.id, NotificationEscalation.id
+// — any model with idType: 'bigint') while it's already walking every field:
+// neither JSON.stringify (res.json) nor Prisma's Json-column write (this
+// same record is also handed to writeAudit as oldValue/newValue) know how to
+// serialize a raw BigInt, and both throw instead of silently coercing.
 export function redactSecretFields(meta, recordOrArray) {
   const model = dmmfModel(meta)
   if (!model || recordOrArray == null) return recordOrArray
   const secretKeys = model.fields.filter((f) => SECRET_FIELD_RE.test(f.name)).map((f) => f.name)
-  if (!secretKeys.length) return recordOrArray
   const strip = (row) => {
     const out = { ...row }
     for (const k of secretKeys) delete out[k]
+    for (const k of Object.keys(out)) {
+      if (typeof out[k] === 'bigint') out[k] = out[k].toString()
+    }
     return out
   }
   return Array.isArray(recordOrArray) ? recordOrArray.map(strip) : strip(recordOrArray)

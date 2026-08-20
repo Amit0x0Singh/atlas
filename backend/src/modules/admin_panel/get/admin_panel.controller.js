@@ -60,6 +60,12 @@ export const MODELS = {
   // ── System ─────────────────────────────────────────────────────────────────
   'users': { model: 'user', group: 'system', title: 'Users',     idField: 'userId',  orderBy: { createdAt: 'desc' } },
   'audit-log': { model: 'auditLog', group: 'system', title: 'Audit Log', idField: 'id', idType: 'bigint', orderBy: { createdAt: 'desc' } },
+  'roles': { model: 'role', group: 'system', title: 'Roles', idField: 'roleId', orderBy: { name: 'asc' } },
+  'permissions': { model: 'permission', group: 'system', title: 'Permissions (Catalog)', idField: 'permissionId', orderBy: { module: 'asc' } },
+  'role-permission-map': { model: 'rolePermissionMap', group: 'system', title: 'Role ↔ Permission Map', idField: ['roleId', 'permissionId'] },
+  'user-roles': { model: 'userRole', group: 'system', title: 'User ↔ Role Assignments', idField: ['userId', 'roleId'] },
+  'option-groups': { model: 'optionGroup', group: 'system', title: 'Option Groups', idField: 'id', orderBy: { groupCode: 'asc' } },
+  'option-values': { model: 'optionValue', group: 'system', title: 'Option Values', idField: 'id', orderBy: { groupId: 'asc' } },
 
   // ── ERP Masters ────────────────────────────────────────────────────────────
   'reason-codes': { model: 'reasonCode', group: 'legacy', title: 'Reason Codes',         idField: 'codeId',       idType: 'int', orderBy: { category: 'asc' } },

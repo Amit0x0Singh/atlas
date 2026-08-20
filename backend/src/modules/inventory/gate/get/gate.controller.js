@@ -56,7 +56,7 @@ const listGateInward = async (req, res) => {
     const [rows, total] = await Promise.all([
       prisma.gateInward.findMany({
         where,
-        select: { inwardId: true, supplierName: true, invoiceNo: true, vehicleNo: true, companyName: true, status: true, requestDelete: true, invoiceDocFileName: true, createdBy: true, createdAt: true, updatedAt: true },
+        select: { inwardId: true, supplierName: true, invoiceNo: true, vehicleNo: true, companyName: true, status: true, requestDelete: true, invoiceDocFileNames: true, createdBy: true, createdAt: true, updatedAt: true },
         orderBy: { createdAt: 'desc' },
         skip: off,
         take: lim,
@@ -116,7 +116,7 @@ const listGateOutward = async (req, res) => {
     const [rows, total] = await Promise.all([
       prisma.gateOutward.findMany({
         where,
-        select: { outwardId: true, receiverName: true, invoiceNo: true, vehicleNo: true, companyName: true, status: true, requestDelete: true, invoiceDocFileName: true, createdBy: true, createdAt: true },
+        select: { outwardId: true, receiverName: true, invoiceNo: true, vehicleNo: true, companyName: true, status: true, requestDelete: true, invoiceDocFileNames: true, createdBy: true, createdAt: true },
         orderBy: { createdAt: 'desc' },
         skip: off,
         take: lim,

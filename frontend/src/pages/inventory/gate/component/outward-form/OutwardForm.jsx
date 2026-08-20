@@ -6,7 +6,7 @@ import { COMPANIES } from "../../data/companies.js";
 import OutwardDocumentField from "./OutwardDocumentField.jsx";
 import "./OutwardForm.css";
 
-const EMPTY = { receiver_name: "", invoice_no: "", vehicle_no: "", company: "", invoice_document: null };
+const EMPTY = { receiver_name: "", invoice_no: "", vehicle_no: "", company: "", invoice_document: [] };
 
 // The four business fields are required — mirrors InwardForm so both gate
 // forms enforce the same completeness rules. Invoice Document is optional —
@@ -21,7 +21,7 @@ const FIELDS = [
 
 // `embedded` drops this component's own card border/shadow/margin — used
 // when it's rendered inside the Edit modal (mirrors InwardForm).
-export default function OutwardForm({ onSubmit, onCancel, mode = "create", initialValues = null, existingDocument = null, onViewDocument = null, embedded = false }) {
+export default function OutwardForm({ onSubmit, onCancel, mode = "create", initialValues = null, existingDocument = [], onViewDocument = null, embedded = false }) {
   const [form, setForm] = useState(initialValues ? { ...EMPTY, ...initialValues } : EMPTY);
   const [fieldErrors, setFieldErrors] = useState({});
 
@@ -75,7 +75,7 @@ export default function OutwardForm({ onSubmit, onCancel, mode = "create", initi
             ) : type === "file" ? (
               <OutwardDocumentField
                 value={form[key]}
-                onChange={(file) => setForm((f) => ({ ...f, [key]: file }))}
+                onChange={(files) => setForm((f) => ({ ...f, [key]: files }))}
                 accept={accept}
                 existingDocument={existingDocument}
                 onViewDocument={onViewDocument}

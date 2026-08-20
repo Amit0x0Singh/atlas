@@ -2,7 +2,7 @@ import { Filter } from 'lucide-react'
 import { Modal, Button } from '../../../../../components/ui'
 import { COMPANIES } from '../../data/companies.js'
 
-export const EMPTY_GATE_FILTERS = { invoice_no: '', status: '', company: '', from_date: '', to_date: '' }
+export const EMPTY_GATE_FILTERS = { type: '', invoice_no: '', status: '', company: '', from_date: '', to_date: '' }
 
 const LABEL = 'text-[11px] font-bold text-gray-500 uppercase tracking-wide block mb-1.5'
 const FIELD = 'w-full border border-gray-200 rounded-lg px-3 py-2 text-[13px] text-gray-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white'
@@ -40,6 +40,18 @@ export default function GateFilterModal({ open, onClose, value, onApply }) {
                 onChange={e => set({ to_date: e.target.value })} className={FIELD} />
             </div>
           </div>
+        </div>
+
+        <div>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className={LABEL}>Type</label>
+            {value.type && <button type="button" onClick={() => set({ type: '' })} className="text-[11px] font-semibold text-blue-600 hover:underline">Reset</button>}
+          </div>
+          <select value={value.type} onChange={e => set({ type: e.target.value })} className={`${FIELD} cursor-pointer`}>
+            <option value="">Inward &amp; Outward</option>
+            <option value="inward">Inward</option>
+            <option value="outward">Outward</option>
+          </select>
         </div>
 
         <div>

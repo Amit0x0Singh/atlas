@@ -1,5 +1,5 @@
 ﻿import { useState, useEffect, useRef } from "react";
-import { ArrowDown, ArrowUp, CheckCircle } from "lucide-react";
+import { CheckCircle, History } from "lucide-react";
 import {
   useGateInward, useGateOutward,
   useCreateGateInward, useCreateGateOutward,
@@ -14,15 +14,14 @@ import GateTabs from "../component/gate-tabs/GateTabs.jsx";
 import GateToolbar, { DEFAULT_GATE_SORT } from "../component/gate-filter-bar/GateToolbar.jsx";
 import InwardForm from "../component/inward-form/InwardForm.jsx";
 import OutwardForm from "../component/outward-form/OutwardForm.jsx";
-import InwardTable from "../component/inward-table/InwardTable.jsx";
-import OutwardTable from "../component/outward-table/OutwardTable.jsx";
+import HistoryTable from "../component/history-table/HistoryTable.jsx";
 import "./GateEntry.css";
 
 import { toTitleCase } from '../../../../utils/textDisplay.js'
 import { COMPANIES } from "../data/companies.js";
 import { gateApi } from "../../../../api/inventory.js";
 import { openAuthedFile } from "../../../../utils/authedFile.js";
-const EMPTY_FILTERS = { search: "", invoice_no: "", status: "", company: "", from_date: "", to_date: "" };
+const EMPTY_FILTERS = { search: "", type: "", invoice_no: "", status: "", company: "", from_date: "", to_date: "" };
 
 // companyName is stored lowercase (see gate.create.middleware's
 // lowercaseFields) — map it back to the display-cased option the <select>
@@ -35,7 +34,7 @@ export default function GateEntry() {
   const { hasAnyPermission } = useAuth();
   const canGate = hasAnyPermission(["gate.inward.view", "gate.outward.view"]);
 
-  // Navigation: 'home' | 'inward-list' | 'outward-list'
+  // Navigation: 'home' | 'history'
   const [view, setView]       = useState("home");
   const [formTab, setFormTab] = useState("inward"); // which form is active on home
   const [formKey, setFormKey] = useState(0);        // increment to reset form
@@ -53,15 +52,25 @@ export default function GateEntry() {
 
   const debounceRef = useRef(null);
 
-  const listType = view === "inward-list" ? "inward" : "outward";
+  // Historical Transactions is now the only list view — it merges both
+  // queries into one type-tagged list (each row keeps its own `type` so
+  // actions/permissions still route correctly; see HistoryTable.jsx).
+  // `type` (Inward/Outward) isn't a field either backend endpoint knows
+  // about — it only exists once the two lists are merged here — so it's
+  // stripped before being sent as a query param and applied client-side
+  // instead, same as the sort.
+  const { type: typeFilter, ...apiFilters } = queryFilters;
+  const inwardQuery  = useGateInward(apiFilters, view === "history" && typeFilter !== "outward");
+  const outwardQuery = useGateOutward(apiFilters, view === "history" && typeFilter !== "inward");
 
-  const inwardQuery  = useGateInward(queryFilters, view === "inward-list");
-  const outwardQuery = useGateOutward(queryFilters, view === "outward-list");
-  const activeQuery  = listType === "inward" ? inwardQuery : outwardQuery;
-  const rawList = activeQuery.data?.rows ?? [];
-  const total   = activeQuery.data?.total ?? 0;
-  const loading = activeQuery.isLoading;
-  const error   = activeQuery.error?.message ?? null;
+  const rawList = [
+    ...(typeFilter === "outward" ? [] : (inwardQuery.data?.rows ?? []).map((r) => ({ ...r, type: "inward" }))),
+    ...(typeFilter === "inward"  ? [] : (outwardQuery.data?.rows ?? []).map((r) => ({ ...r, type: "outward" }))),
+  ];
+  const total = (typeFilter === "outward" ? 0 : (inwardQuery.data?.total ?? 0))
+    + (typeFilter === "inward" ? 0 : (outwardQuery.data?.total ?? 0));
+  const loading = (typeFilter !== "outward" && inwardQuery.isLoading) || (typeFilter !== "inward" && outwardQuery.isLoading);
+  const error   = inwardQuery.error?.message || outwardQuery.error?.message || null;
 
   // Sorted client-side over whatever the server returned (capped at the
   // hook's `limit: 100` — see useGate.js) — same "Sort by" popup pattern as
@@ -86,9 +95,9 @@ export default function GateEntry() {
   const requestDeleteInward   = useRequestDeleteGateInward();
   const requestDeleteOutward  = useRequestDeleteGateOutward();
 
-  // Reset filters each time we enter a list view
+  // Reset filters each time we enter the list view
   useEffect(() => {
-    if (view === "inward-list" || view === "outward-list") {
+    if (view === "history") {
       setFilters(EMPTY_FILTERS);
       setQueryFilters(EMPTY_FILTERS);
       setSort(DEFAULT_GATE_SORT);
@@ -99,11 +108,11 @@ export default function GateEntry() {
   // up-to-100-row batch the table itself is drawing from (see useGate.js).
   function exportGateCsv() {
     if (!list.length) { alert("No records to export — adjust your filters."); return }
-    const isInward = listType === "inward"
-    const headers = ["Company", isInward ? "Supplier Name" : "Receiver Name", "Invoice No.", "Vehicle No.", "Created By", "Date & Time", "Status"]
+    const headers = ["Type", "Company", "Supplier / Receiver", "Invoice No.", "Vehicle No.", "Created By", "Date & Time", "Status"]
     const rows = list.map(item => [
+      item.type === "inward" ? "Inward" : "Outward",
       toTitleCase(item.company_name || item.companyName) || "",
-      toTitleCase(isInward ? (item.supplier_name || item.supplierName) : (item.receiver_name || item.receiverName)) || "",
+      toTitleCase(item.type === "inward" ? (item.supplier_name || item.supplierName) : (item.receiver_name || item.receiverName)) || "",
       item.invoice_no || item.invoiceNo || "",
       item.vehicle_no || item.vehicleNo || "",
       toTitleCase(item.created_by_name || item.createdByName) || "",
@@ -113,13 +122,13 @@ export default function GateEntry() {
     const csv = [headers.join(","), ...rows].join("\n")
     const a = document.createElement("a")
     a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }))
-    a.download = `gate_${listType}_${new Date().toISOString().slice(0, 10)}.csv`
+    a.download = `gate_history_${new Date().toISOString().slice(0, 10)}.csv`
     a.click()
     URL.revokeObjectURL(a.href)
   }
 
-  function openList(type) {
-    setView(type === "inward" ? "inward-list" : "outward-list");
+  function openHistory() {
+    setView("history");
   }
 
   function goHome() {
@@ -148,20 +157,22 @@ export default function GateEntry() {
     setTimeout(() => setSuccessMsg(''), 4000);
   };
 
-  // The invoice document (a File, from either the plain picker or the
-  // camera capture) can't travel through the JSON create/update body — it's
-  // stripped off here and uploaded as a separate multipart request once the
-  // entry itself exists (see gateApi.uploadInwardInvoiceDoc).
+  // The invoice documents (Files, from either the plain picker or the
+  // camera capture) can't travel through the JSON create/update body —
+  // they're stripped off here and uploaded as a separate multipart request
+  // once the entry itself exists (see gateApi.uploadInwardInvoiceDoc). An
+  // entry can carry several, so `invoice_document` is an array; uploading
+  // always appends, so the same call is used on both create and edit.
   const submitInward = async (form) => {
     const { invoice_document, ...fields } = form;
     try {
       const res = await createInwardMutation.mutateAsync(fields);
       const entry = res.data;
-      if (invoice_document) {
+      if (invoice_document?.length) {
         try {
-          await uploadInwardDocMutation.mutateAsync({ id: entry.inwardId, file: invoice_document });
+          await uploadInwardDocMutation.mutateAsync({ id: entry.inwardId, files: invoice_document });
         } catch (docErr) {
-          setErrModal({ open: true, message: `Entry created, but the invoice document failed to upload: ${docErr.message}` });
+          setErrModal({ open: true, message: `Entry created, but the invoice document(s) failed to upload: ${docErr.message}` });
         }
       }
       showSuccess(`Inward entry created${entry?.companyName ? ` for ${toTitleCase(entry.companyName)}` : ''}${entry?.supplierName ? ` · ${toTitleCase(entry.supplierName)}` : ''}${entry?.invoiceNo ? ` · ${entry.invoiceNo}` : ''}`);
@@ -171,19 +182,19 @@ export default function GateEntry() {
     }
   };
 
-  // Same reasoning as submitInward — the File can't travel through the JSON
-  // create body, so it's stripped off and uploaded separately once the
-  // entry exists.
+  // Same reasoning as submitInward — the Files can't travel through the
+  // JSON create body, so they're stripped off and uploaded separately once
+  // the entry exists.
   const submitOutward = async (form) => {
     const { invoice_document, ...fields } = form;
     try {
       const res = await createOutwardMutation.mutateAsync(fields);
       const entry = res.data;
-      if (invoice_document) {
+      if (invoice_document?.length) {
         try {
-          await uploadOutwardDocMutation.mutateAsync({ id: entry.outwardId, file: invoice_document });
+          await uploadOutwardDocMutation.mutateAsync({ id: entry.outwardId, files: invoice_document });
         } catch (docErr) {
-          setErrModal({ open: true, message: `Entry recorded, but the invoice document failed to upload: ${docErr.message}` });
+          setErrModal({ open: true, message: `Entry recorded, but the invoice document(s) failed to upload: ${docErr.message}` });
         }
       }
       showSuccess(`Outward entry recorded${entry?.companyName ? ` for ${toTitleCase(entry.companyName)}` : ''}${entry?.receiverName ? ` · ${toTitleCase(entry.receiverName)}` : ''}${entry?.invoiceNo ? ` · ${entry.invoiceNo}` : ''}`);
@@ -200,11 +211,11 @@ export default function GateEntry() {
     const id = editEntry.item.inward_id || editEntry.item.inwardId;
     try {
       await editInwardMutation.mutateAsync({ id, data: fields });
-      if (invoice_document) {
+      if (invoice_document?.length) {
         try {
-          await uploadInwardDocMutation.mutateAsync({ id, file: invoice_document });
+          await uploadInwardDocMutation.mutateAsync({ id, files: invoice_document });
         } catch (docErr) {
-          setErrModal({ open: true, message: `Entry updated, but the invoice document failed to upload: ${docErr.message}` });
+          setErrModal({ open: true, message: `Entry updated, but the invoice document(s) failed to upload: ${docErr.message}` });
         }
       }
       setEditEntry(null);
@@ -214,9 +225,9 @@ export default function GateEntry() {
     }
   };
 
-  const handleViewInvoiceDoc = (item) => {
+  const handleViewInvoiceDoc = (item, fileName) => {
     const id = item.inward_id || item.inwardId;
-    openAuthedFile(gateApi.invoiceDocUrl(id)).catch((e) => setErrModal({ open: true, message: `Could not open the invoice document: ${e.message}` }));
+    openAuthedFile(gateApi.invoiceDocUrl(id, fileName)).catch((e) => setErrModal({ open: true, message: `Could not open the invoice document: ${e.message}` }));
   };
 
   const submitEditOutward = async (form) => {
@@ -224,11 +235,11 @@ export default function GateEntry() {
     const id = editEntry.item.outward_id || editEntry.item.outwardId;
     try {
       await editOutwardMutation.mutateAsync({ id, data: fields });
-      if (invoice_document) {
+      if (invoice_document?.length) {
         try {
-          await uploadOutwardDocMutation.mutateAsync({ id, file: invoice_document });
+          await uploadOutwardDocMutation.mutateAsync({ id, files: invoice_document });
         } catch (docErr) {
-          setErrModal({ open: true, message: `Entry updated, but the invoice document failed to upload: ${docErr.message}` });
+          setErrModal({ open: true, message: `Entry updated, but the invoice document(s) failed to upload: ${docErr.message}` });
         }
       }
       setEditEntry(null);
@@ -238,10 +249,16 @@ export default function GateEntry() {
     }
   };
 
-  const handleViewOutwardInvoiceDoc = (item) => {
+  const handleViewOutwardInvoiceDoc = (item, fileName) => {
     const id = item.outward_id || item.outwardId;
-    openAuthedFile(gateApi.outwardInvoiceDocUrl(id)).catch((e) => setErrModal({ open: true, message: `Could not open the invoice document: ${e.message}` }));
+    openAuthedFile(gateApi.outwardInvoiceDocUrl(id, fileName)).catch((e) => setErrModal({ open: true, message: `Could not open the invoice document: ${e.message}` }));
   };
+
+  // History view's rows carry a `type` tag instead of living under a
+  // type-specific table, so its "view document" action needs to route to
+  // whichever of the two type-specific handlers above actually matches.
+  const handleViewDocument = (item, type, fileName) =>
+    type === "inward" ? handleViewInvoiceDoc(item, fileName) : handleViewOutwardInvoiceDoc(item, fileName);
 
   const handleRequestDelete = (id, type) => setDeleteConfirm({ id, type });
 
@@ -272,10 +289,7 @@ export default function GateEntry() {
             description="Record inward and outward material movements"
             actions={<>
               {canGate && (
-                <>
-                  <Button variant="primary" icon={ArrowDown} onClick={() => openList("inward")}>Inward Entries</Button>
-                  <Button variant="purple"  icon={ArrowUp}   onClick={() => openList("outward")}>Outward Entries</Button>
-                </>
+                <Button variant="primary" icon={History} onClick={openHistory}>Historical Transactions</Button>
               )}
               {/* Real router back — mobile's native back gesture already
                   covers this, so it's hidden there (see .ge-back-routable) */}
@@ -314,11 +328,11 @@ export default function GateEntry() {
       )}
 
       {/* ════════════════════════════════════════════════════
-          INWARD LIST
+          HISTORICAL TRANSACTIONS — combined inward + outward
           ════════════════════════════════════════════════════ */}
-      {view === "inward-list" && (
+      {view === "history" && (
         <>
-          <PageHeader icon={ArrowDown} title="Inward Entries" actions={<BackButton onClick={goHome} />} />
+          <PageHeader icon={History} title="Historical Transactions" description="Inward and outward gate entries together, most recent first" actions={<BackButton onClick={goHome} />} />
 
           <div className="ge-body">
             {successMsg && (
@@ -328,7 +342,6 @@ export default function GateEntry() {
             )}
 
             <GateToolbar
-              tab="inward"
               filters={filters}
               onChange={handleFilterChange}
               onClear={handleClearFilters}
@@ -342,53 +355,12 @@ export default function GateEntry() {
 
             {loading
               ? <div className="ge-loading">Loading…</div>
-              : <InwardTable
+              : <HistoryTable
                   list={list}
                   total={total}
-                  onRequestDelete={(id) => handleRequestDelete(id, "inward")}
-                  onEdit={(item) => handleEdit(item, "inward")}
-                  onViewDocument={handleViewInvoiceDoc}
-                />
-            }
-          </div>
-        </>
-      )}
-
-      {/* ════════════════════════════════════════════════════
-          OUTWARD LIST
-          ════════════════════════════════════════════════════ */}
-      {view === "outward-list" && (
-        <>
-          <PageHeader icon={ArrowUp} title="Outward Entries" actions={<BackButton onClick={goHome} />} />
-
-          <div className="ge-body">
-            {successMsg && (
-              <div className="ge-success">
-                <CheckCircle size={16} /> {successMsg}
-              </div>
-            )}
-
-            <GateToolbar
-              tab="outward"
-              filters={filters}
-              onChange={handleFilterChange}
-              onClear={handleClearFilters}
-              sort={sort}
-              onSortChange={setSort}
-              onExport={exportGateCsv}
-              total={total}
-            />
-
-            {error && <div className="ge-error">{error}</div>}
-
-            {loading
-              ? <div className="ge-loading">Loading…</div>
-              : <OutwardTable
-                  list={list}
-                  total={total}
-                  onRequestDelete={(id) => handleRequestDelete(id, "outward")}
-                  onEdit={(item) => handleEdit(item, "outward")}
-                  onViewDocument={handleViewOutwardInvoiceDoc}
+                  onRequestDelete={handleRequestDelete}
+                  onEdit={handleEdit}
+                  onViewDocument={handleViewDocument}
                 />
             }
           </div>
@@ -421,8 +393,8 @@ export default function GateEntry() {
               vehicle_no:    editEntry.item.vehicle_no    || editEntry.item.vehicleNo    || "",
               company:       matchCompany(editEntry.item.company_name || editEntry.item.companyName),
             }}
-            existingDocument={{ fileName: editEntry.item.invoice_doc_file_name || editEntry.item.invoiceDocFileName || "" }}
-            onViewDocument={() => handleViewInvoiceDoc(editEntry.item)}
+            existingDocument={(editEntry.item.invoice_doc_file_names || editEntry.item.invoiceDocFileNames || []).map((fileName) => ({ fileName }))}
+            onViewDocument={(fileName) => handleViewInvoiceDoc(editEntry.item, fileName)}
             onSubmit={submitEditInward}
             onCancel={() => setEditEntry(null)}
           />
@@ -438,8 +410,8 @@ export default function GateEntry() {
               vehicle_no:    editEntry.item.vehicle_no    || editEntry.item.vehicleNo    || "",
               company:       matchCompany(editEntry.item.company_name || editEntry.item.companyName),
             }}
-            existingDocument={{ fileName: editEntry.item.invoice_doc_file_name || editEntry.item.invoiceDocFileName || "" }}
-            onViewDocument={() => handleViewOutwardInvoiceDoc(editEntry.item)}
+            existingDocument={(editEntry.item.invoice_doc_file_names || editEntry.item.invoiceDocFileNames || []).map((fileName) => ({ fileName }))}
+            onViewDocument={(fileName) => handleViewOutwardInvoiceDoc(editEntry.item, fileName)}
             onSubmit={submitEditOutward}
             onCancel={() => setEditEntry(null)}
           />

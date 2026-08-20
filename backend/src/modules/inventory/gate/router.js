@@ -24,17 +24,23 @@ const invoiceDocFileFilter = (req, file, cb) => {
   cb(null, extOk && mimeOk)
 }
 
+// An entry can now carry several invoice documents in one upload request —
+// Date.now() alone can collide between files in the same request (multiple
+// files processed within the same millisecond), so each filename also gets
+// a short random suffix on top of the timestamp.
+const uniqueSuffix = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+
 // Disk-storage multer instance for the invoice document upload — mirrors
 // backend/src/modules/backup/router.js's restoreUpload pattern.
 const invoiceDocUpload = multer({
   storage: multer.diskStorage({
     destination: (req, file, cb) => cb(null, GATE_INWARD_INVOICES_DIR),
-    // Keyed by the gate inward id so a re-upload's old file is easy to spot
-    // on disk, and path.basename strips any directory component out of the
+    // Keyed by the gate inward id so an entry's files are easy to spot on
+    // disk, and path.basename strips any directory component out of the
     // client-supplied name (same traversal guard as restoreUpload).
-    filename: (req, file, cb) => cb(null, `${req.params.id}-${Date.now()}${path.extname(path.basename(file.originalname))}`),
+    filename: (req, file, cb) => cb(null, `${req.params.id}-${uniqueSuffix()}${path.extname(path.basename(file.originalname))}`),
   }),
-  limits: { fileSize: 15 * 1024 * 1024 },
+  limits: { fileSize: 15 * 1024 * 1024, files: 10 },
   fileFilter: invoiceDocFileFilter,
 })
 
@@ -44,9 +50,9 @@ const invoiceDocUpload = multer({
 const outwardInvoiceDocUpload = multer({
   storage: multer.diskStorage({
     destination: (req, file, cb) => cb(null, GATE_OUTWARD_INVOICES_DIR),
-    filename: (req, file, cb) => cb(null, `${req.params.id}-${Date.now()}${path.extname(path.basename(file.originalname))}`),
+    filename: (req, file, cb) => cb(null, `${req.params.id}-${uniqueSuffix()}${path.extname(path.basename(file.originalname))}`),
   }),
-  limits: { fileSize: 15 * 1024 * 1024 },
+  limits: { fileSize: 15 * 1024 * 1024, files: 10 },
   fileFilter: invoiceDocFileFilter,
 })
 
@@ -67,8 +73,8 @@ GateRouter.patch('/inward/:id',                 authorize('gate.inward.update'),
 GateRouter.patch('/inward/:id/status',          inwardStatusRoles, validateUpdateIdParam, validateStatusUpdate, updateGateInwardStatus)
 GateRouter.patch('/inward/:id/request-delete',  authorize('gate.inward.update'), validateUpdateIdParam, requestDeleteGateInward)
 GateRouter.delete('/inward/:id',                authorize('gate.inward.delete'), validateDeleteIdParam, deleteGateInward)
-GateRouter.post('/inward/:id/invoice-document', authorize(['gate.inward.create', 'gate.inward.update']), validateUpdateIdParam, invoiceDocUpload.single('file'), uploadGateInwardInvoiceDocument)
-GateRouter.get('/inward/:id/invoice-document',  authorize('gate.inward.view'),   validateGetIdParam, viewGateInwardInvoiceDocument)
+GateRouter.post('/inward/:id/invoice-document', authorize(['gate.inward.create', 'gate.inward.update']), validateUpdateIdParam, invoiceDocUpload.array('files', 10), uploadGateInwardInvoiceDocument)
+GateRouter.get('/inward/:id/invoice-document/:fileName', authorize('gate.inward.view'), validateGetIdParam, viewGateInwardInvoiceDocument)
 
 // ── Gate Outward ──────────────────────────────────────────────────────────────
 GateRouter.post('/outward',                      authorize('gate.outward.create'), validateGateOutward, createGateOutward)
@@ -78,7 +84,7 @@ GateRouter.patch('/outward/:id',                 authorize('gate.outward.update'
 GateRouter.patch('/outward/:id/status',          authorize('gate.outward.update'), validateUpdateIdParam, validateStatusUpdate, updateGateOutwardStatus)
 GateRouter.patch('/outward/:id/request-delete',  authorize('gate.outward.update'), validateUpdateIdParam, requestDeleteGateOutward)
 GateRouter.delete('/outward/:id',                authorize('gate.outward.delete'), validateDeleteIdParam, deleteGateOutward)
-GateRouter.post('/outward/:id/invoice-document', authorize(['gate.outward.create', 'gate.outward.update']), validateUpdateIdParam, outwardInvoiceDocUpload.single('file'), uploadGateOutwardInvoiceDocument)
-GateRouter.get('/outward/:id/invoice-document',  authorize('gate.outward.view'),   validateGetIdParam, viewGateOutwardInvoiceDocument)
+GateRouter.post('/outward/:id/invoice-document', authorize(['gate.outward.create', 'gate.outward.update']), validateUpdateIdParam, outwardInvoiceDocUpload.array('files', 10), uploadGateOutwardInvoiceDocument)
+GateRouter.get('/outward/:id/invoice-document/:fileName', authorize('gate.outward.view'), validateGetIdParam, viewGateOutwardInvoiceDocument)
 
 export default GateRouter

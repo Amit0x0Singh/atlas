@@ -8,7 +8,7 @@ import SupplierAutocomplete from "./SupplierAutocomplete.jsx";
 import InvoiceDocumentField from "./InvoiceDocumentField.jsx";
 import "./InwardForm.css";
 
-const EMPTY = { supplier_name: "", invoice_no: "", vehicle_no: "", company: "", invoice_document: null };
+const EMPTY = { supplier_name: "", invoice_no: "", vehicle_no: "", company: "", invoice_document: [] };
 
 // Supplier Name gets its own autocomplete widget, Invoice Document its own
 // camera-first widget (below) — neither fits the generic select/input
@@ -26,7 +26,7 @@ const FIELDS = [
 // `embedded` drops this component's own card border/shadow/margin — used
 // when it's rendered inside the Edit modal, whose panel already draws that
 // chrome; keeping both caused the two borders to visibly clash at the edges.
-export default function InwardForm({ onSubmit, onCancel, mode = "create", initialValues = null, existingDocument = null, onViewDocument = null, embedded = false }) {
+export default function InwardForm({ onSubmit, onCancel, mode = "create", initialValues = null, existingDocument = [], onViewDocument = null, embedded = false }) {
   const [form, setForm] = useState(initialValues ? { ...EMPTY, ...initialValues } : EMPTY);
   const [fieldErrors, setFieldErrors] = useState({});
   const { data: suppliersResult } = useSupplierSuggestions();
@@ -95,7 +95,7 @@ export default function InwardForm({ onSubmit, onCancel, mode = "create", initia
             ) : type === "file" ? (
               <InvoiceDocumentField
                 value={form[key]}
-                onChange={(file) => setForm((f) => ({ ...f, [key]: file }))}
+                onChange={(files) => setForm((f) => ({ ...f, [key]: files }))}
                 accept={accept}
                 existingDocument={existingDocument}
                 onViewDocument={onViewDocument}

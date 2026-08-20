@@ -11,7 +11,7 @@ model GateInward {
 
   requestDelete Boolean @default(false) @map("request_delete")
 
-  invoiceDocFileName String? @map("invoice_doc_file_name") @db.VarChar(255)
+  invoiceDocFileNames String[] @default([]) @map("invoice_doc_file_names")
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
@@ -33,7 +33,7 @@ model GateOutward {
 
   requestDelete Boolean @default(false) @map("request_delete")
 
-  invoiceDocFileName String? @map("invoice_doc_file_name") @db.VarChar(255)
+  invoiceDocFileNames String[] @default([]) @map("invoice_doc_file_names")
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()

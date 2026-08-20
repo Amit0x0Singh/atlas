@@ -1,7 +1,6 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { customerProfileApi, cpProfileApi } from "../../../../api/sales.js";
-import { STATIC_CUSTOMER_PROFILES } from "../../../../data/customerProfiles";
 import {
   useSalesOrders, useCreateSalesOrder, useUpdateSalesOrder, useDeleteSalesOrder,
 } from "../../../../hooks/sales/useSalesOrders.js";
@@ -43,15 +42,9 @@ const SalesOrder = () => {
   const { data: productsResult } = useProductSuggestions();
   const products = productsResult?.items ?? [];
 
-  const { data: fetchedProfiles = [] } = useCustomerProfiles();
-  const profiles = useMemo(() => {
-    if (!fetchedProfiles.length) return STATIC_CUSTOMER_PROFILES;
-    const merged = [...STATIC_CUSTOMER_PROFILES];
-    for (const p of fetchedProfiles) {
-      if (!merged.find((x) => x.customerName?.toLowerCase() === p.customerName?.toLowerCase())) merged.push(p);
-    }
-    return merged.sort((a, b) => (b.orderCount || 0) - (a.orderCount || 0));
-  }, [fetchedProfiles]);
+  // Backend already returns these sorted by orderCount desc, customerName asc
+  // (see GET /api/customer-profiles) — no client-side merge/sort needed.
+  const { data: profiles = [] } = useCustomerProfiles();
 
   const createOrder = useCreateSalesOrder();
   const updateOrder = useUpdateSalesOrder();

@@ -1,6 +1,6 @@
-/* OutwardTable */
+/* HistoryTable */
 
-.ot-empty {
+.ht-empty {
   background: #fff;
   border-radius: 12px;
   border: 1px solid #e2e8f0;
@@ -8,24 +8,24 @@
   text-align: center;
 }
 
-.ot-empty-icon {
-  font-size: 40px;
+.ht-empty-icon {
   margin-bottom: 10px;
+  color: #cbd5e1;
 }
 
-.ot-empty-title {
+.ht-empty-title {
   font-size: 14px;
   font-weight: 600;
   color: #64748b;
 }
 
-.ot-empty-sub {
+.ht-empty-sub {
   font-size: 12px;
   color: #94a3b8;
   margin-top: 4px;
 }
 
-.ot-wrap {
+.ht-wrap {
   background: #fff;
   border-radius: 12px;
   border: 1px solid #e2e8f0;
@@ -33,7 +33,7 @@
   box-shadow: 0 1px 6px rgba(0, 0, 0, 0.04);
 }
 
-.ot-toolbar {
+.ht-toolbar {
   padding: 14px 18px;
   border-bottom: 1px solid #f1f5f9;
   display: flex;
@@ -43,36 +43,37 @@
   flex-wrap: wrap;
 }
 
-.ot-toolbar-title {
+.ht-toolbar-title {
   font-size: 13px;
   font-weight: 700;
   color: #0f172a;
 }
 
-.ot-badge {
+.ht-badge {
   padding: 3px 10px;
-  background: #fff7ed;
-  color: #f97316;
+  background: #eff6ff;
+  color: #3b82f6;
   border-radius: 99px;
   font-size: 11px;
   font-weight: 700;
+  white-space: nowrap;
 }
 
-.ot-scroll {
+.ht-scroll {
   overflow-x: auto;
 }
 
-.ot-table {
+.ht-table {
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
 }
 
-.ot-thead-row {
+.ht-thead-row {
   background: rgb(226, 235, 240);
 }
 
-.ot-th {
+.ht-th {
   position: relative;
   padding: 11px 14px;
   text-align: left;
@@ -83,7 +84,7 @@
   user-select: none;
 }
 
-.ot-th-resize {
+.ht-th-resize {
   position: absolute;
   right: 0;
   top: 0;
@@ -94,43 +95,86 @@
   touch-action: none;
 }
 
-.ot-th-resize:hover {
+.ht-th-resize:hover {
   background: rgba(96, 165, 250, 0.5);
 }
 
-.ot-row {
+.ht-row {
   border-top: 1px solid #f1f5f9;
   transition: background 0.1s;
 }
 
-.ot-row--even { background: #fff; }
-.ot-row--odd  { background: #fafafa; }
-.ot-row:hover { background: #fff7ed; }
+.ht-row--even { background: #fff; }
+.ht-row--odd  { background: #fafafa; }
+.ht-row:hover { background: #f0f9ff; }
 
-.ot-td { padding: 12px 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ht-td { padding: 12px 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-.ot-td-receiver {
+.ht-td-party {
   font-size: 13px;
   font-weight: 600;
   color: #1e293b;
 }
 
-.ot-td-text {
+.ht-td-text {
   font-size: 13px;
   color: #475569;
 }
 
-.ot-td-date {
+.ht-td-date {
   font-size: 12px;
   color: #64748b;
 }
 
-.ot-pagination {
+.ht-docs-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 9px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.ht-docs-btn:hover {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #2563eb;
+}
+
+.ht-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.ht-pagination {
   padding: 8px 16px;
 }
 
+/* TypeBadge — Inward mirrors the blue "Inward Entries" button, Outward the purple "Outward Entries" one */
+.ht-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.ht-type--inward  { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
+.ht-type--outward { background: #f5f3ff; color: #7c3aed; border: 1px solid #ddd6fe; }
+
 /* StatusBadge */
-.ot-status {
+.ht-status {
   padding: 3px 10px;
   border-radius: 99px;
   font-size: 11px;
@@ -139,19 +183,12 @@
   white-space: nowrap;
 }
 
-.ot-status--pending  { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
-.ot-status--approved { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
-.ot-status--rejected { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+.ht-status--pending  { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+.ht-status--approved { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+.ht-status--rejected { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
 
 /* DeleteRequestBadge */
-.ot-actions {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.ot-del-badge {
+.ht-del-badge {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -166,15 +203,15 @@
 }
 
 @media (max-width: 640px) {
-  .ot-empty {
+  .ht-empty {
     padding: 40px 16px;
   }
 
-  .ot-toolbar {
+  .ht-toolbar {
     padding: 12px 14px;
   }
 
-  .ot-pagination {
+  .ht-pagination {
     padding: 8px 10px;
   }
 }
