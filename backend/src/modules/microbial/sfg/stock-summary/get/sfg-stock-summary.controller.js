@@ -1,4 +1,5 @@
 import prisma from '../../../../../db.js'
+import { toSafeErrorMessage } from '../../../../../utils/safe-error.js'
 import { toSnakeRow } from '../../../../../utils/caseTransform.js'
 import { containerStatus, expiryOf } from '../../shared/status.js'
 
@@ -56,7 +57,7 @@ export const getMicrobeWiseStockSummary = async (req, res) => {
 
     return res.json({ success: true, data: toSnakeRow(rows) })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -95,6 +96,6 @@ export const getContainerLedger = async (req, res) => {
 
     return res.json({ success: true, data: toSnakeRow(rows) })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }

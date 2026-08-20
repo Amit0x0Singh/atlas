@@ -1,4 +1,5 @@
 import prisma from '../../../../db.js'
+import { toSafeErrorMessage } from '../../../../utils/safe-error.js'
 
 const calcCurrentCfu = (mfgCfu, decayK, mfgDate) => {
   const daysSince = (Date.now() - new Date(mfgDate).getTime()) / (1000 * 86400)
@@ -43,7 +44,7 @@ export const listContainers = async (req, res) => {
 
     return res.json({ success: true, data: containers.map(enrichContainer) })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 };
 
@@ -57,7 +58,7 @@ export const getContainer = async (req, res) => {
 
     return res.json({ success: true, data: enrichContainer(container) })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 };
 
@@ -89,7 +90,7 @@ export const listTransactions = async (req, res) => {
 
     return res.json({ success: true, data: rows })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 };
 
@@ -126,6 +127,6 @@ export const getDecayReport = async (req, res) => {
 
     return res.json({ success: true, data: report })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 };

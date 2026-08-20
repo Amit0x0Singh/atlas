@@ -1,4 +1,5 @@
 import prisma from '../../../../db.js'
+import { toSafeErrorMessage } from '../../../../utils/safe-error.js'
 import { writeAudit, auditUser } from '../../../../middleware/audit.js'
 
 export const patchContainer = async (req, res) => {
@@ -20,7 +21,7 @@ export const patchContainer = async (req, res) => {
     await writeAudit({ ...auditUser(req), action: 'UPDATE', tableName: 'microbial_containers', recordId: req.params.id, newValue: req.body })
     return res.json({ success: true, message: 'Container updated' })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 };
 
@@ -41,6 +42,6 @@ export const confirmReceipt = async (req, res) => {
     await writeAudit({ ...auditUser(req), action: 'CONFIRM_RECEIPT', tableName: 'microbial_transactions', recordId: req.params.id })
     return res.json({ success: true, message: 'Receipt confirmed' })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 };

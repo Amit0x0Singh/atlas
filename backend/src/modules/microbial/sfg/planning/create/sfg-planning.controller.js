@@ -1,4 +1,5 @@
 import prisma from '../../../../../db.js'
+import { toSafeErrorMessage } from '../../../../../utils/safe-error.js'
 import { createNotification } from '../../../../../services/notification-service.js'
 
 export const allocateSfg = async (req, res) => {
@@ -65,6 +66,6 @@ export const allocateSfg = async (req, res) => {
 
     return res.status(201).json({ success: true, data: results })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }

@@ -1,4 +1,5 @@
 import prisma from '../../../../../db.js'
+import { toSafeErrorMessage } from '../../../../../utils/safe-error.js'
 import { writeAudit, auditUser } from '../../../../../middleware/audit.js'
 
 export const deleteMicrobe = async (req, res) => {
@@ -8,6 +9,6 @@ export const deleteMicrobe = async (req, res) => {
     return res.json({ success: true })
   } catch (e) {
     if (e.code === 'P2025') return res.status(404).json({ success: false, error: 'Microbe not found', code: 'NOT_FOUND' })
-    return res.status(500).json({ success: false, error: e.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(e), code: 'INTERNAL_ERROR' })
   }
 }

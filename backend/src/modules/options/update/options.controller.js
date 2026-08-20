@@ -1,5 +1,6 @@
 import prisma from '../../../db.js'
 import { writeAudit, auditUser } from '../../../middleware/audit.js'
+import { toSafeErrorMessage } from '../../../utils/safe-error.js';
 
 export const updateValue = async (req, res) => {
   const { id } = req.params
@@ -21,7 +22,7 @@ export const updateValue = async (req, res) => {
     return res.json({ success: true, data: updated })
   } catch (err) {
     if (err.code === 'P2002') return res.status(400).json({ success: false, error: `Option "${code}" already exists in this group`, code: 'VALIDATION_ERROR' })
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -46,7 +47,7 @@ export const setActive = async (req, res) => {
     })
     return res.json({ success: true, data: updated })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -79,6 +80,6 @@ export const reorderValues = async (req, res) => {
     const refreshed = await prisma.optionValue.findMany({ where: { groupId: group.id }, orderBy: { sortOrder: 'asc' } })
     return res.json({ success: true, data: refreshed })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }

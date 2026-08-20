@@ -1,4 +1,5 @@
 import prisma from '../../../db.js'
+import { toSafeErrorMessage } from '../../../utils/safe-error.js';
 
 // ── Admin: list every group with its value count, for the Settings > Select
 // Options landing page ───────────────────────────────────────────────────────
@@ -10,7 +11,7 @@ export const listGroups = async (req, res) => {
     })
     return res.json({ success: true, data: groups })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -25,7 +26,7 @@ export const getGroup = async (req, res) => {
     if (!group) return res.status(404).json({ success: false, error: 'Option group not found', code: 'NOT_FOUND' })
     return res.json({ success: true, data: group })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -42,6 +43,6 @@ export const listPublicValues = async (req, res) => {
     })
     return res.json({ success: true, data })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }

@@ -1,4 +1,5 @@
 import { scanPack as scanPackForLot, batchScanPacks as batchScanPacksForLot, submitLotInward } from '../../../../../services/inward-service.js'
+import { toSafeErrorMessage } from '../../../../../utils/safe-error.js';
 
 const scanPack = async (req, res) => {
   const { itemCode, lotNo } = req.params
@@ -9,7 +10,7 @@ const scanPack = async (req, res) => {
     return res.json({ success: true, data: result })
 
   } catch (e) {
-    return res.status(400).json({ success: false, error: e.message, code: 'VALIDATION_ERROR' })
+    return res.status(400).json({ success: false, error: toSafeErrorMessage(e), code: 'VALIDATION_ERROR' })
   }
 }
 
@@ -25,7 +26,7 @@ const batchScanPack = async (req, res) => {
     return res.json({ success: true, ...result })
 
   } catch (e) {
-    return res.status(400).json({ success: false, error: e.message, code: 'VALIDATION_ERROR' })
+    return res.status(400).json({ success: false, error: toSafeErrorMessage(e), code: 'VALIDATION_ERROR' })
   }
 }
 
@@ -37,7 +38,7 @@ const submitLot = async (req, res) => {
     return res.json(result)
 
   } catch (e) {
-    return res.status(400).json({ success: false, error: e.message, code: 'VALIDATION_ERROR' })
+    return res.status(400).json({ success: false, error: toSafeErrorMessage(e), code: 'VALIDATION_ERROR' })
   }
 }
 

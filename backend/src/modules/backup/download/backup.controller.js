@@ -2,6 +2,7 @@ import fs from 'fs';
 import prisma from '../../../db.js';
 import { writeAudit, auditUser } from '../../../middleware/audit.js';
 import { streamBackupAsExcel } from '../services/backup-excel-export.service.js';
+import { toSafeErrorMessage } from '../../../utils/safe-error.js';
 
 export const downloadBackup = async (req, res) => {
   const job = await prisma.backupJob.findUnique({ where: { id: req.params.id } });
@@ -42,7 +43,7 @@ export const downloadBackupExcel = async (req, res) => {
     // a truncated/invalid file in that case, there's no clean way to signal
     // a JSON error mid-stream. Only respond with JSON if nothing was sent yet.
     if (!res.headersSent) {
-      res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
+      res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' });
     } else {
       res.end();
     }

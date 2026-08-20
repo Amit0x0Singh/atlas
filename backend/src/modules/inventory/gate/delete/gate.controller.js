@@ -3,6 +3,7 @@ import path from 'path'
 import prisma from '../../../../db.js'
 import { writeAudit, auditUser } from '../../../../middleware/audit.js'
 import { GATE_INWARD_INVOICES_DIR, GATE_OUTWARD_INVOICES_DIR } from '../utils/storage-paths.js'
+import { toSafeErrorMessage } from '../../../../utils/safe-error.js';
 
 
 
@@ -20,7 +21,7 @@ const deleteGateInward = async (req, res) => {
   } catch (err) {
     if (err.code === 'P2025') return res.status(404).json({ success: false, error: 'Gate inward not found', code: 'NOT_FOUND' })
     console.error('deleteGateInward error:', err.message)
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 
 }
@@ -39,7 +40,7 @@ const deleteGateOutward = async (req, res) => {
   } catch (err) {
     if (err.code === 'P2025') return res.status(404).json({ success: false, error: 'Gate outward not found', code: 'NOT_FOUND' })
     console.error('deleteGateOutward error:', err.message)
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 

@@ -1,6 +1,7 @@
 import prisma from '../../../../../db.js'
 import { packDetailInclude } from '../../../../../services/pack-view.js'
 import { resolveIssueQty, toOperationalDisplay } from '../services/uom-conversion.service.js'
+import { toSafeErrorMessage } from '../../../../../utils/safe-error.js';
 
 // Best-effort inverse conversion for a fully-automatic deduction (no operator
 // qty to validate against) — falls back to same-unit display rather than
@@ -22,7 +23,7 @@ const bomScan = async (req, res) => {
     const result = await _issuePack({ indentId, rmCode, packId })
     return res.json(result)
   } catch (e) {
-    return res.status(400).json({ success: false, error: e.message, code: 'VALIDATION_ERROR' })
+    return res.status(400).json({ success: false, error: toSafeErrorMessage(e), code: 'VALIDATION_ERROR' })
   }
 }
 
@@ -34,7 +35,7 @@ const bomManual = async (req, res) => {
     const result = await _issuePack({ indentId, rmCode, packId, forcedQty: parseFloat(qtyToIssue) })
     return res.json(result)
   } catch (e) {
-    return res.status(400).json({ success: false, error: e.message, code: 'VALIDATION_ERROR' })
+    return res.status(400).json({ success: false, error: toSafeErrorMessage(e), code: 'VALIDATION_ERROR' })
   }
 }
 
@@ -64,7 +65,7 @@ const packReduction = async (req, res) => {
     })
     return res.json({ success: true, deducted: deduct, containerId })
   } catch (e) {
-    return res.status(400).json({ success: false, error: e.message, code: 'VALIDATION_ERROR' })
+    return res.status(400).json({ success: false, error: toSafeErrorMessage(e), code: 'VALIDATION_ERROR' })
   }
 }
 
@@ -88,7 +89,7 @@ const bagLossAdjustment = async (req, res) => {
     try {
       ({ rm, inventoryQty: loss, operationalQty, operationalUom } = await resolveIssueQty(pack.itemCode, entered))
     } catch (e) {
-      return res.status(400).json({ success: false, error: e.message, code: 'VALIDATION_ERROR' })
+      return res.status(400).json({ success: false, error: toSafeErrorMessage(e), code: 'VALIDATION_ERROR' })
     }
     if (loss > pack.remainingQty)
       return res.status(400).json({ success: false, error: `Loss (${loss}) exceeds remaining qty (${pack.remainingQty})` , code: 'VALIDATION_ERROR' })
@@ -120,7 +121,7 @@ const bagLossAdjustment = async (req, res) => {
       operationalQty, operationalUom, inventoryUom: rm.inventoryUom,
     })
   } catch (e) {
-    return res.status(400).json({ success: false, error: e.message, code: 'VALIDATION_ERROR' })
+    return res.status(400).json({ success: false, error: toSafeErrorMessage(e), code: 'VALIDATION_ERROR' })
   }
 }
 
@@ -141,7 +142,7 @@ const stockAdjustment = async (req, res) => {
     })
     return res.json({ success: true, newBalance: newBal })
   } catch (e) {
-    return res.status(400).json({ success: false, error: e.message, code: 'VALIDATION_ERROR' })
+    return res.status(400).json({ success: false, error: toSafeErrorMessage(e), code: 'VALIDATION_ERROR' })
   }
 }
 
@@ -165,7 +166,7 @@ const warehouseTransfer = async (req, res) => {
     })
     return res.json({ success: true, message: `Pack ${packId} transferred to ${toWarehouse}` })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -185,7 +186,7 @@ const directIssue = async (req, res) => {
     try {
       ({ inventoryQty: issue, operationalQty, operationalUom } = await resolveIssueQty(pack.itemCode, entered))
     } catch (e) {
-      return res.status(400).json({ success: false, error: e.message, code: 'VALIDATION_ERROR' })
+      return res.status(400).json({ success: false, error: toSafeErrorMessage(e), code: 'VALIDATION_ERROR' })
     }
     if (issue > pack.remainingQty)
       return res.status(400).json({ success: false, error: `Qty exceeds pack balance (${pack.remainingQty})` , code: 'VALIDATION_ERROR' })
@@ -205,7 +206,7 @@ const directIssue = async (req, res) => {
     })
     return res.json({ success: true, issued: issue, remainingQty: pack.remainingQty - issue })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -226,7 +227,7 @@ const bomDirectIssue = async (req, res) => {
     try {
       ({ inventoryQty: issue, operationalQty, operationalUom } = await resolveIssueQty(rmCode, entered))
     } catch (e) {
-      return res.status(400).json({ success: false, error: e.message, code: 'VALIDATION_ERROR' })
+      return res.status(400).json({ success: false, error: toSafeErrorMessage(e), code: 'VALIDATION_ERROR' })
     }
 
     if (source === 'pack') {
@@ -262,7 +263,7 @@ const bomDirectIssue = async (req, res) => {
     })
     return res.json({ success: true, issued: issue, remaining: container.currentQty - issue })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -289,7 +290,7 @@ const upsertBomSession = async (req, res) => {
     })
     return res.json({ success: true, data: session })
   } catch (e) {
-    return res.status(400).json({ success: false, error: e.message, code: 'VALIDATION_ERROR' })
+    return res.status(400).json({ success: false, error: toSafeErrorMessage(e), code: 'VALIDATION_ERROR' })
   }
 }
 

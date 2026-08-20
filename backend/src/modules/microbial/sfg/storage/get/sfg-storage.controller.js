@@ -1,4 +1,5 @@
 import prisma from '../../../../../db.js'
+import { toSafeErrorMessage } from '../../../../../utils/safe-error.js'
 import { toSnakeRow } from '../../../../../utils/caseTransform.js'
 import { RACKS, SHELVES, SIDES, POSITIONS, TOTAL_SLOTS, containerStatus, slotCode } from '../../shared/status.js'
 
@@ -72,7 +73,7 @@ export const getStorageGrid = async (req, res) => {
       }),
     })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -103,6 +104,6 @@ export const getAvailableSlots = async (req, res) => {
     }
     return res.json({ success: true, data: slots })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }

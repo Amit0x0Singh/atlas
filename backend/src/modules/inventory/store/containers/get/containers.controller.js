@@ -1,6 +1,7 @@
 import prisma from '../../../../../db.js'
 import PDFDocument from 'pdfkit'
 import QRCode from 'qrcode'
+import { toSafeErrorMessage } from '../../../../../utils/safe-error.js';
 
 const MM = 2.8346
 const W  = 100 * MM
@@ -19,7 +20,7 @@ export const listContainers = async (req, res) => {
     const containers = await prisma.containerMaster.findMany({ where, orderBy: { itemName: 'asc' } })
     return res.json({ success: true, data: containers })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -30,7 +31,7 @@ export const getContainer = async (req, res) => {
     if (!container) return res.status(404).json({ success: false, error: 'Container not found', code: 'NOT_FOUND' })
     return res.json({ success: true, data: container })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -95,6 +96,6 @@ export const getContainerLabel = async (req, res) => {
     res.setHeader('Content-Disposition', `inline; filename="CONT-${container.containerId}.pdf"`)
     return res.send(Buffer.concat(chunks))
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }

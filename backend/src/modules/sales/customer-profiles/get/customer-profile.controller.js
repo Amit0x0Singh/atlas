@@ -1,4 +1,5 @@
 import prisma from "../../../../db.js";
+import { toSafeErrorMessage } from "../../../../utils/safe-error.js";
 
 // GET /api/customer-profiles
 const getCustomerProfiles = async (req, res) => {
@@ -8,7 +9,7 @@ const getCustomerProfiles = async (req, res) => {
     });
     return res.json({ success: true, data: profiles });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' });
   }
 };
 
@@ -24,7 +25,7 @@ const getCpProfiles = async (req, res) => {
     });
     return res.json({ success: true, data: profiles });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' });
   }
 };
 

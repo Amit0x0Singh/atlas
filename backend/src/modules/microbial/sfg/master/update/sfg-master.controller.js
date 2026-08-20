@@ -1,4 +1,5 @@
 import prisma from '../../../../../db.js'
+import { toSafeErrorMessage } from '../../../../../utils/safe-error.js'
 import { normalizeUom, CANONICAL_UNITS } from '../../../../../utils/uom.js'
 import { writeAudit, auditUser } from '../../../../../middleware/audit.js'
 
@@ -25,6 +26,6 @@ export const updateMicrobe = async (req, res) => {
     return res.json({ success: true, data: row })
   } catch (e) {
     if (e.code === 'P2025') return res.status(404).json({ success: false, error: 'Microbe not found', code: 'NOT_FOUND' })
-    return res.status(500).json({ success: false, error: e.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(e), code: 'INTERNAL_ERROR' })
   }
 }

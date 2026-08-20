@@ -1,5 +1,6 @@
 import prisma from '../../../../db.js'
 import { buildBulkWhere, getUniqueColumns, idDisplay, validateBulkTransformRequest } from '../bulk-transform.util.js'
+import { toSafeErrorMessage } from '../../../../utils/safe-error.js';
 
 const PREVIEW_SAMPLE_LIMIT = 50
 const CONFLICT_SAMPLE_LIMIT = 20
@@ -87,6 +88,6 @@ export const previewTransform = async (req, res) => {
       },
     })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }

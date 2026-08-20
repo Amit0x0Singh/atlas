@@ -1,4 +1,5 @@
 import prisma from "../../../../db.js";
+import { toSafeErrorMessage } from "../../../../utils/safe-error.js";
 import { writeAudit, auditUser } from "../../../../middleware/audit.js";
 
 // ── PUT /api/erp/sales-orders/:id  ───────────────────────────────────────
@@ -45,7 +46,7 @@ const updateSalesOrder = async (req, res) => {
     await writeAudit({ ...auditUser(req), action: 'UPDATE', module: 'sales', tableName: 'sales_orders', recordId: order.id, oldValue: existing, newValue: order });
     return res.json({ success: true, data: order });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' });
   }
 };
 
@@ -99,7 +100,7 @@ const updateSalesOrderItem = async (req, res) => {
     await writeAudit({ ...auditUser(req), action: 'UPDATE', module: 'sales', tableName: 'sales_order_items', recordId: item.id, oldValue: existing, newValue: item });
     return res.json({ success: true, data: item });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' });
   }
 };
 
@@ -122,7 +123,7 @@ const cancelOrder = async (req, res) => {
     await writeAudit({ ...auditUser(req), action: 'CANCEL', module: 'sales', tableName: 'sales_orders', recordId: order.id, oldValue: order, notes: 'all items marked CANCELLED' });
     return res.json({ success: true, message: "Order items marked as cancelled" });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' });
   }
 };
 
@@ -156,7 +157,7 @@ const dispatchOrder = async (req, res) => {
     await writeAudit({ ...auditUser(req), action: 'DISPATCH', module: 'sales', tableName: 'sales_orders', recordId: order.id, oldValue: existing, newValue: order });
     return res.json({ success: true, data: order });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' });
   }
 };
 

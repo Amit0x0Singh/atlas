@@ -1,4 +1,5 @@
 import prisma from '../../../../db.js'
+import { toSafeErrorMessage } from '../../../../utils/safe-error.js'
 
 export const updateSfg = async (req, res) => {
   try {
@@ -12,6 +13,6 @@ export const updateSfg = async (req, res) => {
     const updated = await prisma.sfgMaster.update({ where: { sfgId: req.params.sfgId }, data: { formulatedQty: fq, packedQty: pq, sfgQty: sfgBalance, status, remarks: remarks !== undefined ? remarks : existing.remarks } })
     return res.json({ success: true, data: updated })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }

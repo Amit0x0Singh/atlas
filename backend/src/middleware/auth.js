@@ -20,6 +20,7 @@ import { createHmac } from "crypto";
 import prisma from "../db.js";
 import { resolveEffectivePermissions } from "../services/permission-resolver.js";
 import { runWithRequestContext } from "../utils/request-context.js";
+import { toSafeErrorMessage } from '../utils/safe-error.js';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
@@ -160,7 +161,7 @@ export async function authenticate(req, res, next) {
   } catch (err) {
     return res
       .status(401)
-      .json({ success: false, error: err.message || "Unauthorized", code: "UNAUTHORIZED" });
+      .json({ success: false, error: toSafeErrorMessage(err) || "Unauthorized", code: "UNAUTHORIZED" });
   }
 }
 

@@ -1,4 +1,5 @@
 import prisma from '../../../db.js'
+import { toSafeErrorMessage } from '../../../utils/safe-error.js'
 import { scopeWhereByPlant } from '../../../middleware/scope.js'
 
 // ── SO status sync helper ─────────────────────────────────────────────────────
@@ -59,7 +60,7 @@ export const listTasks = async (req, res) => {
     })
     return res.json({ success: true, data: tasks })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err) })
   }
 }
 
@@ -124,7 +125,7 @@ export const createTask = async (req, res) => {
     })
     return res.status(201).json({ success: true, data: task })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err) })
   }
 }
 
@@ -167,7 +168,7 @@ export const updateTask = async (req, res) => {
 
     return res.json({ success: true, data: task })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err) })
   }
 }
 
@@ -195,7 +196,7 @@ export const sendSchedule = async (req, res) => {
 
     return res.json({ success: true, updated: result.count })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err) })
   }
 }
 
@@ -207,7 +208,7 @@ export const deleteTask = async (req, res) => {
     await prisma.productionTask.delete({ where: { id: req.params.id } })
     return res.json({ success: true })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err) })
   }
 }
 
@@ -283,7 +284,7 @@ export const searchSalesOrders = async (req, res) => {
 
     return res.json({ success: true, data: results.slice(0, 20) })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err) })
   }
 }
 
@@ -345,7 +346,7 @@ export const getSalesOrderItems = async (req, res) => {
 
     return res.json({ success: true, data: items })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err) })
   }
 }
 
@@ -363,7 +364,7 @@ export const searchProducts = async (req, res) => {
     })
     return res.json({ success: true, data: products })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err) })
   }
 }
 
@@ -377,6 +378,6 @@ export const listEquipmentByPlant = async (req, res) => {
     })
     return res.json({ success: true, data: equipment })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err) })
   }
 }

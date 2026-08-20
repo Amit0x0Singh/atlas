@@ -1,4 +1,5 @@
 import prisma from '../../../../../db.js'
+import { toSafeErrorMessage } from '../../../../../utils/safe-error.js'
 import { normalizeUom, CANONICAL_UNITS } from '../../../../../utils/uom.js'
 import { getMaxMicrobeCodeNum, formatMicrobeCode } from '../../../../../utils/microbe-code.js'
 import { writeAudit, auditUser } from '../../../../../middleware/audit.js'
@@ -34,7 +35,7 @@ export const createMicrobe = async (req, res) => {
   } catch (e) {
     if (e.code === 'P2002')
       return res.status(409).json({ success: false, error: 'Microbe code already exists', code: 'CONFLICT' })
-    return res.status(500).json({ success: false, error: e.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(e), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -84,7 +85,7 @@ export const importMicrobes = async (req, res) => {
         }
         imported++
       } catch (e) {
-        errors.push({ row: name, error: e.message })
+        errors.push({ row: name, error: toSafeErrorMessage(e) })
         skipped++
       }
     }
@@ -92,6 +93,6 @@ export const importMicrobes = async (req, res) => {
     await writeAudit({ ...auditUser(req), action: 'IMPORT', module: 'masters', tableName: 'microbe_master', newValue: { imported, skipped, errorCount: errors.length } })
     return res.json({ success: true, imported, skipped, errors })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }

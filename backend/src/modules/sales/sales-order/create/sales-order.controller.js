@@ -1,4 +1,5 @@
 import prisma from "../../../../db.js";
+import { toSafeErrorMessage } from "../../../../utils/safe-error.js";
 import { writeAudit, auditUser } from "../../../../middleware/audit.js";
 
 const nextSoId = async () => {
@@ -123,7 +124,7 @@ const createSalesOrder = async (req, res) => {
     // Unique constraint on diNo
     if (err.code === 'P2002' && err.meta?.target?.includes('di_no'))
       return res.status(409).json({ success: false, error: `DI Number "${req.body.diNo}" already exists`, code: 'DUPLICATE' });
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' });
   }
 };
 
@@ -142,7 +143,7 @@ const addCompany = async (req, res) => {
     });
     return res.json({ success: true, data: company });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' });
   }
 };
 

@@ -1,4 +1,5 @@
 import prisma from '../../../../db.js'
+import { toSafeErrorMessage } from '../../../../utils/safe-error.js'
 import { randomUUID } from 'crypto'
 import { normalizeLower } from '../../../../utils/text-normalize.js'
 
@@ -30,7 +31,7 @@ export const createBatch = async (req, res) => {
     })
     return res.status(201).json({ success: true, data: batch })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 };
 
@@ -45,6 +46,6 @@ export const addFormulationCycle = async (req, res) => {
     await prisma.productionBatch.update({ where: { id }, data: { formulationFlag: flagged, currentStage: 'UNLOADING', updatedAt: new Date() } })
     return res.status(201).json({ success: true, data: cycle })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 };

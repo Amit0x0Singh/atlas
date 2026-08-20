@@ -1,4 +1,5 @@
 import prisma from "../../../../db.js";
+import { toSafeErrorMessage } from "../../../../utils/safe-error.js";
 import { flattenPack, packDetailInclude } from "../../../../services/pack-view.js";
 
 // GET /api/tracker
@@ -36,7 +37,7 @@ export const listTrackerIndents = async (req, res) => {
 
     return res.json({ success: true, data: indents, total });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' });
   }
 }
 
@@ -138,6 +139,6 @@ export const getTrackerDetail = async (req, res) => {
       },
     });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' });
   }
 }

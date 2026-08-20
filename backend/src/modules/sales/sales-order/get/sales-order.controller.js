@@ -1,4 +1,5 @@
 import prisma from "../../../../db.js";
+import { toSafeErrorMessage } from "../../../../utils/safe-error.js";
 
 // ── GET /api/erp/sales-orders ─────────────────────────────────────────────────
 // Query params: company, status, priority, diNo, search, from, to, limit, offset
@@ -108,7 +109,7 @@ const getCompanies = async (req, res) => {
     });
     return res.json({ success: true, data: companies });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' });
   }
 };
 

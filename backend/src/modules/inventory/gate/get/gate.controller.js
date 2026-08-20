@@ -1,4 +1,5 @@
 import prisma from '../../../../db.js'
+import { toSafeErrorMessage } from '../../../../utils/safe-error.js';
 
 // createdBy on GateInward/GateOutward is stamped with the acting user's
 // email (see prisma-audit-extension.js), not a display name — resolve the
@@ -67,7 +68,7 @@ const listGateInward = async (req, res) => {
     return res.json({ success: true, data: await attachCreatedByName(rows), total })
   } catch (err) {
     console.error('listGateInward error:', err.message)
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -86,7 +87,7 @@ const getGateInward = async (req, res) => {
 
   } catch (err) {
     console.error('getGateInward error:', err.message)
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -128,7 +129,7 @@ const listGateOutward = async (req, res) => {
 
   } catch (err) {
     console.error('listGateOutward error:', err.message)
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -148,7 +149,7 @@ const getGateOutward = async (req, res) => {
 
   } catch (err) {
     console.error('getGateOutward error:', err.message)
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 

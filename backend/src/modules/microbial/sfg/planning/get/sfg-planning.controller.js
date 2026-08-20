@@ -1,4 +1,5 @@
 import prisma from '../../../../../db.js'
+import { toSafeErrorMessage } from '../../../../../utils/safe-error.js'
 
 export const checkPlanMicrobes = async (req, res) => {
   try {
@@ -92,7 +93,7 @@ export const checkPlanMicrobes = async (req, res) => {
       microbes: microbeData,
     })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -149,7 +150,7 @@ export const getProductMicrobeRequirements = async (req, res) => {
 
     return res.json({ success: true, has_microbes: true, microbes: results })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -169,6 +170,6 @@ export const getAllocationsForPlan = async (req, res) => {
     }))
     return res.json({ success: true, data })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }

@@ -1,5 +1,6 @@
 import prisma from '../../../../../config/db.js'
 import { writeAudit, auditUser } from '../../../../middleware/audit.js'
+import { toSafeErrorMessage } from '../../../../utils/safe-error.js';
 
 // Multiple companies operate out of this same facility — every gate
 // movement must be tagged so stock can be segregated/reported per company.
@@ -40,7 +41,7 @@ const createGateInward = async (req, res) => {
     return res.status(201).json({ success: true, data: row })
   } catch (err) {
     console.error('createGateInward error:', err.message)
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -79,7 +80,7 @@ const createManualGateInward = async (req, res) => {
     return res.status(201).json({ success: true, data: row })
   } catch (err) {
     console.error('createManualGateInward error:', err.message)
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -108,7 +109,7 @@ const createGateOutward = async (req, res) => {
 
   } catch (err) {
     console.error('createGateOutward error:', err.message)
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 

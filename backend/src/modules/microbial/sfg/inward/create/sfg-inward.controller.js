@@ -1,4 +1,5 @@
 import prisma from '../../../../../db.js'
+import { toSafeErrorMessage } from '../../../../../utils/safe-error.js'
 import { slotCode } from '../../shared/status.js'
 import { writeAudit, auditUser } from '../../../../../middleware/audit.js'
 
@@ -143,7 +144,7 @@ export const createSfgInward = async (req, res) => {
 
     return res.status(201).json({ success: true, data: result })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -211,7 +212,7 @@ export const importSfgInward = async (req, res) => {
 
         imported++
       } catch (e) {
-        errors.push({ row: microbe_name || JSON.stringify(r).slice(0, 60), error: e.message })
+        errors.push({ row: microbe_name || JSON.stringify(r).slice(0, 60), error: toSafeErrorMessage(e) })
         skipped++
       }
     }
@@ -219,6 +220,6 @@ export const importSfgInward = async (req, res) => {
     await writeAudit({ ...auditUser(req), action: 'IMPORT', module: 'microbial', tableName: 'microbial_sfg_inward', newValue: { imported, skipped, errorCount: errors.length } })
     return res.json({ success: true, imported, skipped, errors })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }

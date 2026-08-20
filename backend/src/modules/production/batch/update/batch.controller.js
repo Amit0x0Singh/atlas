@@ -1,4 +1,5 @@
 import prisma from '../../../../db.js'
+import { toSafeErrorMessage } from '../../../../utils/safe-error.js'
 import { randomUUID } from 'crypto'
 
 const INCLUDE_ALL = {
@@ -21,7 +22,7 @@ export const patchBatch = async (req, res) => {
     const batch = await prisma.productionBatch.update({ where: { id: req.params.id }, data, include: INCLUDE_ALL })
     return res.json({ success: true, data: batch })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -31,17 +32,19 @@ export const saveBiomass = async (req, res) => {
     const { id } = req.params
     const batch = await prisma.productionBatch.findUnique({ where: { id } })
     if (!batch) return res.status(404).json({ success: false, error: 'Batch not found', code: 'NOT_FOUND' })
-    await prisma.biomassInput.deleteMany({ where: { batchId: id } })
-    const created = await Promise.all(rows.map(row =>
-      prisma.biomassInput.create({
-        data: { id: randomUUID(), batchId: id, cultureName: row.cultureName || '', batchNo: row.batchNo || '', doi: row.doi || '', cfuPerGram: row.cfuPerGram ? parseFloat(row.cfuPerGram) : null, biomassQty: row.biomassQty ? parseFloat(row.biomassQty) : null, moisture: row.moisture ? parseFloat(row.moisture) : null, form: row.form || '', receivedFrom: row.receivedFrom || '', receivedDate: row.receivedDate || '', receivedTime: row.receivedTime || '', flagged: !row.cfuPerGram || !row.biomassQty }
-      })
-    ))
-    const anyFlagged = created.some(r => r.flagged)
-    await prisma.productionBatch.update({ where: { id }, data: { biomassFlag: anyFlagged, currentStage: 'TECHNICAL', updatedAt: new Date() } })
+    const rowsData = rows.map(row => ({ id: randomUUID(), batchId: id, cultureName: row.cultureName || '', batchNo: row.batchNo || '', doi: row.doi || '', cfuPerGram: row.cfuPerGram ? parseFloat(row.cfuPerGram) : null, biomassQty: row.biomassQty ? parseFloat(row.biomassQty) : null, moisture: row.moisture ? parseFloat(row.moisture) : null, form: row.form || '', receivedFrom: row.receivedFrom || '', receivedDate: row.receivedDate || '', receivedTime: row.receivedTime || '', flagged: !row.cfuPerGram || !row.biomassQty }))
+    const anyFlagged = rowsData.some(r => r.flagged)
+    // Delete-then-recreate must be atomic — a crash mid-way would otherwise
+    // leave the batch with zero biomass inputs and no way to recover them.
+    const created = await prisma.$transaction(async (tx) => {
+      await tx.biomassInput.deleteMany({ where: { batchId: id } })
+      const rowsCreated = await Promise.all(rowsData.map(data => tx.biomassInput.create({ data })))
+      await tx.productionBatch.update({ where: { id }, data: { biomassFlag: anyFlagged, currentStage: 'TECHNICAL', updatedAt: new Date() } })
+      return rowsCreated
+    })
     return res.json({ success: true, data: created })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -63,7 +66,7 @@ export const saveTechnical = async (req, res) => {
     await prisma.productionBatch.update({ where: { id }, data: { technicalFlag: flagged, currentStage: 'FORMULATION', updatedAt: new Date() } })
     return res.json({ success: true, data: tech })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -77,7 +80,7 @@ export const updateFormulationCycle = async (req, res) => {
     })
     return res.json({ success: true, data: cycle })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -90,7 +93,7 @@ export const saveUnloading = async (req, res) => {
     await prisma.productionBatch.update({ where: { id }, data: { currentStage: 'SIEVING', updatedAt: new Date() } })
     return res.json({ success: true, data: log })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -103,7 +106,7 @@ export const saveSieving = async (req, res) => {
     await prisma.productionBatch.update({ where: { id }, data: { sievingFlag: flagged, currentStage: 'PACKING', updatedAt: new Date() } })
     return res.json({ success: true, data: log })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -116,7 +119,7 @@ export const savePacking = async (req, res) => {
     await prisma.productionBatch.update({ where: { id }, data: { packingFlag: flagged, currentStage: 'QC', updatedAt: new Date() } })
     return res.json({ success: true, data: log })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -129,7 +132,7 @@ export const saveQc = async (req, res) => {
     await prisma.productionBatch.update({ where: { id }, data: { qcFlag: flagged, currentStage: 'INVENTORY', updatedAt: new Date() } })
     return res.json({ success: true, data: qc })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -152,6 +155,6 @@ export const saveInventory = async (req, res) => {
     await prisma.productionBatch.update({ where: { id }, data: { status: 'COMPLETED', updatedAt: new Date() } })
     return res.json({ success: true, data: inv })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }

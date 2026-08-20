@@ -1,4 +1,5 @@
 import prisma from '../../../../db.js'
+import { toSafeErrorMessage } from '../../../../utils/safe-error.js';
 
 // A bag only counts toward a GRN once the Store Person has actually scanned
 // it during Raw Material Inward — Print Master merely prints a QR label and
@@ -66,7 +67,7 @@ const listGrn = async (req, res) => {
     return res.json({ success: true, data: result })
 
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -132,7 +133,7 @@ const getGrnDetail = async (req, res) => {
     })
 
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 

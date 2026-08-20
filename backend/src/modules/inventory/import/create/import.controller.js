@@ -7,6 +7,7 @@ import { getMaxMicrobeCodeNum, formatMicrobeCode } from '../../../../utils/micro
 import { getMaxProductCodeNum, formatProductCode } from '../../../../utils/product-code.js'
 import { getMaxEquipCodeNum, formatEquipCode } from '../../../../utils/equip-code.js'
 import { writeAudit, auditUser } from '../../../../middleware/audit.js'
+import { toSafeErrorMessage } from '../../../../utils/safe-error.js';
 
 function col(row, ...keys) {
   for (const key of keys) {
@@ -190,7 +191,7 @@ export const previewImport = async (req, res) => {
     return res.json({ success: true, data: { sheets: wb.SheetNames, summary, detectedAs, totalSheets: wb.SheetNames.length } })
   } catch (e) {
     console.error(e)
-    return res.status(500).json({ success: false, error: e.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(e), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -888,6 +889,6 @@ export const executeImport = async (req, res) => {
     })
   } catch (e) {
     console.error(e)
-    return res.status(500).json({ success: false, error: e.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(e), code: 'INTERNAL_ERROR' })
   }
 }

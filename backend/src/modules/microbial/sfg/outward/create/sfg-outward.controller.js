@@ -1,4 +1,5 @@
 import prisma from '../../../../../db.js'
+import { toSafeErrorMessage } from '../../../../../utils/safe-error.js'
 import { toSnakeRow } from '../../../../../utils/caseTransform.js'
 
 // Auto-saved on every header/row change while an issuance is in progress —
@@ -19,7 +20,7 @@ export const upsertOutwardSession = async (req, res) => {
     })
     return res.json({ success: true, data: toSnakeRow(session) })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -116,6 +117,6 @@ export const createSfgOutward = async (req, res) => {
 
     return res.status(201).json({ success: true, data: toSnakeRow(result) })
   } catch (err) {
-    return res.status(400).json({ success: false, error: err.message, code: 'ISSUANCE_ERROR' })
+    return res.status(400).json({ success: false, error: toSafeErrorMessage(err), code: 'ISSUANCE_ERROR' })
   }
 }

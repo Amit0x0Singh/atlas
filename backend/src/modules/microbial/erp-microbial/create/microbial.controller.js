@@ -1,4 +1,5 @@
 import prisma from '../../../../db.js'
+import { toSafeErrorMessage } from '../../../../utils/safe-error.js'
 import { writeAudit, auditUser } from '../../../../middleware/audit.js'
 
 const calcCurrentCfu = (mfgCfu, decayK, mfgDate) => {
@@ -34,7 +35,7 @@ export const createContainer = async (req, res) => {
     await writeAudit({ ...auditUser(req), action: 'CREATE', tableName: 'microbial_containers', recordId: container.containerId, newValue: req.body })
     return res.status(201).json({ success: true, data: container })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 };
 
@@ -87,7 +88,7 @@ export const allocateCfu = async (req, res) => {
       },
     })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 };
 
@@ -120,6 +121,6 @@ export const createTransaction = async (req, res) => {
     await writeAudit({ ...auditUser(req), action: 'DISPATCH', tableName: 'microbial_transactions', recordId: tx.id, newValue: req.body })
     return res.status(201).json({ success: true, data: tx })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 };

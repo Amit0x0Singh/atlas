@@ -1,4 +1,5 @@
 import prisma from '../../../../db.js'
+import { toSafeErrorMessage } from '../../../../utils/safe-error.js'
 import { getMaxEquipCodeNum, formatEquipCode } from '../../../../utils/equip-code.js'
 import { writeAudit, auditUser } from '../../../../middleware/audit.js'
 
@@ -28,6 +29,6 @@ export const createEquipment = async (req, res) => {
     await writeAudit({ ...auditUser(req), action: 'CREATE', module: 'masters', tableName: 'equipment_master', recordId: item.equipCode, newValue: item })
     return res.status(201).json({ success: true, data: item })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }

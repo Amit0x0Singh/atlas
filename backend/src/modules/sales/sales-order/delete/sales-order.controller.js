@@ -1,4 +1,5 @@
 import prisma from "../../../../db.js";
+import { toSafeErrorMessage } from "../../../../utils/safe-error.js";
 import { writeAudit, auditUser } from "../../../../middleware/audit.js";
 
 // ── DELETE /api/erp/sales-orders/:id  ────────────────────────────────────
@@ -10,7 +11,7 @@ const deleteSalesOrder = async (req, res) => {
     await writeAudit({ ...auditUser(req), action: 'DELETE', module: 'sales', tableName: 'sales_orders', recordId: req.params.id, oldValue: deleted });
     return res.json({ success: true });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' });
   }
 };
 
@@ -23,7 +24,7 @@ const deleteSalesOrderItem = async (req, res) => {
     await writeAudit({ ...auditUser(req), action: 'DELETE', module: 'sales', tableName: 'sales_order_items', recordId: req.params.itemId, oldValue: deleted });
     return res.json({ success: true });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' });
   }
 };
 

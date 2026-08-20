@@ -1,4 +1,5 @@
 import prisma from "../../../../db.js";
+import { toSafeErrorMessage } from "../../../../utils/safe-error.js";
 
 // POST /api/customer-profiles/seed
 const seedCustomerProfiles = async (req, res) => {
@@ -42,7 +43,7 @@ const seedCustomerProfiles = async (req, res) => {
     }
     return res.json({ success: true, created, updated });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' });
   }
 };
 
@@ -141,7 +142,7 @@ const upsertManyCpProfiles = async (req, res) => {
     }
     return res.json({ success: true, saved });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' });
   }
 };
 

@@ -1,4 +1,5 @@
 import prisma from "../../../../db.js";
+import { toSafeErrorMessage } from "../../../../utils/safe-error.js";
 import getIssuedQty from "../utils/utils.js";
 
 const nextSendId = async () => {
@@ -58,7 +59,7 @@ const createBomSend = async (req, res) => {
     });
     return res.json({ success: true, data: send });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' });
   }
 };
 
@@ -194,7 +195,7 @@ const issuePackToBomSend = async (req, res) => {
       bomFullyDone: allDone,
     });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' });
   }
 };
 

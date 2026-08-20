@@ -1,4 +1,5 @@
 import prisma from '../../../../db.js'
+import { toSafeErrorMessage } from '../../../../utils/safe-error.js'
 import { generateBatchNo } from '../../../../services/lot-generator.js'
 import { scopeWhereByPlant } from '../../../../middleware/scope.js'
 
@@ -24,7 +25,7 @@ export const stockCheck = async (req, res) => {
     const allOk = checks.every(c => c.ok)
     return res.json({ success: true, data: { allOk, checks } })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -35,7 +36,7 @@ export const getNextBatchNo = async (req, res) => {
     const batchNo = await generateBatchNo(productCode)
     return res.json({ success: true, data: { batchNo } })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -47,7 +48,7 @@ export const getSfgAvailable = async (req, res) => {
     const totalSfg = entries.reduce((sum, e) => sum + e.sfgQty, 0)
     return res.json({ success: true, data: { totalSfg, entries } })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -56,7 +57,7 @@ export const listProducts = async (req, res) => {
     const products = await prisma.recipeDb.findMany({ distinct: ['productCode'], select: { productCode: true, productName: true } })
     return res.json({ success: true, data: products })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -86,7 +87,7 @@ export const getPurchaseSummary = async (req, res) => {
     const result = Object.values(rmSummary).map(rm => ({ ...rm, shortfall: Math.max(0, rm.totalRequired - rm.availableQty), suggestedOrderQty: Math.max(0, rm.totalRequired - rm.availableQty) })).filter(rm => rm.shortfall > 0).sort((a, b) => b.shortfall - a.shortfall)
     return res.json({ success: true, data: result, pendingCount: pendingIndents.length })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -96,7 +97,7 @@ export const getIndent = async (req, res) => {
     if (!indent) return res.status(404).json({ success: false, error: 'Indent not found', code: 'NOT_FOUND' })
     return res.json({ success: true, data: indent })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -110,6 +111,6 @@ export const listIndents = async (req, res) => {
     ])
     return res.json({ success: true, data: indents, total })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }

@@ -1,4 +1,5 @@
 import prisma from '../../../../db.js'
+import { toSafeErrorMessage } from '../../../../utils/safe-error.js'
 
 const getStockChecks = async (productCode, batchSize) => {
   const recipe = await prisma.recipeDb.findMany({ where: { productCode } })
@@ -73,7 +74,7 @@ export const createIndent = async (req, res) => {
           : `Indent created with PENDING_STOCK status. ${stockChecks.filter(c => !c.ok).length} item(s) have insufficient stock.`
     })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -84,6 +85,6 @@ export const markPoSent = async (req, res) => {
     await prisma.indentMaster.updateMany({ where: { indentId: { in: indentIds } }, data: { poSentAt: new Date() } })
     return res.json({ success: true, markedCount: indentIds.length })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }

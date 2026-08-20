@@ -1,4 +1,5 @@
 import prisma from '../../../../db.js'
+import { toSafeErrorMessage } from '../../../../utils/safe-error.js'
 
 const clampInt = (val, fallback, min = 1) => {
   const n = parseInt(val, 10)
@@ -40,7 +41,7 @@ export const listProducts = async (req, res) => {
 
     return res.json({ success: true, data: items, total, page, limit: paginate ? limit : total })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -52,7 +53,7 @@ export const listProductFilterMeta = async (req, res) => {
     const plants = [...new Set(rows.flatMap(r => r.plant || []))].sort()
     return res.json({ success: true, data: { plants } })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -62,6 +63,6 @@ export const getProduct = async (req, res) => {
     if (!item) return res.status(404).json({ success: false, error: 'Product not found', code: 'NOT_FOUND' })
     return res.json({ success: true, data: item })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }

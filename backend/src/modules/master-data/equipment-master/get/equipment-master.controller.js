@@ -1,4 +1,5 @@
 import prisma from '../../../../db.js'
+import { toSafeErrorMessage } from '../../../../utils/safe-error.js'
 
 const clampInt = (val, fallback, min = 1) => {
   const n = parseInt(val, 10)
@@ -34,7 +35,7 @@ export const listEquipment = async (req, res) => {
 
     return res.json({ success: true, data: items, total, page, limit: paginate ? limit : total })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -54,6 +55,6 @@ export const listEquipmentFilterMeta = async (req, res) => {
       },
     })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }

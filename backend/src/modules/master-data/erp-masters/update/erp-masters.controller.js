@@ -1,4 +1,5 @@
 import prisma from '../../../../db.js'
+import { toSafeErrorMessage } from '../../../../utils/safe-error.js'
 import { writeAudit, auditUser } from '../../../../middleware/audit.js'
 
 // ── Suppliers ─────────────────────────────────────────────────────────────────
@@ -20,7 +21,7 @@ export const updateSupplier = async (req, res) => {
     return res.json({ success: true, message: 'Supplier updated' })
   } catch (err) {
     if (err.code === 'P2025') return res.status(404).json({ success: false, error: 'Supplier not found', code: 'NOT_FOUND' })
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -40,6 +41,6 @@ export const patchErpEquipment = async (req, res) => {
     return res.json({ success: true, message: 'Equipment updated' })
   } catch (err) {
     if (err.code === 'P2025') return res.status(404).json({ success: false, error: 'Equipment not found', code: 'NOT_FOUND' })
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }

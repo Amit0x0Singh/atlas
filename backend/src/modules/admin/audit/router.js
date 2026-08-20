@@ -8,6 +8,7 @@
 import express from 'express'
 import { authorize } from '../../../middleware/auth.js'
 import * as auditLog from '../../../services/audit-log.service.js'
+import { toSafeErrorMessage } from '../../../utils/safe-error.js';
 
 const AuditRouter = express.Router()
 const canView = authorize('admin.audit.view')
@@ -17,7 +18,7 @@ const wrap = (fn) => async (req, res) => {
     const result = await fn(req)
     return res.json({ success: true, data: result })
   } catch (err) {
-    return res.status(400).json({ success: false, error: err.message, code: 'VALIDATION_ERROR' })
+    return res.status(400).json({ success: false, error: toSafeErrorMessage(err), code: 'VALIDATION_ERROR' })
   }
 }
 

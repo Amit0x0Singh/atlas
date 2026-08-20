@@ -1,4 +1,5 @@
 import prisma from '../../../../db.js'
+import { toSafeErrorMessage } from '../../../../utils/safe-error.js'
 
 export const listPlans = async (req, res) => {
   try {
@@ -21,7 +22,7 @@ export const listPlans = async (req, res) => {
     }))
     return res.json({ success: true, data: resolvedPlans })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -31,7 +32,7 @@ export const getPlan = async (req, res) => {
     if (!plan) return res.status(404).json({ success: false, error: 'Plan not found', code: 'NOT_FOUND' })
     return res.json({ success: true, data: plan })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -40,7 +41,7 @@ export const listLogs = async (req, res) => {
     const logs = await prisma.plannerLog.findMany({ orderBy: { runAt: 'desc' }, take: 10 })
     return res.json({ success: true, data: logs })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -56,7 +57,7 @@ export const getDashboard = async (req, res) => {
     ])
     return res.json({ success: true, data: { bySection: bySectionRaw, byStatus: byStatusRaw, pendingOrders, lastRun: lastLog } })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -69,6 +70,6 @@ export const listPendingOrders = async (req, res) => {
     })
     return res.json({ success: true, data: items })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }

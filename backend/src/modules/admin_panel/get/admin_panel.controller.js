@@ -1,5 +1,6 @@
 import prisma from '../../../db.js';
 import { redactSecretFields, getSearchableFields, scalarFieldType } from '../shared/field-guard.js';
+import { toSafeErrorMessage } from '../../../utils/safe-error.js';
 
 // ─── Model registry ───────────────────────────────────────────────────────────
 // idField:  string → simple PK field name
@@ -212,7 +213,7 @@ export const listRecords = async (req, res) => {
 
     return res.json({ success: true, data: redactSecretFields(meta, records), total, page, limit });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' });
   }
 }
 
@@ -225,7 +226,7 @@ export const getRecord = async (req, res) => {
     if (!record) return res.status(404).json({ success: false, error: 'Record not found', code: 'NOT_FOUND' });
     return res.json({ success: true, data: redactSecretFields(meta, record) });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' });
   }
 }
 
@@ -244,6 +245,6 @@ export const getStats = async (req, res) => {
     );
     return res.json({ success: true, data: Object.fromEntries(counts) });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' });
   }
 }

@@ -1,4 +1,5 @@
 import prisma from "../../../../db.js";
+import { toSafeErrorMessage } from "../../../../utils/safe-error.js";
 
 function userNotifWhere(user) {
   return {
@@ -28,7 +29,7 @@ export const getMyNotifications = async (req, res) => {
     ]);
     return res.json({ success: true, data, unread_count: unreadCount });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' });
   }
 }
 
@@ -39,7 +40,7 @@ export const getUnreadCount = async (req, res) => {
     });
     return res.json({ success: true, count });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' });
   }
 }
 
@@ -64,7 +65,7 @@ export const getAllNotificationsAdmin = async (req, res) => {
     }));
     return res.json({ success: true, data });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' });
   }
 }
 
@@ -89,6 +90,6 @@ export const getDeliveryLog = async (req, res) => {
     }));
     return res.json({ success: true, data });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' });
   }
 }

@@ -1,4 +1,5 @@
 import prisma from '../../../../db.js'
+import { toSafeErrorMessage } from '../../../../utils/safe-error.js'
 import { toCanonical } from '../../../../utils/uom.js'
 import { syncTotalRecipe } from '../recipe-utils.js'
 import { writeAudit, auditUser } from '../../../../middleware/audit.js'
@@ -60,7 +61,7 @@ export const bulkSaveRecipe = async (req, res) => {
     await writeAudit({ ...auditUser(req), action: 'UPDATE', module: 'masters', tableName: 'recipe_db', recordId: [...touchedProductCodes].join(','), newValue: { savedRows: saved, productCodes: [...touchedProductCodes] } })
     return res.json({ success: true, saved, message: `${saved} rows saved` })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -107,13 +108,13 @@ export const fixRmMapping = async (req, res) => {
             await prisma.recipeDb.update({ where: { id: row.id }, data: { rmCode: m.toCode, rmName: targetName, isMicrobe, microbeCode } })
           }
           totalFixed++
-        } catch (e) { log.push({ from: m.fromCode, rowId: row.id, error: e.message }) }
+        } catch (e) { log.push({ from: m.fromCode, rowId: row.id, error: toSafeErrorMessage(e) }) }
       }
       log.push({ from: m.fromCode, to: m.toCode, fixed: affected.length })
     }
     await writeAudit({ ...auditUser(req), action: 'UPDATE', module: 'masters', tableName: 'recipe_db', notes: 'fix-rm-mapping', newValue: { totalFixed, mappings, log } })
     return res.json({ success: true, totalFixed, log })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }

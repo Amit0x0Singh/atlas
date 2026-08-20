@@ -1,4 +1,5 @@
 import prisma from '../../../../db.js'
+import { toSafeErrorMessage } from '../../../../utils/safe-error.js';
 
 export const listRm = async (req, res) => {
   try {
@@ -10,7 +11,7 @@ export const listRm = async (req, res) => {
     const items = await prisma.rmMaster.findMany({ where, orderBy: { itemName: 'asc' } })
     return res.json({ success: true, data: items })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -20,7 +21,7 @@ export const getRm = async (req, res) => {
     if (!item) return res.status(404).json({ success: false, error: 'RM not found', code: 'NOT_FOUND' })
     return res.json({ success: true, data: item })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -29,6 +30,6 @@ export const listWarehouses = async (req, res) => {
     const rows = await prisma.packDetail.findMany({ where: { status: 'INWARDED' }, distinct: ['warehouse'], select: { warehouse: true } })
     return res.json({ success: true, data: rows.map(r => r.warehouse) })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }

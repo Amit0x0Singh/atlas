@@ -1,4 +1,5 @@
 import prisma from "../../../../db.js";
+import { toSafeErrorMessage } from "../../../../utils/safe-error.js";
 import getIssuedQty from "../utils/utils.js";
 import { flattenPack, packDetailInclude } from "../../../../services/pack-view.js";
 
@@ -64,7 +65,7 @@ const getBomSends = async (req, res) => {
 
     return res.json({ success: true, data: enriched });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' });
   }
 }
 
@@ -141,7 +142,7 @@ const getBomSend = async (req, res) => {
       data: { ...send, plannedDate, planCode, lines },
     });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' });
   }
 }
 

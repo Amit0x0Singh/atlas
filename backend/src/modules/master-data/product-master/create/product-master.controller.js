@@ -1,4 +1,5 @@
 import prisma from '../../../../db.js'
+import { toSafeErrorMessage } from '../../../../utils/safe-error.js'
 import { normalizePlant } from '../../../../utils/plant.js'
 import { normalizeUom, CANONICAL_UNITS } from '../../../../utils/uom.js'
 import { getMaxProductCodeNum, formatProductCode } from '../../../../utils/product-code.js'
@@ -29,6 +30,6 @@ export const createProduct = async (req, res) => {
     await writeAudit({ ...auditUser(req), action: 'CREATE', module: 'masters', tableName: 'product_master', recordId: item.productCode, newValue: item })
     return res.status(201).json({ success: true, data: item })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }

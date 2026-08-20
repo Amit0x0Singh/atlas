@@ -1,4 +1,5 @@
 import prisma from '../../../../db.js'
+import { toSafeErrorMessage } from '../../../../utils/safe-error.js'
 
 export const listSfg = async (req, res) => {
   try {
@@ -15,7 +16,7 @@ export const listSfg = async (req, res) => {
     const entries = await prisma.sfgMaster.findMany({ where, orderBy: { createdAt: 'desc' } })
     return res.json({ success: true, data: entries })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -30,7 +31,7 @@ export const getSfgSummary = async (req, res) => {
     }
     return res.json({ success: true, data: Object.values(summary) })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -41,6 +42,6 @@ export const getSfg = async (req, res) => {
     const indent = await prisma.indentMaster.findUnique({ where: { indentId: sfg.indentId }, include: { details: true } })
     return res.json({ success: true, data: { ...sfg, indent } })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }

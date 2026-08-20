@@ -1,4 +1,5 @@
 import prisma from '../../../../db.js'
+import { toSafeErrorMessage } from '../../../../utils/safe-error.js'
 import { normalizePlant } from '../../../../utils/plant.js'
 import { normalizeUom, CANONICAL_UNITS } from '../../../../utils/uom.js'
 import { writeAudit, auditUser } from '../../../../middleware/audit.js'
@@ -25,6 +26,6 @@ export const updateProduct = async (req, res) => {
     await writeAudit({ ...auditUser(req), action: 'UPDATE', module: 'masters', tableName: 'product_master', recordId: item.productCode, oldValue: existing, newValue: item })
     return res.json({ success: true, data: item })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }

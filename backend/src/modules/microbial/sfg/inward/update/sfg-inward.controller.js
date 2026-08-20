@@ -1,4 +1,5 @@
 import prisma from '../../../../../db.js'
+import { toSafeErrorMessage } from '../../../../../utils/safe-error.js'
 
 export const updateSfgInward = async (req, res) => {
   try {
@@ -18,6 +19,6 @@ export const updateSfgInward = async (req, res) => {
     return res.json({ success: true, data: row })
   } catch (e) {
     if (e.code === 'P2025') return res.status(404).json({ success: false, error: 'Inward record not found', code: 'NOT_FOUND' })
-    return res.status(500).json({ success: false, error: e.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(e), code: 'INTERNAL_ERROR' })
   }
 }

@@ -1,4 +1,5 @@
 import prisma from '../../../../../db.js'
+import { toSafeErrorMessage } from '../../../../../utils/safe-error.js'
 import { toSnakeRow } from '../../../../../utils/caseTransform.js'
 import { allocateFefo } from '../fefo.js'
 
@@ -52,7 +53,7 @@ export const previewSfgOutward = async (req, res) => {
 
     return res.json({ success: true, data: toSnakeRow(results) })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -72,7 +73,7 @@ export const listEligibleBatches = async (req, res) => {
       .sort((a, b) => (a.expiryDate ?? Infinity) - (b.expiryDate ?? Infinity))
     return res.json({ success: true, data: toSnakeRow(sorted) })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -84,7 +85,7 @@ export const listOutwardSessions = async (req, res) => {
     const sessions = await prisma.microbialSfgOutwardSession.findMany({ orderBy: { updatedAt: 'desc' } })
     return res.json({ success: true, data: toSnakeRow(sessions) })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -106,7 +107,7 @@ export const listSfgOutward = async (req, res) => {
     })
     return res.json({ success: true, data: toSnakeRow(rows) })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -119,7 +120,7 @@ export const getSfgOutwardById = async (req, res) => {
     if (!row) return res.status(404).json({ success: false, error: 'Not found', code: 'NOT_FOUND' })
     return res.json({ success: true, data: toSnakeRow(row) })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -194,6 +195,6 @@ export const getSfgHistory = async (req, res) => {
     ledger.sort((a, b) => new Date(b.date) - new Date(a.date))
     return res.json({ success: true, data: toSnakeRow(ledger) })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }

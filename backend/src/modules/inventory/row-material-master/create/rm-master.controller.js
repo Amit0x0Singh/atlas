@@ -2,6 +2,7 @@ import prisma from '../../../../db.js'
 import { normalizeUom, CANONICAL_UNITS } from '../../../../utils/uom.js'
 import { padItemCode } from '../../../../utils/item-code.js'
 import { writeAudit, auditUser } from '../../../../middleware/audit.js'
+import { toSafeErrorMessage } from '../../../../utils/safe-error.js';
 
 export const createRm = async (req, res) => {
   try {
@@ -55,6 +56,6 @@ export const createRm = async (req, res) => {
     await writeAudit({ ...auditUser(req), action: 'CREATE', module: 'masters', tableName: 'rm_master', recordId: item.itemCode, newValue: item })
     return res.status(201).json({ success: true, data: item })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }

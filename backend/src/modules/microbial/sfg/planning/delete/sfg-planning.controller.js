@@ -1,4 +1,5 @@
 import prisma from '../../../../../db.js'
+import { toSafeErrorMessage } from '../../../../../utils/safe-error.js'
 import { writeAudit, auditUser } from '../../../../../middleware/audit.js'
 
 export const cancelAllocation = async (req, res) => {
@@ -24,6 +25,6 @@ export const cancelAllocation = async (req, res) => {
     await writeAudit({ ...auditUser(req), action: 'DELETE', module: 'microbial', tableName: 'microbial_sfg_allocation', recordId: req.params.id, oldValue: alloc })
     return res.json({ success: true })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }

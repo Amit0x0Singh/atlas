@@ -1,4 +1,5 @@
 import prisma from '../../../../db.js'
+import { toSafeErrorMessage } from '../../../../utils/safe-error.js'
 
 // ── Suppliers ─────────────────────────────────────────────────────────────────
 
@@ -36,7 +37,7 @@ export const listSuppliers = async (req, res) => {
 
     return res.json({ success: true, data, total, page, limit: paginate ? limit : total })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -50,7 +51,7 @@ export const listPlants = async (req, res) => {
     })
     return res.json({ success: true, data })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -70,7 +71,7 @@ export const listErpEquipment = async (req, res) => {
     const data = rows.map(e => ({ ...e, plant_name: e.plant?.plantName ?? null, plant: undefined }))
     return res.json({ success: true, data })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -84,7 +85,7 @@ export const listStrains = async (req, res) => {
     })
     return res.json({ success: true, data })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -98,7 +99,7 @@ export const listCustomers = async (req, res) => {
     })
     return res.json({ success: true, data })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -116,6 +117,6 @@ export const listReasonCodes = async (req, res) => {
     })
     return res.json({ success: true, data })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }

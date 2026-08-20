@@ -29,17 +29,12 @@ export async function generatePackBatch({ gateInwardId, itemCode, itemName, batc
   const lbl = extractLbl(itemName)
   const numberOfBags = batches.reduce((n, b) => n + b.numberOfBags, 0)
 
-  const printMaster = await prisma.printMaster.create({
-    data: { gateInwardId, itemCode, itemName, lotNo, packQty: batches[0].packQty, uom, numberOfBags },
-  })
-
   const bags = []
   let bagNo = 1
   for (const batch of batches) {
     for (let i = 0; i < batch.numberOfBags; i++) {
       bags.push({
         packId: buildPackId(lbl, itemCode, year, lotNo, bagNo),
-        printMasterId: printMaster.id,
         itemCode,
         bagNo,
         totalQty: batch.packQty,
@@ -51,7 +46,19 @@ export async function generatePackBatch({ gateInwardId, itemCode, itemName, batc
       bagNo++
     }
   }
-  await prisma.packDetail.createMany({ data: bags, skipDuplicates: true })
 
-  return { lotNo, printMasterId: printMaster.id, packs: bags }
+  // PrintMaster header and its PackDetail rows must land together — a crash
+  // between the two calls would otherwise leave a header with zero bags.
+  const printMaster = await prisma.$transaction(async (tx) => {
+    const pm = await tx.printMaster.create({
+      data: { gateInwardId, itemCode, itemName, lotNo, packQty: batches[0].packQty, uom, numberOfBags },
+    })
+    await tx.packDetail.createMany({
+      data: bags.map((b) => ({ ...b, printMasterId: pm.id })),
+      skipDuplicates: true,
+    })
+    return pm
+  })
+
+  return { lotNo, printMasterId: printMaster.id, packs: bags.map((b) => ({ ...b, printMasterId: printMaster.id })) }
 }

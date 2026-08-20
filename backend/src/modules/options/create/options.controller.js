@@ -1,5 +1,6 @@
 import prisma from '../../../db.js'
 import { writeAudit, auditUser } from '../../../middleware/audit.js'
+import { toSafeErrorMessage } from '../../../utils/safe-error.js';
 
 export const createGroup = async (req, res) => {
   const { groupCode, label, description } = req.body
@@ -13,7 +14,7 @@ export const createGroup = async (req, res) => {
     return res.status(201).json({ success: true, data: group })
   } catch (err) {
     if (err.code === 'P2002') return res.status(400).json({ success: false, error: `Group code "${groupCode}" already exists`, code: 'VALIDATION_ERROR' })
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -36,6 +37,6 @@ export const createValue = async (req, res) => {
     return res.status(201).json({ success: true, data: value })
   } catch (err) {
     if (err.code === 'P2002') return res.status(400).json({ success: false, error: `Option "${code}" already exists in this group`, code: 'VALIDATION_ERROR' })
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }

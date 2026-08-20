@@ -1,4 +1,5 @@
 import prisma from '../../../../db.js'
+import { toSafeErrorMessage } from '../../../../utils/safe-error.js'
 
 const INCLUDE_ALL = {
   biomassInputs: true,
@@ -30,7 +31,7 @@ export const listBatches = async (req, res) => {
     ])
     return res.json({ success: true, data: batches, total })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 };
 
@@ -40,6 +41,6 @@ export const getBatch = async (req, res) => {
     if (!batch) return res.status(404).json({ success: false, error: 'Batch not found', code: 'NOT_FOUND' })
     return res.json({ success: true, data: batch })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 };

@@ -1,4 +1,5 @@
 import prisma from '../../../../db.js'
+import { toSafeErrorMessage } from '../../../../utils/safe-error.js'
 
 const nextPlanId = async () => {
   const year = new Date().getFullYear()
@@ -76,6 +77,6 @@ export const runEngine = async (req, res) => {
     const result = await runPlanningEngine('MANUAL')
     return res.json({ success: true, ...result })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }

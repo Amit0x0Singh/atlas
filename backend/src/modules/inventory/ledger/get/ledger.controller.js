@@ -1,6 +1,7 @@
 import prisma from '../../../../db.js'
 import { flattenPack, packDetailInclude } from '../../../../services/pack-view.js'
 import { TRANSACTION_TYPES, TRANSACTION_TYPE_VALUES } from '../../../../utils/ledger-transaction-types.js'
+import { toSafeErrorMessage } from '../../../../utils/safe-error.js';
 
 // BOM_ISSUANCE ledger rows record the deduction in Inventory UOM only
 // (outQty) — the Operational UOM qty the operator actually entered lives on
@@ -103,7 +104,7 @@ export const listLedger = async (req, res) => {
     const data    = await attachOperationalQty(withUom)
     return res.json({ success: true, data, total, page: parseInt(page), limit: parseInt(limit) })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -129,7 +130,7 @@ export const getLedgerByItem = async (req, res) => {
     ])
     return res.json({ success: true, data: rows, total, page: parseInt(page), limit: parseInt(limit) })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -178,6 +179,6 @@ export const getLedgerEntry = async (req, res) => {
     }
     return res.json({ success: true, data: { ...entry, detail } })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }

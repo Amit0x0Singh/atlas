@@ -1,5 +1,6 @@
 import prisma from '../../../../../db.js'
 import { flattenPack, packDetailInclude } from '../../../../../services/pack-view.js'
+import { toSafeErrorMessage } from '../../../../../utils/safe-error.js';
 
 export const listOutward = async (req, res) => {
   try {
@@ -25,7 +26,7 @@ export const listOutward = async (req, res) => {
     }))
     return res.json({ success: true, data, total, page: parseInt(page), limit: parseInt(limit) })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -50,7 +51,7 @@ export const getPackDetail = async (req, res) => {
       },
     })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -62,7 +63,7 @@ export const listBomSessions = async (req, res) => {
     const sessions = await prisma.bomIssueSession.findMany({ orderBy: { updatedAt: 'desc' } })
     return res.json({ success: true, data: sessions })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -83,6 +84,6 @@ export const getAvailablePacks = async (req, res) => {
     })
     return res.json({ success: true, data })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }

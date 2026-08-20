@@ -28,6 +28,7 @@ const MSG91_TMPL_LANG     = process.env.MSG91_TEMPLATE_LANG || 'en'
 const WHATSAPP_ENABLED    = process.env.WHATSAPP_ENABLED === 'true'
 
 import prisma from '../db.js'
+import { toSafeErrorMessage } from '../utils/safe-error.js'
 
 /**
  * sendWhatsApp — send via MSG91 WhatsApp Business API
@@ -134,7 +135,7 @@ export async function sendSMS({ to, message, notifId }) {
   } catch (err) {
     console.error('[SMS Error]', err.message)
     if (notifId) await logDelivery(notifId, 'sms', 'failed', err.message)
-    return { success: false, error: err.message }
+    return { success: false, error: toSafeErrorMessage(err) }
   }
 }
 

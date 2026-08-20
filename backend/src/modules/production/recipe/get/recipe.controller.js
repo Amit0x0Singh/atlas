@@ -1,4 +1,5 @@
 import prisma from '../../../../db.js'
+import { toSafeErrorMessage } from '../../../../utils/safe-error.js'
 import { findBestRmMatch, confidenceLabel } from '../../../../utils/fuzzy.js'
 
 export const listRecipe = async (req, res) => {
@@ -11,7 +12,7 @@ export const listRecipe = async (req, res) => {
     const rows = await prisma.recipeDb.findMany({ where, orderBy: [{ productCode: 'asc' }, { rmName: 'asc' }] })
     return res.json({ success: true, data: rows })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -20,7 +21,7 @@ export const listRecipeProducts = async (req, res) => {
     const products = await prisma.recipeDb.findMany({ distinct: ['productCode'], select: { productCode: true, productName: true } })
     return res.json({ success: true, data: products })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -57,6 +58,6 @@ export const checkRmMapping = async (req, res) => {
     }
     return res.json({ success: true, data: { unmatched, matched: matched.length, total: recipeCombos.length } })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }

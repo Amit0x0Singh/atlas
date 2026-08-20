@@ -1,6 +1,7 @@
 import prisma from '../../../../../db.js'
 import { toCanonical } from '../../../../../utils/uom.js'
 import { resolveIssueQty } from '../../outward/services/uom-conversion.service.js'
+import { toSafeErrorMessage } from '../../../../../utils/safe-error.js';
 
 export const createContainer = async (req, res) => {
   try {
@@ -14,7 +15,7 @@ export const createContainer = async (req, res) => {
     try {
       canonical = toCanonical(parseFloat(capacity), uom)
     } catch (e) {
-      return res.status(400).json({ success: false, error: e.message, code: 'VALIDATION_ERROR' })
+      return res.status(400).json({ success: false, error: toSafeErrorMessage(e), code: 'VALIDATION_ERROR' })
     }
 
     const lbl = itemName.replace(/[^a-zA-Z0-9]/g, '').slice(0, 4).toUpperCase()
@@ -24,7 +25,7 @@ export const createContainer = async (req, res) => {
     })
     return res.status(201).json({ success: true, data: container })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -77,7 +78,7 @@ export const fillContainer = async (req, res) => {
     const updated = await prisma.containerMaster.findUnique({ where: { containerId: container.containerId } })
     return res.json({ success: true, data: updated, filled: fill })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -98,7 +99,7 @@ export const issueFromContainer = async (req, res) => {
     try {
       ({ inventoryQty: issue, operationalQty, operationalUom } = await resolveIssueQty(container.itemCode, entered))
     } catch (e) {
-      return res.status(400).json({ success: false, error: e.message, code: 'VALIDATION_ERROR' })
+      return res.status(400).json({ success: false, error: toSafeErrorMessage(e), code: 'VALIDATION_ERROR' })
     }
     if (issue > container.currentQty)
       return res.status(400).json({ success: false, error: `Qty exceeds container balance (${container.currentQty})` , code: 'VALIDATION_ERROR' })
@@ -153,6 +154,6 @@ export const issueFromContainer = async (req, res) => {
     const updated = await prisma.containerMaster.findUnique({ where: { containerId: container.containerId } })
     return res.json({ success: true, data: updated, issued: issue })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }

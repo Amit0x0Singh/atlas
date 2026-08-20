@@ -4,6 +4,7 @@ import { generateLabelBuffer, generateBatchLabelBuffer } from "../../../../../se
 import { toCanonical } from "../../../../../utils/uom.js";
 import { flattenPack, packDetailInclude } from "../../../../../services/pack-view.js";
 import { getLotsInProgress, getLotProgress } from "../../../../../services/inward-service.js";
+import { toSafeErrorMessage } from '../../../../../utils/safe-error.js';
 
 const getPendingInwardGroups = async (req, res) => {
   try {
@@ -34,7 +35,7 @@ const getPendingInwardGroups = async (req, res) => {
     });
 
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' });
   }
 }
 
@@ -49,7 +50,7 @@ const getNextLotNumber = async (req, res) => {
     const nextSeq = (existing?.seq || 0) + 1;
     return res.json({ success: true, data: { lotNo: `${year}-${String(nextSeq).padStart(3, "0")}` } });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' });
   }
 }
 
@@ -80,7 +81,7 @@ const listPacks = async (req, res) => {
     return res.json({ success: true, data: bags.map(flattenPack), total, page: parseInt(page), limit: noLimit ? total : parseInt(limit) });
 
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' });
   }
 }
 
@@ -96,7 +97,7 @@ const getPackById = async (req, res) => {
     return res.json({ success: true, data: flattenPack(pack) });
 
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' });
   }
 }
 
@@ -119,7 +120,7 @@ const getPackLabel = async (req, res) => {
     return res.send(buf);
 
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' });
   }
 }
 
@@ -145,7 +146,7 @@ const getBatchLabels = async (req, res) => {
     return res.send(buf);
 
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' });
   }
 }
 
@@ -186,7 +187,7 @@ const getBatchLabelsMulti = async (req, res) => {
     return res.send(buf);
 
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' });
   }
 }
 
@@ -220,7 +221,7 @@ const generatePacks = async (req, res) => {
       try {
         canonical = toCanonical(parseFloat(b.packQty), uom);
       } catch (e) {
-        return res.status(400).json({ success: false, error: e.message, code: 'VALIDATION_ERROR' });
+        return res.status(400).json({ success: false, error: toSafeErrorMessage(e), code: 'VALIDATION_ERROR' });
       }
       canonicalUom = canonical.uom;
       parsedBatches.push({
@@ -245,7 +246,7 @@ const generatePacks = async (req, res) => {
     return res.status(201).json({ success: true, data: result });
 
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' });
   }
 }
 
@@ -263,7 +264,7 @@ const listInward = async (req, res) => {
     return res.json({ success: true, data: records.map(flattenPack), total })
 
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -272,7 +273,7 @@ const listActiveSessions = async (req, res) => {
     const lots = await getLotsInProgress()
     return res.json({ success: true, data: lots })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -282,7 +283,7 @@ const getSession = async (req, res) => {
     const progress = await getLotProgress(itemCode, lotNo)
     return res.json({ success: true, data: { ...progress, bags: progress.bags.map(flattenPack) } })
   } catch (e) {
-    return res.status(400).json({ success: false, error: e.message, code: 'VALIDATION_ERROR' })
+    return res.status(400).json({ success: false, error: toSafeErrorMessage(e), code: 'VALIDATION_ERROR' })
   }
 }
 

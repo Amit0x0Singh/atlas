@@ -27,6 +27,7 @@ import { signJwt } from "../../../middleware/auth.js";
 import { writeAudit } from "../../../middleware/audit.js";
 import { resolveEffectivePermissions } from "../../../services/permission-resolver.js";
 import { PERMISSIONS, PERMISSION_KEYS } from "../../../constants/permissions.catalog.js";
+import { toSafeErrorMessage } from '../../../utils/safe-error.js';
 
 const SUPER_ADMIN_ROLE_NAME = "Super Admin";
 
@@ -40,7 +41,7 @@ export const getSetupStatus = async (req, res) => {
     });
   } catch (err) {
     console.error("getSetupStatus error:", err.message);
-    return res.status(500).json({ success: false, error: err.message, code: "INTERNAL_ERROR" });
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: "INTERNAL_ERROR" });
   }
 };
 
@@ -137,6 +138,6 @@ export const bootstrapAdmin = async (req, res) => {
       return res.status(409).json({ success: false, error: "An account with that email already exists.", code: "CONFLICT" });
     }
     console.error("bootstrapAdmin error:", err.message);
-    return res.status(500).json({ success: false, error: err.message, code: "INTERNAL_ERROR" });
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: "INTERNAL_ERROR" });
   }
 };

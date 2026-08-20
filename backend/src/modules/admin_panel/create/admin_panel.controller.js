@@ -2,6 +2,7 @@ import prisma from '../../../db.js';
 import { getMeta } from '../get/admin_panel.controller.js';
 import { sanitizeWriteBody, redactSecretFields, idDisplay } from '../shared/field-guard.js';
 import { writeAudit, auditUser } from '../../../middleware/audit.js';
+import { toSafeErrorMessage } from '../../../utils/safe-error.js';
 
 export const createRecord = async (req, res) => {
   const meta = getMeta(req.params.resource);
@@ -28,6 +29,6 @@ export const createRecord = async (req, res) => {
     });
     return res.status(201).json({ success: true, data: safe });
   } catch (err) {
-    return res.status(400).json({ success: false, error: err.message, code: 'VALIDATION_ERROR' });
+    return res.status(400).json({ success: false, error: toSafeErrorMessage(err), code: 'VALIDATION_ERROR' });
   }
 }

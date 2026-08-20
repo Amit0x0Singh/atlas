@@ -1,4 +1,5 @@
 import prisma from "../../../../db.js";
+import { toSafeErrorMessage } from "../../../../utils/safe-error.js";
 import { writeAudit, auditUser } from "../../../../middleware/audit.js";
 
 function userNotifWhere(user) {
@@ -20,7 +21,7 @@ export const markNotificationRead = async (req, res) => {
   } catch (err) {
     if (err.code === "P2025")
       return res.status(404).json({ success: false, error: "Notification not found", code: 'NOT_FOUND' });
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' });
   }
 }
 
@@ -32,7 +33,7 @@ export const markAllNotificationsRead = async (req, res) => {
     });
     return res.json({ success: true, message: "All notifications marked as read" });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' });
   }
 }
 
@@ -57,6 +58,6 @@ export const actionNotification = async (req, res) => {
   } catch (err) {
     if (err.code === "P2025")
       return res.status(404).json({ success: false, error: "Notification not found", code: 'NOT_FOUND' });
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' });
   }
 }

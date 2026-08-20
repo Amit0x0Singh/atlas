@@ -1,5 +1,6 @@
 import prisma from '../../../../db.js'
 import { writeAudit, auditUser } from '../../../../middleware/audit.js'
+import { toSafeErrorMessage } from '../../../../utils/safe-error.js';
 
 const VALID_STATUSES = ['pending', 'approved', 'rejected']
 
@@ -15,7 +16,7 @@ const requestDeleteGateInward = async (req, res) => {
   } catch (err) {
     if (err.code === 'P2025') return res.status(404).json({ success: false, error: 'Gate inward not found', code: 'NOT_FOUND' })
     console.error('requestDeleteGateInward error:', err.message)
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -33,7 +34,7 @@ const requestDeleteGateOutward = async (req, res) => {
   } catch (err) {
     if (err.code === 'P2025') return res.status(404).json({ success: false, error: 'Gate outward not found', code: 'NOT_FOUND' })
     console.error('requestDeleteGateOutward error:', err.message)
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -58,7 +59,7 @@ const updateGateInward = async (req, res) => {
   } catch (err) {
     if (err.code === 'P2025') return res.status(404).json({ success: false, error: 'Gate inward not found', code: 'NOT_FOUND' })
     console.error('updateGateInward error:', err.message)
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -83,7 +84,7 @@ const updateGateOutward = async (req, res) => {
   } catch (err) {
     if (err.code === 'P2025') return res.status(404).json({ success: false, error: 'Gate outward not found', code: 'NOT_FOUND' })
     console.error('updateGateOutward error:', err.message)
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -108,7 +109,7 @@ const updateGateInwardStatus = async (req, res) => {
   } catch (err) {
     if (err.code === 'P2025') return res.status(404).json({ success: false, error: 'Gate inward not found', code: 'NOT_FOUND' })
     console.error('updateGateInwardStatus error:', err.message)
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -135,7 +136,7 @@ const updateGateOutwardStatus = async (req, res) => {
   } catch (err) {
     if (err.code === 'P2025') return res.status(404).json({ success: false, error: 'Gate outward not found', code: 'NOT_FOUND' })
     console.error('updateGateOutwardStatus error:', err.message)
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 

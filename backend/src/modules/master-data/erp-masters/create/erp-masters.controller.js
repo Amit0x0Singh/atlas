@@ -1,4 +1,5 @@
 import prisma from '../../../../db.js'
+import { toSafeErrorMessage } from '../../../../utils/safe-error.js'
 import { writeAudit, auditUser } from '../../../../middleware/audit.js'
 import { normalizeUom, toCanonical } from '../../../../utils/uom.js'
 
@@ -21,7 +22,7 @@ export const createSupplier = async (req, res) => {
     await writeAudit({ ...auditUser(req), action: 'CREATE', module: 'masters', tableName: 'erp_suppliers', recordId: row.supplierId, newValue: req.body })
     return res.status(201).json({ success: true, data: row })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -45,7 +46,7 @@ export const createPlant = async (req, res) => {
     return res.status(201).json({ success: true, data: row })
   } catch (err) {
     if (err.code === 'P2002') return res.status(409).json({ success: false, error: 'Plant code already exists', code: 'CONFLICT' })
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -88,7 +89,7 @@ export const createErpEquipment = async (req, res) => {
     return res.status(201).json({ success: true, data: row })
   } catch (err) {
     if (err.code === 'P2002') return res.status(409).json({ success: false, error: 'Equipment code already exists', code: 'CONFLICT' })
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -112,7 +113,7 @@ export const createStrain = async (req, res) => {
     await writeAudit({ ...auditUser(req), action: 'CREATE', module: 'masters', tableName: 'microbial_strains', recordId: row.strainId, newValue: req.body })
     return res.status(201).json({ success: true, data: row })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -138,6 +139,6 @@ export const createCustomer = async (req, res) => {
     return res.status(201).json({ success: true, data: row })
   } catch (err) {
     if (err.code === 'P2002') return res.status(409).json({ success: false, error: 'Customer code already exists', code: 'CONFLICT' })
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }

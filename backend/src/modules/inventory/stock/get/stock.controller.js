@@ -1,5 +1,6 @@
 import prisma from '../../../../db.js'
 import { flattenPack, packDetailInclude } from '../../../../services/pack-view.js'
+import { toSafeErrorMessage } from '../../../../utils/safe-error.js';
 
 
 const listStock = async (req, res) => {
@@ -44,7 +45,7 @@ const listStock = async (req, res) => {
     })
     return res.json({ success: true, data: stockData })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -53,7 +54,7 @@ const listContainers = async (req, res) => {
     const containers = await prisma.containerMaster.findMany({ orderBy: { itemName: 'asc' } })
     return res.json({ success: true, data: containers })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -66,7 +67,7 @@ const getItemStock = async (req, res) => {
     })
     return res.json({ success: true, data: { rm, packs } })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -84,7 +85,7 @@ const getRmHistory = async (req, res) => {
     const packs = bags.map(flattenPack).map(p => ({ ...p, balanceTotalQty: p.totalQty }))
     return res.json({ success: true, data: { rm, packs } })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -240,7 +241,7 @@ const getDashboardStats = async (req, res) => {
     })
 
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 

@@ -1,4 +1,5 @@
 import prisma from '../../../../../db.js'
+import { toSafeErrorMessage } from '../../../../../utils/safe-error.js'
 import { toSnakeRow } from '../../../../../utils/caseTransform.js'
 import { slotCode } from '../../shared/status.js'
 
@@ -19,7 +20,7 @@ export const markContainerInactive = async (req, res) => {
     })
     return res.json({ success: true, data: toSnakeRow(updated) })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -38,6 +39,6 @@ export const reactivateContainer = async (req, res) => {
     })
     return res.json({ success: true, data: toSnakeRow(updated) })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }

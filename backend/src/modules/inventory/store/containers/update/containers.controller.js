@@ -1,4 +1,5 @@
 import prisma from '../../../../../db.js'
+import { toSafeErrorMessage } from '../../../../../utils/safe-error.js';
 
 export const updateContainerCapacity = async (req, res) => {
   const { containerId } = req.params
@@ -24,6 +25,6 @@ export const updateContainerCapacity = async (req, res) => {
     })
     return res.json({ success: true, data: updated })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }

@@ -1,4 +1,5 @@
 import prisma from '../../../../../db.js'
+import { toSafeErrorMessage } from '../../../../../utils/safe-error.js'
 import { toSnakeRow } from '../../../../../utils/caseTransform.js'
 
 export const listSfgContainers = async (req, res) => {
@@ -20,7 +21,7 @@ export const listSfgContainers = async (req, res) => {
     const data = rows.map(r => ({ ...r, batch_count: r._count.inwards, _count: undefined }))
     return res.json({ success: true, data: toSnakeRow(data) })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -37,7 +38,7 @@ export const listAvailableSfgContainers = async (req, res) => {
     })
     return res.json({ success: true, data: toSnakeRow(rows) })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -54,7 +55,7 @@ export const getNextContainerCode = async (req, res) => {
     const next_code = `${microbe_code}-${type_code}-${String(nextSeq).padStart(3, '0')}`
     return res.json({ success: true, data: { next_code, next_seq: nextSeq } })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -66,7 +67,7 @@ export const getSfgContainerBatches = async (req, res) => {
     })
     return res.json({ success: true, data: toSnakeRow(rows) })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -92,7 +93,7 @@ export const listSfgInward = async (req, res) => {
     }))
     return res.json({ success: true, data: toSnakeRow(data) })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -134,6 +135,6 @@ export const getSfgInwardSummary = async (req, res) => {
 
     return res.json({ success: true, data })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
