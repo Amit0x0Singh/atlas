@@ -38,9 +38,10 @@ export default function ProductMaster() {
   const debouncedFilters = useDebouncedValue({ ...filters, productName: search }, 300)
   useEffect(() => { setPage(1) }, [debouncedFilters])
 
-  const { data: result, isLoading: loading } = useProducts({ ...debouncedFilters, page, limit })
+  const { data: result, isLoading: loading, error: productsError } = useProducts({ ...debouncedFilters, page, limit })
   const items = result?.items ?? []
   const total = result?.total ?? 0
+  const error = productsError?.message || ''
 
   const { data: meta } = useProductFilterMeta()
   const plantOptions = (meta?.plants || []).map(p => ({ value: p, label: p }))
@@ -132,6 +133,7 @@ export default function ProductMaster() {
         items={items}
         total={total}
         loading={loading}
+        error={error}
         page={page}
         limit={limit}
         onEdit={openEdit}

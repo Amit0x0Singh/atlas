@@ -20,6 +20,7 @@ export default function BMROverlay({ openTasks, onClose, onTasksChange }) {
   const [activeId,    setActiveId]    = useState(openTasks[0]?.id || null)
   const [saveStatus,  setSaveStatus]  = useState('All changes auto-saved')
   const [qcHandoff,   setQcHandoff]   = useState(null)
+  const [submitting,  setSubmitting]  = useState(false)
   const panelRef  = useRef(null)
   const debTimer  = useRef(null)
 
@@ -55,50 +56,55 @@ export default function BMROverlay({ openTasks, onClose, onTasksChange }) {
   }
 
   async function handleSubmit(taskId) {
+    if (submitting) return
     saveCurrentDraft()
     if (!confirm('Submit BMR? This will mark the task as Completed.')) return
     const task    = openTasks.find(t => t.id === taskId)
     if (!task) return
     const bmrData = bmrLoad()[taskId] || {}
-
-    let sfgCreated = null
-    if (task.process === 'Formulation' && task.packAfter === 'NO') {
-      const qty = parseFloat(bmrData['weight-after-sieve']) || parseFloat(bmrData['weight-after-unload']) || task.qty
-      const loc = prompt(
-        `Formulation complete — no packing scheduled.\nEnter SFG storage location:\n(${toTitleCase(task.productName)} | ${task.batchCode} | ${qty} ${task.qtyUom||'kg'})`,
-        task.location || ''
-      )
-      if (loc === null) { alert('SFG location required. BMR not submitted.'); return }
-      sfgAddEntry({ productName:task.productName, batchCode:task.batchCode, plant:task.plant, qty, qtyUom:task.qtyUom||'kg', location:loc.trim()||'—', sourceTaskId:task.id })
-      sfgCreated = { qty, location: loc.trim() || '—' }
-    }
-
-    if (task.process === 'Packing' && task.sfgSourceId) {
-      const sfgList = (() => { try { return JSON.parse(localStorage.getItem('erp_sfg_stock'))||[] } catch { return [] } })()
-      const si = sfgList.findIndex(s => s.id === task.sfgSourceId)
-      if (si >= 0) {
-        const used = parseFloat(bmrData['packing-recv-qty']) || parseFloat(task.qty) || 0
-        sfgList[si].qtyRemaining = Math.max(0, sfgList[si].qtyRemaining - used)
-        sfgList[si].status = sfgList[si].qtyRemaining <= 0 ? 'Consumed' : 'Partially Used'
-        localStorage.setItem('erp_sfg_stock', JSON.stringify(sfgList))
-      }
-    }
-
+    setSubmitting(true)
     try {
-      await planTasksApi.update(taskId, {
-        bmrSubmitted:   true,
-        bmrSubmittedAt: new Date().toISOString(),
-        status:         'Completed',
-      })
-    } catch (e) {
-      alert('Failed to submit BMR: ' + e.message)
-      return
-    }
+      let sfgCreated = null
+      if (task.process === 'Formulation' && task.packAfter === 'NO') {
+        const qty = parseFloat(bmrData['weight-after-sieve']) || parseFloat(bmrData['weight-after-unload']) || task.qty
+        const loc = prompt(
+          `Formulation complete — no packing scheduled.\nEnter SFG storage location:\n(${toTitleCase(task.productName)} | ${task.batchCode} | ${qty} ${task.qtyUom||'kg'})`,
+          task.location || ''
+        )
+        if (loc === null) { alert('SFG location required. BMR not submitted.'); return }
+        sfgAddEntry({ productName:task.productName, batchCode:task.batchCode, plant:task.plant, qty, qtyUom:task.qtyUom||'kg', location:loc.trim()||'—', sourceTaskId:task.id })
+        sfgCreated = { qty, location: loc.trim() || '—' }
+      }
 
-    setQcHandoff({ task, bmrData, sfgCreated })
-    const remaining = openTasks.filter(t => t.id !== taskId)
-    onTasksChange(remaining)
-    if (!remaining.length || activeId === taskId) setActiveId(remaining[0]?.id || null)
+      if (task.process === 'Packing' && task.sfgSourceId) {
+        const sfgList = (() => { try { return JSON.parse(localStorage.getItem('erp_sfg_stock'))||[] } catch { return [] } })()
+        const si = sfgList.findIndex(s => s.id === task.sfgSourceId)
+        if (si >= 0) {
+          const used = parseFloat(bmrData['packing-recv-qty']) || parseFloat(task.qty) || 0
+          sfgList[si].qtyRemaining = Math.max(0, sfgList[si].qtyRemaining - used)
+          sfgList[si].status = sfgList[si].qtyRemaining <= 0 ? 'Consumed' : 'Partially Used'
+          localStorage.setItem('erp_sfg_stock', JSON.stringify(sfgList))
+        }
+      }
+
+      try {
+        await planTasksApi.update(taskId, {
+          bmrSubmitted:   true,
+          bmrSubmittedAt: new Date().toISOString(),
+          status:         'Completed',
+        })
+      } catch (e) {
+        alert('Failed to submit BMR: ' + e.message)
+        return
+      }
+
+      setQcHandoff({ task, bmrData, sfgCreated })
+      const remaining = openTasks.filter(t => t.id !== taskId)
+      onTasksChange(remaining)
+      if (!remaining.length || activeId === taskId) setActiveId(remaining[0]?.id || null)
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   function handleQcClose() {
@@ -164,9 +170,9 @@ export default function BMROverlay({ openTasks, onClose, onTasksChange }) {
                   <div>Shift: {task.shift||'General'}</div>
                 </div>
                 <Can permission="production.batch.update">
-                  <button onClick={() => handleSubmit(task.id)}
-                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-[13px] font-bold transition">
-                    ✓ Submit BMR
+                  <button onClick={() => handleSubmit(task.id)} disabled={submitting}
+                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-[13px] font-bold transition disabled:opacity-60 disabled:cursor-not-allowed">
+                    {submitting ? 'Submitting…' : '✓ Submit BMR'}
                   </button>
                 </Can>
               </div>
@@ -179,15 +185,15 @@ export default function BMROverlay({ openTasks, onClose, onTasksChange }) {
               <span className={`text-[12px] ${saveStatus.startsWith('✓') ? 'text-green-600 font-semibold' : 'text-gray-400'}`}>{saveStatus}</span>
               <div className="flex gap-2.5">
                 <Can permission="production.batch.update">
-                  <button onClick={() => handleCloseTask(task.id)}
-                    className="px-4 py-2 border border-gray-200 rounded-lg text-[13px] font-medium hover:bg-gray-50 transition">
+                  <button onClick={() => handleCloseTask(task.id)} disabled={submitting}
+                    className="px-4 py-2 border border-gray-200 rounded-lg text-[13px] font-medium hover:bg-gray-50 transition disabled:opacity-60 disabled:cursor-not-allowed">
                     Save &amp; Close
                   </button>
                 </Can>
                 <Can permission="production.batch.update">
-                  <button onClick={() => handleSubmit(task.id)}
-                    className="px-4 py-2 bg-green-600 text-white rounded-lg text-[13px] font-bold hover:bg-green-700 transition">
-                    ✓ Submit BMR
+                  <button onClick={() => handleSubmit(task.id)} disabled={submitting}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg text-[13px] font-bold hover:bg-green-700 transition disabled:opacity-60 disabled:cursor-not-allowed">
+                    {submitting ? 'Submitting…' : '✓ Submit BMR'}
                   </button>
                 </Can>
               </div>

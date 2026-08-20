@@ -38,24 +38,22 @@ app.use(express.urlencoded({ extended: true, limit: "30mb" }));
 // ── CORS ───────────────────────────────────────────────────────────────────────
 const isDev = process.env.NODE_ENV !== "production";
 const allowedOrigins = (process.env.FRONTEND_URLS || "").split(",").map((s) => s.trim()).filter(Boolean);
-// app.use(
-//   cors({
-//     // Dev: allow any localhost port (main ERP 5173, admin panel 5175, etc.)
-//     // Prod: only origins explicitly listed in FRONTEND_URLS (comma-separated).
-//     origin: isDev
-//       ? (origin, cb) => {
-//           if (!origin || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) cb(null, true);
-//           else cb(new Error("CORS: origin not allowed"));
-//         }
-//       : (origin, cb) => {
-//           if (!origin || allowedOrigins.includes(origin)) cb(null, true);
-//           else cb(new Error("CORS: origin not allowed"));
-//         },
-//     credentials: true,
-//   }),
-// );
-
-app.use(cors())
+app.use(
+  cors({
+    // Dev: allow any localhost port (main ERP 5173, admin panel 5175, etc.)
+    // Prod: only origins explicitly listed in FRONTEND_URLS (comma-separated).
+    origin: isDev
+      ? (origin, cb) => {
+          if (!origin || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) cb(null, true);
+          else cb(new Error("CORS: origin not allowed"));
+        }
+      : (origin, cb) => {
+          if (!origin || allowedOrigins.includes(origin)) cb(null, true);
+          else cb(new Error("CORS: origin not allowed"));
+        },
+    credentials: true,
+  }),
+);
 
 // ── File uploads ───────────────────────────────────────────────────────────────
 export const upload = multer({

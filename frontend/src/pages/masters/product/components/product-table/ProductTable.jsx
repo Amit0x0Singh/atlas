@@ -29,7 +29,7 @@ const ACTIONS_COL_WIDTH = 90
 // server-side) — `total` is the server-reported match count. Sort is applied
 // client-side to whatever page is currently loaded (see ProductSortModal).
 export default function ProductTable({
-  items, total, loading, page, limit, onEdit, onDelete, onRowClick, onPageChange, onLimitChange,
+  items, total, loading, error, page, limit, onEdit, onDelete, onRowClick, onPageChange, onLimitChange,
   search, onSearchChange, filters, onFiltersChange, sort, onSortChange, plantOptions, uomOptions, stateOptions, onExport, exporting,
 }) {
   const { columnWidths, columnVisibility, visibleColumns, startResize, toggleColumn } = useColumnPreferences('product-master', COLUMN_DEFS)
@@ -83,6 +83,10 @@ export default function ProductTable({
                   <Loader2 size={22} className="animate-spin mx-auto mb-2" />
                   Loading products…
                 </td>
+              </tr>
+            ) : error ? (
+              <tr>
+                <td colSpan={visibleColumns.length + 1} className="py-14 text-center text-red-500">{error}</td>
               </tr>
             ) : items.length === 0 ? (
               <tr>

@@ -29,9 +29,10 @@ export default function EquipmentMaster() {
   const debouncedFilters = useDebouncedValue({ ...filters, equipName: search }, 300)
   useEffect(() => { setPage(1) }, [debouncedFilters])
 
-  const { data: result, isLoading: loading } = useEquipment({ ...debouncedFilters, page, limit })
+  const { data: result, isLoading: loading, error: equipmentError } = useEquipment({ ...debouncedFilters, page, limit })
   const items = result?.items ?? []
   const total = result?.total ?? 0
+  const error = equipmentError?.message || ''
 
   const { data: meta } = useEquipmentFilterMeta()
   const operationOptions = (meta?.operations || []).map(o => ({ value: o, label: o }))
@@ -114,6 +115,7 @@ export default function EquipmentMaster() {
         items={items}
         total={total}
         loading={loading}
+        error={error}
         page={page}
         limit={limit}
         onEdit={openEdit}

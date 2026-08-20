@@ -13,7 +13,7 @@ export const rmApi = {
   create:     (data)       => api.post('/rm', data),
   update:     (code, data) => api.put(`/rm/${code}`, data),
   delete:     (code)       => api.delete(`/rm/${code}`),
-  warehouses: ()           => api.get('/rm/meta/warehouses'),
+  warehouses: ()           => api.get('/rm/warehouses'),
 }
 
 export const packsApi = {

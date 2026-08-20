@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Pencil, Paperclip, ArrowDown, ArrowUp, Eye } from "lucide-react";
 import Pagination from "../../../../../components/pagination/Pagination.jsx";
 import { Button, IconButton, Modal } from "../../../../../components/ui";
@@ -47,9 +47,14 @@ function DeleteRequestBadge() {
 // it merges the two queries) that drives the Type badge, which field holds
 // the counterparty name (supplier vs receiver), and which permission/
 // handler each action routes to.
-export default function HistoryTable({ list, total, onRequestDelete, onEdit, onViewDocument }) {
+export default function HistoryTable({ list, total, filterKey, onRequestDelete, onEdit, onViewDocument }) {
   const [limit, setLimit] = useState(15);
   const [page, setPage] = useState(1);
+  // Reset to page 1 whenever the applied filters change (not on every
+  // render — `list` itself is re-sorted into a new array each render, so
+  // depending on it directly would bounce the user back to page 1 while
+  // paging through results).
+  useEffect(() => { setPage(1); }, [filterKey]);
   const paginated = list.slice((page - 1) * limit, page * limit);
   // An entry can carry several documents now — a single click can't target
   // "the" document anymore, so more than one opens a small picker instead

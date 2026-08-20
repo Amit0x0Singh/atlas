@@ -23,7 +23,7 @@ const ACTIONS_COL_WIDTH = 90
 // Pagination to compute page count, not to slice anything here. Sort is
 // applied client-side to whatever page is currently loaded.
 export default function EquipmentTable({
-  items, total, loading, page, limit, onEdit, onDelete, onRowClick, onPageChange, onLimitChange,
+  items, total, loading, error, page, limit, onEdit, onDelete, onRowClick, onPageChange, onLimitChange,
   search, onSearchChange, filters, onFiltersChange, sort, onSortChange, operationOptions, plantOptions, onExport, exporting,
 }) {
   const { columnWidths, columnVisibility, visibleColumns, startResize, toggleColumn } = useColumnPreferences('equipment-master', COLUMN_DEFS)
@@ -77,6 +77,10 @@ export default function EquipmentTable({
                   <Loader2 size={22} className="animate-spin mx-auto mb-2" />
                   Loading equipment…
                 </td>
+              </tr>
+            ) : error ? (
+              <tr>
+                <td colSpan={visibleColumns.length + 1} className="py-14 text-center text-red-500">{error}</td>
               </tr>
             ) : items.length === 0 ? (
               <tr>

@@ -358,6 +358,7 @@ export default function GateEntry() {
               : <HistoryTable
                   list={list}
                   total={total}
+                  filterKey={queryFilters}
                   onRequestDelete={handleRequestDelete}
                   onEdit={handleEdit}
                   onViewDocument={handleViewDocument}

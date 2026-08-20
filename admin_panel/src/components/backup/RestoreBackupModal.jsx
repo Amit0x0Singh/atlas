@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Upload, History, AlertTriangle } from 'lucide-react';
+import { Upload, History } from 'lucide-react';
 import Modal from '../common/Modal.jsx';
 import Button from '../common/Button.jsx';
+import DestructiveActionDialog from '../common/DestructiveActionDialog.jsx';
 import ProgressBar from './ProgressBar.jsx';
 import { useToast } from '../common/Toast.jsx';
 import { useJobPolling } from '../../hooks/useJobPolling.js';
@@ -53,6 +54,7 @@ export default function RestoreBackupModal({ open, onClose, onDone, presetJob })
 
   async function openPickHistory() {
     setMode('pick-history');
+    setError('');
     try {
       const res = await listBackups({ status: 'COMPLETED', limit: 100 });
       setHistoryOptions(res.data ?? []);
@@ -81,7 +83,8 @@ export default function RestoreBackupModal({ open, onClose, onDone, presetJob })
       setJobId(res.id);
       setMode('progress');
     } catch (err) {
-      setError(err?.response?.data?.error || 'Unable to start restore.');
+      showToast(err?.response?.data?.error || 'Unable to start restore.', 'danger');
+    } finally {
       setSubmitting(false);
     }
   }
@@ -100,7 +103,8 @@ export default function RestoreBackupModal({ open, onClose, onDone, presetJob })
     : <>This will permanently overwrite data in the table(s) contained in <strong>{file?.name}</strong>. This cannot be undone.</>;
 
   return (
-    <Modal open={open} onClose={submitting ? undefined : handleClose} size="md">
+    <>
+    <Modal open={open && mode !== 'confirm'} onClose={submitting ? undefined : handleClose} size="md">
       <div className="p-6">
         <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">Restore Backup</h2>
 
@@ -127,7 +131,8 @@ export default function RestoreBackupModal({ open, onClose, onDone, presetJob })
 
         {mode === 'pick-history' && (
           <div className="space-y-1 max-h-72 overflow-y-auto scrollbar-thin">
-            {historyOptions.length === 0 && <p className="text-sm text-slate-400">No completed backups available.</p>}
+            {error && <p className="text-sm text-red-600 dark:text-red-400 mb-2">{error}</p>}
+            {!error && historyOptions.length === 0 && <p className="text-sm text-slate-400">No completed backups available.</p>}
             {historyOptions.map((b) => (
               <button
                 key={b.id}
@@ -139,25 +144,6 @@ export default function RestoreBackupModal({ open, onClose, onDone, presetJob })
                 <span className="text-xs text-slate-400 flex-shrink-0 ml-2">{b.tableCount} table(s)</span>
               </button>
             ))}
-          </div>
-        )}
-
-        {mode === 'confirm' && (
-          <div className="text-center">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full mb-4 text-red-600 bg-red-50 dark:bg-red-950">
-              <AlertTriangle size={22} />
-            </div>
-            <div className="text-sm text-slate-500 dark:text-slate-400">{confirmMessage}</div>
-            {isExcelUpload && (
-              <div className="mt-3 text-left text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 rounded-lg px-3 py-2.5">
-                <strong>Restoring from an Excel export.</strong> Values were reformatted for readability when this file was created — decimal/quantity precision and JSON-type fields may come back slightly different from the original backup. Use the original .gz backup instead when exact fidelity matters.
-              </div>
-            )}
-            {error && <p className="text-sm text-red-600 dark:text-red-400 mt-3">{error}</p>}
-            <div className="flex gap-3 mt-6">
-              <Button variant="secondary" fullWidth onClick={handleClose} disabled={submitting}>Cancel</Button>
-              <Button variant="danger-solid" fullWidth loading={submitting} onClick={handleConfirm}>Restore</Button>
-            </div>
           </div>
         )}
 
@@ -189,5 +175,25 @@ export default function RestoreBackupModal({ open, onClose, onDone, presetJob })
         )}
       </div>
     </Modal>
+
+    <DestructiveActionDialog
+      open={open && mode === 'confirm'}
+      title="Restore this backup?"
+      summary={
+        <>
+          {confirmMessage}
+          {isExcelUpload && (
+            <div className="mt-3 text-left text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 rounded-lg px-3 py-2.5">
+              <strong>Restoring from an Excel export.</strong> Values were reformatted for readability when this file was created — decimal/quantity precision and JSON-type fields may come back slightly different from the original backup. Use the original .gz backup instead when exact fidelity matters.
+            </div>
+          )}
+        </>
+      }
+      confirmWord="RESTORE"
+      confirmLabel="Restore"
+      onConfirm={handleConfirm}
+      onCancel={handleClose}
+    />
+    </>
   );
 }

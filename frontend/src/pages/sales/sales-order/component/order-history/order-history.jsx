@@ -1,4 +1,4 @@
-﻿import { Fragment, useState } from 'react'
+﻿import { Fragment, useEffect, useState } from 'react'
 import { Clock } from 'lucide-react'
 import Pagination from '../../../../../components/pagination/Pagination.jsx'
 import { STATUS_STYLE, STATUS_LABELS } from '../../shared/constants.js'
@@ -38,11 +38,15 @@ function EtdCell({ date }) {
   )
 }
 
-export default function OrderHistory({ orders, loading, onOpenDispatch }) {
+export default function OrderHistory({ orders, loading, filterKey, onOpenDispatch }) {
   const displayName = useUserDisplayNames()
   const [limit,        setLimit]        = useState(15)
   const [page,         setPage]         = useState(1)
   const [expandedKeys, setExpandedKeys] = useState(new Set())
+
+  // Reset to page 1 whenever the applied filters change, so a filter that
+  // shrinks the result set can't strand the view on a now-empty page.
+  useEffect(() => { setPage(1) }, [filterKey])
 
   const sorted = [...orders].sort((a, b) => {
     const da = a.estimatedDispatchDate || null

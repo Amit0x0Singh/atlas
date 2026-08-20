@@ -29,6 +29,7 @@ const FIELDS = [
 export default function InwardForm({ onSubmit, onCancel, mode = "create", initialValues = null, existingDocument = [], onViewDocument = null, embedded = false }) {
   const [form, setForm] = useState(initialValues ? { ...EMPTY, ...initialValues } : EMPTY);
   const [fieldErrors, setFieldErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
   const { data: suppliersResult } = useSupplierSuggestions();
   const suppliers = suppliersResult?.items ?? [];
 
@@ -53,12 +54,18 @@ export default function InwardForm({ onSubmit, onCancel, mode = "create", initia
   };
 
   const handleSubmit = async () => {
+    if (submitting) return;
     const errors = validate();
     if (Object.keys(errors).length) { setFieldErrors(errors); return; }
-    await onSubmit(form);
-    if (mode !== "edit") {
-      setForm(EMPTY);
-      setFieldErrors({});
+    setSubmitting(true);
+    try {
+      await onSubmit(form);
+      if (mode !== "edit") {
+        setForm(EMPTY);
+        setFieldErrors({});
+      }
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -116,11 +123,11 @@ export default function InwardForm({ onSubmit, onCancel, mode = "create", initia
 
       <div className="if-actions">
         <Can permission={mode === "edit" ? "gate.inward.update" : "gate.inward.create"}>
-          <Button variant="primary" onClick={handleSubmit}>
+          <Button variant="primary" onClick={handleSubmit} disabled={submitting} loading={submitting}>
             {mode === "edit" ? "Save Changes" : "Create Inward Entry"}
           </Button>
         </Can>
-        <Button variant="secondary" onClick={onCancel}>
+        <Button variant="secondary" onClick={onCancel} disabled={submitting}>
           Cancel
         </Button>
       </div>

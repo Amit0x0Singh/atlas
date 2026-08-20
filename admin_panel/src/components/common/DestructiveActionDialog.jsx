@@ -5,20 +5,18 @@ import Button from './Button.jsx';
 import Input from './Input.jsx';
 import { verifyPassword } from '../../api/auth.js';
 
-const CONFIRM_WORD = 'DELETE';
-
 // Generic "prove you mean it" gate for destructive operations — composed
 // alongside ConfirmDialog/DeleteDialog rather than extending them, since
 // neither supports typed confirmation or a password field. Requires typing
-// the word DELETE AND re-entering the current password; only calls
+// the given confirm word AND re-entering the current password; only calls
 // onConfirm() after the backend actually verifies the password.
-export default function DestructiveActionDialog({ open, title, summary, onConfirm, onCancel }) {
+export default function DestructiveActionDialog({ open, title, summary, onConfirm, onCancel, confirmWord = 'DELETE', confirmLabel = 'Delete' }) {
   const [typedWord, setTypedWord] = useState('');
   const [password, setPassword] = useState('');
   const [verifying, setVerifying] = useState(false);
   const [verifyError, setVerifyError] = useState('');
 
-  const canSubmit = typedWord === CONFIRM_WORD && password.length > 0 && !verifying;
+  const canSubmit = typedWord === confirmWord && password.length > 0 && !verifying;
 
   function reset() {
     setTypedWord(''); setPassword(''); setVerifying(false); setVerifyError('');
@@ -60,7 +58,7 @@ export default function DestructiveActionDialog({ open, title, summary, onConfir
         <div className="mt-5 space-y-4">
           <Input
             name="confirmWord"
-            label={`Type ${CONFIRM_WORD} to confirm`}
+            label={`Type ${confirmWord} to confirm`}
             value={typedWord}
             onChange={(e) => setTypedWord(e.target.value)}
             autoComplete="off"
@@ -79,7 +77,7 @@ export default function DestructiveActionDialog({ open, title, summary, onConfir
         <div className="flex gap-3 mt-6">
           <Button variant="secondary" fullWidth onClick={handleCancel} disabled={verifying}>Cancel</Button>
           <Button variant="danger-solid" fullWidth loading={verifying} disabled={!canSubmit} onClick={handleSubmit}>
-            Delete
+            {confirmLabel}
           </Button>
         </div>
       </div>

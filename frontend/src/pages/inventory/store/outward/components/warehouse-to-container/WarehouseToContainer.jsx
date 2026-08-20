@@ -74,7 +74,7 @@ export default function WarehouseToContainer() {
         `Level: ${r.data.currentQty} / ${r.data.capacity} ${(r.data.uom || '').toUpperCase()}`
       )
       // Reset for next fill
-      setPack(null); setContainer(null); setAvailPacks([]); setQty(''); setPackInput('')
+      setPack(null); setContainer(null); setAvailPacks([]); setQty('')
     } catch (e) { setError(e.response?.data?.error || e.message) }
     finally { setSub(false) }
   }

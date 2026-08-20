@@ -24,6 +24,7 @@ const FIELDS = [
 export default function OutwardForm({ onSubmit, onCancel, mode = "create", initialValues = null, existingDocument = [], onViewDocument = null, embedded = false }) {
   const [form, setForm] = useState(initialValues ? { ...EMPTY, ...initialValues } : EMPTY);
   const [fieldErrors, setFieldErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
 
   // Both are business codes the backend always stores uppercase — matching
   // it live avoids the "typed lowercase, saved uppercase" surprise.
@@ -41,12 +42,18 @@ export default function OutwardForm({ onSubmit, onCancel, mode = "create", initi
   };
 
   const handleSubmit = async () => {
+    if (submitting) return;
     const errors = validate();
     if (Object.keys(errors).length) { setFieldErrors(errors); return; }
-    await onSubmit(form);
-    if (mode !== "edit") {
-      setForm(EMPTY);
-      setFieldErrors({});
+    setSubmitting(true);
+    try {
+      await onSubmit(form);
+      if (mode !== "edit") {
+        setForm(EMPTY);
+        setFieldErrors({});
+      }
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -95,11 +102,11 @@ export default function OutwardForm({ onSubmit, onCancel, mode = "create", initi
 
       <div className="of-actions">
         <Can permission={mode === "edit" ? "gate.outward.update" : "gate.outward.create"}>
-          <Button variant="warning" onClick={handleSubmit}>
+          <Button variant="warning" onClick={handleSubmit} disabled={submitting} loading={submitting}>
             {mode === "edit" ? "Save Changes" : "Record Outward"}
           </Button>
         </Can>
-        <Button variant="secondary" onClick={onCancel}>
+        <Button variant="secondary" onClick={onCancel} disabled={submitting}>
           Cancel
         </Button>
       </div>

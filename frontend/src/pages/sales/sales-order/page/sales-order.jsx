@@ -231,6 +231,7 @@ const SalesOrder = () => {
           <OrderHistory
             orders={ordersVisible}
             loading={loading}
+            filterKey={filters}
             onOpenDispatch={setDispatchOrder}
           />
         </div>
