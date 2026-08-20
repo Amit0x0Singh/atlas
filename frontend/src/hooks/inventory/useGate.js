@@ -79,6 +79,14 @@ export function useUploadGateInwardInvoiceDoc() {
   })
 }
 
+export function useUploadGateOutwardInvoiceDoc() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, file }) => gateApi.uploadOutwardInvoiceDoc(id, file),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['gate-outward'] }),
+  })
+}
+
 export function useRequestDeleteGateInward() {
   const qc = useQueryClient()
   return useMutation({

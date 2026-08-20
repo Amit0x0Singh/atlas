@@ -28,19 +28,16 @@ const restoreUpload = multer({
   limits: { fileSize: 500 * 1024 * 1024 },
   // .gz — the original backup format (preferred, exact); .xlsx — a
   // previously-exported "Export to Excel" file, reconstructed best-effort
-  // (see backup-excel-import.service.js). Extension + MIME type together —
-  // both are client-supplied and spoofable, but raise the bar over
-  // extension alone; full magic-byte sniffing would be excessive for this
-  // authenticate+adminOnly-gated, non-public upload surface.
+  // (see backup-excel-import.service.js). Extension only — file.mimetype is
+  // client-supplied and, worse, unreliable: Windows has no default MIME
+  // registration for .gz, so browsers there report an empty mimetype and a
+  // combined extension+MIME gate silently dropped every legitimate upload
+  // (multer's fileFilter cb(null, false) rejects with no error, so it just
+  // looked like the request vanished). Real content validation already
+  // happens in validateBackupFile() (gunzip + JSON.parse) before anything
+  // is trusted, so this is just an early, cheap sanity check.
   fileFilter: (req, file, cb) => {
-    const extOk = /\.(json\.gz|gz|xlsx)$/i.test(file.originalname);
-    const mimeOk = [
-      'application/gzip',
-      'application/x-gzip',
-      'application/octet-stream',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    ].includes(file.mimetype);
-    cb(null, extOk && mimeOk);
+    cb(null, /\.(json\.gz|gz|xlsx)$/i.test(file.originalname));
   },
 });
 

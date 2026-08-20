@@ -145,6 +145,14 @@ export const gateApi = {
   editOutward:          (id, data) => api.patch(`/gate/outward/${id}`, data),
   requestDeleteOutward: (id)       => api.patch(`/gate/outward/${id}/request-delete`),
   deleteOutward: (id) => api.delete(`/gate/outward/${id}`),
-  
+  uploadOutwardInvoiceDoc: (id, file) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    return api.post(`/gate/outward/${id}/invoice-document`, fd);
+  },
+  // Same-origin authenticated endpoint — open with openAuthedFile()
+  // (utils/authedFile.js), not a plain <a href> — mirrors invoiceDocUrl above.
+  outwardInvoiceDocUrl: (id) => `/api/gate/outward/${encodeURIComponent(id)}/invoice-document`,
+
 }
 

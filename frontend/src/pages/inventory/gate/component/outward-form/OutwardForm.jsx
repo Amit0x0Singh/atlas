@@ -3,20 +3,25 @@ import { ArrowUp } from "lucide-react";
 import { Button } from "../../../../../components/ui";
 import { Can } from "../../../../../components/common/Can.jsx";
 import { COMPANIES } from "../../data/companies.js";
+import OutwardDocumentField from "./OutwardDocumentField.jsx";
 import "./OutwardForm.css";
 
-const EMPTY = { receiver_name: "", invoice_no: "", vehicle_no: "", company: "" };
+const EMPTY = { receiver_name: "", invoice_no: "", vehicle_no: "", company: "", invoice_document: null };
 
-// All four fields are required — mirrors InwardForm so both gate forms
-// enforce the same completeness rules.
+// The four business fields are required — mirrors InwardForm so both gate
+// forms enforce the same completeness rules. Invoice Document is optional —
+// not every receiver hands back a signed copy on the spot.
 const FIELDS = [
   { key: "company",       label: "Company",       type: "select", options: COMPANIES, placeholder: "Select company", required: true },
   { key: "receiver_name", label: "Receiver Name", placeholder: "Person receiving goods", required: true },
   { key: "invoice_no",    label: "Invoice No.",   placeholder: "e.g. INV-2024-001", uppercase: true, required: true },
   { key: "vehicle_no",    label: "Vehicle No.",   placeholder: "e.g. MH-12-AB-1234", uppercase: true, required: true },
+  { key: "invoice_document", label: "Invoice Document", type: "file", accept: ".pdf,.jpg,.jpeg,.png", required: false },
 ];
 
-export default function OutwardForm({ onSubmit, onCancel, mode = "create", initialValues = null, embedded = false }) {
+// `embedded` drops this component's own card border/shadow/margin — used
+// when it's rendered inside the Edit modal (mirrors InwardForm).
+export default function OutwardForm({ onSubmit, onCancel, mode = "create", initialValues = null, existingDocument = null, onViewDocument = null, embedded = false }) {
   const [form, setForm] = useState(initialValues ? { ...EMPTY, ...initialValues } : EMPTY);
   const [fieldErrors, setFieldErrors] = useState({});
 
@@ -53,8 +58,8 @@ export default function OutwardForm({ onSubmit, onCancel, mode = "create", initi
       </div>
 
       <div className="of-grid">
-        {FIELDS.map(({ key, label, placeholder, type, options, uppercase, required }) => (
-          <div key={key}>
+        {FIELDS.map(({ key, label, placeholder, type, options, uppercase, required, accept }) => (
+          <div key={key} className={type === "file" ? "of-span-full" : undefined}>
             <label className="of-label">{label}{required && " *"}</label>
             {type === "select" ? (
               <select
@@ -67,6 +72,14 @@ export default function OutwardForm({ onSubmit, onCancel, mode = "create", initi
                   <option key={o} value={o}>{o}</option>
                 ))}
               </select>
+            ) : type === "file" ? (
+              <OutwardDocumentField
+                value={form[key]}
+                onChange={(file) => setForm((f) => ({ ...f, [key]: file }))}
+                accept={accept}
+                existingDocument={existingDocument}
+                onViewDocument={onViewDocument}
+              />
             ) : (
               <input
                 value={form[key]}

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Pencil } from "lucide-react";
+import { Pencil, Paperclip } from "lucide-react";
 import Pagination from "../../../../../components/pagination/Pagination.jsx";
 import { Button, IconButton } from "../../../../../components/ui";
 import { Can } from "../../../../../components/common/Can.jsx";
@@ -15,12 +15,13 @@ function StatusBadge({ status }) {
 }
 
 const COLUMNS = [
-  { key: "company",  label: "Company",       defaultWidth: 150 },
-  { key: "receiver", label: "Receiver Name", defaultWidth: 180 },
-  { key: "invoice",  label: "Invoice No.",   defaultWidth: 130 },
-  { key: "vehicle",  label: "Vehicle No.",   defaultWidth: 120 },
-  { key: "date",     label: "Date & Time",   defaultWidth: 160 },
-  { key: "status",   label: "Status",        defaultWidth: 100 },
+  { key: "company",    label: "Company",       defaultWidth: 150 },
+  { key: "receiver",   label: "Receiver Name", defaultWidth: 180 },
+  { key: "invoice",    label: "Invoice No.",   defaultWidth: 130 },
+  { key: "vehicle",    label: "Vehicle No.",   defaultWidth: 120 },
+  { key: "created_by", label: "Created By",    defaultWidth: 150 },
+  { key: "date",       label: "Date & Time",   defaultWidth: 160 },
+  { key: "status",     label: "Status",        defaultWidth: 100 },
 ];
 const ACTIONS_COL_WIDTH = 200;
 const MIN_COL_WIDTH = 60;
@@ -29,7 +30,7 @@ function DeleteRequestBadge() {
   return <span className="ot-del-badge">Delete Requested</span>;
 }
 
-export default function OutwardTable({ list, total, onRequestDelete, onEdit }) {
+export default function OutwardTable({ list, total, onRequestDelete, onEdit, onViewDocument }) {
   const [limit, setLimit] = useState(15);
   const [page, setPage] = useState(1);
   const paginated = list.slice((page - 1) * limit, page * limit);
@@ -102,6 +103,9 @@ export default function OutwardTable({ list, total, onRequestDelete, onEdit }) {
                 <td className="ot-td ot-td-text" style={{ width: columnWidths.vehicle }}>
                   {item.vehicle_no || item.vehicleNo || "—"}
                 </td>
+                <td className="ot-td ot-td-text" style={{ width: columnWidths.created_by }}>
+                  {toTitleCase(item.created_by_name || item.createdByName) || "—"}
+                </td>
                 <td className="ot-td ot-td-date" style={{ width: columnWidths.date }}>
                   {new Date(item.created_at || item.createdAt).toLocaleString("en-IN")}
                 </td>
@@ -113,6 +117,9 @@ export default function OutwardTable({ list, total, onRequestDelete, onEdit }) {
                     <Can permission="gate.outward.update">
                       <IconButton icon={Pencil} tooltip="Edit" onClick={() => onEdit(item)} />
                     </Can>
+                    {(item.invoice_doc_file_name || item.invoiceDocFileName) && (
+                      <IconButton icon={Paperclip} tooltip="View Invoice" onClick={() => onViewDocument(item)} />
+                    )}
                     {item.request_delete ? (
                       <DeleteRequestBadge />
                     ) : (

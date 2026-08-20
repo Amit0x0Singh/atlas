@@ -4,6 +4,8 @@ import { authenticate } from "../../middleware/auth.js";
 import { authLimiter } from "../../middleware/rate-limit.js";
 import { validateLogin } from "./login/login.middleware.js";
 import { login } from "./login/login.controller.js";
+import { validateSetup } from "./setup/setup.middleware.js";
+import { getSetupStatus, bootstrapAdmin } from "./setup/setup.controller.js";
 import { verifyPassword } from "./verify-password/verify-password.controller.js";
 import { resolveEffectivePermissions } from "../../services/permission-resolver.js";
 import { writeAudit, auditUser } from "../../middleware/audit.js";
@@ -11,6 +13,12 @@ import { writeAudit, auditUser } from "../../middleware/audit.js";
 const UserRouter = express.Router();
 
 UserRouter.post("/login", authLimiter, validateLogin, login);
+
+// First-run bootstrap — only usable while the users table is empty (see
+// setup.controller.js). Rate-limited the same as login since it also
+// verifies a secret/checks credentials-adjacent state.
+UserRouter.get("/setup-status", getSetupStatus);
+UserRouter.post("/setup", authLimiter, validateSetup, bootstrapAdmin);
 
 // Stateless JWT — there's no server-side session to invalidate, so this
 // route's only job is recording the action; the frontend calls it right

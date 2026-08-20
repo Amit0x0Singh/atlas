@@ -1,5 +1,27 @@
 import prisma from '../../../../db.js'
-import { stripDocPath } from '../document/gate.controller.js'
+
+// createdBy on GateInward/GateOutward is stamped with the acting user's
+// email (see prisma-audit-extension.js), not a display name — resolve the
+// set of emails on a page of rows to User.fullName in one batched query and
+// attach it as `createdByName`, falling back to the raw email for any that
+// don't resolve (an account since deleted, or a pre-login-system historical
+// row with no createdBy at all).
+async function attachCreatedByName(rows) {
+  const emails = [...new Set(rows.map((r) => r.createdBy).filter(Boolean))]
+  if (!emails.length) return rows.map((r) => ({ ...r, createdByName: null }))
+
+  const users = await prisma.user.findMany({
+    where: { OR: [{ email: { in: emails } }, { username: { in: emails } }] },
+    select: { email: true, username: true, fullName: true },
+  })
+  const nameByIdentifier = new Map()
+  for (const u of users) {
+    if (u.email) nameByIdentifier.set(u.email, u.fullName)
+    nameByIdentifier.set(u.username, u.fullName)
+  }
+
+  return rows.map((r) => ({ ...r, createdByName: (r.createdBy && nameByIdentifier.get(r.createdBy)) || r.createdBy || null }))
+}
 
 /// -------------------   Gate Inward list and get
 
@@ -34,7 +56,7 @@ const listGateInward = async (req, res) => {
     const [rows, total] = await Promise.all([
       prisma.gateInward.findMany({
         where,
-        select: { inwardId: true, supplierName: true, invoiceNo: true, vehicleNo: true, companyName: true, status: true, requestDelete: true, invoiceDocFileName: true, invoiceDocMimeType: true, createdAt: true, updatedAt: true },
+        select: { inwardId: true, supplierName: true, invoiceNo: true, vehicleNo: true, companyName: true, status: true, requestDelete: true, invoiceDocFileName: true, createdBy: true, createdAt: true, updatedAt: true },
         orderBy: { createdAt: 'desc' },
         skip: off,
         take: lim,
@@ -42,7 +64,7 @@ const listGateInward = async (req, res) => {
       prisma.gateInward.count({ where }),
     ])
 
-    return res.json({ success: true, data: rows, total })
+    return res.json({ success: true, data: await attachCreatedByName(rows), total })
   } catch (err) {
     console.error('listGateInward error:', err.message)
     return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
@@ -59,8 +81,9 @@ const getGateInward = async (req, res) => {
 
     const row = await prisma.gateInward.findUnique({ where: { inwardId: id } })
     if (!row) return res.status(404).json({ success: false, error: 'Gate inward not found', code: 'NOT_FOUND' })
-    return res.json({ success: true, data: stripDocPath(row) })
-    
+    const [enriched] = await attachCreatedByName([row])
+    return res.json({ success: true, data: enriched })
+
   } catch (err) {
     console.error('getGateInward error:', err.message)
     return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
@@ -93,7 +116,7 @@ const listGateOutward = async (req, res) => {
     const [rows, total] = await Promise.all([
       prisma.gateOutward.findMany({
         where,
-        select: { outwardId: true, receiverName: true, invoiceNo: true, vehicleNo: true, companyName: true, status: true, requestDelete: true, createdAt: true },
+        select: { outwardId: true, receiverName: true, invoiceNo: true, vehicleNo: true, companyName: true, status: true, requestDelete: true, invoiceDocFileName: true, createdBy: true, createdAt: true },
         orderBy: { createdAt: 'desc' },
         skip: off,
         take: lim,
@@ -101,7 +124,7 @@ const listGateOutward = async (req, res) => {
       prisma.gateOutward.count({ where }),
     ])
 
-    return res.json({ success: true, data: rows, total })
+    return res.json({ success: true, data: await attachCreatedByName(rows), total })
 
   } catch (err) {
     console.error('listGateOutward error:', err.message)
@@ -119,9 +142,10 @@ const getGateOutward = async (req, res) => {
     const row = await prisma.gateOutward.findUnique({ where: { outwardId: id } })
     if (!row)
       return res.status(404).json({ success: false, error: 'Gate outward not found', code: 'NOT_FOUND' })
-    
-    return res.json({ success: true, data: row })
-    
+
+    const [enriched] = await attachCreatedByName([row])
+    return res.json({ success: true, data: enriched })
+
   } catch (err) {
     console.error('getGateOutward error:', err.message)
     return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })

@@ -15,12 +15,13 @@ function StatusBadge({ status }) {
 }
 
 const COLUMNS = [
-  { key: "company",  label: "Company",       defaultWidth: 150 },
-  { key: "supplier", label: "Supplier Name", defaultWidth: 180 },
-  { key: "invoice",  label: "Invoice No.",   defaultWidth: 130 },
-  { key: "vehicle",  label: "Vehicle No.",   defaultWidth: 120 },
-  { key: "date",     label: "Date & Time",   defaultWidth: 160 },
-  { key: "status",   label: "Status",        defaultWidth: 100 },
+  { key: "company",    label: "Company",       defaultWidth: 150 },
+  { key: "supplier",   label: "Supplier Name", defaultWidth: 180 },
+  { key: "invoice",    label: "Invoice No.",   defaultWidth: 130 },
+  { key: "vehicle",    label: "Vehicle No.",   defaultWidth: 120 },
+  { key: "created_by", label: "Created By",    defaultWidth: 150 },
+  { key: "date",       label: "Date & Time",   defaultWidth: 160 },
+  { key: "status",     label: "Status",        defaultWidth: 100 },
 ];
 const ACTIONS_COL_WIDTH = 200;
 const MIN_COL_WIDTH = 60;
@@ -101,6 +102,9 @@ export default function InwardTable({ list, total, onRequestDelete, onEdit, onVi
                 </td>
                 <td className="it-td it-td-text" style={{ width: columnWidths.vehicle }}>
                   {item.vehicle_no || item.vehicleNo || "—"}
+                </td>
+                <td className="it-td it-td-text" style={{ width: columnWidths.created_by }}>
+                  {toTitleCase(item.created_by_name || item.createdByName) || "—"}
                 </td>
                 <td className="it-td it-td-date" style={{ width: columnWidths.date }}>
                   {new Date(item.created_at || item.createdAt).toLocaleString(

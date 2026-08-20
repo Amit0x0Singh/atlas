@@ -1,6 +1,8 @@
 import fs from 'fs'
+import path from 'path'
 import prisma from '../../../../db.js'
 import { writeAudit, auditUser } from '../../../../middleware/audit.js'
+import { GATE_INWARD_INVOICES_DIR, GATE_OUTWARD_INVOICES_DIR } from '../utils/storage-paths.js'
 
 
 
@@ -11,7 +13,7 @@ const deleteGateInward = async (req, res) => {
   try {
 
     const deleted = await prisma.gateInward.delete({ where: { inwardId: id } })
-    if (deleted.invoiceDocPath) fs.unlink(deleted.invoiceDocPath, () => {})
+    if (deleted.invoiceDocFileName) fs.unlink(path.join(GATE_INWARD_INVOICES_DIR, deleted.invoiceDocFileName), () => {})
     await writeAudit({ ...auditUser(req), action: 'DELETE', module: 'gate', tableName: 'gate_inward', recordId: id, oldValue: deleted })
     return res.json({ success: true, message: 'Gate inward deleted' })
 
@@ -30,6 +32,7 @@ const deleteGateOutward = async (req, res) => {
 
   try {
     const deleted = await prisma.gateOutward.delete({ where: { outwardId: id } })
+    if (deleted.invoiceDocFileName) fs.unlink(path.join(GATE_OUTWARD_INVOICES_DIR, deleted.invoiceDocFileName), () => {})
     await writeAudit({ ...auditUser(req), action: 'DELETE', module: 'gate', tableName: 'gate_outward', recordId: id, oldValue: deleted })
     return res.json({ success: true, message: 'Gate outward deleted' })
 

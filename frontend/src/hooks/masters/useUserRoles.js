@@ -62,8 +62,14 @@ export function useSetRolePermissions() {
 export function useCreateUser() {
   const qc = useQueryClient()
   return useMutation({
+    // Creation can assign role(s) up front (see UserFormPage), which shifts
+    // those roles' `_count.users` on the Roles tab — same reasoning as
+    // useSetUserRoles below.
     mutationFn: (data) => rbacApi.createUser(data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.rbac.users() }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.rbac.users() })
+      qc.invalidateQueries({ queryKey: queryKeys.rbac.roles() })
+    },
   })
 }
 
@@ -93,6 +99,17 @@ export function useSetUserRoles() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: ({ userId, roleIds }) => rbacApi.setUserRoles(userId, roleIds),
-    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.rbac.users() }),
+    // This changes which role(s) a user has, which shifts each affected
+    // role's `_count.users` — the Roles tab's "Users" column (see
+    // rbac.service.js's listRoles) reads `rbac.roles()`, a *separate* cache
+    // key from `rbac.users()`, so it goes stale here unless both are
+    // invalidated together. The DB write itself is correct the moment this
+    // resolves; without this, only the Roles tab's cached count lags until
+    // something else happens to refetch it — easy to mistake for the
+    // assignment never having been saved at all.
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.rbac.users() })
+      qc.invalidateQueries({ queryKey: queryKeys.rbac.roles() })
+    },
   })
 }

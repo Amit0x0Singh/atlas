@@ -10,10 +10,19 @@ import { updateGateInward, updateGateOutward, updateGateInwardStatus, updateGate
 import { validateStatusUpdate, validateIdParam as validateUpdateIdParam } from './update/gate.middleware.js'
 import { deleteGateInward, deleteGateOutward } from './delete/gate.controller.js'
 import { validateGateIdParam as validateDeleteIdParam } from './delete/gate.middleware.js'
-import { uploadGateInwardInvoiceDocument, viewGateInwardInvoiceDocument } from './document/gate.controller.js'
-import { GATE_INWARD_INVOICES_DIR, ensureGateStorageDirs } from './utils/storage-paths.js'
+import {
+  uploadGateInwardInvoiceDocument, viewGateInwardInvoiceDocument,
+  uploadGateOutwardInvoiceDocument, viewGateOutwardInvoiceDocument,
+} from './document/gate.controller.js'
+import { GATE_INWARD_INVOICES_DIR, GATE_OUTWARD_INVOICES_DIR, ensureGateStorageDirs } from './utils/storage-paths.js'
 
 ensureGateStorageDirs()
+
+const invoiceDocFileFilter = (req, file, cb) => {
+  const extOk = /\.(pdf|jpe?g|png)$/i.test(file.originalname)
+  const mimeOk = ['application/pdf', 'image/jpeg', 'image/png'].includes(file.mimetype)
+  cb(null, extOk && mimeOk)
+}
 
 // Disk-storage multer instance for the invoice document upload — mirrors
 // backend/src/modules/backup/router.js's restoreUpload pattern.
@@ -26,11 +35,19 @@ const invoiceDocUpload = multer({
     filename: (req, file, cb) => cb(null, `${req.params.id}-${Date.now()}${path.extname(path.basename(file.originalname))}`),
   }),
   limits: { fileSize: 15 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
-    const extOk = /\.(pdf|jpe?g|png)$/i.test(file.originalname)
-    const mimeOk = ['application/pdf', 'image/jpeg', 'image/png'].includes(file.mimetype)
-    cb(null, extOk && mimeOk)
-  },
+  fileFilter: invoiceDocFileFilter,
+})
+
+// Same shape as invoiceDocUpload, keyed by outward id, writing to its own
+// storage dir — a multer disk-storage instance's destination is fixed at
+// construction, so inward and outward each need their own instance.
+const outwardInvoiceDocUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, GATE_OUTWARD_INVOICES_DIR),
+    filename: (req, file, cb) => cb(null, `${req.params.id}-${Date.now()}${path.extname(path.basename(file.originalname))}`),
+  }),
+  limits: { fileSize: 15 * 1024 * 1024 },
+  fileFilter: invoiceDocFileFilter,
 })
 
 const GateRouter = express.Router()
@@ -61,5 +78,7 @@ GateRouter.patch('/outward/:id',                 authorize('gate.outward.update'
 GateRouter.patch('/outward/:id/status',          authorize('gate.outward.update'), validateUpdateIdParam, validateStatusUpdate, updateGateOutwardStatus)
 GateRouter.patch('/outward/:id/request-delete',  authorize('gate.outward.update'), validateUpdateIdParam, requestDeleteGateOutward)
 GateRouter.delete('/outward/:id',                authorize('gate.outward.delete'), validateDeleteIdParam, deleteGateOutward)
+GateRouter.post('/outward/:id/invoice-document', authorize(['gate.outward.create', 'gate.outward.update']), validateUpdateIdParam, outwardInvoiceDocUpload.single('file'), uploadGateOutwardInvoiceDocument)
+GateRouter.get('/outward/:id/invoice-document',  authorize('gate.outward.view'),   validateGetIdParam, viewGateOutwardInvoiceDocument)
 
 export default GateRouter

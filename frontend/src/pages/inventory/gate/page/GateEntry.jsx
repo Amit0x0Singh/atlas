@@ -4,7 +4,7 @@ import {
   useGateInward, useGateOutward,
   useCreateGateInward, useCreateGateOutward,
   useEditGateInward, useEditGateOutward,
-  useUploadGateInwardInvoiceDoc,
+  useUploadGateInwardInvoiceDoc, useUploadGateOutwardInvoiceDoc,
   useRequestDeleteGateInward, useRequestDeleteGateOutward,
 } from "../../../../hooks/inventory/useGate.js";
 import { useAuth } from "../../../../components/auth/AuthContext.jsx";
@@ -82,6 +82,7 @@ export default function GateEntry() {
   const editInwardMutation    = useEditGateInward();
   const editOutwardMutation   = useEditGateOutward();
   const uploadInwardDocMutation = useUploadGateInwardInvoiceDoc();
+  const uploadOutwardDocMutation = useUploadGateOutwardInvoiceDoc();
   const requestDeleteInward   = useRequestDeleteGateInward();
   const requestDeleteOutward  = useRequestDeleteGateOutward();
 
@@ -99,12 +100,13 @@ export default function GateEntry() {
   function exportGateCsv() {
     if (!list.length) { alert("No records to export — adjust your filters."); return }
     const isInward = listType === "inward"
-    const headers = ["Company", isInward ? "Supplier Name" : "Receiver Name", "Invoice No.", "Vehicle No.", "Date & Time", "Status"]
+    const headers = ["Company", isInward ? "Supplier Name" : "Receiver Name", "Invoice No.", "Vehicle No.", "Created By", "Date & Time", "Status"]
     const rows = list.map(item => [
       toTitleCase(item.company_name || item.companyName) || "",
       toTitleCase(isInward ? (item.supplier_name || item.supplierName) : (item.receiver_name || item.receiverName)) || "",
       item.invoice_no || item.invoiceNo || "",
       item.vehicle_no || item.vehicleNo || "",
+      toTitleCase(item.created_by_name || item.createdByName) || "",
       new Date(item.created_at || item.createdAt).toLocaleString("en-IN"),
       item.status || "",
     ].map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(","))
@@ -169,10 +171,21 @@ export default function GateEntry() {
     }
   };
 
+  // Same reasoning as submitInward — the File can't travel through the JSON
+  // create body, so it's stripped off and uploaded separately once the
+  // entry exists.
   const submitOutward = async (form) => {
+    const { invoice_document, ...fields } = form;
     try {
-      const res = await createOutwardMutation.mutateAsync(form);
+      const res = await createOutwardMutation.mutateAsync(fields);
       const entry = res.data;
+      if (invoice_document) {
+        try {
+          await uploadOutwardDocMutation.mutateAsync({ id: entry.outwardId, file: invoice_document });
+        } catch (docErr) {
+          setErrModal({ open: true, message: `Entry recorded, but the invoice document failed to upload: ${docErr.message}` });
+        }
+      }
       showSuccess(`Outward entry recorded${entry?.companyName ? ` for ${toTitleCase(entry.companyName)}` : ''}${entry?.receiverName ? ` · ${toTitleCase(entry.receiverName)}` : ''}${entry?.invoiceNo ? ` · ${entry.invoiceNo}` : ''}`);
       setFormKey(k => k + 1);
     } catch (e) {
@@ -207,14 +220,27 @@ export default function GateEntry() {
   };
 
   const submitEditOutward = async (form) => {
+    const { invoice_document, ...fields } = form;
     const id = editEntry.item.outward_id || editEntry.item.outwardId;
     try {
-      await editOutwardMutation.mutateAsync({ id, data: form });
+      await editOutwardMutation.mutateAsync({ id, data: fields });
+      if (invoice_document) {
+        try {
+          await uploadOutwardDocMutation.mutateAsync({ id, file: invoice_document });
+        } catch (docErr) {
+          setErrModal({ open: true, message: `Entry updated, but the invoice document failed to upload: ${docErr.message}` });
+        }
+      }
       setEditEntry(null);
       showSuccess("Outward entry updated");
     } catch (e) {
       setErrModal({ open: true, message: e.message });
     }
+  };
+
+  const handleViewOutwardInvoiceDoc = (item) => {
+    const id = item.outward_id || item.outwardId;
+    openAuthedFile(gateApi.outwardInvoiceDocUrl(id)).catch((e) => setErrModal({ open: true, message: `Could not open the invoice document: ${e.message}` }));
   };
 
   const handleRequestDelete = (id, type) => setDeleteConfirm({ id, type });
@@ -362,6 +388,7 @@ export default function GateEntry() {
                   total={total}
                   onRequestDelete={(id) => handleRequestDelete(id, "outward")}
                   onEdit={(item) => handleEdit(item, "outward")}
+                  onViewDocument={handleViewOutwardInvoiceDoc}
                 />
             }
           </div>
@@ -411,6 +438,8 @@ export default function GateEntry() {
               vehicle_no:    editEntry.item.vehicle_no    || editEntry.item.vehicleNo    || "",
               company:       matchCompany(editEntry.item.company_name || editEntry.item.companyName),
             }}
+            existingDocument={{ fileName: editEntry.item.invoice_doc_file_name || editEntry.item.invoiceDocFileName || "" }}
+            onViewDocument={() => handleViewOutwardInvoiceDoc(editEntry.item)}
             onSubmit={submitEditOutward}
             onCancel={() => setEditEntry(null)}
           />

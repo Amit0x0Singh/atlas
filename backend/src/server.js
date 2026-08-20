@@ -25,6 +25,8 @@ const app = express();
 // X-Forwarded-For, which is worse than not having it. No reverse proxy is
 // in front of this app in the current deployment shape.
 
+app.set("trust proxy", 1);
+
 // ── Security headers ────────────────────────────────────────────────────────────
 app.use(helmet());
 

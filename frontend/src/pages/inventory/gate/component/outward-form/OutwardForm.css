@@ -84,6 +84,113 @@
   font-weight: 600;
 }
 
+.of-span-full {
+  grid-column: 1 / -1;
+}
+
+/* ── Invoice Document field — camera is the primary, most-used action;
+   file upload is a secondary fallback, styled as a quiet text link.
+   Mirrors InwardForm.css's .if-doc-* block. ── */
+
+.of-doc-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.of-doc-file-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 2px;
+}
+
+.of-doc-file-trigger:hover {
+  color: #f97316;
+  text-decoration: underline;
+}
+
+.of-doc-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.of-doc-attached {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  font-size: 12px;
+  color: #334155;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 6px 10px;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.of-doc-attached span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.of-doc-remove {
+  display: flex;
+  align-items: center;
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 4px;
+  margin-left: 2px;
+  flex-shrink: 0;
+}
+
+.of-doc-remove:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.of-doc-hint {
+  margin: 8px 0 0;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.of-file-view-btn {
+  margin-left: 4px;
+  padding: 2px 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 5px;
+  background: #fff;
+  color: #f97316;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.of-file-view-btn:hover {
+  background: #fff7ed;
+}
+
 .of-actions {
   display: flex;
   gap: 8px;
@@ -104,6 +211,14 @@
   }
 
   .of-actions > * {
+    flex: 1 1 auto;
+  }
+
+  .of-doc-actions {
+    gap: 10px;
+  }
+
+  .of-doc-actions > button:first-child {
     flex: 1 1 auto;
   }
 }

@@ -2,6 +2,7 @@ import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 
 import AppSidebar from "../components/menu-bar/page/menu-bar.jsx";
 import Login from "../pages/auth/page/Login.jsx";
+import Setup from "../pages/auth/page/Setup.jsx";
 import AccessDenied from "../components/common/AccessDenied.jsx";
 import { useApp } from "../context/context.jsx";
 import { permissionForPath, defaultPathForUser } from "./operationMap.js";
@@ -67,6 +68,10 @@ export default function AppRoutes() {
 
   return (
     <Routes>
+      {/* Public — usable without being logged in, since a fresh deploy with
+          an empty database has no account to log in as yet. Self-disables
+          on the backend once any user exists (see setup.controller.js). */}
+      <Route path="/setup" element={user ? <Navigate to="/" replace /> : <Setup />} />
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
       <Route path="/*" element={user ? <AppLayout /> : <Navigate to="/login" replace />} />
     </Routes>

@@ -47,7 +47,15 @@ export async function restoreFromHistory(id) {
 export async function restoreFromUpload(file) {
   const formData = new FormData();
   formData.append('file', file);
-  const { data } = await http.post('/backup/upload/restore', formData);
+  // `http`'s instance default sets Content-Type: application/json on every
+  // request — left in place here, axios's transformRequest sees that JSON
+  // content-type and JSON.stringify()s the FormData instead of sending it as
+  // a real multipart body (see transformRequest in axios/lib/defaults), so
+  // the backend's multer never sees a file. Clearing it lets axios/the
+  // browser generate the correct multipart/form-data boundary header.
+  const { data } = await http.post('/backup/upload/restore', formData, {
+    headers: { 'Content-Type': undefined },
+  });
   return data.data;
 }
 

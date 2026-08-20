@@ -17,6 +17,12 @@ class ValidationError extends Error {}
 // Structural checks shared by both source formats — a .xlsx-derived
 // `parsed` object goes through the exact same gate as a .json.gz-derived
 // one before either is trusted with a restore.
+//
+// A table the backup lists that no longer exists in this codebase's schema
+// (e.g. a model removed locally after the backup was taken elsewhere) is
+// dropped rather than treated as fatal — `skipped` reports what was
+// dropped so the caller can log/audit it. Everything else about the file
+// still has to be well-formed, and at least one known table must remain.
 function validateParsedStructure(parsed) {
   if (typeof parsed !== 'object' || parsed === null) {
     throw new ValidationError('Backup file has no top-level JSON object.');
@@ -31,16 +37,22 @@ function validateParsedStructure(parsed) {
     throw new ValidationError('Backup file is missing its data section.');
   }
 
-  for (const table of parsed.tables) {
-    if (!KNOWN_MODELS.has(table)) {
-      throw new ValidationError(`Backup references an unknown table: "${table}".`);
-    }
-  }
-  const dataKeys = Object.keys(parsed.data);
+  const dataKeys = new Set(Object.keys(parsed.data));
   const tableSet = new Set(parsed.tables);
-  if (dataKeys.length !== parsed.tables.length || dataKeys.some((k) => !tableSet.has(k))) {
+  if (dataKeys.size !== parsed.tables.length || [...dataKeys].some((k) => !tableSet.has(k))) {
     throw new ValidationError('Backup file\'s table list and data section do not match.');
   }
+
+  const skipped = parsed.tables.filter((table) => !KNOWN_MODELS.has(table));
+  if (skipped.length) {
+    const skippedSet = new Set(skipped);
+    parsed.tables = parsed.tables.filter((table) => !skippedSet.has(table));
+    for (const table of skipped) delete parsed.data[table];
+    if (parsed.tables.length === 0) {
+      throw new ValidationError('None of the tables in this backup exist in the current database schema.');
+    }
+  }
+
   for (const table of parsed.tables) {
     const rows = parsed.data[table];
     if (!Array.isArray(rows)) throw new ValidationError(`Table "${table}" is not an array in the backup file.`);
@@ -48,6 +60,8 @@ function validateParsedStructure(parsed) {
       throw new ValidationError(`Table "${table}" contains malformed row data.`);
     }
   }
+
+  return skipped;
 }
 
 function parseGzipJsonBackup(filePath) {
@@ -76,18 +90,21 @@ export async function validateBackupFile(filePath) {
   }
 
   if (/\.xlsx$/i.test(filePath)) {
-    const { parsed, tables, scope } = await parseExcelBackup(filePath).catch((err) => {
+    const { parsed, scope, skipped: skippedSheets } = await parseExcelBackup(filePath).catch((err) => {
       throw new ValidationError(err.message);
     });
-    validateParsedStructure(parsed);
-    return { parsed, tables, scope };
+    if (parsed.tables.length === 0) {
+      throw new ValidationError('None of the sheets in this workbook match a table in the current database schema.');
+    }
+    const skipped = validateParsedStructure(parsed);
+    return { parsed, tables: parsed.tables, scope, skipped: [...skippedSheets, ...skipped] };
   }
 
   const parsed = parseGzipJsonBackup(filePath);
-  validateParsedStructure(parsed);
+  const skipped = validateParsedStructure(parsed);
   // Files predating the "scope" field have no such key at all — default to
   // FULL so every existing backup keeps restoring exactly as it always has.
-  return { parsed, tables: parsed.tables, scope: parsed.scope ?? 'FULL' };
+  return { parsed, tables: parsed.tables, scope: parsed.scope ?? 'FULL', skipped };
 }
 
 // JSON round-trips BigInt columns as strings (see backup-export.service.js) —
@@ -135,8 +152,14 @@ async function runRestoreInner(restoreJobId, filePath, auditCtx) {
   let parsed;
   let requestedTables;
   let scope;
+  let skipped;
   try {
-    ({ parsed, tables: requestedTables, scope } = await validateBackupFile(filePath));
+    ({ parsed, tables: requestedTables, scope, skipped } = await validateBackupFile(filePath));
+    if (skipped.length) {
+      console.warn(
+        `[RESTORE] ${restoreJobId}: skipping ${skipped.length} table(s) not present in the current schema: ${skipped.join(', ')}`,
+      );
+    }
   } catch (err) {
     await prisma.restoreJob.update({
       where: { id: restoreJobId },
@@ -211,7 +234,8 @@ async function runRestoreInner(restoreJobId, filePath, auditCtx) {
       action: 'RESTORE',
       tableName: 'restore_jobs',
       recordId: restoreJobId,
-      notes: `Restore completed — ${tables.length} table(s), ${recordCount} record(s)`,
+      notes: `Restore completed — ${tables.length} table(s), ${recordCount} record(s)`
+        + (skipped.length ? `; skipped ${skipped.length} table(s) not in current schema: ${skipped.join(', ')}` : ''),
     });
   } catch (err) {
     await prisma.restoreJob.update({

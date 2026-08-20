@@ -83,7 +83,14 @@ function coerceCellBack(rawValue, field) {
     else if ('richText' in value) value = value.richText.map((r) => r.text).join('');
   }
 
-  if (EXCEL_EPOCH_EMPTY.has(value)) return null;
+  // A non-nullable field (no `?` in the schema) rejects an explicit `null`
+  // even when it has a @default — that default only applies when the key is
+  // omitted entirely. `undefined` here does exactly that: Prisma drops an
+  // undefined-valued key from the input, so a genuinely blank cell falls
+  // back to the column's own default (or, for a required field with no
+  // default, surfaces a clear "Argument is missing" instead of a confusing
+  // null-into-NOT-NULL failure). A nullable field keeps returning `null`.
+  if (EXCEL_EPOCH_EMPTY.has(value)) return field.isRequired ? undefined : null;
 
   if (field.type === 'DateTime') {
     if (value instanceof Date) return value.toISOString();
@@ -105,12 +112,17 @@ function coerceCellBack(rawValue, field) {
   if (field.type === 'Int') {
     return Math.trunc(Number(value));
   }
-  if (field.type === 'Float' || field.type === 'Decimal') {
-    // Kept as a string — Prisma's Decimal input accepts strings directly
-    // and this avoids reintroducing floating-point error on top of the
+  if (field.type === 'Decimal') {
+    // Kept as a string — Prisma's Decimal input accepts strings directly,
+    // which avoids reintroducing floating-point error on top of the
     // precision Excel's own display formatting may have already cost.
-    // Float fields accept a numeric string equally well.
     return typeof value === 'number' ? String(value) : String(value).trim();
+  }
+  if (field.type === 'Float') {
+    // Unlike Decimal, Prisma Client's generated types require a real JS
+    // number for a Float scalar — a numeric string is rejected outright
+    // ("Expected Float, provided String").
+    return typeof value === 'number' ? value : Number(String(value).trim());
   }
   if (field.type === 'Json' || field.isList) {
     if (typeof value !== 'string') return field.isList ? [] : value;
@@ -149,12 +161,18 @@ export async function parseExcelBackup(filePath) {
 
   const tables = [];
   const data = {};
+  const skipped = [];
   let recordCount = 0;
 
   for (const sheet of sheets) {
     const accessor = resolveAccessorForSheet(sheet.name);
     if (!accessor) {
-      throw new ExcelValidationError(`Sheet "${sheet.name}" does not match any known table — this file may not be a backup export from this system.`);
+      // Sheet name doesn't match any table this codebase's schema currently
+      // knows about — most likely a model that existed when this backup was
+      // taken and has since been removed locally. Skip it rather than
+      // failing the whole restore; the caller surfaces what was skipped.
+      skipped.push(sheet.name);
+      continue;
     }
     const fieldMap = fieldMapFor(accessor);
 
@@ -186,7 +204,7 @@ export async function parseExcelBackup(filePath) {
   }
 
   const parsed = { version: SUPPORTED_VERSION, scope, createdAt: new Date().toISOString(), tables, data, tableCount: tables.length, recordCount };
-  return { parsed, tables, scope };
+  return { parsed, tables, scope, skipped };
 }
 
 export { ExcelValidationError };

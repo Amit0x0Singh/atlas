@@ -1,6 +1,5 @@
 import prisma from '../../../../db.js'
 import { writeAudit, auditUser } from '../../../../middleware/audit.js'
-import { stripDocPath } from '../document/gate.controller.js'
 
 const VALID_STATUSES = ['pending', 'approved', 'rejected']
 
@@ -55,7 +54,7 @@ const updateGateInward = async (req, res) => {
       },
     })
     await writeAudit({ ...auditUser(req), action: 'UPDATE', module: 'gate', tableName: 'gate_inward', recordId: id, oldValue: before, newValue: row })
-    return res.json({ success: true, data: stripDocPath(row) })
+    return res.json({ success: true, data: row })
   } catch (err) {
     if (err.code === 'P2025') return res.status(404).json({ success: false, error: 'Gate inward not found', code: 'NOT_FOUND' })
     console.error('updateGateInward error:', err.message)
