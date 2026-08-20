@@ -133,6 +133,12 @@ const issuePackToBomSend = async (req, res) => {
         .status(400)
         .json({ success: false, error: "Nothing to deduct" });
 
+    // Pack deduction, ledger write, and the BOM send's derived status all
+    // need to land together — otherwise a crash right after the ledger
+    // write leaves the send's status stuck at its old value (PENDING/
+    // PICKED) even though the material was actually issued, with nothing
+    // to self-correct it until someone issues against that send again.
+    let allDone, anyDone;
     await prisma.$transaction(async (tx) => {
       await tx.packDetail.update({
         where: { packId },
@@ -155,28 +161,28 @@ const issuePackToBomSend = async (req, res) => {
           reference: `${send.sendId} | ${send.productName} | DI:${send.diNo}`,
         },
       });
-    });
 
-    const allRecipe = await prisma.recipeDb.findMany({
-      where: { productCode: send.productCode },
-    });
-    let allDone = true,
+      const allRecipe = await tx.recipeDb.findMany({
+        where: { productCode: send.productCode },
+      });
+      allDone = true;
       anyDone = false;
-    for (const r of allRecipe) {
-      const rqty = parseFloat((r.qtyPerUnit * send.totalQty).toFixed(3));
-      const iss = await getIssuedQty(send.sendId, r.rmCode);
-      if (iss > 0) anyDone = true;
-      if (iss < rqty * 0.999) allDone = false;
-    }
+      for (const r of allRecipe) {
+        const rqty = parseFloat((r.qtyPerUnit * send.totalQty).toFixed(3));
+        const iss = await getIssuedQty(send.sendId, r.rmCode, tx);
+        if (iss > 0) anyDone = true;
+        if (iss < rqty * 0.999) allDone = false;
+      }
 
-    await prisma.bomSend.update({
-      where: { id: send.id },
-      data: {
-        status: allDone ? "ISSUED" : anyDone ? "PICKED" : "PENDING",
-        issuedAt: allDone ? new Date() : undefined,
-        pickedAt:
-          anyDone && !allDone ? (send.pickedAt ?? new Date()) : undefined,
-      },
+      await tx.bomSend.update({
+        where: { id: send.id },
+        data: {
+          status: allDone ? "ISSUED" : anyDone ? "PICKED" : "PENDING",
+          issuedAt: allDone ? new Date() : undefined,
+          pickedAt:
+            anyDone && !allDone ? (send.pickedAt ?? new Date()) : undefined,
+        },
+      });
     });
 
     const newItemRemaining = parseFloat(

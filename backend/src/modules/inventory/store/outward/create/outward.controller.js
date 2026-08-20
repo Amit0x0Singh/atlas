@@ -155,14 +155,16 @@ const warehouseTransfer = async (req, res) => {
     if (!pack) return res.status(404).json({ success: false, error: 'Pack not found', code: 'NOT_FOUND' })
     if (pack.status !== 'INWARDED' || pack.remainingQty <= 0)
       return res.status(400).json({ success: false, error: 'Pack is exhausted or not inwarded', code: 'VALIDATION_ERROR' })
-    await prisma.packDetail.update({ where: { packId }, data: { warehouse: toWarehouse } })
-    const prevLedger = await prisma.stockLedger.findFirst({ where: { itemCode: pack.itemCode }, orderBy: { timestamp: 'desc' } })
-    await prisma.stockLedger.create({
-      data: {
-        itemCode: pack.itemCode, sourceId: packId, transactionType: 'WAREHOUSE_TRANSFER',
-        inQty: 0, outQty: 0, balance: prevLedger?.balance || 0,
-        reference: `${fromWarehouse || 'Warehouse'} → ${toWarehouse} | Pack: ${packId}${remarks ? ' | ' + remarks : ''}`
-      }
+    await prisma.$transaction(async (tx) => {
+      await tx.packDetail.update({ where: { packId }, data: { warehouse: toWarehouse } })
+      const prevLedger = await tx.stockLedger.findFirst({ where: { itemCode: pack.itemCode }, orderBy: { timestamp: 'desc' } })
+      await tx.stockLedger.create({
+        data: {
+          itemCode: pack.itemCode, sourceId: packId, transactionType: 'WAREHOUSE_TRANSFER',
+          inQty: 0, outQty: 0, balance: prevLedger?.balance || 0,
+          reference: `${fromWarehouse || 'Warehouse'} → ${toWarehouse} | Pack: ${packId}${remarks ? ' | ' + remarks : ''}`
+        }
+      })
     })
     return res.json({ success: true, message: `Pack ${packId} transferred to ${toWarehouse}` })
   } catch (err) {
