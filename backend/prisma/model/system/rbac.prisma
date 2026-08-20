@@ -1,30 +1,8 @@
-// ─── RBAC — ROLES & PERMISSIONS ────────────────────────────────────────────────
-//
-// Models in this file:
-//   Role               — Named permission bundle assigned to users (e.g. "Store Manager")
-//   Permission         — Catalog of module.resource.action strings (single source of
-//                        truth is backend/src/constants/permissions.catalog.js — this
-//                        table is seeded from that file, never hand-edited)
-//   RolePermissionMap  — Role <-> Permission join. Deliberately NOT named
-//                        "RolePermission" — that name is already taken by the
-//                        legacy page-path permission table in hr.prisma, which
-//                        belongs to a separate (currently dead) HR feature and
-//                        is left untouched to avoid colliding with it.
-//   UserRole           — User <-> Role join. Many-to-many from day one so a
-//                        person can hold more than one role without a schema
-//                        change, even though every seeded account gets exactly one.
-//
-// ─────────────────────────────────────────────────────────────────────────────
-
 model Role {
   roleId      String   @id @default(cuid()) @map("role_id")
   name        String   @unique @db.VarChar(100)
   description String?
-  // Seeded roles — block delete/rename of these in the future Admin Panel.
   isSystem    Boolean  @default(false) @map("is_system")
-  // Plain email string, same convention as every other createdBy/updatedBy
-  // in this schema — auto-stamped by the Prisma audit-stamp extension
-  // (utils/prisma-audit-extension.js), not by application code.
   createdBy   String?  @map("created_by")
   updatedBy   String?  @map("updated_by")
   createdAt   DateTime @default(now()) @map("created_at")
@@ -36,11 +14,9 @@ model Role {
   @@map("roles")
 }
 
-// Seeded from backend/src/constants/permissions.catalog.js, never
-// hand-edited — no createdBy/updatedBy, it isn't a user-created record.
 model Permission {
   permissionId String  @id @default(cuid()) @map("permission_id")
-  key          String  @unique @db.VarChar(150) // "inventory.inward.create"
+  key          String  @unique @db.VarChar(150)
   module       String  @db.VarChar(50)
   resource     String  @db.VarChar(50)
   action       String  @db.VarChar(30)
@@ -52,9 +28,6 @@ model Permission {
   @@map("permissions")
 }
 
-// Join table — no createdBy/updatedBy; the mutating action itself is
-// already captured by writeAudit() at the rbac.service.js layer that
-// changes these rows.
 model RolePermissionMap {
   roleId       String
   permissionId String
@@ -66,9 +39,6 @@ model RolePermissionMap {
   @@map("role_permission_map")
 }
 
-// Join table — no createdBy/updatedBy, same reasoning as RolePermissionMap
-// above; setUserRoles/assignRoleToUser/removeRoleFromUser already audit
-// the change itself.
 model UserRole {
   userId     String   @db.Uuid
   roleId     String

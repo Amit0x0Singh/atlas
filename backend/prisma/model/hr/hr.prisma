@@ -1,16 +1,6 @@
-// ─── HR & ACCESS CONTROL ─────────────────────────────────────────────────────
-//
-// Models in this file:
-//   CompanyMaster   — Legal entities / companies operating under the ERP
-//                     (DVS, SOM, AL-IPL, AL-PTE)
-//   EmployeeMaster  — Employee records with role-based access assignment
-//   RolePermission  — Page-level permission map per role (role → page path)
-//
-// ─────────────────────────────────────────────────────────────────────────────
-
 model CompanyMaster {
   id        String   @id @default(cuid())
-  code      String   @unique // DVS | SOM | AL-IPL | AL-PTE
+  code      String   @unique
   name      String
   isActive  Boolean  @default(true) @map("is_active")
   createdAt DateTime @default(now()) @map("created_at")
@@ -28,9 +18,7 @@ model EmployeeMaster {
   email     String?  @unique
   phone     String?
   role      String
-  // ADMIN | SALES | PRODUCTION | QC | DISPATCH | PLANNING | ACCOUNTS
   section   String?
-  // NANO | BOTANICAL | LIQUID | POWDER | GRANULES (applicable to PRODUCTION role)
   isActive  Boolean  @default(true) @map("is_active")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

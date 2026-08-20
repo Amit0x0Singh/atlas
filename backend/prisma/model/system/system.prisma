@@ -1,11 +1,3 @@
-// ─── SYSTEM — USERS & AUDIT ───────────────────────────────────────────────────
-//
-// Models in this file:
-//   User      — App users with role-based access (auth via password or PIN)
-//   AuditLog  — Append-only audit trail for all data mutations
-//
-// ─────────────────────────────────────────────────────────────────────────────
-
 model User {
   userId       String   @id @default(dbgenerated("gen_random_uuid()")) @map("user_id") @db.Uuid
   username     String   @unique @db.VarChar(100)
@@ -14,15 +6,8 @@ model User {
   fullName     String   @map("full_name") @db.VarChar(200)
   phone        String?  @db.VarChar(20)
   pinHash      String?  @map("pin_hash") @db.VarChar(255)
-  // DEPRECATED — superseded by UserRole/Role. Column kept (not dropped) to
-  // avoid unnecessary migration churn; stop reading/writing it in new code.
   role         String   @default("") @db.VarChar(50)
-  // Plant scope for this login — [] = unscoped (all plants), non-empty =
-  // restricted to these plant tags. Mirrors the array convention already
-  // used on ProductMaster.plant. Enforced by backend/src/middleware/scope.js.
   plants       String[] @default([]) @map("plants")
-  // Optional link to an HR roster record. Not every login needs one, and not
-  // every EmployeeMaster row needs a login — kept as separate concepts.
   employeeId   String?  @unique @map("employee_id")
   isActive     Boolean  @default(true) @map("is_active")
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz()
@@ -39,14 +24,8 @@ model AuditLog {
   id        BigInt   @id @default(autoincrement())
   userId    String?  @map("user_id") @db.Uuid
   username  String?  @db.VarChar(100)
-  // Point-in-time snapshot of the actor's display name, captured at write
-  // time — audit rows must stay self-contained and readable even if the
-  // user's name (or the user itself) changes later.
   fullName  String?  @map("full_name") @db.VarChar(150)
   action    String   @db.VarChar(50)
-  // Coarse module grouping (mirrors the permission catalog's module
-  // vocabulary, e.g. "masters"/"inventory"/"sales"/"admin") — lets the
-  // Audit Logs page filter by module without parsing tableName.
   module    String?  @db.VarChar(50)
   tableName String?  @map("table_name") @db.VarChar(100)
   recordId  String?  @map("record_id") @db.VarChar(200)

@@ -1,18 +1,11 @@
--- =============================================================================
--- SOM ERP — SEED DATA
 -- Run AFTER erp-migration.sql
--- =============================================================================
-
--- ─── REASON CODES ─────────────────────────────────────────────────────────────
 
 INSERT INTO reason_codes (category, code, label) VALUES
-  -- Stock Adjustments
   ('stock_adjustment', 'PHYS_COUNT', 'Physical count variance'),
   ('stock_adjustment', 'DAMAGE',     'Damage'),
   ('stock_adjustment', 'SPILLAGE',   'Spillage'),
   ('stock_adjustment', 'EXPIRED',    'Expired'),
   ('stock_adjustment', 'OTHER',      'Other (with note)'),
-  -- Delay Reasons
   ('batch_delay', 'RM_NOT_AVAIL',  'RM not available'),
   ('batch_delay', 'EQUIP_BREAK',   'Equipment breakdown'),
   ('batch_delay', 'MANPOWER',      'Manpower shortage'),
@@ -20,24 +13,16 @@ INSERT INTO reason_codes (category, code, label) VALUES
   ('batch_delay', 'POWER',         'Power/utility issue'),
   ('batch_delay', 'QUALITY_HOLD',  'Quality hold'),
   ('batch_delay', 'OTHER',         'Other'),
-  -- Production Loss
   ('production_loss', 'QC_FAIL',    'QC failure'),
   ('production_loss', 'PROCESS_ERR','Process error'),
   ('production_loss', 'CONTAMINATION','Contamination'),
   ('production_loss', 'EQUIP_ISSUE','Equipment issue'),
   ('production_loss', 'OTHER',      'Other'),
-  -- FIFO Override
   ('fifo_override', 'ITEM_SAME',   'Item identical — different supplier batch'),
   ('fifo_override', 'OLDER_QUARAN','Older lot in quarantine'),
   ('fifo_override', 'MANAGER_AUTH','Manager-authorised exception'),
   ('fifo_override', 'OTHER',       'Other (requires note)')
 ON CONFLICT (category, code) DO NOTHING;
-
--- ─── DEFAULT ADMIN USER ────────────────────────────────────────────────────────
--- Password: Admin@2026!  (PBKDF2-SHA512, change after first login)
--- Generated hash for password "Admin@2026!":
--- In production, run: node -e "import('./src/middleware/auth.js').then(m => console.log(m.hashPassword('Admin@2026!')))"
--- For seeding we insert a known hash; replace this after deployment.
 
 DO $$
 DECLARE
@@ -48,7 +33,7 @@ BEGIN
     INSERT INTO users (username, password_hash, full_name, role, email, is_active)
     VALUES (
       'admin',
-      -- This is a placeholder hash for 'Admin@2026!' — MUST be replaced via the admin UI
+      -- Placeholder hash; replace via the admin UI before real use.
       'REPLACE_WITH_HASH_FROM_hashPassword_Admin@2026!',
       'System Administrator',
       'admin',
@@ -59,16 +44,12 @@ BEGIN
   END IF;
 END $$;
 
--- ─── SAMPLE PLANTS ────────────────────────────────────────────────────────────
-
 INSERT INTO erp_plants (plant_name, plant_code, location, plant_type) VALUES
   ('Formulation Plant 1', 'FP1', 'Block A, Ground Floor', 'formulation'),
   ('Packing Plant 1',     'PP1', 'Block A, First Floor',  'packing'),
   ('Formulation Plant 2', 'FP2', 'Block B, Ground Floor', 'formulation'),
   ('Combined Plant',      'CP1', 'Block C',               'both')
 ON CONFLICT (plant_code) DO NOTHING;
-
--- ─── SAMPLE EQUIPMENT ─────────────────────────────────────────────────────────
 
 INSERT INTO erp_equipment (plant_id, equipment_name, equipment_code, equipment_type,
   working_volume, working_volume_unit, cleaning_time_hrs, requires_sterilisation)
@@ -84,16 +65,12 @@ FROM erp_plants p, (VALUES
 WHERE p.plant_code = eq.plant_code
 ON CONFLICT (equipment_code) DO NOTHING;
 
--- ─── SAMPLE SUPPLIERS ─────────────────────────────────────────────────────────
-
 INSERT INTO erp_suppliers (supplier_name, gstin, phone, email) VALUES
   ('Agri Inputs India Ltd',    '27AAACI0001A1Z5', '9800001111', 'procurement@agriinputs.in'),
   ('BioTech Carriers Pvt Ltd', '29AABCB0002B2Z6', '9800002222', 'supply@biotechcarriers.com'),
   ('Om Chemicals',             '24AAAOC0003C3Z7', '9800003333', 'sales@omchemicals.in'),
   ('Packing Solutions India',  '07AABCP0004D4Z8', '9800004444', 'orders@packingsol.com')
 ON CONFLICT DO NOTHING;
-
--- ─── SAMPLE MICROBIAL STRAINS ─────────────────────────────────────────────────
 
 INSERT INTO microbial_strains (strain_name, decay_k, optimal_temp_c, min_viable_cfu_per_ml, notes) VALUES
   ('Rhizobium japonicum',      0.012, 28.0, 1e8,  'Soybean nitrogen-fixer'),
@@ -103,8 +80,6 @@ INSERT INTO microbial_strains (strain_name, decay_k, optimal_temp_c, min_viable_
   ('Pseudomonas fluorescens',  0.010, 27.0, 1e8,  'Plant growth promoting'),
   ('Frateuria aurantia',       0.009, 28.5, 1e8,  'Potash mobilizer')
 ON CONFLICT DO NOTHING;
-
--- ─── SAMPLE ITEMS ─────────────────────────────────────────────────────────────
 
 INSERT INTO erp_items (item_code, item_name, item_category, uom, warehouse_zone,
   reorder_level, decanting_tolerance_pct, is_microbial) VALUES
@@ -122,8 +97,6 @@ INSERT INTO erp_items (item_code, item_name, item_category, uom, warehouse_zone,
   ('LBL-002', 'Product Label 1kg',        'PM',         'nos', 'Zone-C', 10000,0.0,  false)
 ON CONFLICT (item_code) DO NOTHING;
 
--- ─── SAMPLE PRODUCTS ──────────────────────────────────────────────────────────
-
 INSERT INTO erp_products (product_code, product_name, product_category, formulation_type,
   shelf_life_days, consolidation_window_days, is_microbial, status)
 SELECT
@@ -138,14 +111,12 @@ FROM (VALUES
 ) AS v(code, name, cat, form_type, shelf, cons_window, micro)
 ON CONFLICT (product_code) DO NOTHING;
 
--- Link products to plants
 UPDATE erp_products SET plant_id = (SELECT plant_id FROM erp_plants WHERE plant_code = 'FP1' LIMIT 1)
 WHERE plant_id IS NULL AND product_code IN ('RHZ-500G','AZO-1KG','PSB-500G','TRIC-1KG');
 
 UPDATE erp_products SET plant_id = (SELECT plant_id FROM erp_plants WHERE plant_code = 'CP1' LIMIT 1)
 WHERE plant_id IS NULL AND product_code IN ('BCO-5KG','COM-1KG');
 
--- Link microbial products to strains
 UPDATE erp_products SET microbial_strain_id = (
   SELECT strain_id FROM microbial_strains WHERE strain_name = 'Rhizobium japonicum' LIMIT 1
 ) WHERE product_code = 'RHZ-500G';
@@ -162,8 +133,6 @@ UPDATE erp_products SET microbial_strain_id = (
   SELECT strain_id FROM microbial_strains WHERE strain_name = 'Trichoderma viride' LIMIT 1
 ) WHERE product_code = 'TRIC-1KG';
 
--- ─── SAMPLE CUSTOMERS ────────────────────────────────────────────────────────
-
 INSERT INTO customers (customer_name, customer_code, state) VALUES
   ('Krishidhan Seeds Ltd',         'KDN-001', 'Maharashtra'),
   ('Bharat Agro Inputs',           'BAI-002', 'Gujarat'),
@@ -171,8 +140,6 @@ INSERT INTO customers (customer_name, customer_code, state) VALUES
   ('North India Fertilizers',      'NIF-004', 'Punjab'),
   ('AgroTech International Ltd',   'ATI-005', 'Export')
 ON CONFLICT DO NOTHING;
-
--- ─── SAMPLE CONTAINERS (for decanting) ────────────────────────────────────────
 
 INSERT INTO erp_containers (container_id, container_qr, item_code, location,
   max_capacity, current_qty, uom, low_stock_threshold)
@@ -183,8 +150,6 @@ VALUES
   ('CNT-SMP-001', 'QR-CNT-SMP-001', 'SMP-001', 'Zone-B Shelf-2', 50,  0, 'kg', 10),
   ('CNT-MGS-001', 'QR-CNT-MGS-001', 'MGS-001', 'Zone-A Shelf-3', 25,  0, 'kg', 5)
 ON CONFLICT (container_id) DO NOTHING;
-
--- ─── SAMPLE MICROBIAL CONTAINERS ──────────────────────────────────────────────
 
 INSERT INTO microbial_containers (strain_id, location_room, location_position,
   volume_litres, mfg_cfu_per_ml, mfg_date, expiry_date, storage_temp_c, status)
@@ -199,19 +164,5 @@ FROM microbial_strains ms, (VALUES
 ) AS v(strain, room, pos, vol, cfu, mfg_date, exp_date, temp)
 WHERE ms.strain_name = v.strain
 ON CONFLICT DO NOTHING;
-
--- ─── NOTES FOR DEPLOYMENT ─────────────────────────────────────────────────────
--- 1. After running this seed:
---    a) Run the backend server
---    b) Create the admin user via:
---       POST /api/auth/users with { username: "admin", password: "Admin@2026!", full_name: "System Administrator", role: "admin" }
---    c) Or update the placeholder hash in users table directly using hashPassword()
---
--- 2. Then create operational users via POST /api/auth/users for each role:
---    gate_staff, store_person, store_manager, planner, planning_manager,
---    plant_supervisor, qc_person, sales_team
---
--- 3. The admin user created via API will have a proper PBKDF2 hash.
---    The placeholder row above should be updated or deleted.
 
 SELECT 'Seed data applied successfully' AS status;

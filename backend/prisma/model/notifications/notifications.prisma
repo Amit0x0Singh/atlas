@@ -1,12 +1,3 @@
-// ─── NOTIFICATIONS ────────────────────────────────────────────────────────────
-//
-// Models in this file:
-//   ErpNotification          — In-app notifications targeting roles or users
-//   NotificationEscalation   — Escalation trail when notifications go un-actioned
-//   NotificationDeliveryLog  — Delivery log per channel (email, SMS, push, etc.)
-//
-// ─────────────────────────────────────────────────────────────────────────────
-
 model ErpNotification {
   notifId      String    @id @default(dbgenerated("gen_random_uuid()")) @map("notif_id") @db.Uuid
   notifType    String    @map("notif_type") @db.VarChar(100)

@@ -1,15 +1,3 @@
-// SOM ERP — Admin-only seed
-// Run: node prisma/seed-admin.js   (from backend/)
-//
-// Same RBAC bootstrap as seed.js (permission catalog + all role definitions —
-// Super Admin's role references every permission key, so the catalog can't
-// be scoped down), but creates only the admin@agrilife.com login instead of
-// looping every legacy account, and skips all of seed.js's demo business
-// data (product master, sales orders, production plans, ...) entirely.
-// Meant for a local DB that already holds real restored data and just needs
-// a working admin login, not a full demo dataset on top of it.
-// Idempotent: safe to run multiple times.
-
 import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 import { PERMISSIONS } from '../src/constants/permissions.catalog.js'

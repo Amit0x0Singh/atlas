@@ -1,14 +1,3 @@
-// ─── ERP MASTER DATA ──────────────────────────────────────────────────────────
-//
-// Models in this file (all mapped to erp-migration.sql tables):
-//   ReasonCode            — Configurable reason codes by category
-//   ErpSupplier           — Supplier master
-//   ErpPlant              — Plant/facility master
-//   ErpEquipment          — Equipment catalogue with capacity and sterilisation flags
-//   Customer              — Customer master
-//
-// ─────────────────────────────────────────────────────────────────────────────
-
 model ReasonCode {
   codeId    Int      @id @default(autoincrement()) @map("code_id")
   category  String   @db.VarChar(100)
@@ -46,7 +35,6 @@ model ErpPlant {
   plantCode String   @unique @map("plant_code") @db.VarChar(20)
   location  String?  @db.VarChar(200)
   plantType String   @map("plant_type") @db.VarChar(50)
-  // formulation / packing / both
   isActive  Boolean  @default(true) @map("is_active")
   createdBy String?  @map("created_by")
   updatedBy String?  @map("updated_by")

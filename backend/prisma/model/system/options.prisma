@@ -1,26 +1,7 @@
-// ─── SYSTEM — ADMIN-MANAGED SELECT OPTIONS ────────────────────────────────────
-//
-// Models in this file:
-//   OptionGroup  — A dropdown "family" (Company, Warehouse, Carrier, ...) that
-//                  engineering wires a frontend <select> up to by groupCode.
-//                  New groups are added by a developer touching code (a new
-//                  consumer needs a new groupCode anyway) — admins manage the
-//                  VALUES within existing groups, not the groups themselves,
-//                  in this first wave.
-//   OptionValue  — One selectable option within a group. Never hard-deleted —
-//                  isActive=false removes it from new-record pickers while
-//                  historical records keep whatever value they already stored.
-//                  Business tables store the plain `code` string directly (no
-//                  FK to this table), same as the hardcoded arrays they
-//                  replace — this is why deactivating/never-deleting an
-//                  OptionValue can never break an existing record.
-//
-// ─────────────────────────────────────────────────────────────────────────────
-
 model OptionGroup {
   id          String   @id @default(cuid())
-  groupCode   String   @unique @map("group_code") @db.VarChar(50) // 'COMPANY', 'WAREHOUSE', ...
-  label       String   @db.VarChar(200) // "Company"
+  groupCode   String   @unique @map("group_code") @db.VarChar(50)
+  label       String   @db.VarChar(200)
   description String?  @db.VarChar(500)
   isActive    Boolean  @default(true) @map("is_active")
   createdAt   DateTime @default(now()) @map("created_at")
@@ -37,8 +18,8 @@ model OptionValue {
   id        String      @id @default(cuid())
   groupId   String      @map("group_id")
   group     OptionGroup @relation(fields: [groupId], references: [id])
-  code      String      @db.VarChar(100) // stable value stored on business records, e.g. 'SOM'
-  label     String      @db.VarChar(200) // display label, e.g. "SOM Phytopharma"
+  code      String      @db.VarChar(100)
+  label     String      @db.VarChar(200)
   isActive  Boolean     @default(true) @map("is_active")
   sortOrder Int         @default(0) @map("sort_order")
   createdAt DateTime    @default(now()) @map("created_at")

@@ -1,45 +1,14 @@
-// ─── INVENTORY / RAW MATERIALS ───────────────────────────────────────────────
-//
-// Models in this file:
-//   RmMaster         — Raw material catalogue (item code, name, UOM, tracking type)
-//   PrintMaster      — Header: one row per item generated within a Gate Inward entry
-//   PackDetail       — One row per physical bag: scan/inward status + remaining qty
-//   ContainerMaster  — Reusable containers (drums, IBC, etc.) with current fill level
-//   LotSequence      — Auto-increment sequence for pack lot numbers (per item/year)
-//   StockLedger      — Append-only ledger of all IN/OUT stock movements
-//   Outward          — Individual outward (issue) transactions
-//
-// ─────────────────────────────────────────────────────────────────────────────
-
-// ─── RAW MATERIAL MASTER ─────────────────────────────────────────────────────
-
 model RmMaster {
   itemCode           String   @id @map("item_code")
   itemName           String   @unique @map("item_name")
-  // Unit this item is stored/tracked in inventory (packs, containers, stock
-  // ledger). Every stock quantity for this item lives in this unit.
   inventoryUom       String   @map("inventory_uom")
-  // Unit this item is actually consumed/issued in on the shop floor when it
-  // differs from the inventory unit — e.g. stocked in KG but dosed in L.
-  // Left null when operations use the same unit as inventory.
   operationalUom     String?  @map("operational_uom")
-  trackingType       String   @default("PACK") @map("tracking_type") // PACK | BULK
+  trackingType       String   @default("PACK") @map("tracking_type")
   category           String?  @map("category")
   subCategory        String?  @map("sub_category")
-  state              String?  @map("physical_state") // SOLID | LIQUID | GAS
-  // kg per liter — lets a liquid item be stored in KG and issued in L (or
-  // vice versa) by converting through mass = density × volume. Only
-  // meaningful for state = LIQUID; left null for solids/gases. This is what
-  // the RM import sheet calls "Conversion Factor" — same value, same purpose.
+  state              String?  @map("physical_state")
   density            Float?   @map("density")
-  // Whether inventoryUom -> operationalUom needs density applied as a
-  // conversion factor before issuance — flagged explicitly rather than just
-  // inferred from inventoryUom !== operationalUom, since a store operator
-  // sets this by hand.
   conversionRequired Boolean  @default(false) @map("conversion_required")
-  // Reorder thresholds (in inventoryUom) — lowStockLevel flags when stock
-  // needs replenishing, highStockLevel flags excess/overstock. Both
-  // optional; left null when this item isn't tracked against reorder levels.
   lowStockLevel      Float?   @map("low_stock_level")
   highStockLevel     Float?   @map("high_stock_level")
   createdAt          DateTime @default(now()) @map("created_at")
@@ -50,8 +19,6 @@ model RmMaster {
   @@map("rm_master")
 }
 
-// ─── PACK TRACKING ───────────────────────────────────────────────────────────
-
 model LotSequence {
   itemCode String @map("item_code")
   year     Int
@@ -61,9 +28,6 @@ model LotSequence {
   @@map("lot_sequence")
 }
 
-// Header — one row per item generated within a single Gate Inward entry.
-// Supplier/invoice/received-date live on the linked GateInward and are not
-// duplicated here (see gateInward relation).
 model PrintMaster {
   id           String   @id @default(cuid())
   gateInwardId String   @map("gate_inward_id") @db.Uuid
@@ -86,27 +50,15 @@ model PrintMaster {
   @@map("print_master")
 }
 
-// One row per physical bag — absorbs what used to be split across
-// InwardSession (scan progress), Inward (inward transaction history) and
-// PackBalance (remaining qty). `status` tracks the bag's lifecycle:
-// AWAITING_INWARD -> SCANNED -> INWARDED.
 model PackDetail {
   packId            String    @id @map("pack_id")
   printMasterId     String    @map("print_master_id")
-  // Denormalized from PrintMaster so stock queries can groupBy/aggregate by
-  // item directly on this table (Prisma can't groupBy a related field) —
-  // mirrors what PackBalance.itemCode already did.
   itemCode          String    @map("item_code")
   bagNo             Int       @map("bag_no")
   totalQty          Float     @map("total_qty")
   remainingQty      Float     @map("remaining_qty")
   status            String    @default("AWAITING_INWARD")
   warehouse         String?
-  // Per-bag, not per-lot — different bag ranges within the same lot can
-  // arrive under different supplier batch codes / expiry dates (e.g. bags
-  // 1-10 of LOT-001 are Batch-A expiring Dec 2027, 11-18 are Batch-B
-  // expiring Jun 2028). Set once at generation time, one value per
-  // "batch group" of bags within a lot.
   customerBatchCode String?   @map("customer_batch_code")
   expiryDate        DateTime? @map("expiry_date")
   scannedAt         DateTime? @map("scanned_at")
@@ -139,8 +91,6 @@ model ContainerMaster {
   @@map("container_master")
 }
 
-// ─── STOCK LEDGER & OUTWARD ───────────────────────────────────────────────────
-
 model StockLedger {
   id              String   @id @default(cuid())
   itemCode        String   @map("item_code")
@@ -152,8 +102,6 @@ model StockLedger {
   reference       String?
   timestamp       DateTime @default(now())
 
-  // Support the Stock Ledger filter bar's item/type/date-range filters
-  // without a full-table scan as the ledger grows.
   @@index([itemCode])
   @@index([transactionType])
   @@index([timestamp])
@@ -166,15 +114,7 @@ model Outward {
   sourceId       String   @map("source_id")
   sourceType     String   @map("source_type")
   rmCode         String   @map("rm_code")
-  // Actual quantity deducted from inventory, in the item's Inventory UOM —
-  // the ledger truth. Unchanged in meaning from before Operational UOM
-  // conversion existed, so anything summing this field for reconciliation
-  // keeps working.
   qtyIssued      Float    @map("qty_issued")
-  // Qty as entered/displayed in the item's Operational UOM at issue time —
-  // equal to qtyIssued (and operationalUom equal to the item's inventoryUom)
-  // when no conversion applied. Null on rows written before this field
-  // existed; display code falls back to qtyIssued/the item's uom then.
   operationalQty Float?   @map("operational_qty")
   operationalUom String?  @map("operational_uom")
   remarks        String?
@@ -187,11 +127,6 @@ model Outward {
   @@map("outward")
 }
 
-// In-progress "Material Issue by BOM" checklist state — a store operator can
-// load a product's BOM and issue lines over multiple visits/scans before it's
-// complete. Persisted here (instead of browser localStorage) so the same
-// in-progress session is visible from any device/login, not just the one
-// that started it.
 model BomIssueSession {
   id          String   @id
   planTaskId  String?  @map("plan_task_id")
@@ -210,11 +145,3 @@ model BomIssueSession {
 
   @@map("bom_issue_session")
 }
-
-// ─── ERP GATE & PACK TRACKING ─────────────────────────────────────────────────
-//
-// Models below come from erp-migration.sql and extend the inventory domain:
-//   GateInward        — Goods receipt entries at the gate
-//   GateOutward       — Gate outward log (authorised & unauthorised exits)
-//
-// ─────────────────────────────────────────────────────────────────────────────

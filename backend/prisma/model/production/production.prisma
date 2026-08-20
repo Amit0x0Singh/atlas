@@ -1,43 +1,9 @@
-// ─── PRODUCTION ───────────────────────────────────────────────────────────────
-//
-// Models in this file:
-//   ProductMaster     — Finished-product catalogue (code, name, plant)
-//   EquipmentMaster   — Equipment/reactor catalogue with volume & operation type
-//   RecipeDb          — Bill-of-materials: which RMs go into which product
-//   IndentMaster      — Production indent (work order) header
-//   IndentDetails     — Per-RM material requirement lines within an indent
-//   SfgMaster         — Semi-finished goods (SFG) record created after formulation
-//   ProductionBatch   — Core batch record that drives all stage sub-documents
-//   BiomassInput      — Biomass stage inputs (culture, CFU, moisture, …)
-//   TechnicalDetail   — Technical blending stage details
-//   FormulationCycle  — One record per formulation cycle within a batch
-//   UnloadingLog      — Unloading stage log
-//   SievingLog        — Sieving stage log
-//   PackingLog        — Packing & labelling stage log
-//   QcSample          — QC sample collection record
-//   InventoryHandover — Handover of finished batch to inventory store
-//
-// ─────────────────────────────────────────────────────────────────────────────
-
-// ─── PRODUCT & EQUIPMENT MASTERS ─────────────────────────────────────────────
-
 model ProductMaster {
-  // App-generated (MAX(existing code)+1, see utils/product-code.js) — never
-  // accepted from the client, same convention as EquipmentMaster.equipCode
-  // below. A DB sequence default was tried first but the hosted DB's app role
-  // was never granted USAGE on it ("permission denied for sequence
-  // product_master_pr_code_seq"); computing it in app code avoids depending
-  // on DB-level grants. Existing rows (PROD-XXX, RHZ-001, ...) keep their
-  // historical codes; only products created from now on get this PR00001-style code.
   productCode String   @id @map("product_code")
   productName String   @unique @map("product_name")
   uom         String?
-  state       String?  @map("physical_state") // SOLID | LIQUID | GAS
-  // Plants involved in making this product — an array because different
-  // recipe ingredients can be sourced/processed at different plants.
+  state       String?  @map("physical_state")
   plant       String[] @default([])
-  // Count of distinct recipes (see RecipeDb.recipeNo) this product has.
-  // Maintained by the recipe save path, not user-editable.
   totalRecipe Int      @default(0) @map("total_recipe")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
@@ -49,13 +15,6 @@ model ProductMaster {
 
 model EquipmentMaster {
   equipId           String   @id @default(cuid()) @map("equip_id")
-  // App-generated (MAX(existing code)+1, see utils/equip-code.js) — never
-  // accepted from the client. A DB sequence default was tried first but the
-  // hosted DB's app role was never granted USAGE on it ("permission denied
-  // for sequence equipment_master_ep_code_seq"); computing it in app code
-  // avoids depending on DB-level grants. Format changed 2026-07-20 from
-  // "EQ-0001" to the 7-char, no-hyphen "EP00001" standard — existing EQ-xxxx
-  // rows are untouched, only new equipment gets the new format.
   equipCode         String   @unique @map("equip_code")
   equipName         String   @unique @map("equip_name")
   designatedProduct String?  @map("designated_product")
@@ -71,13 +30,11 @@ model EquipmentMaster {
   @@map("equipment_master")
 }
 
-// ─── PRODUCTION TASK (plant scheduling) ─────────────────────────────────────
-
 model ProductionTask {
   id                    String    @id @default(cuid())
   taskId                String    @unique @map("task_id") @db.VarChar(40)
   plant                 String    @db.VarChar(50)
-  date                  String    @db.VarChar(10) // YYYY-MM-DD
+  date                  String    @db.VarChar(10)
   diNo                  String?   @map("di_no") @db.VarChar(50)
   shift                 String    @default("General") @db.VarChar(20)
   productName           String    @map("product_name") @db.VarChar(300)
@@ -93,7 +50,6 @@ model ProductionTask {
   specs                 String?   @db.VarChar(200)
   status                String    @default("Not Started") @db.VarChar(50)
   remarks               String?   @db.VarChar(500)
-  // Packing fields
   primaryPack           String?   @map("primary_pack") @db.VarChar(100)
   inners                String?   @db.VarChar(100)
   secondaryPack         String?   @map("secondary_pack") @db.VarChar(100)
@@ -104,7 +60,6 @@ model ProductionTask {
   labels                String?   @db.VarChar(100)
   packAfter             String?   @map("pack_after") @db.VarChar(10)
   sfgSourceId           String?   @map("sfg_source_id") @db.VarChar(50)
-  // Workflow flags
   sent                  Boolean   @default(false)
   timerStart            DateTime? @map("timer_start") @db.Timestamptz()
   timerEnd              DateTime? @map("timer_end") @db.Timestamptz()
@@ -112,15 +67,8 @@ model ProductionTask {
   bmrSubmittedAt        DateTime? @map("bmr_submitted_at") @db.Timestamptz()
   sentToQc              Boolean   @default(false) @map("sent_to_qc")
   sentToQcAt            DateTime? @map("sent_to_qc_at") @db.Timestamptz()
-  // Set once a store operator has opened this task for BOM material issuance
-  // (Material Issue by BOM page) — persisted server-side so the task drops
-  // out of the pending picker on every device, not just the browser that
-  // started it.
   bomIssueStarted       Boolean   @default(false) @map("bom_issue_started")
   bomIssueStartedAt     DateTime? @map("bom_issue_started_at") @db.Timestamptz()
-  // Same idea as bomIssueStarted, tracked independently — RM issuance (store)
-  // and microbe issuance (SFG store) are separate people/pages drawing on the
-  // same task, so one starting shouldn't hide the task from the other.
   microbeIssueStarted   Boolean   @default(false) @map("microbe_issue_started")
   microbeIssueStartedAt DateTime? @map("microbe_issue_started_at") @db.Timestamptz()
   createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz()
@@ -133,22 +81,16 @@ model ProductionTask {
   @@map("production_tasks")
 }
 
-// ─── RECIPE / BOM ────────────────────────────────────────────────────────────
-
 model RecipeDb {
   id          String   @id @default(cuid())
   productCode String   @map("product_code")
   productName String   @map("product_name")
-  // Which recipe (of possibly several, in future) this BOM line belongs to
-  // for the product — today every product has exactly one, so this always
-  // reads 1, but it's what lets a product carry more than one recipe later
-  // without a further schema change.
   recipeNo    Int      @default(1) @map("recipe_no")
   rmCode      String   @map("rm_code")
   rmName      String   @map("rm_name")
   qtyPerUnit  Float    @map("qty_per_unit")
   uom         String
-  roleType    String   @default("INGREDIENT") @map("role_type") // INGREDIENT | CARRIER | BASE
+  roleType    String   @default("INGREDIENT") @map("role_type")
   isMicrobe   Boolean  @default(false) @map("is_microbe")
   microbeCode String?  @map("microbe_code")
   requiredCfu Float?   @map("required_cfu")
@@ -161,8 +103,6 @@ model RecipeDb {
   @@map("recipe_db")
 }
 
-// ─── INDENT (WORK ORDER) ─────────────────────────────────────────────────────
-
 model IndentMaster {
   indentId          String            @id @default(cuid()) @map("indent_id")
   productCode       String            @map("product_code")
@@ -172,9 +112,9 @@ model IndentMaster {
   diNo              String            @map("di_no")
   plant             String            @default("")
   equipment         String            @default("")
-  cycleBatchSize    Float?            @map("cycle_batch_size") // per-cycle qty when multi-cycle
-  cycleNo           Int?              @map("cycle_no") // which cycle this indent is (1-based)
-  totalCycles       Int?              @map("total_cycles") // total cycles for this DI
+  cycleBatchSize    Float?            @map("cycle_batch_size")
+  cycleNo           Int?              @map("cycle_no")
+  totalCycles       Int?              @map("total_cycles")
   status            String            @default("OPEN")
   poSentAt          DateTime?         @map("po_sent_at")
   createdAt         DateTime          @default(now()) @map("created_at")
@@ -204,8 +144,6 @@ model IndentDetails {
   @@map("indent_details")
 }
 
-// ─── SEMI-FINISHED GOODS ─────────────────────────────────────────────────────
-
 model SfgMaster {
   sfgId         String   @id @default(cuid()) @map("sfg_id")
   indentId      String   @map("indent_id")
@@ -224,8 +162,6 @@ model SfgMaster {
 
   @@map("sfg_master")
 }
-
-// ─── PRODUCTION BATCH & STAGE LOGS ───────────────────────────────────────────
 
 model ProductionBatch {
   id              String   @id @default(cuid())
@@ -435,18 +371,6 @@ model InventoryHandover {
 
   @@map("inventory_handover")
 }
-
-// ─── ERP PRODUCTION (erp-migration.sql tables) ───────────────────────────────
-//
-// Models below extend the production domain with ERP-level tracking:
-//   ErpProductionPlan       — ERP production plans (separate from app-level ProductionPlan)
-//   ErpProductionJob        — Individual batch jobs within an ERP production plan
-//   JobEquipmentAssignment  — Equipment time blocks assigned to a job
-//   BatchQcRecord           — QC results per production job
-//   ProductionLossLog       — Material loss entries during production
-//   TimeMotionLog           — Time-and-motion observations for capacity planning
-//
-// ─────────────────────────────────────────────────────────────────────────────
 
 model ErpProductionPlan {
   planId             String    @id @default(dbgenerated("gen_random_uuid()")) @map("plan_id") @db.Uuid

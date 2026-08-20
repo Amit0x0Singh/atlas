@@ -1,17 +1,3 @@
-// ─── MICROBIAL MODULE ─────────────────────────────────────────────────────────
-//
-// Models in this file:
-//   MicrobialStrain          — Strain master (decay constants, viability thresholds)
-//   MicrobialContainer       — Cold-storage containers holding live culture
-//   MicrobialTransaction     — Dispatches from containers to production jobs
-//   MicrobeMaster            — Microbial SFG product catalogue (microbe_master)
-//   MicrobialSfgContainerSeq — Sequence counter per (microbe_code, type_code)
-//   MicrobialSfgContainer    — SFG containers for microbial powders/granules
-//   MicrobialSfgInward       — Inward records for microbial SFG batches
-//   MicrobialSfgAllocation   — Allocation of SFG stock to production plans
-//
-// ─────────────────────────────────────────────────────────────────────────────
-
 model MicrobialStrain {
   strainId          String   @id @default(dbgenerated("gen_random_uuid()")) @map("strain_id") @db.Uuid
   strainName        String   @map("strain_name") @db.VarChar(200)
@@ -73,17 +59,9 @@ model MicrobialTransaction {
   @@map("microbial_transactions")
 }
 
-// ─── MICROBIAL SFG (runtime-created tables) ───────────────────────────────────
-
 model MicrobeMaster {
   microbeId   String   @id @default(dbgenerated("gen_random_uuid()::text")) @map("microbe_id")
   microbeName String   @map("microbe_name")
-  // Backend-generated — never accepted from the client, whether the
-  // interactive "Add Microbe" form or a bulk Import Master Data sheet.
-  // Computed application-side from MAX(existing microbe_code)+1 (see
-  // backend/src/utils/microbe-code.js), not a raw DB sequence — a sequence
-  // only ever increments and never rolls back on a deleted/failed insert,
-  // so it can drift far ahead of the real row count over time.
   microbeCode String   @unique @map("microbe_code")
   uom         String?  @map("uom")
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
@@ -244,12 +222,6 @@ model MicrobialSfgOutwardLine {
   @@map("microbial_sfg_outward_line")
 }
 
-// Persists an in-progress Microbe Outward issuance (header + requirement
-// rows, including any FEFO allocations already calculated) keyed by a
-// client-generated id, mirroring BomIssueSession's role for Material Issue
-// by BOM — so navigating away or closing the tab mid-issuance never loses
-// work, and the task stays resumable instead of vanishing from the picker
-// once microbeIssueStarted is set.
 model MicrobialSfgOutwardSession {
   id         String   @id
   planTaskId String?  @map("plan_task_id")

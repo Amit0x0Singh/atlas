@@ -1,18 +1,12 @@
-// SOM ERP — Prisma Seed Script
-// Run: npx prisma db seed   (from backend/ directory)
-// Idempotent: safe to run multiple times
-
 import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 import { PERMISSIONS } from '../src/constants/permissions.catalog.js'
 import { ROLE_SEEDS, LEGACY_ACCOUNTS } from '../src/constants/roles.seed.js'
 const prisma = new PrismaClient()
 
-// ─── helpers ─────────────────────────────────────────────────────────────────
 const d = (s) => new Date(s)
 const log = (msg) => console.log(`  ✓ ${msg}`)
 
-// ─── 0a. RBAC — Permission catalog ────────────────────────────────────────────
 async function seedPermissions() {
   for (const p of PERMISSIONS) {
     await prisma.permission.upsert({
@@ -21,18 +15,11 @@ async function seedPermissions() {
       create: p,
     })
   }
-  // Prune rows for keys removed from the catalog file since the last seed —
-  // the file is the single source of truth per its own header comment, so a
-  // key deleted there shouldn't linger in the DB. RolePermissionMap cascades
-  // on delete, so this also detaches it from any role (should be none, in
-  // practice, since removing a still-assigned key from the catalog is itself
-  // a mistake worth surfacing rather than silently orphaning).
   const keys = PERMISSIONS.map((p) => p.key)
   const { count } = await prisma.permission.deleteMany({ where: { key: { notIn: keys } } })
   log(`Permissions — ${PERMISSIONS.length} catalog entries${count ? ` (pruned ${count} stale)` : ''}`)
 }
 
-// ─── 0b. RBAC — Roles + their permission sets ─────────────────────────────────
 async function seedRoles() {
   for (const r of ROLE_SEEDS) {
     const role = await prisma.role.upsert({
@@ -52,11 +39,6 @@ async function seedRoles() {
   log(`Roles — ${ROLE_SEEDS.length} roles seeded with their permission sets`)
 }
 
-// ─── 0c. RBAC — Migrate the 18 legacy backend/access.js accounts to real,
-// bcrypt-hashed User rows, each assigned their equivalent seed role. Safe to
-// re-run: existing rows are left with their current password hash untouched
-// (so a real password change via the app survives a reseed) and only the
-// role assignment + plants are refreshed to match roles.seed.js. ──────────────
 async function seedLegacyAccounts() {
   for (const acct of LEGACY_ACCOUNTS) {
     const role = await prisma.role.findUnique({ where: { name: acct.role } })
@@ -85,7 +67,6 @@ async function seedLegacyAccounts() {
   log(`Legacy accounts — ${LEGACY_ACCOUNTS.length} users migrated to DB-backed login with role assignments`)
 }
 
-// ─── 1. Product Master ────────────────────────────────────────────────────────
 async function seedProductMaster() {
   const products = [
     { productCode: 'RHZ-001',  productName: 'Rhizobium japonicum WP 500g',       plant: ['Nano'] },
@@ -105,7 +86,6 @@ async function seedProductMaster() {
   log(`Product Master — ${products.length} products`)
 }
 
-// ─── 2. Equipment Master ──────────────────────────────────────────────────────
 async function seedEquipmentMaster() {
   const equipment = [
     { equipName: 'Nano Reactor NR-200',      workingVolume: 200,  operation: 'Fermentation',  plant: 'Nano' },
@@ -126,31 +106,25 @@ async function seedEquipmentMaster() {
   log(`Equipment Master — ${equipment.length} equipment`)
 }
 
-// ─── 3. Recipe DB ─────────────────────────────────────────────────────────────
 async function seedRecipeDb() {
   const recipes = [
-    // Rhizobium 500g
     { productCode: 'RHZ-001', productName: 'Rhizobium japonicum WP 500g',    rmCode: 'RHZ-BIO', rmName: 'Rhizobium Biomass Culture',  qtyPerUnit: 10,   uom: 'L',  roleType: 'INGREDIENT', isMicrobe: true,  requiredCfu: 1e9 },
     { productCode: 'RHZ-001', productName: 'Rhizobium japonicum WP 500g',    rmCode: 'SIL-001', rmName: 'Silica Powder',              qtyPerUnit: 0.5,  uom: 'kg', roleType: 'CARRIER',    isMicrobe: false },
     { productCode: 'RHZ-001', productName: 'Rhizobium japonicum WP 500g',    rmCode: 'CAC-001', rmName: 'Calcium Carbonate',          qtyPerUnit: 0.3,  uom: 'kg', roleType: 'INGREDIENT', isMicrobe: false },
     { productCode: 'RHZ-001', productName: 'Rhizobium japonicum WP 500g',    rmCode: 'SMP-001', rmName: 'Skim Milk Powder',           qtyPerUnit: 0.1,  uom: 'kg', roleType: 'INGREDIENT', isMicrobe: false },
-    // Azotobacter 1kg
     { productCode: 'AZO-001', productName: 'Azotobacter chroococcum WP 1kg', rmCode: 'AZO-BIO', rmName: 'Azotobacter Culture',       qtyPerUnit: 8,    uom: 'L',  roleType: 'INGREDIENT', isMicrobe: true,  requiredCfu: 8e8 },
     { productCode: 'AZO-001', productName: 'Azotobacter chroococcum WP 1kg', rmCode: 'SIL-001', rmName: 'Silica Powder',              qtyPerUnit: 0.4,  uom: 'kg', roleType: 'CARRIER',    isMicrobe: false },
     { productCode: 'AZO-001', productName: 'Azotobacter chroococcum WP 1kg', rmCode: 'CAC-001', rmName: 'Calcium Carbonate',          qtyPerUnit: 0.35, uom: 'kg', roleType: 'INGREDIENT', isMicrobe: false },
     { productCode: 'AZO-001', productName: 'Azotobacter chroococcum WP 1kg', rmCode: 'SMP-001', rmName: 'Skim Milk Powder',           qtyPerUnit: 0.1,  uom: 'kg', roleType: 'INGREDIENT', isMicrobe: false },
-    // Trichoderma 1kg
     { productCode: 'TRIC-001', productName: 'Trichoderma viride WP 1kg',     rmCode: 'TRI-BIO', rmName: 'Trichoderma viride Culture', qtyPerUnit: 5,    uom: 'L',  roleType: 'INGREDIENT', isMicrobe: true,  requiredCfu: 5e7 },
     { productCode: 'TRIC-001', productName: 'Trichoderma viride WP 1kg',     rmCode: 'SIL-001', rmName: 'Silica Powder',              qtyPerUnit: 0.4,  uom: 'kg', roleType: 'CARRIER',    isMicrobe: false },
     { productCode: 'TRIC-001', productName: 'Trichoderma viride WP 1kg',     rmCode: 'CAC-001', rmName: 'Calcium Carbonate',          qtyPerUnit: 0.4,  uom: 'kg', roleType: 'INGREDIENT', isMicrobe: false },
     { productCode: 'TRIC-001', productName: 'Trichoderma viride WP 1kg',     rmCode: 'TALC-001',rmName: 'Talc',                      qtyPerUnit: 0.1,  uom: 'kg', roleType: 'INGREDIENT', isMicrobe: false },
-    // Bacillus subtilis 1kg
     { productCode: 'BAC-001', productName: 'Bacillus subtilis KD-118 WP 1kg', rmCode: 'BAC-BIO',rmName: 'Bacillus subtilis Biomass', qtyPerUnit: 8,    uom: 'L',  roleType: 'INGREDIENT', isMicrobe: true,  requiredCfu: 2e9 },
     { productCode: 'BAC-001', productName: 'Bacillus subtilis KD-118 WP 1kg', rmCode: 'SIL-001',rmName: 'Silica Powder',             qtyPerUnit: 0.45, uom: 'kg', roleType: 'CARRIER',    isMicrobe: false },
     { productCode: 'BAC-001', productName: 'Bacillus subtilis KD-118 WP 1kg', rmCode: 'CAC-001',rmName: 'Calcium Carbonate',         qtyPerUnit: 0.3,  uom: 'kg', roleType: 'INGREDIENT', isMicrobe: false },
     { productCode: 'BAC-001', productName: 'Bacillus subtilis KD-118 WP 1kg', rmCode: 'MGS-001',rmName: 'Magnesium Stearate',       qtyPerUnit: 0.05, uom: 'kg', roleType: 'INGREDIENT', isMicrobe: false },
     { productCode: 'BAC-001', productName: 'Bacillus subtilis KD-118 WP 1kg', rmCode: 'SMP-001',rmName: 'Skim Milk Powder',          qtyPerUnit: 0.1,  uom: 'kg', roleType: 'INGREDIENT', isMicrobe: false },
-    // Bioconsortia 5kg
     { productCode: 'BCO-001', productName: 'Bioconsortia WP 5kg Bulk',       rmCode: 'RHZ-BIO', rmName: 'Rhizobium Biomass Culture', qtyPerUnit: 3,    uom: 'L',  roleType: 'INGREDIENT', isMicrobe: true,  requiredCfu: 1e9 },
     { productCode: 'BCO-001', productName: 'Bioconsortia WP 5kg Bulk',       rmCode: 'AZO-BIO', rmName: 'Azotobacter Culture',       qtyPerUnit: 2,    uom: 'L',  roleType: 'INGREDIENT', isMicrobe: true,  requiredCfu: 8e8 },
     { productCode: 'BCO-001', productName: 'Bioconsortia WP 5kg Bulk',       rmCode: 'TRI-BIO', rmName: 'Trichoderma viride Culture',qtyPerUnit: 1.5,  uom: 'L',  roleType: 'INGREDIENT', isMicrobe: true,  requiredCfu: 5e7 },
@@ -171,14 +145,12 @@ async function seedRecipeDb() {
   log(`Recipe DB — ${recipes.length} BOM lines across 5 products`)
 }
 
-// ─── 4. Sequence tables ───────────────────────────────────────────────────────
 async function seedSequences() {
   await prisma.soSequence.upsert({ where: { year: 2026 }, update: {}, create: { year: 2026, seq: 5 } })
   await prisma.planSequence.upsert({ where: { year: 2026 }, update: {}, create: { year: 2026, seq: 5 } })
   log('Sequences — so_sequence & plan_sequence bootstrapped at 5')
 }
 
-// ─── 5. Customer Profiles ─────────────────────────────────────────────────────
 async function seedCustomerProfiles() {
   const profiles = [
     { customerName: 'Krishidhan Seeds Ltd',       company: 'SOM', orderType: 'DOMESTIC', orderCount: 3 },
@@ -195,7 +167,6 @@ async function seedCustomerProfiles() {
     })
   }
 
-  // Customer × Product memory
   const cppRecords = [
     {
       customerName: 'Krishidhan Seeds Ltd', productName: 'Rhizobium 500g',
@@ -248,7 +219,6 @@ async function seedCustomerProfiles() {
   log(`Customer Profiles — ${profiles.length} profiles, ${cppRecords.length} product memories`)
 }
 
-// ─── 6. Sales Orders + Items ──────────────────────────────────────────────────
 async function seedSalesOrders() {
   const orders = [
     {
@@ -384,7 +354,6 @@ async function seedSalesOrders() {
   log(`Sales Orders — 5 orders (SO-2026-0001 to 0005), 7 line items`)
 }
 
-// ─── 7. Production Plans ──────────────────────────────────────────────────────
 async function seedProductionPlans() {
   const plans = [
     {
@@ -487,7 +456,6 @@ async function seedProductionPlans() {
   log(`Production Plans — 5 plans (PP-2026-0001 to 0005) across NANO / BOTANICAL / POWDER / GRANULES`)
 }
 
-// ─── 8. BOM Send Requests ─────────────────────────────────────────────────────
 async function seedBomSends() {
   const sends = [
     {
@@ -525,7 +493,6 @@ async function seedBomSends() {
   log(`BOM Sends — ${sends.length} records (2 ISSUED for DI-0001, 1 PICKED for DI-0002)`)
 }
 
-// ─── 9. Planner Logs ──────────────────────────────────────────────────────────
 async function seedPlannerLogs() {
   const count = await prisma.plannerLog.count()
   if (count === 0) {
@@ -541,9 +508,7 @@ async function seedPlannerLogs() {
   }
 }
 
-// ─── 10. Production Data (Indent → Batch → Stage Logs) ───────────────────────
 async function seedProductionData() {
-  // ── Indent for DI-2026-0001 (COMPLETED) ──────────────────────────────────
   let indent1 = await prisma.indentMaster.findFirst({ where: { batchNo: 'RHZ-260605-01', diNo: 'DI-2026-0001' } })
   if (!indent1) {
     indent1 = await prisma.indentMaster.create({
@@ -566,7 +531,6 @@ async function seedProductionData() {
     log(`Indent — IND-001 created (RHZ, CLOSED)`)
   }
 
-  // ── Production Batch for Indent 1 (COMPLETED with all stage logs) ─────────
   let batch1 = await prisma.productionBatch.findFirst({ where: { batchCode: 'RHZ-260605-01' } })
   if (!batch1) {
     batch1 = await prisma.productionBatch.create({
@@ -656,7 +620,6 @@ async function seedProductionData() {
     log(`Production Batch — RHZ-260605-01 created (COMPLETED, all 7 stage logs)`)
   }
 
-  // SFG for completed batch
   let sfg1 = await prisma.sfgMaster.findFirst({ where: { productCode: 'RHZ-001', indentId: indent1.indentId } })
   if (!sfg1) {
     await prisma.sfgMaster.create({
@@ -671,7 +634,6 @@ async function seedProductionData() {
     log('SFG Master — RHZ-001 SFG record (CLOSED)')
   }
 
-  // ── Indent for DI-2026-0002 (IN_PROGRESS — biomass + technical done) ─────
   let indent2 = await prisma.indentMaster.findFirst({ where: { batchNo: 'AZO-260615-01', diNo: 'DI-2026-0002' } })
   if (!indent2) {
     indent2 = await prisma.indentMaster.create({
@@ -738,7 +700,6 @@ async function seedProductionData() {
     log('Production Batch — AZO-260615-01 created (IN_PROGRESS, biomass+technical done)')
   }
 
-  // ── Indent for DI-2026-0003 (REVIEWED — not started) ─────────────────────
   let indent3 = await prisma.indentMaster.findFirst({ where: { batchNo: 'TRIC-260620-01', diNo: 'DI-2026-0003' } })
   if (!indent3) {
     await prisma.indentMaster.create({
@@ -762,7 +723,6 @@ async function seedProductionData() {
   }
 }
 
-// ─── main ─────────────────────────────────────────────────────────────────────
 async function main() {
   console.log('\n🌱  SOM ERP — Database Seed\n')
   await seedPermissions()
