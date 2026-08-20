@@ -1,23 +1,6 @@
 import { api } from '../context/context.jsx'
 
 
-export const productionApi = {
-  list:          (params)            => api.get('/production', { params }),
-  get:           (id)                => api.get(`/production/${id}`),
-  create:        (data)              => api.post('/production', data),
-  patch:         (id, data)          => api.patch(`/production/${id}`, data),
-  saveBiomass:   (id, rows)          => api.put(`/production/${id}/biomass`, { rows }),
-  saveTechnical: (id, data)          => api.put(`/production/${id}/technical`, data),
-  addCycle:      (id, data)          => api.post(`/production/${id}/formulation`, data),
-  updateCycle:   (id, cycleId, data) => api.put(`/production/${id}/formulation/${cycleId}`, data),
-  deleteCycle:   (id, cycleId)       => api.delete(`/production/${id}/formulation/${cycleId}`),
-  saveUnloading: (id, data)          => api.put(`/production/${id}/unloading`, data),
-  saveSieving:   (id, data)          => api.put(`/production/${id}/sieving`, data),
-  savePacking:   (id, data)          => api.put(`/production/${id}/packing`, data),
-  saveQC:        (id, data)          => api.put(`/production/${id}/qc`, data),
-  saveInventory: (id, data)          => api.put(`/production/${id}/inventory`, data),
-}
-
 export const indentApi = {
   create:          (data)                  => api.post('/indent', data),
   list:            (params)                => api.get('/indent', { params }),

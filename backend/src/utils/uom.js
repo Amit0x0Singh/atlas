@@ -57,17 +57,6 @@ const ALIASES = {
 // quantities. Matched case-insensitively like everything else here.
 const SPECIAL_UNITS = new Set(['cfu/g', '%w/w', '%v/v'])
 
-export function isSpecialUnit(rawUnit) {
-  return SPECIAL_UNITS.has(String(rawUnit || '').trim().toLowerCase())
-}
-
-// Returns 'MASS' | 'VOLUME' | 'COUNT' | 'SPECIAL' | null (unknown unit).
-export function unitFamily(rawUnit) {
-  const key = String(rawUnit || '').trim().toLowerCase()
-  if (SPECIAL_UNITS.has(key)) return 'SPECIAL'
-  return ALIASES[key]?.family || null
-}
-
 // Canonical spelling for a unit, preserving special units verbatim (in their
 // canonical lowercase form) and returning null for anything unrecognized.
 export function normalizeUom(rawUnit) {

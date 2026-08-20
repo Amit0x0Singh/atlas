@@ -64,16 +64,3 @@ export function findTier(category, unitSymbol) {
 export function toTierValue(canonicalQty, tier) {
   return canonicalQty / tier.factor
 }
-
-/**
- * Converts a display-tier value back to its category's canonical unit —
- * the inverse of toTierValue, for the rare case a UI collects input in a
- * friendly unit and needs the canonical value to persist.
- *
- * @param {number} tierValue
- * @param {MeasurementTier} tier
- * @returns {number}
- */
-export function toCanonicalValue(tierValue, tier) {
-  return tierValue * tier.factor
-}

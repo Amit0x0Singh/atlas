@@ -76,13 +76,6 @@ export function normalizeGeneral(value) {
     .trim();
 }
 
-// Business data (Company/Supplier/Customer/Product/RM/
-// Employee/Equipment/Plant/Warehouse Name, Address, Remarks, Notes,
-// Description) — general normalization only, case preserved exactly as
-// typed. Alias (not a reimplementation) so it can never drift from
-// normalizeGeneral's behavior.
-export const normalizeBusinessName = normalizeGeneral;
-
 // System data (Email, Username, API keys, auth identifiers) — free-typed
 // identifiers where consistent case matters. NOT used for fixed-vocabulary
 // dropdown fields (status/role/type/category) — those are RULES.NONE

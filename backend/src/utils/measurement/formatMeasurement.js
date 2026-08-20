@@ -123,17 +123,3 @@ export function formatMeasurement(value, unit, options = {}) {
 
   return { value: cleaned, unit: tierUnit, formatted: showUnit ? `${text} ${tierUnit}` : text, category }
 }
-
-/**
- * Convenience wrapper for the overwhelmingly common case — just the
- * ready-to-render string. `{formatMeasurementString(row.qty, row.uom)}`
- * drops straight into JSX with no destructuring at the call site.
- *
- * @param {number} value
- * @param {string} unit
- * @param {FormatMeasurementOptions} [options]
- * @returns {string}
- */
-export function formatMeasurementString(value, unit, options) {
-  return formatMeasurement(value, unit, options).formatted
-}

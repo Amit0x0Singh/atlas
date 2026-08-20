@@ -75,7 +75,9 @@ app.use(
   "/api",
   globalApiLimiter,
   (req, res, next) => {
-    console.log(`Incoming request: ${req.method} ${req.originalUrl}`);
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`Incoming request: ${req.method} ${req.originalUrl}`);
+    }
     next();
   },
   router,

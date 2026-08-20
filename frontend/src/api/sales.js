@@ -14,12 +14,6 @@ export const salesOrderApi = {
   addCompany:   (code, name) => api.post('/sales-orders/companies', { code, name }),
   dashboard:    ()           => api.get('/sales-orders/summary/dashboard'),
   syncLog:      ()           => api.get('/sales-orders/sync-log'),
-  sheetImport:  (rows, trigger = 'MANUAL') =>
-    api.post('/sales-orders/sheet-import', {
-      secret: import.meta.env.VITE_SHEET_WEBHOOK_SECRET || 'som-sheet-sync-2024',
-      trigger,
-      rows,
-    }),
 }
 
 export const customerProfileApi = {
@@ -47,18 +41,4 @@ export const bomSendApi = {
 export const trackerApi = {
   searchDiNo: (diNo)     => api.get('/tracker', { params: { diNo } }),
   getDetail:  (indentId) => api.get('/tracker/detail', { params: { indentId } }),
-}
-
-
-export const salesApi = {
-  list:         (params)     => api.get('/sales/orders', { params }),
-  get:          (di)         => api.get(`/sales/orders/${encodeURIComponent(di)}`),
-  create:       (data)       => api.post('/sales/orders', data),
-  update:       (di, data)   => api.patch(`/sales/orders/${encodeURIComponent(di)}`, data),
-  cancel:       (di)         => api.patch(`/sales/orders/${encodeURIComponent(di)}/cancel`),
-  dispatch:     (di, data)   => api.post(`/sales/orders/${encodeURIComponent(di)}/dispatch`, data),
-  dispatchList: (params)     => api.get('/sales/dispatch', { params }),
-  atRisk:       ()           => api.get('/sales/orders/at-risk'),
-  syncExcel:    ()           => api.post('/sales/sync'),
-  plannerQueue: (params)     => api.get('/sales/planner-queue', { params }),
 }

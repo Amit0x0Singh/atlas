@@ -7,9 +7,7 @@ import ProductionRouter from "../modules/production/routes.js";
 import PlanningRouter from "../modules/planning/routes.js";
 import TasksRouter from "../modules/production/tasks/tasks.router.js";
 import MasterDataRouter from "../modules/master-data/routes.js";
-import HRRouter from "../modules/hr/routes.js";
 import MicrobialRouter from "../modules/microbial/routes.js";
-import ExportRouter from "../modules/export/routes.js";
 
 // Admin Panel Router
 import AdminPanelRouter from "../modules/admin_panel/router.js";
@@ -74,10 +72,6 @@ router.use("/", TasksRouter);
 // Handles: /api/rm, /api/products, /api/equipment, /api/masters/*
 router.use("/", MasterDataRouter);
 
-// ── HR ────────────────────────────────────────────────────────────────────────
-// Handles: /api/employees/*
-// router.use("/", HRRouter);
-
 // ── Microbial ─────────────────────────────────────────────────────────────────
 // Handles: /api/microbial-sfg/*, /api/microbial/*
 router.use("/", MicrobialRouter);
@@ -87,10 +81,6 @@ router.use("/", MicrobialRouter);
 // populating dropdowns app-wide. authenticate-only (no permission check)
 // since every logged-in user's forms need to read these, not just admins.
 router.use("/options", authenticate, OptionsPublicRouter);
-
-// ── Export ────────────────────────────────────────────────────────────────────
-// Handles: /api/export/*
-// router.use("/", ExportRouter);
 
 // ---- RBAC management (roles/permissions/users) ────────────────────────────────
 // Must precede /admin below — AdminPanelRouter's own /:resource catch-all

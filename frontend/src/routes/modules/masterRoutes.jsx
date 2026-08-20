@@ -6,7 +6,6 @@ import MicrobesMaster from "../../pages/masters/microbes/page/MicrobesMaster.jsx
 import RecipeDB from "../../pages/masters/recipe/page/RecipeDB.jsx";
 import PrintMaster from "../../pages/inventory/print-master/page/PrintMaster.jsx";
 import PackEntries from "../../pages/inventory/print-master/page/PackEntries.jsx";
-import EmployeeMaster from "../../pages/hr/employee/page/EmployeeMaster.jsx";
 import SupplierMaster from "../../pages/masters/supplier/page/SupplierMaster.jsx";
 import UserRoles from "../../pages/masters/user-roles/page/UserRoles.jsx";
 import UserFormPage from "../../pages/masters/user-roles/page/UserFormPage.jsx";
@@ -21,7 +20,6 @@ export const masterRoutes = [
   <Route key="print-master"         path="/print-master"                element={<PrintMaster />} />,
   <Route key="print-master-entries" path="/print-master/entries"        element={<PackEntries />} />,
   <Route key="microbes-master"  path="/microbes-master"  element={<MicrobesMaster />} />,
-  <Route key="employee-master"  path="/employee-master"  element={<EmployeeMaster />} />,
   <Route key="recipe"           path="/recipe"           element={<RecipeDB />} />,
   <Route key="user-roles"       path="/user-roles"       element={<UserRoles />} />,
   <Route key="user-roles-new-user"  path="/user-roles/users/new"      element={<UserFormPage />} />,

@@ -44,7 +44,6 @@ export const PERMISSION_ROUTES = [
   { prefix: '/product-master',  permission: 'masters.product.view' },
   { prefix: '/equipment-master', permission: 'masters.equipment.view' },
   { prefix: '/supplier-master',  permission: 'masters.erp-supplier.view' },
-  { prefix: '/employee-master', permission: 'masters.employee.view' },
   { prefix: '/user-roles',      permission: 'admin.users.view' },
   { prefix: '/recipe',          permission: 'masters.recipe.view' },
   { prefix: '/microbes-master', permission: 'masters.microbe.view' },

@@ -48,27 +48,7 @@ export const erpSuppliersApi = {
   update: (id, data)   => api.put(`/masters/suppliers/${id}`, data),
 }
 
-export const erpPlantsApi = {
-  list:   () => api.get('/masters/plants'),
-  create: (data) => api.post('/masters/plants', data),
-}
-
-export const erpEquipmentApi = {
-  list:   (params)   => api.get('/masters/equipment', { params }),
-  create: (data)     => api.post('/masters/equipment', data),
-  patch:  (id, data) => api.patch(`/masters/equipment/${id}`, data),
-}
-
 export const erpStrainsApi = {
   list:   ()     => api.get('/masters/strains'),
   create: (data) => api.post('/masters/strains', data),
-}
-
-export const erpCustomersApi = {
-  list:   ()     => api.get('/masters/customers'),
-  create: (data) => api.post('/masters/customers', data),
-}
-
-export const erpReasonCodesApi = {
-  list: (params) => api.get('/masters/reason-codes', { params }),
 }
