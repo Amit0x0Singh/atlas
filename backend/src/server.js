@@ -91,7 +91,7 @@ app.use((err, req, res, next) => {
 const PORT = parseInt(process.env.PORT || "3001", 10);
 await connectDb();
 
-const server = app.listen(PORT, "0.0.0.0", () => {
+const server = app.listen(PORT, "127.0.0.1", () => {
   console.log(`SOM ERP Backend running on port ${PORT}`);
   runAutoSeed((msg) => console.log(msg));
   startCronJobs(app);
