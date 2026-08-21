@@ -12,7 +12,7 @@ model RmMaster {
   lowStockLevel      Float?   @map("low_stock_level")
   highStockLevel     Float?   @map("high_stock_level")
   createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
+  updatedAt          DateTime @default(now()) @updatedAt @map("updated_at")
   createdBy          String?  @map("created_by") @db.VarChar(255)
   updatedBy          String?  @map("updated_by") @db.VarChar(255)
 
@@ -38,7 +38,7 @@ model PrintMaster {
   numberOfBags Int      @map("number_of_bags")
   uom          String
   createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
   createdBy    String?  @map("created_by") @db.VarChar(255)
   updatedBy    String?  @map("updated_by") @db.VarChar(255)
 
@@ -64,7 +64,7 @@ model PackDetail {
   scannedAt         DateTime? @map("scanned_at")
   inwardedAt        DateTime? @map("inwarded_at")
   createdAt         DateTime  @default(now()) @map("created_at")
-  updatedAt         DateTime  @updatedAt @map("updated_at")
+  updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at")
   createdBy         String?   @map("created_by") @db.VarChar(255)
   updatedBy         String?   @map("updated_by") @db.VarChar(255)
 
@@ -85,7 +85,7 @@ model ContainerMaster {
   currentQty  Float    @default(0) @map("current_qty")
   uom         String
   createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
   createdBy   String?  @map("created_by") @db.VarChar(255)
   updatedBy   String?  @map("updated_by") @db.VarChar(255)
 
@@ -122,7 +122,7 @@ model Outward {
   remarks        String?
   timestamp      DateTime @default(now())
   createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
   createdBy      String?  @map("created_by") @db.VarChar(255)
   updatedBy      String?  @map("updated_by") @db.VarChar(255)
 
@@ -143,7 +143,7 @@ model BomIssueSession {
   diNo        String?  @map("di_no")
   bomLines    Json     @map("bom_lines")
   startedAt   DateTime @default(now()) @map("started_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
   createdAt   DateTime @default(now()) @map("created_at")
   createdBy   String?  @map("created_by") @db.VarChar(255)
   updatedBy   String?  @map("updated_by") @db.VarChar(255)

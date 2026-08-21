@@ -5,7 +5,7 @@ model OptionGroup {
   description String?  @db.VarChar(500)
   isActive    Boolean  @default(true) @map("is_active")
   createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
   createdBy   String?  @map("created_by") @db.VarChar(255)
   updatedBy   String?  @map("updated_by") @db.VarChar(255)
 
@@ -23,7 +23,7 @@ model OptionValue {
   isActive  Boolean     @default(true) @map("is_active")
   sortOrder Int         @default(0) @map("sort_order")
   createdAt DateTime    @default(now()) @map("created_at")
-  updatedAt DateTime    @updatedAt @map("updated_at")
+  updatedAt DateTime    @default(now()) @updatedAt @map("updated_at")
   createdBy String?     @map("created_by") @db.VarChar(255)
   updatedBy String?     @map("updated_by") @db.VarChar(255)
 
