@@ -82,7 +82,7 @@ export default function RmTableRow({ item, columnVisibility, onEdit, onDelete, o
         </td>
       )}
       <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-        <div className="flex gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+        <div className="flex gap-1">
           <Can permission="masters.rm.update">
             <IconButton icon={Pencil} tooltip="Edit" onClick={() => onEdit(item)} />
           </Can>

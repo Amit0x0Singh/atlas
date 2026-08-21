@@ -280,6 +280,12 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed, onUnlin
                 idx={i}
                 item={it}
                 rmList={rmList}
+                // Raw materials already picked in *other* item lines — kept
+                // out of this line's own dropdown so the same material can't
+                // end up selected twice across the form.
+                selectedElsewhere={new Set(
+                  items.filter((_, oi) => oi !== i).map(o => o.selectedItem?.itemCode).filter(Boolean)
+                )}
                 receivedDate={hdr.receivedDate}
                 onChange={next => updateItem(i, next)}
                 onRemove={() => removeItem(i)}

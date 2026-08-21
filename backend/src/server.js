@@ -34,6 +34,8 @@ app.use(helmet());
 app.use(express.json({ limit: "30mb" }));
 app.use(express.urlencoded({ extended: true, limit: "30mb" }));
 
+
+
 // ── CORS ───────────────────────────────────────────────────────────────────────
 const isDev = process.env.NODE_ENV !== "production";
 const allowedOrigins = (process.env.FRONTEND_URLS || "").split(",").map((s) => s.trim()).filter(Boolean);
@@ -120,6 +122,7 @@ const server = app.listen(PORT, "127.0.0.1", () => {
   startCronJobs(app);
 });
 
+ 
 const shutdown = async () => {
   console.log("Shutting down backend...");
   await disconnectDb();

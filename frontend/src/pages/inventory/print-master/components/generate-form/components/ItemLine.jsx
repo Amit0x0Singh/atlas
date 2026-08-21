@@ -17,7 +17,7 @@ export const BLANK_BATCH = () => ({
   remainingYears: "",
 });
 
-export default function ItemLine({ idx, item, rmList, receivedDate, onChange, onRemove, canRemove, fieldErrors, clearFieldError }) {
+export default function ItemLine({ idx, item, rmList, selectedElsewhere, receivedDate, onChange, onRemove, canRemove, fieldErrors, clearFieldError }) {
   const [search, setSearch]     = useState(item.selectedItem?.itemName || "");
   const [showDrop, setShowDrop] = useState(false);
   const [nextLot, setNextLot]   = useState("");
@@ -25,9 +25,10 @@ export default function ItemLine({ idx, item, rmList, receivedDate, onChange, on
   const selectedItemError = fieldErrors?.[`item.${idx}.selectedItem`];
 
   const filtered = rmList.filter(r =>
-    !search ||
-    (r.itemName || "").toLowerCase().includes(search.toLowerCase()) ||
-    (r.itemCode || "").toLowerCase().includes(search.toLowerCase())
+    !selectedElsewhere?.has(r.itemCode) &&
+    (!search ||
+      (r.itemName || "").toLowerCase().includes(search.toLowerCase()) ||
+      (r.itemCode || "").toLowerCase().includes(search.toLowerCase()))
   ).slice(0, 30);
 
   const pickItem = async (r) => {

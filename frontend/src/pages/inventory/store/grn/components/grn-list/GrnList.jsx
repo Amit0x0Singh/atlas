@@ -1,4 +1,5 @@
 import './GrnList.css'
+import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 
 export default function GrnList({ list, loading, search, selected, onSearch, onSelect, fmtDate }) {
   return (
@@ -32,7 +33,7 @@ export default function GrnList({ list, loading, search, selected, onSearch, onS
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p className="font-semibold text-gray-900 text-sm truncate">{grn.invoiceNo}</p>
-                  <p className="text-xs text-gray-500 mt-0.5 truncate">{grn.supplier}</p>
+                  <p className="text-xs text-gray-500 mt-0.5 truncate">{toTitleCase(grn.supplier)}</p>
                 </div>
                 <span className="text-xs text-gray-400 whitespace-nowrap flex-shrink-0 mt-0.5">
                   {grn.totalPacks} bags

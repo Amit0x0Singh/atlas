@@ -57,7 +57,7 @@ export default function GrnDetail({ selected, detail, loading }) {
       <div className="flex items-center justify-between mb-5">
         <div>
           <h2 className="font-bold text-gray-900">{grnNumber(selected)}</h2>
-          <p className="text-sm text-gray-400 mt-0.5">{detail.supplier} — Invoice {detail.invoiceNo}</p>
+          <p className="text-sm text-gray-400 mt-0.5">{toTitleCase(detail.supplier)} — Invoice {detail.invoiceNo}</p>
         </div>
         <Button variant="primary" icon={Printer} onClick={handlePrint}>
           Print GRN
@@ -88,7 +88,7 @@ export default function GrnDetail({ selected, detail, loading }) {
           {/* Meta grid */}
           <div className="gd-meta-grid">
             <MetaField label="Invoice No" value={detail.invoiceNo} />
-            <MetaField label="Supplier" value={detail.supplier} />
+            <MetaField label="Supplier" value={toTitleCase(detail.supplier)} />
             <MetaField label="Received Date" value={fmtDate(detail.receivedDate)} />
             <MetaField label="Total Bags" value={String(detail.totalPacks)} />
           </div>

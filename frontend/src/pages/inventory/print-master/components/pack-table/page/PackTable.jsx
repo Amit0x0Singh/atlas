@@ -53,7 +53,13 @@ export default function PackTable({ reloadTrigger }) {
     return [...statusFiltered].sort((a, b) => {
       if (sort.field === 'itemName') return dir * (a.itemName || '').localeCompare(b.itemName || '')
       if (sort.field === 'bags') return dir * (a.bags.length - b.bags.length)
-      return dir * (new Date(a.receivedDate || 0) - new Date(b.receivedDate || 0)) // 'receivedDate'
+      // 'receivedDate' sort option — receivedDate itself is a date-only
+      // field (the goods-received date), so same-day entries would tie and
+      // fall back to insertion order. createdAt is the actual pack-
+      // generation timestamp (full date+time), which is what "Newest
+      // first"/"Oldest first" should really mean — same-day entries now
+      // order correctly by when they were entered, not just which day.
+      return dir * (new Date(a.createdAt || 0) - new Date(b.createdAt || 0))
     })
   }, [statusFiltered, sort])
 

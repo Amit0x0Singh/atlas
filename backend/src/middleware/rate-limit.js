@@ -1,12 +1,9 @@
 import rateLimit from "express-rate-limit";
-
-// Strict — brute-force mitigation on the two credential-checking endpoints.
-// 10 attempts / 15 min per IP: generous enough that a legitimate user who
-// mistypes a password a few times is never blocked, tight enough to make
-// online brute-forcing any of this app's known accounts impractical.
+ 
+// 10 attempts / 15 min per IP : For authentication and password reset endpoints.  
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: 25,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, error: "Too many attempts. Please try again later." },
