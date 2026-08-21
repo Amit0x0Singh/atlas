@@ -113,7 +113,7 @@ export default function ItemLine({ idx, item, rmList, receivedDate, onChange, on
       </div>
 
       <div>
-        <label style={lbl}>Total Bags</label>
+        <label style={lbl}>Total Packs</label>
         <div style={{ ...inp, background: "#f1f5f9", fontWeight: 700, color: "#0f172a", display: "flex", alignItems: "center" }}>
           {totalBags}
         </div>

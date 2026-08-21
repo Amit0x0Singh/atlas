@@ -5,6 +5,7 @@ import { Button, IconButton, Modal } from "../../../../../components/ui";
 import { Can } from "../../../../../components/common/Can.jsx";
 import "./HistoryTable.css";
 import { toTitleCase } from "../../../../../utils/textDisplay.js";
+import { Trash2 } from "lucide-react";
 
 function StatusBadge({ status }) {
   return (
@@ -176,11 +177,16 @@ export default function HistoryTable({ list, total, filterKey, onRequestDelete, 
                       ) : (
                         <Can permission={deletePerm}>
                           <Button
-                            variant="warning"
-                            size="xs"
+                            title="Request Delete"  
+                              style={{
+                                padding: "4px 9px",
+                                background: "#ffff",
+                                border: "1px solid #cbd5e1",
+                                borderRadius: "6px",    
+                              }}
                             onClick={() => onRequestDelete(id, item.type)}
-                          >
-                            Request Delete
+                          > 
+                              <Trash2 size={15} color="#475569" />
                           </Button>
                         </Can>
                       )}

@@ -48,8 +48,8 @@ export default function BatchGroupRow({
           <input type="number" min="1"
             value={batch.numberOfBags}
             onChange={e => { onChange({ ...batch, numberOfBags: e.target.value }); onClearNumberOfBagsError?.(); }}
-            placeholder="Number of Bags *"
-            aria-label="Number of Bags"
+            placeholder="Number of Packs *"
+            aria-label="Number of Packs"
             style={withError(field, !!numberOfBagsError)}
           />
         </div>
