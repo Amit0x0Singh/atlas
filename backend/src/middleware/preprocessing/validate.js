@@ -1,16 +1,23 @@
 
-import { isRequired, isEnum, validationError } from '../validators/common.js'
+import { isRequired, isEnum, isBoolean, validationError } from '../validators/common.js'
 import { isMinLength, isMaxLength, isEmail, isIndianPhone } from '../validators/string.js'
-import { isPositiveFloat } from '../validators/number.js'
+import { isPositiveFloat, isNumber, isNonNegativeFloat, isInteger, isPositiveInteger } from '../validators/number.js'
 
 const RULE_RUNNERS = {
-  required:  (field, value, ruleValue) => (ruleValue ? isRequired(field, value) : []),
-  minLength: (field, value, ruleValue) => isMinLength(field, value, ruleValue),
-  maxLength: (field, value, ruleValue) => isMaxLength(field, value, ruleValue),
-  email:     (field, value, ruleValue) => (ruleValue ? isEmail(field, value) : []),
-  phone:     (field, value, ruleValue) => (ruleValue ? isIndianPhone(field, value) : []),
-  positive:  (field, value, ruleValue) => (ruleValue ? isPositiveFloat(field, value) : []),
-  enum:      (field, value, ruleValue) => isEnum(field, value, ruleValue),
+  required:    (field, value, ruleValue) => (ruleValue ? isRequired(field, value) : []),
+  minLength:   (field, value, ruleValue) => isMinLength(field, value, ruleValue),
+  maxLength:   (field, value, ruleValue) => isMaxLength(field, value, ruleValue),
+  email:       (field, value, ruleValue) => (ruleValue ? isEmail(field, value) : []),
+  phone:       (field, value, ruleValue) => (ruleValue ? isIndianPhone(field, value) : []),
+  positive:    (field, value, ruleValue) => (ruleValue ? isPositiveFloat(field, value) : []),
+  boolean:     (field, value, ruleValue) => (ruleValue ? isBoolean(field, value) : []),
+  // Present-but-must-be-numeric — unlike `positive`, doesn't reject 0 or
+  // negative values (temperature, offsets, etc.).
+  number:      (field, value, ruleValue) => (ruleValue ? isNumber(field, value) : []),
+  nonNegative: (field, value, ruleValue) => (ruleValue ? isNonNegativeFloat(field, value) : []),
+  integer:     (field, value, ruleValue) => (ruleValue ? isInteger(field, value) : []),
+  positiveInt: (field, value, ruleValue) => (ruleValue ? isPositiveInteger(field, value) : []),
+  enum:        (field, value, ruleValue) => isEnum(field, value, ruleValue),
 }
 
 export function validate(schema, { target = 'body' } = {}) {
