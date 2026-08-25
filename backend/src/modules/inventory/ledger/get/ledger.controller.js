@@ -3,34 +3,48 @@ import { flattenPack, packDetailInclude } from '../../../../services/pack-view.j
 import { TRANSACTION_TYPES, TRANSACTION_TYPE_VALUES } from '../../../../utils/ledger-transaction-types.js'
 import { toSafeErrorMessage } from '../../../../utils/safe-error.js';
 
-// BOM_ISSUANCE ledger rows record the deduction in Inventory UOM only
-// (outQty) — the Operational UOM qty the operator actually entered lives on
-// the matching Outward row instead, so the ledger list has to join it to
-// show the same "3.333 l (1.000 deducted)" framing Store Outward's Recent
-// Transactions already uses (see outward.controller.js's bomDirectIssue).
-// There's no FK between the two tables, and the same pack can legitimately
-// be issued more than once for the same BOM (sourceId + rmCode repeats) —
-// so candidates are matched by closest timestamp rather than a plain
-// findFirst, which would silently pick an arbitrary row once duplicates
-// exist.
+// Several ledger transaction types record the deduction in Inventory UOM
+// only (outQty) — the Operational UOM qty the operator actually entered
+// (e.g. litres of an oil stocked in kg) lives on the matching Outward row
+// instead, so the ledger list has to join it to show the same
+// "3.333 l (1.000 deducted)" framing Store Outward's Recent Transactions
+// already uses. Keyed by the Outward row's own sourceType rather than
+// assuming transactionType and sourceType always agree 1:1 — STOCK_RECON in
+// particular is written by two different flows (bagLossAdjustment, which
+// does capture Operational UOM via a linked pack, and stockAdjustment,
+// which doesn't touch Outward at all and so simply won't match anything
+// here). There's no FK between StockLedger and Outward, and the same pack
+// can legitimately pick up several Outward rows over its life (a BOM
+// issuance today, a stock-recon loss next week, both sharing the same
+// packId as sourceId) — so candidates are scoped to the matching sourceType
+// AND matched by closest timestamp, rather than a plain findFirst that
+// could silently grab the wrong event's row.
+const OPERATIONAL_QTY_SOURCE_TYPES = {
+  BOM_ISSUANCE: 'BOM_ISSUANCE',
+  STOCK_RECON:  'STOCK_ADJUSTMENT',
+  DIRECT_ISSUE: 'DIRECT_ISSUE',
+}
+
 async function attachOperationalQty(rows) {
-  const bomRows = rows.filter((r) => r.transactionType === 'BOM_ISSUANCE')
-  if (bomRows.length === 0) return rows
-  const sourceIds = [...new Set(bomRows.map((r) => r.sourceId))]
-  const itemCodes = [...new Set(bomRows.map((r) => r.itemCode))]
+  const targetRows = rows.filter((r) => OPERATIONAL_QTY_SOURCE_TYPES[r.transactionType])
+  if (targetRows.length === 0) return rows
+  const sourceIds   = [...new Set(targetRows.map((r) => r.sourceId))]
+  const itemCodes   = [...new Set(targetRows.map((r) => r.itemCode))]
+  const sourceTypes = [...new Set(Object.values(OPERATIONAL_QTY_SOURCE_TYPES))]
   const candidates = await prisma.outward.findMany({
-    where: { sourceId: { in: sourceIds }, rmCode: { in: itemCodes } },
-    select: { sourceId: true, rmCode: true, qtyIssued: true, operationalQty: true, operationalUom: true, timestamp: true },
+    where: { sourceId: { in: sourceIds }, rmCode: { in: itemCodes }, sourceType: { in: sourceTypes } },
+    select: { sourceId: true, rmCode: true, sourceType: true, qtyIssued: true, operationalQty: true, operationalUom: true, timestamp: true },
   })
   const byKey = new Map()
   for (const c of candidates) {
-    const key = `${c.rmCode}::${c.sourceId}`
+    const key = `${c.rmCode}::${c.sourceId}::${c.sourceType}`
     if (!byKey.has(key)) byKey.set(key, [])
     byKey.get(key).push(c)
   }
   return rows.map((r) => {
-    if (r.transactionType !== 'BOM_ISSUANCE') return r
-    const pool = byKey.get(`${r.itemCode}::${r.sourceId}`)
+    const sourceType = OPERATIONAL_QTY_SOURCE_TYPES[r.transactionType]
+    if (!sourceType) return r
+    const pool = byKey.get(`${r.itemCode}::${r.sourceId}::${sourceType}`)
     if (!pool?.length) return r
     const best = pool.reduce((a, b) =>
       Math.abs(new Date(b.timestamp) - new Date(r.timestamp)) < Math.abs(new Date(a.timestamp) - new Date(r.timestamp)) ? b : a
@@ -145,14 +159,16 @@ export const getLedgerEntry = async (req, res) => {
     if (!entry) return res.status(404).json({ success: false, error: 'Entry not found', code: 'NOT_FOUND' })
 
     const detail = {}
-    if (entry.transactionType === 'BOM_ISSUANCE') {
-      // The same pack can be issued more than once against the same BOM
-      // (sourceId + rmCode repeats) — findFirst would arbitrarily grab
-      // whichever Outward row Postgres happens to return, potentially
-      // showing the wrong issuance's Operational UOM qty. Ledger + Outward
-      // rows are written in the same transaction (see bomDirectIssue), so
-      // their timestamps are only milliseconds apart — closest wins.
-      const candidates = await prisma.outward.findMany({ where: { sourceId: entry.sourceId, rmCode: entry.itemCode } })
+    const outwardSourceType = OPERATIONAL_QTY_SOURCE_TYPES[entry.transactionType]
+    if (outwardSourceType) {
+      // The same pack can pick up more than one Outward row of this same
+      // sourceType (e.g. issued against the same BOM twice, or a second
+      // stock-recon loss recorded later) — findFirst would arbitrarily grab
+      // whichever row Postgres happens to return, potentially showing the
+      // wrong event's Operational UOM qty. Ledger + Outward rows are
+      // written in the same transaction, so their timestamps are only
+      // milliseconds apart — closest wins.
+      const candidates = await prisma.outward.findMany({ where: { sourceId: entry.sourceId, rmCode: entry.itemCode, sourceType: outwardSourceType } })
       const outward = candidates.length <= 1
         ? candidates[0]
         : candidates.reduce((a, b) =>

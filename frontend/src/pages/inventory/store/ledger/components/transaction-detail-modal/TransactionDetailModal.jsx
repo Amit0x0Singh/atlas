@@ -37,7 +37,7 @@ export default function TransactionDetailModal({ detail, onClose }) {
                   <DRow label="In Qty"           value={shown.entry.inQty  > 0 ? `+${Number(shown.entry.inQty).toFixed(3)}`  : '—'} tone="in" />
                   <DRow label="Out Qty"          value={shown.entry.outQty > 0 ? `-${Number(shown.entry.outQty).toFixed(3)}` : '—'} tone="out" />
                   {shown.detail?.outward?.operationalUom && Number(shown.detail.outward.operationalQty) !== Number(shown.detail.outward.qtyIssued) && (
-                    <DRow label="Issued (Operational UOM)" value={`${Number(shown.detail.outward.operationalQty).toFixed(3)} ${(shown.detail.outward.operationalUom || '').toUpperCase()}`} />
+                    <DRow label="Qty (Operational UOM)" value={`${Number(shown.detail.outward.operationalQty).toFixed(3)} ${(shown.detail.outward.operationalUom || '').toUpperCase()}`} />
                   )}
                   <DRow label="Balance After"    value={Number(shown.entry.balance).toFixed(3)} />
                   <DRow label="Reference"        value={shown.entry.reference || '—'} full />
