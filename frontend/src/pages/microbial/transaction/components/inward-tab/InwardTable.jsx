@@ -4,7 +4,7 @@ export default function InwardTable({ rows, loading }) {
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-5">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-bold text-gray-700">Recent Inward Entries</h3>
+        <h3 className="text-sm font-bold text-gray-700">Recent 5 Inward Entries</h3>
         <span className="text-xs text-gray-400">See Transaction History for the full record</span>
       </div>
 
