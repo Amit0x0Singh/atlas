@@ -13,6 +13,16 @@ const SECTIONS = [
 
 export default function MicrobesDashboard() {
   const [section, setSection] = useState('dashboard')
+  // Bumped every time the "Stock Summary" tab is clicked, so re-clicking it
+  // while already on that tab remounts StockSummarySection back to its
+  // default microbe-wise view — the tab bar doubles as the way back out of
+  // the drilled-down Container Ledger page.
+  const [stockSummaryResetKey, setStockSummaryResetKey] = useState(0)
+
+  const goToSection = (key) => {
+    setSection(key)
+    if (key === 'stock-summary') setStockSummaryResetKey((k) => k + 1)
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -26,7 +36,7 @@ export default function MicrobesDashboard() {
           {SECTIONS.map(([key, label, Icon]) => (
             <button
               key={key}
-              onClick={() => setSection(key)}
+              onClick={() => goToSection(key)}
               className={`flex items-center gap-1.5 px-4 py-2 rounded-t-lg text-[13px] font-semibold border border-b-0 transition-colors ${
                 section === key
                   ? 'bg-white text-blue-700 border-gray-200'
@@ -41,9 +51,9 @@ export default function MicrobesDashboard() {
       </PageHeader>
 
       <div className="p-4 md:p-6">
-        {section === 'dashboard' && <DashboardSection onGoToSection={setSection} />}
+        {section === 'dashboard' && <DashboardSection onGoToSection={goToSection} />}
         {section === 'storage' && <StorageSection />}
-        {section === 'stock-summary' && <StockSummarySection />}
+        {section === 'stock-summary' && <StockSummarySection key={stockSummaryResetKey} />}
       </div>
     </div>
   )

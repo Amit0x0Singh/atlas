@@ -1,6 +1,7 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Camera, Paperclip, X } from "lucide-react";
 import { Button } from "../../../../../components/ui";
+import { compressImageFiles } from "../../../../../utils/compressImage.js";
 
 // Mirrors inward-form/InvoiceDocumentField.jsx — see its comment for why the
 // camera is the primary action and file upload a quiet secondary link, and
@@ -8,12 +9,22 @@ import { Button } from "../../../../../components/ui";
 export default function OutwardDocumentField({ value, onChange, accept, existingDocument, onViewDocument }) {
   const cameraInputRef = useRef(null);
   const fileInputRef = useRef(null);
+  const [compressing, setCompressing] = useState(false);
   const staged = value || [];
   const existing = existingDocument || [];
 
-  function addFiles(fileList) {
+  // Camera photos are downscaled/recompressed to JPEG before staging — a
+  // 12MP+ phone photo uploaded as-is is what actually stalls or fails on a
+  // weak mobile connection. Non-image files (PDFs) pass through untouched.
+  async function addFiles(fileList) {
     if (!fileList?.length) return;
-    onChange([...staged, ...Array.from(fileList)]);
+    setCompressing(true);
+    try {
+      const compressed = await compressImageFiles(fileList);
+      onChange([...staged, ...compressed]);
+    } finally {
+      setCompressing(false);
+    }
   }
 
   function removeStaged(index) {
@@ -23,10 +34,10 @@ export default function OutwardDocumentField({ value, onChange, accept, existing
   return (
     <div className="of-doc-field">
       <div className="of-doc-actions">
-        <Button type="button" variant="primary" icon={Camera} onClick={() => cameraInputRef.current?.click()}>
-          Take Photo
+        <Button type="button" variant="primary" icon={Camera} disabled={compressing} loading={compressing} onClick={() => cameraInputRef.current?.click()}>
+          {compressing ? "Processing photo…" : "Take Photo"}
         </Button>
-        <button type="button" className="of-doc-file-trigger" onClick={() => fileInputRef.current?.click()}>
+        <button type="button" className="of-doc-file-trigger" disabled={compressing} onClick={() => fileInputRef.current?.click()}>
           <Paperclip size={12} /> or choose file(s)
         </button>
 

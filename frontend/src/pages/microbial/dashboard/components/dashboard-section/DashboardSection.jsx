@@ -5,8 +5,6 @@ import HealthScoreCard from './HealthScoreCard.jsx'
 import InsightsFeed from './InsightsFeed.jsx'
 import DecisionCards from './DecisionCards.jsx'
 import ReorderSignalsTable from './ReorderSignalsTable.jsx'
-import TodayActivityPanel from './TodayActivityPanel.jsx'
-import InventoryPositionCard from './InventoryPositionCard.jsx'
 import ConsumptionVelocityCard from './ConsumptionVelocityCard.jsx'
 import AbcClassificationCard from './AbcClassificationCard.jsx'
 import SlowMovingAtRiskCard from './SlowMovingAtRiskCard.jsx'
@@ -25,12 +23,8 @@ export default function DashboardSection({ onGoToSection }) {
           <InsightsFeed insights={data.insights} />
           <DecisionCards decisions={data.decisions} />
           <ReorderSignalsTable rows={data.reorder_signals} />
-          <TodayActivityPanel todayInward={data.today_inward} todayIssued={data.today_issued} />
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <InventoryPositionCard rows={data.inventory_position} onViewFull={() => onGoToSection('stock-summary')} />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <ConsumptionVelocityCard rows={data.consumption_velocity} />
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <AbcClassificationCard rows={data.abc_classification} />
             <SlowMovingAtRiskCard rows={data.slow_moving_at_risk} />
           </div>

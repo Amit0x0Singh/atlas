@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useStorageGrid } from '../../../../../hooks/microbial/useMicrobialStorage.js'
 import RackCard from './RackCard.jsx'
-import SlotDetailModal from './SlotDetailModal.jsx'
+import ContainerDetailModal from '../shared/ContainerDetailModal.jsx'
 
 const LEGEND = [
   { label: 'Fresh', cls: 'bg-green-100 text-green-800' },
@@ -43,7 +43,7 @@ export default function StorageSection() {
         )}
       </div>
 
-      <SlotDetailModal cell={selectedCell} onClose={() => setSelectedCell(null)} />
+      <ContainerDetailModal container={selectedCell} onClose={() => setSelectedCell(null)} />
     </div>
   )
 }

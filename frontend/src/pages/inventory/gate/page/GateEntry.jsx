@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef } from "react";
+﻿import { useState, useEffect } from "react";
 import { CheckCircle, History } from "lucide-react";
 import {
   useGateInward, useGateOutward,
@@ -21,6 +21,7 @@ import { toTitleCase } from '../../../../utils/textDisplay.js'
 import { COMPANIES } from "../data/companies.js";
 import { gateApi } from "../../../../api/inventory.js";
 import { openAuthedFile } from "../../../../utils/authedFile.js";
+import { useDebouncedValue } from "../../../../hooks/useDebouncedValue.js";
 const EMPTY_FILTERS = { search: "", type: "", invoice_no: "", status: "", company: "", from_date: "", to_date: "" };
 
 // companyName is stored lowercase (see gate.create.middleware's
@@ -40,17 +41,20 @@ export default function GateEntry() {
   const [formKey, setFormKey] = useState(0);        // increment to reset form
 
   // List state — `filters` drives the controlled inputs immediately;
-  // `queryFilters` drives the actual query and is debounced for the
-  // free-text fields (search/invoice_no) so we don't refetch per keystroke.
-  const [filters, setFilters]           = useState(EMPTY_FILTERS);
-  const [queryFilters, setQueryFilters] = useState(EMPTY_FILTERS);
+  // `queryFilters` drives the actual query and is debounced (so typing in
+  // the search/invoice-no fields doesn't refetch on every keystroke). Using
+  // the shared debounce hook here (same one the Stock Ledger page uses)
+  // instead of a hand-rolled setTimeout means every field change is a single
+  // functional setFilters update — no risk of one field's change clobbering
+  // another's when several change in the same tick (e.g. the Filter modal's
+  // "Reset all", which used to touch every key at once).
+  const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const queryFilters = useDebouncedValue(filters, 400);
   const [sort, setSort]                 = useState(DEFAULT_GATE_SORT);
   const [errModal, setErrModal]           = useState({ open: false, message: '' });
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [editEntry, setEditEntry]         = useState(null); // { type: 'inward'|'outward', item }
   const [successMsg, setSuccessMsg]       = useState('');
-
-  const debounceRef = useRef(null);
 
   // Historical Transactions is now the only list view — it merges both
   // queries into one type-tagged list (each row keeps its own `type` so
@@ -99,7 +103,6 @@ export default function GateEntry() {
   useEffect(() => {
     if (view === "history") {
       setFilters(EMPTY_FILTERS);
-      setQueryFilters(EMPTY_FILTERS);
       setSort(DEFAULT_GATE_SORT);
     }
   }, [view]);
@@ -137,19 +140,11 @@ export default function GateEntry() {
   }
 
   const handleFilterChange = (key, value) => {
-    const next = { ...filters, [key]: value };
-    setFilters(next);
-    if (key === "search" || key === "invoice_no") {
-      clearTimeout(debounceRef.current);
-      debounceRef.current = setTimeout(() => setQueryFilters(next), 400);
-    } else {
-      setQueryFilters(next);
-    }
+    setFilters((prev) => ({ ...prev, [key]: value }));
   };
 
   const handleClearFilters = () => {
     setFilters(EMPTY_FILTERS);
-    setQueryFilters(EMPTY_FILTERS);
   };
 
   const showSuccess = (msg) => {

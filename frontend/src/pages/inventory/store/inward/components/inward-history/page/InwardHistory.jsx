@@ -43,8 +43,14 @@ export default function InwardHistory() {
   const load = async () => {
     setLoading(true)
     try {
+      // limit: 'all' bypasses the backend's paging entirely (see
+      // listPacks's `noLimit` branch) — this page already does its own
+      // client-side filter/sort/paginate over whatever it's given, same as
+      // Print Master's Pack Records list, so a numeric cap here just means
+      // packs printed before that cutoff silently never show up at all
+      // (search included, since it only ever searches what got fetched).
       const [packsRes, inwardRes] = await Promise.all([
-        packsApi.list({ limit: 1000 }),
+        packsApi.list({ limit: 'all' }),
         inwardApi.history({ limit: 10000 }),
       ])
       // Build packId → warehouse map from inward records

@@ -11,6 +11,15 @@ export function useStorageGrid() {
   })
 }
 
+export function useContainerBatches(containerId, enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.microbialSfgContainers.batches(containerId),
+    queryFn: () => microbialSfgApi.containerBatches(containerId).then(r => r.data),
+    enabled: enabled && !!containerId,
+    ...CACHE.MASTER,
+  })
+}
+
 export function useAvailableSlots(params, enabled = true) {
   return useQuery({
     queryKey: queryKeys.microbialSfgStorage.availableSlots(params),

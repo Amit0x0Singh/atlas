@@ -45,6 +45,9 @@ export const queryKeys = {
   microbialContainers: {
     all: (filters) => filters ? ['microbial-containers', filters] : ['microbial-containers'],
   },
+  microbialSfgContainers: {
+    batches: (id) => ['microbial-sfg-containers', 'batches', id],
+  },
   microbialSfgInward: {
     all:     (filters) => filters ? ['microbial-sfg-inward', filters] : ['microbial-sfg-inward'],
     summary: () => ['microbial-sfg-inward', 'summary'],

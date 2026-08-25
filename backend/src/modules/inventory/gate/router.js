@@ -56,6 +56,28 @@ const outwardInvoiceDocUpload = multer({
   fileFilter: invoiceDocFileFilter,
 })
 
+// multer's own errors (oversized file, too many files) surface as a plain
+// `next(err)` with no statusCode set, so left alone they'd fall through to
+// the global 500 handler — technically correct message, but reads as "the
+// server crashed" instead of "your photo was too big." Wrapping the upload
+// middleware here turns those into a clear 413 with an actionable message.
+function handleUploadErrors(uploadMiddleware) {
+  return (req, res, next) => {
+    uploadMiddleware(req, res, (err) => {
+      if (!err) return next()
+      if (err instanceof multer.MulterError) {
+        const message = err.code === 'LIMIT_FILE_SIZE'
+          ? 'One of the files is too large — each invoice document must be under 15MB. Try retaking the photo (it will be auto-compressed) or choosing a smaller file.'
+          : (err.code === 'LIMIT_FILE_COUNT' || err.code === 'LIMIT_UNEXPECTED_FILE')
+            ? 'Too many files in one upload — attach up to 10 documents at a time.'
+            : err.message
+        return res.status(413).json({ success: false, error: message, code: err.code })
+      }
+      return next(err)
+    })
+  }
+}
+
 const GateRouter = express.Router()
 
 // Store flips a Gate Inward to 'approved' right after generating Print
@@ -73,7 +95,7 @@ GateRouter.patch('/inward/:id',                 authorize('gate.inward.update'),
 GateRouter.patch('/inward/:id/status',          inwardStatusRoles, validateUpdateIdParam, validateStatusUpdate, updateGateInwardStatus)
 GateRouter.patch('/inward/:id/request-delete',  authorize('gate.inward.update'), validateUpdateIdParam, requestDeleteGateInward)
 GateRouter.delete('/inward/:id',                authorize('gate.inward.delete'), validateDeleteIdParam, deleteGateInward)
-GateRouter.post('/inward/:id/invoice-document', authorize(['gate.inward.create', 'gate.inward.update']), validateUpdateIdParam, invoiceDocUpload.array('files', 10), uploadGateInwardInvoiceDocument)
+GateRouter.post('/inward/:id/invoice-document', authorize(['gate.inward.create', 'gate.inward.update']), validateUpdateIdParam, handleUploadErrors(invoiceDocUpload.array('files', 10)), uploadGateInwardInvoiceDocument)
 GateRouter.get('/inward/:id/invoice-document/:fileName', authorize('gate.inward.view'), validateGetIdParam, viewGateInwardInvoiceDocument)
 
 // ── Gate Outward ──────────────────────────────────────────────────────────────
@@ -84,7 +106,9 @@ GateRouter.patch('/outward/:id',                 authorize('gate.outward.update'
 GateRouter.patch('/outward/:id/status',          authorize('gate.outward.update'), validateUpdateIdParam, validateStatusUpdate, updateGateOutwardStatus)
 GateRouter.patch('/outward/:id/request-delete',  authorize('gate.outward.update'), validateUpdateIdParam, requestDeleteGateOutward)
 GateRouter.delete('/outward/:id',                authorize('gate.outward.delete'), validateDeleteIdParam, deleteGateOutward)
-GateRouter.post('/outward/:id/invoice-document', authorize(['gate.outward.create', 'gate.outward.update']), validateUpdateIdParam, outwardInvoiceDocUpload.array('files', 10), uploadGateOutwardInvoiceDocument)
+GateRouter.post('/outward/:id/invoice-document', authorize(['gate.outward.create', 'gate.outward.update']), validateUpdateIdParam, handleUploadErrors(outwardInvoiceDocUpload.array('files', 10)), uploadGateOutwardInvoiceDocument)
 GateRouter.get('/outward/:id/invoice-document/:fileName', authorize('gate.outward.view'), validateGetIdParam, viewGateOutwardInvoiceDocument)
+
+
 
 export default GateRouter
