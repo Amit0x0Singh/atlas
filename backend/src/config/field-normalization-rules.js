@@ -252,11 +252,11 @@ export const FIELD_RULES = {
     microbeName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
     microbeType: RULES.NONE, // fixed-vocabulary/enum-like — no case change
     typeCode: RULES.UPPER, // business code/identifier
-    location: RULES.LOWER, // free-text location descriptor — normalized lowercase, Title Case on display
+    location: RULES.UPPER, // structured rack-shelf-side-position code (e.g. R09-S3-B-M via shared/status.js's slotCode()), not free text — was misclassified LOWER, which fought the uppercase format the app generates and displays everywhere else
     side: RULES.NONE, // REVIEW: no confident naming signal — safe default
     position: RULES.NONE, // REVIEW: no confident naming signal — safe default
     fillStatus: RULES.NONE, // fixed-vocabulary/enum-like — no case change
-    inactiveLocation: RULES.LOWER, // free-text location descriptor — normalized lowercase, Title Case on display
+    inactiveLocation: RULES.UPPER, // same structured slot code as `location`, just snapshotted when a container is marked inactive
   },
   MicrobialSfgInward: {
     containerCode: RULES.UPPER, // business code/identifier
@@ -264,7 +264,7 @@ export const FIELD_RULES = {
     microbeName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
     microbeType: RULES.NONE, // fixed-vocabulary/enum-like — no case change
     biomassBatchCode: RULES.UPPER, // business code/identifier
-    location: RULES.LOWER, // free-text location descriptor — normalized lowercase, Title Case on display
+    location: RULES.UPPER, // structured rack-shelf-side-position code, same as MicrobialSfgContainer.location above
     receivedBy: RULES.NONE, // REVIEW: no confident naming signal — safe default
     remarks: RULES.NONE, // business name/free text — never case-changed
     fillStatus: RULES.NONE, // fixed-vocabulary/enum-like — no case change

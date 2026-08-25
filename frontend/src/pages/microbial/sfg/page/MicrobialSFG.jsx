@@ -140,7 +140,7 @@ function MicrobialTab() {
                               <span className="msfg-container-code">{cont.container_code}</span>
                               <span className={fillBadgeCls(cont.fill_status)}>{cont.fill_status}</span>
                               <span className="msfg-container-qty">{Number(cont.current_qty_kg).toFixed(3)} kg in container</span>
-                              {cont.location && <span className="msfg-container-loc">📍 {toTitleCase(cont.location)}</span>}
+                              {cont.location && <span className="msfg-container-loc">📍 {cont.location}</span>}
                             </div>
                             {batches.length > 0 ? (
                               <table className="msfg-fifo-table">

@@ -26,7 +26,7 @@ export default function DecisionCards({ decisions }) {
           {fefo.length ? fefo.map((r) => (
             <div key={r.container_id} className="text-xs border-b border-gray-100 pb-2 last:border-0 last:pb-0">
               <div className="flex justify-between font-semibold text-gray-900"><span className="font-mono">{r.container_code}</span><span>{r.days_to_expiry}d left</span></div>
-              <div className="text-gray-500 mt-0.5">{toTitleCase(r.microbe_name)} · {toTitleCase(r.location)} · {Number(r.balance_kg).toFixed(2)}kg</div>
+              <div className="text-gray-500 mt-0.5">{toTitleCase(r.microbe_name)} · <span className="font-mono">{r.location}</span> · {Number(r.balance_kg).toFixed(2)}kg</div>
             </div>
           )) : <div className="text-xs text-gray-400 py-2">No active stock to pick from.</div>}
         </div>

@@ -47,11 +47,23 @@ export const getNextContainerCode = async (req, res) => {
     const { microbe_code, type_code } = req.query
     if (!microbe_code || !type_code) return res.status(400).json({ success: false, error: 'microbe_code and type_code required', code: 'VALIDATION_ERROR' })
 
-    const agg = await prisma.microbialSfgContainer.aggregate({
-      where: { microbeCode: microbe_code, typeCode: type_code },
-      _max: { seqNo: true },
+    // Peek at the same MicrobialSfgContainerSeq counter createSfgInward
+    // actually increments (create/sfg-inward.controller.js's
+    // getNextContainerSeq) — that's the sole source of truth for the real
+    // seqNo/code at creation time, so the preview has to read it too rather
+    // than re-derive its own guess from the containers table's current
+    // max(seqNo). Those two can drift apart the moment a container is ever
+    // inserted by any path that doesn't touch this counter (an import
+    // script, a data migration, a manual fix) — once they do, a max()-based
+    // preview would keep suggesting an already-taken code indefinitely,
+    // since nothing would ever notice the mismatch. This is a read-only
+    // peek (no increment) — safe without extra locking, since actual
+    // creation atomically re-derives the real value regardless of what was
+    // last previewed.
+    const seqRow = await prisma.microbialSfgContainerSeq.findUnique({
+      where: { microbeCode_typeCode: { microbeCode: microbe_code, typeCode: type_code } },
     })
-    const nextSeq = (agg._max.seqNo || 0) + 1
+    const nextSeq = (seqRow?.seq || 0) + 1
     const next_code = `${microbe_code}-${type_code}-${String(nextSeq).padStart(3, '0')}`
     return res.json({ success: true, data: { next_code, next_seq: nextSeq } })
   } catch (err) {

@@ -55,12 +55,19 @@ export const createSfgInward = async (req, res) => {
     const result = await prisma.$transaction(async (tx) => {
       let resolvedContainerId = container_id
       let resolvedContainerCode
+      // Tracks whichever slot the batch is actually landing in — new
+      // container's slot, an existing container's current location, or a
+      // reactivated container's fresh slot — so the inward (batch) row can
+      // be stamped with the same value the container itself gets. Defaults
+      // to the raw `location` string from the request body only for the
+      // Excel-import path (see importSfgInward below), which has no
+      // rack/shelf/side/position of its own to derive one from.
+      let resolvedLocation = location || null
 
       if (!resolvedContainerId) {
         const seq = await getNextContainerSeq(microbe_code, tCode)
         const code = new_container_code || buildContainerCode(microbe_code, tCode, seq)
 
-        let resolvedLocation = location || null
         const hasSlot = rack && shelf && side && position
         if (hasSlot) {
           const clash = await tx.microbialSfgContainer.findFirst({ where: { rack: Number(rack), shelf: Number(shelf), side, position } })
@@ -92,6 +99,7 @@ export const createSfgInward = async (req, res) => {
         const container = await tx.microbialSfgContainer.findUnique({ where: { containerId: resolvedContainerId } })
         if (!container) throw new Error('Container not found')
         resolvedContainerCode = container.containerCode
+        resolvedLocation = container.location
 
         // Adding a batch to an INACTIVE container reactivates it, but its old
         // slot isn't auto-restored (may be occupied by now) — a fresh
@@ -101,9 +109,10 @@ export const createSfgInward = async (req, res) => {
           if (!hasSlot) throw new Error(`${container.containerCode} is inactive — a storage slot is required to reactivate it`)
           const clash = await tx.microbialSfgContainer.findFirst({ where: { rack: Number(rack), shelf: Number(shelf), side, position, containerId: { not: resolvedContainerId } } })
           if (clash) throw new Error(`Slot ${slotCode(rack, shelf, side, position)} is already occupied by ${clash.containerCode}`)
+          resolvedLocation = slotCode(rack, shelf, side, position)
           await tx.microbialSfgContainer.update({
             where: { containerId: resolvedContainerId },
-            data: { inactive: false, inactiveLocation: null, location: slotCode(rack, shelf, side, position), rack: Number(rack), shelf: Number(shelf), side, position },
+            data: { inactive: false, inactiveLocation: null, location: resolvedLocation, rack: Number(rack), shelf: Number(shelf), side, position },
           })
         }
       }
@@ -121,7 +130,7 @@ export const createSfgInward = async (req, res) => {
           dateOfHarvest: new Date(date_of_harvest),
           totalQtyKg: qty,
           remainingQtyKg: qty,
-          location: location || null,
+          location: resolvedLocation,
           moisture: moisture != null ? Number(moisture) : null,
           shelfLifeDays: shelf_life_days != null ? Number(shelf_life_days) : null,
           pouchNos: pouch_nos != null ? Number(pouch_nos) : null,
