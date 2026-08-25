@@ -28,11 +28,13 @@ export default function MicrobeTransaction() {
               Back to Transactions
             </Button>
           ) : (
-            <Button variant="outline-gray" size="md" icon={ClipboardList} onClick={() => setTab('history')}>
-              Transaction History
-            </Button>
+            <>
+              <Button variant="outline-gray" size="md" icon={ClipboardList} onClick={() => setTab('history')}>
+                Transaction History
+              </Button>
+              <BackButton />
+            </>
           )}
-          <BackButton />
         </>}
       >
       </PageHeader>
