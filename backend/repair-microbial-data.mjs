@@ -1,4 +1,4 @@
-ne-time data repair for the microbial SFG module — fixes data created
+// one-time data repair for the microbial SFG module — fixes data created
 // before two backend bugs were patched (now on origin/main):
 //
 //   1. Container numbering (seqNo) drifted out of sync with the actual
