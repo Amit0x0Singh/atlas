@@ -54,7 +54,7 @@ export default function Stock() {
         </>}
       />
 
-      <div className="max-w-7xl mx-auto px-6 py-7">
+      <div className="px-4 md:px-6 py-7">
         {/* Period selector */}
         <div className="flex gap-1 mb-8 bg-white border border-gray-200 rounded-xl p-1 w-fit shadow-sm">
           {PERIODS.map((p) => (

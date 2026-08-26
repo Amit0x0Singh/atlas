@@ -103,7 +103,7 @@ export default function RmMaterialDetail() {
         </>}
       />
 
-      <div className="max-w-7xl mx-auto px-6 py-7">
+      <div className="px-4 md:px-6 py-7">
         {error && <div className="mb-5 px-4 py-3 bg-red-50 border border-red-100 text-red-600 rounded-xl text-sm">{error}</div>}
 
         {/* Summary stats */}
