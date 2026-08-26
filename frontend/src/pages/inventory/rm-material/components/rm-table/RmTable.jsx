@@ -14,10 +14,10 @@ const COLUMN_DEFS = [
   { key: 'idx',       label: '#',             align: 'left',   defaultWidth: 56  },
   { key: 'name',      label: 'Raw Material',  align: 'left',   defaultWidth: 260 },
   { key: 'category',  label: 'Category',      align: 'left',   defaultWidth: 170 },
-  { key: 'state',     label: 'State',         align: 'center', defaultWidth: 90  },
-  { key: 'uom',       label: 'Inventory UOM', align: 'center', defaultWidth: 120 },
-  { key: 'oprUom',    label: 'Operation UOM', align: 'center', defaultWidth: 120 },
-  { key: 'convFactor', label: 'Conv. Factor (Density)', align: 'right', defaultWidth: 150 },
+  { key: 'state',     label: 'State',         align: 'center', defaultWidth: 90,  defaultVisible: false },
+  { key: 'uom',       label: 'Inv. UOM', align: 'center', defaultWidth: 120 },
+  { key: 'oprUom',    label: 'Opr. UOM', align: 'center', defaultWidth: 120, defaultVisible: false },
+  { key: 'convFactor', label: 'Conv. Factor', align: 'right', defaultWidth: 150 },
   { key: 'inPack',    label: 'In Pack',       align: 'right',  defaultWidth: 130 },
   { key: 'inContainer', label: 'In Container', align: 'right', defaultWidth: 130 },
   { key: 'totalQty',  label: 'Total Qty',     align: 'right',  defaultWidth: 150 },
@@ -61,7 +61,7 @@ export default function RmTable({
 }) {
   const navigate = useNavigate()
 
-  const { columnWidths, columnVisibility, visibleColumns, startResize, toggleColumn } = useColumnPreferences('rm-material-stock', COLUMN_DEFS)
+  const { columnWidths, columnVisibility, visibleColumns, startResize, toggleColumn } = useColumnPreferences('rm-material-stock-v2', COLUMN_DEFS)
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">

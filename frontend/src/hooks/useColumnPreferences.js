@@ -18,7 +18,10 @@ function load(storageKey, defaults) {
 /**
  * Column width + visibility state for a resizable table, persisted to
  * localStorage per table so a user's layout survives a refresh/next visit.
- * `columns` is the table's COLUMN_DEFS array: [{ key, label, defaultWidth }].
+ * `columns` is the table's COLUMN_DEFS array: [{ key, label, defaultWidth,
+ * defaultVisible }]. `defaultVisible` is optional and defaults to true —
+ * set it to false for columns that should start hidden (e.g. secondary
+ * fields the user can opt into via the Columns menu).
  * `tableId` must be a stable, unique string per table (used as the storage
  * key) — e.g. 'equipment-master', 'stock-ledger'.
  *
@@ -31,7 +34,7 @@ export function useColumnPreferences(tableId, columns) {
 
   const [state, setState] = useState(() => load(storageKey, {
     widths: Object.fromEntries(columns.map((c) => [c.key, c.defaultWidth])),
-    visibility: Object.fromEntries(columns.map((c) => [c.key, true])),
+    visibility: Object.fromEntries(columns.map((c) => [c.key, c.defaultVisible !== false])),
   }))
 
   useEffect(() => {
