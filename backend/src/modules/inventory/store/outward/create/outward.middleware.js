@@ -45,6 +45,15 @@ export const validateBagLossAdjustment = preprocess({
   },
 })
 
+export const validateContainerLossAdjustment = preprocess({
+  excludeFromConversion: idFields,
+  schema: {
+    containerId: { required: true },
+    lossQty:     { required: true, positive: true },
+    reason:      { required: true, minLength: 3 },
+  },
+})
+
 export const validateStockAdjustment = preprocess({
   excludeFromConversion: idFields,
   schema: {

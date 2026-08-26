@@ -12,7 +12,7 @@
 //                         modules/sales/bom-sends/{create,utils}/*.js
 //   PACK_TO_CONTAINER  — outward.controller.js (packReduction),
 //                         modules/inventory/store/containers/create/containers.controller.js (fillContainer)
-//   STOCK_RECON        — outward.controller.js (bagLossAdjustment, stockAdjustment)
+//   STOCK_RECON        — outward.controller.js (bagLossAdjustment, containerLossAdjustment, stockAdjustment)
 //   WAREHOUSE_TRANSFER — outward.controller.js (warehouseTransfer)
 //   DIRECT_ISSUE       — outward.controller.js (directIssue)
 //   CONTAINER_ISSUE    — containers.controller.js (issueFromContainer)

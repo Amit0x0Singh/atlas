@@ -52,6 +52,7 @@ export const outwardApi = {
   packReduction:       (data)    => api.post('/outward/pack-reduction', data),
   stockAdjustment:     (data)    => api.post('/outward/stock-adjustment', data),
   lossAdjustment:      (data)    => api.post('/outward/loss-adjustment', data),
+  containerLossAdjustment: (data) => api.post('/outward/container-loss-adjustment', data),
   warehouseTransfer:   (data)    => api.post('/outward/warehouse-transfer', data),
   directIssue:         (data)    => api.post('/outward/direct-issue', data),
   bomDirect:           (data)    => api.post('/outward/bom-direct', data),

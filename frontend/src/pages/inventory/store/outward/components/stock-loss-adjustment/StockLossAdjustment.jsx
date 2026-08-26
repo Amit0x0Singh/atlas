@@ -1,5 +1,5 @@
-﻿import { useState } from 'react'
-import { outwardApi, packsApi, rmApi } from '../../../../../../api/inventory.js'
+import { useState } from 'react'
+import { outwardApi, packsApi, rmApi, containerApi } from '../../../../../../api/inventory.js'
 import { Button, IconButton } from '../../../../../../components/ui'
 import { Can } from '../../../../../../components/common/Can.jsx'
 import ScannerPanel from '../../../../../../components/ScannerPanel/ScannerPanel.jsx'
@@ -19,8 +19,11 @@ const REASONS = [
 ]
 
 export default function StockLossAdjustment() {
-  const [pack,       setPack]       = useState(null)
-  // RM Master row for the scanned pack's item — carries inventoryUom /
+  // `target` is whichever stock unit was scanned — a bag (pack) or a
+  // container — normalized to the same shape so the rest of the screen
+  // doesn't need to branch on type except where the label actually differs.
+  const [target,     setTarget]     = useState(null)
+  // RM Master row for the scanned item — carries inventoryUom /
   // operationalUom / density, so a loss measured on the shop floor in the
   // operational unit (e.g. 2 L spilled) can be entered as-measured even
   // though stock is tracked in KG. null when the item isn't in RM Master.
@@ -33,39 +36,81 @@ export default function StockLossAdjustment() {
   const [error,      setError]      = useState('')
   const [success,    setSuccess]    = useState('')
 
-  // ─── Load pack by ID ─────────────────────────────────────────────────────
+  const clearEntry = () => { setTarget(null); setRm(null); setLossQty(''); setReason(''); setCustomReason('') }
+
+  // ─── Load a scanned bag ──────────────────────────────────────────────────
   const loadPack = async (packId) => {
     if (!packId) return
-    setError(''); setSuccess(''); setPack(null); setRm(null); setLossQty(''); setReason(''); setCustomReason('')
+    setError(''); setSuccess(''); clearEntry()
     setLoading(true)
     try {
       const r = await packsApi.get(packId)
-      if (!r.data) { setError(`Pack "${packId}" not found.`); return }
+      if (!r.data) { setError(`Bag "${packId}" not found.`); return }
 
       // packsApi.get returns PrintMaster — get balance via availablePacks
       const balRes = await outwardApi.availablePacks(r.data.itemCode)
-
       const balance = (balRes.data || []).find(p => p.packId === packId)
       if (!balance) {
         setError(`Bag "${packId}" has no remaining quantity — already exhausted.`)
         return
       }
-      setPack({ ...r.data, remainingQty: balance.remainingQty })
+      setTarget({
+        type: 'pack', id: packId, itemCode: r.data.itemCode, itemName: r.data.itemName,
+        uom: r.data.uom, remainingQty: balance.remainingQty, originalQty: r.data.packQty,
+        lotNo: r.data.lotNo, bagNo: r.data.bagNo, supplier: r.data.supplier,
+      })
       // Best-effort — a missing RM row just means no conversion is offered
-      // (entry stays in the pack's own unit); the server is the authority.
+      // (entry stays in the item's own unit); the server is the authority.
       rmApi.get(r.data.itemCode).then(res => setRm(res.data || null)).catch(() => setRm(null))
     } catch (e) {
-      setError(e.response?.data?.error || e.message || 'Failed to load pack.')
+      setError(e.response?.data?.error || e.message || 'Failed to load bag.')
     } finally {
       setLoading(false)
     }
   }
 
+  // ─── Load a scanned container ────────────────────────────────────────────
+  const loadContainer = async (containerId) => {
+    if (!containerId) return
+    setError(''); setSuccess(''); clearEntry()
+    setLoading(true)
+    try {
+      const r = await containerApi.get(containerId)
+      if (!r.data) { setError(`Container "${containerId}" not found.`); return }
+      const c = r.data
+      if (!c.currentQty || c.currentQty <= 0) {
+        setError(`Container "${containerId}" is empty — nothing to adjust.`)
+        return
+      }
+      setTarget({
+        type: 'container', id: c.containerId, itemCode: c.itemCode, itemName: c.itemName,
+        uom: c.uom, remainingQty: c.currentQty, originalQty: c.capacity,
+      })
+      rmApi.get(c.itemCode).then(res => setRm(res.data || null)).catch(() => setRm(null))
+    } catch (e) {
+      setError(e.response?.data?.error || e.message || 'Failed to load container.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Container QR encodes "CONT:<id>", bag QR encodes "PACK:<id>" — route to
+  // the right loader based on that prefix.
+  const handleScan = (val) => {
+    const raw = (val || '').trim()
+    if (!raw) return
+    if (raw.toUpperCase().startsWith('CONT:')) loadContainer(raw.slice(5).trim())
+    else loadPack((raw.startsWith('PACK:') ? raw.slice(5) : raw).trim())
+  }
+
+  const isContainer = target?.type === 'container'
+  const unitLabel = isContainer ? 'container' : 'bag'
+
   // ─── UOM conversion (display + validation only) ───────────────────────────
-  // Inventory UOM is what pack.remainingQty and every ledger figure are in;
+  // Inventory UOM is what target.remainingQty and every ledger figure are in;
   // entryUom is what the operator types the loss in. Identical unless the
   // item has a distinct Operational UOM configured.
-  const inventoryUom = rm?.inventoryUom || pack?.uom || ''
+  const inventoryUom = rm?.inventoryUom || target?.uom || ''
   const entryUom     = rm?.operationalUom || inventoryUom
   const converts     = Boolean(entryUom && inventoryUom && entryUom !== inventoryUom)
   // Same rule the server enforces in resolveIssueQty — two different units
@@ -85,7 +130,7 @@ export default function StockLossAdjustment() {
   const toEntry     = (invQty)   => convert(invQty, inventoryUom, entryUom)
 
   // The most the operator can enter, expressed in the unit they're typing in.
-  const maxEntryQty = pack ? toEntry(pack.remainingQty) : 0
+  const maxEntryQty = target ? toEntry(target.remainingQty) : 0
 
   const lossNum       = parseFloat(lossQty)
   const lossValid     = !isNaN(lossNum) && lossNum > 0 && lossNum <= maxEntryQty + 0.0001
@@ -95,13 +140,13 @@ export default function StockLossAdjustment() {
   const submit = async () => {
     const loss = parseFloat(lossQty)
     const finalReason = reason === 'Other' ? customReason.trim() : reason
-    if (!pack)              { setError('Scan or enter a bag first');  return }
+    if (!target)             { setError(`Scan or enter a ${unitLabel} first`); return }
     if (!loss || loss <= 0) { setError('Enter a valid loss quantity'); return }
     // Best-effort client-side ceiling only — `loss` is in the entry
     // (Operational) UOM while remainingQty is Inventory UOM, so it has to be
     // converted before comparing. The server re-derives and re-checks this.
-    if (toInventory(loss) > pack.remainingQty) {
-      setError(`Loss exceeds remaining qty (${pack.remainingQty} ${inventoryUom})`); return
+    if (toInventory(loss) > target.remainingQty) {
+      setError(`Loss exceeds remaining qty (${target.remainingQty} ${inventoryUom})`); return
     }
     if (!finalReason || finalReason.length < 3) { setError('Select or enter a reason'); return }
 
@@ -109,15 +154,18 @@ export default function StockLossAdjustment() {
     try {
       // lossQty is sent in the item's Operational UOM — the server converts
       // it through density and returns what it actually deducted.
-      const r = await outwardApi.lossAdjustment({ packId: pack.packId, lossQty: loss, reason: finalReason })
+      const r = isContainer
+        ? await outwardApi.containerLossAdjustment({ containerId: target.id, lossQty: loss, reason: finalReason })
+        : await outwardApi.lossAdjustment({ packId: target.id, lossQty: loss, reason: finalReason })
       const invUom  = r.inventoryUom || inventoryUom
       const entered = `${loss} ${r.operationalUom || entryUom}`
       const deducted = Number(r.lossDeducted)
+      const statusPart = r.newStatus ? ` · Status: ${r.newStatus.replace('_', ' ')}` : ''
       setSuccess(
-        `Adjusted: ${entered}${deducted !== loss ? ` (${deducted.toFixed(3)} ${invUom} deducted)` : ''} from ${pack.packId}. ` +
-        `Remaining: ${Number(r.newRemaining).toFixed(3)} ${invUom} · Status: ${r.newStatus.replace('_', ' ')}`
+        `Adjusted: ${entered}${deducted !== loss ? ` (${deducted.toFixed(3)} ${invUom} deducted)` : ''} from ${target.id}. ` +
+        `Remaining: ${Number(r.newRemaining).toFixed(3)} ${invUom}${statusPart}`
       )
-      setPack(null); setRm(null); setLossQty(''); setReason(''); setCustomReason('')
+      clearEntry()
     } catch (e) {
       setError(e.response?.data?.error || e.message)
     } finally {
@@ -125,10 +173,7 @@ export default function StockLossAdjustment() {
     }
   }
 
-  const reset = () => {
-    setPack(null); setRm(null); setLossQty(''); setReason(''); setCustomReason('')
-    setError('')
-  }
+  const reset = () => { clearEntry(); setError('') }
 
   return (
     <div className="p-4 md:p-6 max-w-xl">
@@ -136,36 +181,40 @@ export default function StockLossAdjustment() {
       {error   && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm">{error}</div>}
       {success && <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-4 text-sm">{success}</div>}
 
-      {/* ─── Step 1: Scan bag ─── */}
-      {!pack && (
+      {/* ─── Step 1: Scan bag or container ─── */}
+      {!target && (
         <div>
           <p className="text-sm text-gray-500 mb-5">
-            Scan the bag QR code to record a stock loss against that specific bag.
+            Scan a bag or container QR code to record a stock loss against it.
           </p>
 
           <ScannerPanel
             accent="red"
-            onScan={(val) => loadPack((val.startsWith('PACK:') ? val.slice(5) : val).trim())}
-            scanHint="Point at bag QR code"
+            onScan={handleScan}
+            scanHint="Point at bag or container QR code"
             allowManualEntry={false}
           />
           {loading && <p className="text-xs text-gray-400 mt-2">Loading…</p>}
         </div>
       )}
 
-      {/* ─── Step 2: Pack loaded — enter loss ─── */}
-      {pack && (
+      {/* ─── Step 2: Bag/container loaded — enter loss ─── */}
+      {target && (
         <div className="space-y-4">
 
-          {/* Pack info card */}
+          {/* Target info card */}
           <div className="bg-red-50 border border-red-200 rounded-xl p-4">
             <div className="flex justify-between items-start gap-2">
               <div className="min-w-0">
-                <div className="text-[10px] font-semibold text-red-400 uppercase tracking-widest mb-0.5">Selected Bag</div>
-                <div className="font-mono text-sm font-bold text-red-900 truncate">{pack.packId}</div>
-                <div className="text-sm text-red-700 mt-0.5 font-medium truncate">{toTitleCase(pack.itemName)}</div>
+                <div className="text-[10px] font-semibold text-red-400 uppercase tracking-widest mb-0.5">
+                  Selected {isContainer ? 'Container' : 'Bag'}
+                </div>
+                <div className="font-mono text-sm font-bold text-red-900 truncate">{target.id}</div>
+                <div className="text-sm text-red-700 mt-0.5 font-medium truncate">{toTitleCase(target.itemName)}</div>
                 <div className="text-xs text-red-500 mt-0.5">
-                  Lot: {pack.lotNo} · Bag #{pack.bagNo} · Supplier: {pack.supplier || '—'}
+                  {isContainer
+                    ? <>Code: {target.itemCode}</>
+                    : <>Lot: {target.lotNo} · Bag #{target.bagNo} · Supplier: {target.supplier || '—'}</>}
                 </div>
               </div>
               <IconButton icon={X} onClick={reset} variant="danger" size="sm" tooltip="Clear" className="flex-shrink-0" />
@@ -175,14 +224,14 @@ export default function StockLossAdjustment() {
             <div className="mt-3 bg-white rounded-lg px-3 py-2.5">
               <div className="flex justify-between text-xs mb-1.5">
                 <span className="text-gray-500 font-medium">Remaining Qty</span>
-                <span className="font-bold text-gray-800">{pack.remainingQty} {inventoryUom?.toUpperCase()}</span>
+                <span className="font-bold text-gray-800">{target.remainingQty} {inventoryUom?.toUpperCase()}</span>
               </div>
               <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${Math.min(100, (pack.remainingQty / (pack.packQty || pack.remainingQty)) * 100)}%` }} />
+                <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${Math.min(100, (target.remainingQty / (target.originalQty || target.remainingQty)) * 100)}%` }} />
               </div>
               <div className="flex justify-between text-[10px] text-gray-400 mt-1">
                 <span>0</span>
-                <span>Original: {pack.packQty || '—'} {inventoryUom?.toUpperCase()}</span>
+                <span>{isContainer ? 'Capacity' : 'Original'}: {target.originalQty || '—'} {inventoryUom?.toUpperCase()}</span>
               </div>
               {/* Only shown for items configured with a distinct Operational
                   UOM — makes it explicit that the same physical stock reads
@@ -209,7 +258,7 @@ export default function StockLossAdjustment() {
           )}
           {misconfigured && (
             <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-xs text-red-700">
-              <strong>{rm?.itemName || pack.itemName}</strong> is stocked in <strong>{inventoryUom}</strong> but
+              <strong>{rm?.itemName || target.itemName}</strong> is stocked in <strong>{inventoryUom}</strong> but
               issued in <strong>{entryUom}</strong>, and can't be converted:{' '}
               {!rm?.conversionRequired ? 'it is not flagged "Conversion Required"' : 'no density is set'} in
               RM Master. Fix the item there before recording a loss against it.
@@ -233,7 +282,7 @@ export default function StockLossAdjustment() {
                 {converts && (
                   <>Deducts <strong className="text-gray-700">{lossInventory.toFixed(3)} {inventoryUom?.toUpperCase()}</strong> · </>
                 )}
-                After adjustment: <strong className="text-gray-700">{(pack.remainingQty - lossInventory).toFixed(3)} {inventoryUom?.toUpperCase()}</strong> remaining
+                After adjustment: <strong className="text-gray-700">{(target.remainingQty - lossInventory).toFixed(3)} {inventoryUom?.toUpperCase()}</strong> remaining
               </p>
             )}
           </div>

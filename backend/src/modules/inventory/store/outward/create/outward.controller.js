@@ -125,6 +125,58 @@ const bagLossAdjustment = async (req, res) => {
   }
 }
 
+const containerLossAdjustment = async (req, res) => {
+  const { containerId, lossQty, reason } = req.body
+  if (!containerId || !lossQty || !reason || reason.trim().length < 3)
+    return res.status(400).json({ success: false, error: 'containerId, lossQty, and reason (min 3 chars) required', code: 'VALIDATION_ERROR' })
+  try {
+    const entered = parseFloat(lossQty)
+    if (isNaN(entered) || entered <= 0)
+      return res.status(400).json({ success: false, error: 'lossQty must be a positive number', code: 'VALIDATION_ERROR' })
+
+    const container = await prisma.containerMaster.findUnique({ where: { containerId } })
+    if (!container) return res.status(404).json({ success: false, error: 'Container not found', code: 'NOT_FOUND' })
+
+    // Same server-authoritative Operational → Inventory UOM conversion as
+    // bagLossAdjustment/issueFromContainer, so a loss measured on the shop
+    // floor (e.g. 2 L spilled) can be entered as-measured against a
+    // container tracked in KG.
+    let rm, loss, operationalQty, operationalUom
+    try {
+      ({ rm, inventoryQty: loss, operationalQty, operationalUom } = await resolveIssueQty(container.itemCode, entered))
+    } catch (e) {
+      return res.status(400).json({ success: false, error: toSafeErrorMessage(e), code: 'VALIDATION_ERROR' })
+    }
+    if (loss > container.currentQty)
+      return res.status(400).json({ success: false, error: `Loss (${loss}) exceeds container balance (${container.currentQty})`, code: 'VALIDATION_ERROR' })
+
+    const newRemaining = container.currentQty - loss
+
+    await prisma.$transaction(async (tx) => {
+      await tx.containerMaster.update({ where: { containerId }, data: { currentQty: newRemaining } })
+      await tx.outward.create({
+        data: { sourceId: containerId, sourceType: 'STOCK_ADJUSTMENT', rmCode: container.itemCode, qtyIssued: loss, operationalQty, operationalUom, remarks: reason.trim() }
+      })
+      const prev = await tx.stockLedger.findFirst({ where: { itemCode: container.itemCode }, orderBy: { timestamp: 'desc' } })
+      await tx.stockLedger.create({
+        data: {
+          itemCode: container.itemCode, sourceId: containerId, transactionType: 'STOCK_RECON',
+          outQty: loss, balance: (prev?.balance || 0) - loss, reference: `Loss: ${reason.trim()}`
+        }
+      })
+    })
+
+    // lossDeducted/newRemaining are Inventory UOM; operationalQty/operationalUom
+    // echo back what the operator actually entered.
+    return res.json({
+      success: true, containerId, lossDeducted: loss, newRemaining,
+      operationalQty, operationalUom, inventoryUom: rm.inventoryUom,
+    })
+  } catch (e) {
+    return res.status(400).json({ success: false, error: toSafeErrorMessage(e), code: 'VALIDATION_ERROR' })
+  }
+}
+
 const stockAdjustment = async (req, res) => {
   const { itemCode, adjustmentQty, remarks } = req.body
   if (!itemCode || adjustmentQty === undefined || !remarks || remarks.length < 5)
@@ -368,6 +420,7 @@ export {
   bomManual,
   packReduction,
   bagLossAdjustment,
+  containerLossAdjustment,
   stockAdjustment,
   warehouseTransfer,
   directIssue,

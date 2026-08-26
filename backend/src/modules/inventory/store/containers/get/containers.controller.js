@@ -50,45 +50,65 @@ export const getContainerLabel = async (req, res) => {
       doc.on('end', resolve)
       doc.on('error', reject)
 
-      const headerH = 14 * MM
-      doc.rect(0, 0, W, headerH).fill('#e67e22')
-      doc.fillColor('#ffffff').fontSize(8).font('Helvetica-Bold')
-      doc.text('CONTAINER — SOM PHYTOPHARMA', M, 3 * MM, { width: W - 2 * M, align: 'center' })
+      // ── HEADER: Container ID (large, white on navy) — same treatment as the
+      // raw-material pack label so it survives monochrome thermal printing.
+      const headerH = 15 * MM
+      doc.rect(0, 0, W, headerH).fill('#1a3a6b')
 
-      const qrSize = 22 * MM
+      const idText = container.containerId
+      const availWidth = W - 2 * M
+      let idFontSize = 18
+      doc.font('Helvetica-Bold')
+      while (idFontSize > 10 && idText.length * idFontSize * 0.55 > availWidth) idFontSize -= 1
+
+      doc.fillColor('#ffffff').fontSize(idFontSize)
+      const idTextH = idFontSize * 1.2
+      doc.text(idText, M, (headerH - idTextH) / 2, { width: availWidth, align: 'center', lineBreak: false })
+
+      // ── QR CODE (right side) ──────────────────────────────────────────────
+      const qrSize = 24 * MM
       const qrX = W - qrSize - M
       const qrY = headerH + M
       const qrImg = await qrBuffer(`CONT:${container.containerId}`)
       doc.image(qrImg, qrX, qrY, { width: qrSize, height: qrSize })
 
-      let curY = headerH + M
+      const createdStr = container.createdAt
+        ? new Date(container.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+        : '—'
+      const dateY = qrY + qrSize + 1.5 * MM
+      doc.fillColor('#444444').fontSize(7).font('Helvetica')
+      doc.text(`Made: ${createdStr}`, qrX, dateY, { width: qrSize, align: 'center' })
+
+      // ── LEFT CONTENT AREA ───────────────────────────────────────────────────
       const leftW = qrX - M - 2 * MM
+      let curY = headerH + M
 
-      doc.fillColor('#444444').fontSize(7).font('Helvetica-Bold')
-      doc.text('CONTAINER ID', M, curY)
-      curY += 8
-      doc.fillColor('#e67e22').fontSize(11).font('Helvetica-Bold')
-      doc.text(container.containerId, M, curY, { width: leftW })
-      curY += 14
+      const itemNameText = container.itemName
+      doc.font('Helvetica-Bold')
+      let itemFontSize = 14
+      while (itemFontSize > 8 && itemNameText.length * itemFontSize * 0.52 > leftW) itemFontSize -= 1
 
-      doc.fillColor('#444444').fontSize(7).font('Helvetica-Bold')
+      doc.fillColor('#666666').fontSize(7).font('Helvetica-Bold')
       doc.text('ITEM', M, curY)
-      curY += 8
-      doc.fillColor('#111111').fontSize(9).font('Helvetica-Bold')
-      doc.text(container.itemName, M, curY, { width: leftW, lineBreak: true })
-      curY += 13
+      curY += 7.5
+      doc.fillColor('#111111').fontSize(itemFontSize).font('Helvetica-Bold')
+      doc.text(itemNameText, M, curY, { width: leftW, lineBreak: true })
+      const itemLines = Math.ceil((itemNameText.length * itemFontSize * 0.52) / leftW)
+      curY += (itemLines > 1 ? itemFontSize * 2.4 : itemFontSize * 1.4)
 
-      doc.fillColor('#777777').fontSize(7).font('Helvetica')
-      doc.text(`Capacity: ${container.capacity} ${container.uom}  |  Code: ${container.itemCode}`, M, curY, { width: leftW })
+      doc.fillColor('#666666').fontSize(7).font('Helvetica-Bold')
+      doc.text('CAPACITY', M, curY)
+      curY += 7.5
+      doc.fillColor('#000000').fontSize(14).font('Helvetica-Bold')
+      doc.text(`${container.capacity} ${container.uom}`, M, curY, { width: leftW })
+      curY += 18
 
-      const footerH = 6 * MM
-      const footerY = H - footerH
-      doc.rect(0, footerY, W, footerH).fill('#fdebd0')
-      doc.fillColor('#e67e22').fontSize(7).font('Helvetica-Bold')
-      doc.text(
-        `CONT: ${container.containerId}  |  ITEM: ${container.itemCode}  |  CAP: ${container.capacity} ${container.uom}`,
-        M, footerY + 1.5 * MM, { width: W - 2 * M, align: 'left' }
-      )
+      doc.fillColor('#666666').fontSize(7).font('Helvetica-Bold')
+      doc.text('CODE', M, curY)
+      curY += 7.5
+      doc.fillColor('#222222').fontSize(itemFontSize).font('Helvetica-Bold')
+      doc.text(container.itemCode, M, curY, { width: leftW })
+
       doc.end()
     })
 
