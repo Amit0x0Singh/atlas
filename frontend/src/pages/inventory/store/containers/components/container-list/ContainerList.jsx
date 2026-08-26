@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+﻿import { useMemo, useState } from "react";
 import './ContainerList.css';
 import { containerApi } from "../../../../../../api/inventory.js";
 import { openAuthedFile } from "../../../../../../utils/authedFile.js";
@@ -7,6 +7,7 @@ import Pagination from "../../../../../../components/pagination/Pagination.jsx";
 import { Button, IconButton, Modal } from "../../../../../../components/ui";
 import { Can } from "../../../../../../components/common/Can.jsx";
 import { Pencil } from "lucide-react";
+import ContainerToolbar, { EMPTY_CONTAINER_FILTERS, DEFAULT_CONTAINER_SORT } from "./ContainerToolbar.jsx";
 
 import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 function fillPct(c) {
@@ -38,7 +39,59 @@ export default function ContainerList() {
   const { containers, loading, error, reload } = useContainers();
   const [limit, setLimit] = useState(15);
   const [page, setPage] = useState(1);
-  const paginated = containers.slice((page - 1) * limit, page * limit);
+  const [search, setSearch] = useState('');
+  const [filters, setFilters] = useState(EMPTY_CONTAINER_FILTERS);
+  const [sort, setSort] = useState(DEFAULT_CONTAINER_SORT);
+
+  const uomOptions = useMemo(() => [...new Set(containers.map(c => c.uom).filter(Boolean))].sort(), [containers]);
+
+  const filtered = useMemo(() => {
+    let list = containers.filter(c => {
+      if (search) {
+        const q = search.toLowerCase();
+        if (!c.itemName?.toLowerCase().includes(q) && !c.itemCode?.toLowerCase().includes(q) && !c.containerId?.toLowerCase().includes(q)) return false;
+      }
+      const pct = fillPct(c);
+      if (filters.status === 'empty'   && pct > 0) return false;
+      if (filters.status === 'partial' && (pct <= 0 || pct >= 75)) return false;
+      if (filters.status === 'full'    && pct < 75) return false;
+      if (filters.uom && (c.uom || '').toLowerCase() !== filters.uom.toLowerCase()) return false;
+      if (filters.minQty !== '' && (c.currentQty || 0) < Number(filters.minQty)) return false;
+      if (filters.maxQty !== '' && (c.currentQty || 0) > Number(filters.maxQty)) return false;
+      return true;
+    });
+
+    const dir = sort.direction === 'asc' ? 1 : -1;
+    list = [...list].sort((a, b) => {
+      if (sort.field === 'containerId') return dir * (a.containerId || '').localeCompare(b.containerId || '');
+      if (sort.field === 'currentQty')  return dir * ((a.currentQty || 0) - (b.currentQty || 0));
+      if (sort.field === 'capacity')    return dir * ((a.capacity || 0) - (b.capacity || 0));
+      if (sort.field === 'fillPct')     return dir * (fillPct(a) - fillPct(b));
+      return dir * (a.itemName || '').localeCompare(b.itemName || ''); // 'name'
+    });
+
+    return list;
+  }, [containers, search, filters, sort]);
+
+  const paginated = filtered.slice((page - 1) * limit, page * limit);
+
+  const handleSearch = (v) => { setSearch(v); setPage(1) };
+  const handleFilters = (f) => { setFilters(f); setPage(1) };
+
+  function exportContainersCsv() {
+    if (!filtered.length) { alert('No containers to export — adjust your filters.'); return }
+    const headers = ['Container ID', 'Item Code', 'Item Name', 'Current Qty', 'Capacity', 'UOM', 'Fill %'];
+    const rows = filtered.map(c => [
+      c.containerId, c.itemCode, c.itemName || '',
+      c.currentQty ?? 0, c.capacity ?? 0, c.uom || '', fillPct(c),
+    ].map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','));
+    const csv = [headers.join(','), ...rows].join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    a.download = `containers_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
 
   const [editing, setEditing]   = useState(null); // container being edited, or null
   const [newCapacity, setNewCapacity] = useState("");
@@ -82,10 +135,19 @@ export default function ContainerList() {
       {/* Toolbar */}
       <div className="flex justify-between items-center mb-3">
         <p className="text-sm text-gray-500 font-medium">
-          {containers.length} container{containers.length !== 1 ? "s" : ""}
+          {filtered.length} of {containers.length} container{containers.length !== 1 ? "s" : ""}
         </p>
         <Button variant="outline-gray" size="sm" onClick={reload}>Refresh</Button>
       </div>
+
+      <ContainerToolbar
+        search={search} onSearchChange={handleSearch}
+        filters={filters} onFiltersChange={handleFilters}
+        sort={sort} onSortChange={setSort}
+        uomOptions={uomOptions}
+        onExport={exportContainersCsv}
+        resultCount={filtered.length}
+      />
 
       {/* Header row */}
       <div className="bg-slate-700 text-white text-xs font-semibold rounded-t-xl grid grid-cols-[180px_350px_1fr_90px_60px_44px] gap-3 px-4 py-2.5">
@@ -99,6 +161,9 @@ export default function ContainerList() {
 
       {/* Rows */}
       <div className="bg-white border border-gray-200 border-t-0 rounded-b-xl divide-y divide-gray-100">
+        {filtered.length === 0 && (
+          <div className="text-center py-10 text-gray-400 text-sm">No containers match your search/filters.</div>
+        )}
         {paginated.map((c) => {
           const pct = fillPct(c);
           return (
@@ -163,7 +228,7 @@ export default function ContainerList() {
           );
         })}
       </div>
-      <Pagination page={page} total={containers.length} limit={limit} onChange={setPage} onLimitChange={l => { setLimit(l); setPage(1) }} />
+      <Pagination page={page} total={filtered.length} limit={limit} onChange={setPage} onLimitChange={l => { setLimit(l); setPage(1) }} />
 
       {/* Edit capacity modal */}
       <Modal open={!!editing} onClose={() => setEditing(null)} size="sm">

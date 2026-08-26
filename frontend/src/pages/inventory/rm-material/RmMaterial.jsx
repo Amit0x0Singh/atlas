@@ -30,6 +30,9 @@ export default function RmMaterial() {
   }
 
   const uomOptions = useMemo(() => [...new Set(items.map(it => it.uom).filter(Boolean))].sort(), [items])
+  const categoryOptions = useMemo(() => [...new Set(items.map(it => it.category).filter(Boolean))].sort(), [items])
+  const subCategoryOptions = useMemo(() => [...new Set(items.map(it => it.subCategory).filter(Boolean))].sort(), [items])
+  const stateOptions = useMemo(() => [...new Set(items.map(it => it.state).filter(Boolean))].sort(), [items])
 
   const filtered = useMemo(() => {
     let list = items.filter(it => {
@@ -39,7 +42,10 @@ export default function RmMaterial() {
       }
       if (filters.status === 'in_stock'     && it.totalStock <= 0) return false
       if (filters.status === 'out_of_stock' && it.totalStock  > 0) return false
-      if (filters.uom && it.uom !== filters.uom) return false
+      if (filters.uom && (it.uom || '').toLowerCase() !== filters.uom.toLowerCase()) return false
+      if (filters.category && (it.category || '').toLowerCase() !== filters.category.toLowerCase()) return false
+      if (filters.subCategory && (it.subCategory || '').toLowerCase() !== filters.subCategory.toLowerCase()) return false
+      if (filters.state && (it.state || '').toLowerCase() !== filters.state.toLowerCase()) return false
       if (filters.minQty !== '' && it.totalStock < Number(filters.minQty)) return false
       if (filters.maxQty !== '' && it.totalStock > Number(filters.maxQty)) return false
       return true
@@ -62,11 +68,16 @@ export default function RmMaterial() {
 
   function exportRmCsv() {
     if (!filtered.length) { alert('No items to export — adjust your filters.'); return }
-    const headers = ['Item Code', 'Item Name', 'UOM', 'In Pack', 'In Container', 'Total Qty', 'Status']
+    const headers = [
+      'Item Code', 'Item Name', 'UOM', 'In Pack', 'In Container', 'Total Qty', 'Status',
+      'Category', 'Sub Category', 'State', 'Inventory UOM', 'Operation UOM', 'Conversion Factor (Density)',
+    ]
     const rows = filtered.map(it => [
       it.itemCode, it.itemName, it.uom || '',
       it.stockInPacks ?? 0, it.stockInContainer ?? 0, it.totalStock ?? 0,
       (it.totalStock || 0) > 0 ? 'In Stock' : 'Out of Stock',
+      it.category || '', it.subCategory || '', it.state || '',
+      it.inventoryUom || '', it.operationalUom || '', it.density ?? '',
     ].map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','))
     const csv = [headers.join(','), ...rows].join('\n')
     const a = document.createElement('a')
@@ -111,6 +122,9 @@ export default function RmMaterial() {
           sort={sort}
           onSortChange={setSort}
           uomOptions={uomOptions}
+          categoryOptions={categoryOptions}
+          subCategoryOptions={subCategoryOptions}
+          stateOptions={stateOptions}
           onExport={exportRmCsv}
         />
       </div>

@@ -12,11 +12,15 @@ import { toTitleCase } from '../../../../../utils/textDisplay.js'
 // stays a fixed width since it only ever holds one button.
 const COLUMN_DEFS = [
   { key: 'idx',       label: '#',             align: 'left',   defaultWidth: 56  },
-  { key: 'name',      label: 'Raw Material',  align: 'left',   defaultWidth: 280 },
-  { key: 'uom',       label: 'UOM',           align: 'center', defaultWidth: 100 },
-  { key: 'inPack',    label: 'In Pack',       align: 'right',  defaultWidth: 140 },
-  { key: 'inContainer', label: 'In Container', align: 'right', defaultWidth: 140 },
-  { key: 'totalQty',  label: 'Total Qty',     align: 'right',  defaultWidth: 160 },
+  { key: 'name',      label: 'Raw Material',  align: 'left',   defaultWidth: 260 },
+  { key: 'category',  label: 'Category',      align: 'left',   defaultWidth: 170 },
+  { key: 'state',     label: 'State',         align: 'center', defaultWidth: 90  },
+  { key: 'uom',       label: 'Inventory UOM', align: 'center', defaultWidth: 120 },
+  { key: 'oprUom',    label: 'Operation UOM', align: 'center', defaultWidth: 120 },
+  { key: 'convFactor', label: 'Conv. Factor (Density)', align: 'right', defaultWidth: 150 },
+  { key: 'inPack',    label: 'In Pack',       align: 'right',  defaultWidth: 130 },
+  { key: 'inContainer', label: 'In Container', align: 'right', defaultWidth: 130 },
+  { key: 'totalQty',  label: 'Total Qty',     align: 'right',  defaultWidth: 150 },
 ]
 const DETAILS_COL_WIDTH = 150
 // Tailwind's JIT scans for literal class strings, so `text-${align}` would
@@ -38,10 +42,10 @@ function StockBadge({ value }) {
   return <span className="text-gray-900 font-semibold">{fmt(v)}</span>
 }
 
-function SkeletonRow() {
+function SkeletonRow({ cols }) {
   return (
     <tr className="border-t border-gray-100 animate-pulse">
-      {[...Array(7)].map((_, i) => (
+      {[...Array(cols)].map((_, i) => (
         <td key={i} className="px-4 py-3">
           <div className="h-4 bg-gray-100 rounded w-3/4" />
         </td>
@@ -52,7 +56,8 @@ function SkeletonRow() {
 
 export default function RmTable({
   loading, items, filtered, paginated, page, limit, onPageChange, onLimitChange,
-  search, onSearchChange, filters, onFiltersChange, sort, onSortChange, uomOptions, onExport,
+  search, onSearchChange, filters, onFiltersChange, sort, onSortChange,
+  uomOptions, categoryOptions, subCategoryOptions, stateOptions, onExport,
 }) {
   const navigate = useNavigate()
 
@@ -73,7 +78,8 @@ export default function RmTable({
         search={search} onSearchChange={onSearchChange}
         filters={filters} onFiltersChange={onFiltersChange}
         sort={sort} onSortChange={onSortChange}
-        uomOptions={uomOptions} onExport={onExport}
+        uomOptions={uomOptions} categoryOptions={categoryOptions} subCategoryOptions={subCategoryOptions} stateOptions={stateOptions}
+        onExport={onExport}
         resultCount={filtered.length}
       />
 
@@ -103,7 +109,7 @@ export default function RmTable({
           </thead>
           <tbody>
             {loading ? (
-              [...Array(8)].map((_, i) => <SkeletonRow key={i} />)
+              [...Array(8)].map((_, i) => <SkeletonRow key={i} cols={visibleColumns.length + 1} />)
             ) : filtered.length === 0 ? (
               <tr>
                 <td colSpan={visibleColumns.length + 1} className="text-center py-14 text-gray-400">No raw materials found.</td>
@@ -120,9 +126,34 @@ export default function RmTable({
                         <div className="text-xs text-gray-400 font-mono mt-0.5 truncate">{it.itemCode}</div>
                       </td>
                     )}
+                    {columnVisibility.category && (
+                      <td style={{ width: columnWidths.category }} className="px-4 py-3 overflow-hidden">
+                        {it.category ? (
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-blue-600 font-medium text-xs truncate">{toTitleCase(it.category)}</span>
+                            {it.subCategory && <span className="text-rose-500 text-xs mt-0.5 truncate">{toTitleCase(it.subCategory)}</span>}
+                          </div>
+                        ) : <span className="text-gray-300">—</span>}
+                      </td>
+                    )}
+                    {columnVisibility.state && (
+                      <td style={{ width: columnWidths.state }} className="px-4 py-3 text-center overflow-hidden">
+                        <span className="text-xs text-gray-600">{it.state ? it.state.toUpperCase() : '—'}</span>
+                      </td>
+                    )}
                     {columnVisibility.uom && (
                       <td style={{ width: columnWidths.uom }} className="px-4 py-3 text-center overflow-hidden">
                         <span className="bg-gray-100 text-gray-600 text-xs font-medium px-2 py-0.5 rounded-md">{it.uom ? it.uom.toUpperCase() : '—'}</span>
+                      </td>
+                    )}
+                    {columnVisibility.oprUom && (
+                      <td style={{ width: columnWidths.oprUom }} className="px-4 py-3 text-center overflow-hidden">
+                        <span className="bg-gray-100 text-gray-600 text-xs font-medium px-2 py-0.5 rounded-md">{(it.operationalUom || it.uom) ? (it.operationalUom || it.uom).toUpperCase() : '—'}</span>
+                      </td>
+                    )}
+                    {columnVisibility.convFactor && (
+                      <td style={{ width: columnWidths.convFactor }} className="px-4 py-3 text-right tabular-nums overflow-hidden">
+                        <span className="text-gray-600">{it.density != null ? fmt(it.density, 4) : '—'}</span>
                       </td>
                     )}
                     {columnVisibility.inPack && (
