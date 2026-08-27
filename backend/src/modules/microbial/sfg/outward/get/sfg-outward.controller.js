@@ -141,13 +141,22 @@ export const getSfgHistory = async (req, res) => {
       if (to) inwardWhere.createdAt.lte = new Date(`${to}T23:59:59.999Z`)
     }
 
-    const [inwards, outwards] = await Promise.all([
+    const adjustmentWhere = {}
+    if (microbe_code) adjustmentWhere.microbeCode = microbe_code
+    if (from || to) {
+      adjustmentWhere.adjustedAt = {}
+      if (from) adjustmentWhere.adjustedAt.gte = new Date(from)
+      if (to) adjustmentWhere.adjustedAt.lte = new Date(`${to}T23:59:59.999Z`)
+    }
+
+    const [inwards, outwards, adjustments] = await Promise.all([
       prisma.microbialSfgInward.findMany({ where: inwardWhere, orderBy: { createdAt: 'desc' } }),
       prisma.microbialSfgOutward.findMany({
         where: (from || to) ? { issuedAt: { ...(from ? { gte: new Date(from) } : {}), ...(to ? { lte: new Date(`${to}T23:59:59.999Z`) } : {}) } } : {},
         include: { lines: microbe_code ? { where: outwardLineWhere } : true },
         orderBy: { issuedAt: 'desc' },
       }),
+      prisma.microbialSfgAdjustment.findMany({ where: adjustmentWhere, orderBy: { adjustedAt: 'desc' } }),
     ])
 
     const ledger = []
@@ -190,6 +199,27 @@ export const getSfgHistory = async (req, res) => {
           ref_id: o.outwardId,
         })
       }
+    }
+
+    for (const a of adjustments) {
+      ledger.push({
+        type: 'ADJUSTMENT',
+        date: a.adjustedAt,
+        microbe_code: a.microbeCode,
+        microbe_name: a.microbeName,
+        microbe_type: a.microbeType,
+        container_code: a.containerCode,
+        qty_kg: -Number(a.lossQtyKg),
+        cfu_per_g: a.cfuPerGAtAdjust != null ? Number(a.cfuPerGAtAdjust) : null,
+        batch_code: a.batchCode,
+        location: null,
+        status: a.reasonCategory,
+        reason: a.reason,
+        stage: a.stage,
+        adjusted_by: a.adjustedBy,
+        balance_after_kg: Number(a.balanceAfterKg),
+        ref_id: a.adjustmentId,
+      })
     }
 
     ledger.sort((a, b) => new Date(b.date) - new Date(a.date))

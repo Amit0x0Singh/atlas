@@ -145,6 +145,7 @@ model MicrobialSfgInward {
   microbe      MicrobeMaster?            @relation(fields: [microbeId], references: [microbeId])
   allocations  MicrobialSfgAllocation[]
   outwardLines MicrobialSfgOutwardLine[]
+  adjustments  MicrobialSfgAdjustment[]
 
   @@map("microbial_sfg_inward")
 }
@@ -234,4 +235,43 @@ model MicrobialSfgOutwardSession {
   updatedBy  String?  @map("updated_by") @db.VarChar(255)
 
   @@map("microbial_sfg_outward_session")
+}
+
+// A booked stock loss against one inward batch — biomass lost during
+// issuance, release to production, or transport between storage locations.
+// Deduction-only (never a gain): lossQtyKg is always the positive magnitude
+// removed from the batch, mirrored onto the batch's container in the same
+// transaction. Surfaced in Transaction History as an ADJUSTMENT row with a
+// negative qty, alongside INWARD and OUTWARD.
+model MicrobialSfgAdjustment {
+  adjustmentId    String   @id @default(dbgenerated("gen_random_uuid()::text")) @map("adjustment_id")
+  inwardId        String   @map("inward_id")
+  containerId     String?  @map("container_id")
+  containerCode   String   @map("container_code")
+  microbeId       String?  @map("microbe_id")
+  microbeCode     String   @map("microbe_code")
+  microbeName     String   @map("microbe_name")
+  microbeType     String   @map("microbe_type")
+  lossQtyKg       Float    @map("loss_qty_kg")
+  cfuPerGAtAdjust Float?   @map("cfu_per_g_at_adjust")
+  balanceBeforeKg Float    @map("balance_before_kg")
+  balanceAfterKg  Float    @map("balance_after_kg")
+  reasonCategory  String   @map("reason_category")
+  reason          String
+  stage           String?
+  adjustedBy      String   @map("adjusted_by")
+  remarks         String?
+  batchCode       String?  @map("batch_code")
+  adjustedAt      DateTime @default(now()) @map("adjusted_at") @db.Timestamptz()
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+  createdBy       String?  @map("created_by") @db.VarChar(255)
+  updatedBy       String?  @map("updated_by") @db.VarChar(255)
+
+  inward MicrobialSfgInward @relation(fields: [inwardId], references: [inwardId])
+
+  @@index([inwardId])
+  @@index([microbeCode])
+  @@index([adjustedAt])
+  @@map("microbial_sfg_adjustment")
 }

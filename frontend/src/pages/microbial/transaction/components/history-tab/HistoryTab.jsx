@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Search, Filter, ArrowUpDown, Download, ArrowDownCircle, ArrowUpCircle } from 'lucide-react'
+import { Search, Filter, ArrowUpDown, Download, ArrowDownCircle, ArrowUpCircle, MinusCircle } from 'lucide-react'
 import { Button, ColumnsMenu } from '../../../../../components/ui'
 import { Can } from '../../../../../components/common/Can.jsx'
 import { useMicrobeSuggestions } from '../../../../../hooks/masters/useMicrobes.js'
@@ -10,6 +10,7 @@ import { toTitleCase } from '../../../../../utils/textDisplay.js'
 import { exportCsv } from '../../../dashboard/utils/exportCsv.js'
 import HistoryFilterModal, { EMPTY_HISTORY_FILTERS } from './HistoryFilterModal.jsx'
 import HistorySortModal, { DEFAULT_HISTORY_SORT } from './HistorySortModal.jsx'
+import { REASON_LABEL } from '../adjustment-tab/reasons.js'
 
 function countActiveFilters(f) {
   return Object.values(f).filter((v) => (v ?? '').toString().trim()).length
@@ -79,7 +80,10 @@ export default function HistoryTab() {
     { label: 'Qty (kg)', value: (e) => e.qty_kg },
     { label: 'CFU/g', value: (e) => e.cfu_per_g },
     { label: 'Batch / Ref', value: (e) => e.batch_code || '' },
-    { label: 'Detail', value: (e) => e.type === 'OUTWARD' ? `${e.product_name || ''}${e.customer_name ? ` -> ${e.customer_name}` : ''}` : (e.location || '') },
+    { label: 'Detail', value: (e) =>
+      e.type === 'OUTWARD' ? `${e.product_name || ''}${e.customer_name ? ` -> ${e.customer_name}` : ''}`
+      : e.type === 'ADJUSTMENT' ? `${e.reason || ''}${e.adjusted_by ? ` (by ${e.adjusted_by})` : ''}`
+      : (e.location || '') },
     { label: 'Status', value: (e) => e.status },
   ])
 
@@ -152,7 +156,9 @@ export default function HistoryTab() {
                   <td className="px-3 py-2.5">
                     {e.type === 'INWARD'
                       ? <ArrowDownCircle size={16} className="text-green-600" />
-                      : <ArrowUpCircle size={16} className="text-red-600" />}
+                      : e.type === 'ADJUSTMENT'
+                        ? <MinusCircle size={16} className="text-amber-600" />
+                        : <ArrowUpCircle size={16} className="text-red-600" />}
                   </td>
                   {columnVisibility.date && <td className="px-3 py-2.5 text-gray-700 whitespace-nowrap overflow-hidden">{fmtDateTime(e.date)}</td>}
                   {columnVisibility.microbe && (
@@ -171,16 +177,21 @@ export default function HistoryTab() {
                   {columnVisibility.batch && <td className="px-3 py-2.5 font-mono text-gray-700 truncate">{e.batch_code || '—'}</td>}
                   {columnVisibility.detail && (
                     <td className="px-3 py-2.5 text-gray-500 truncate">
-                      {e.type === 'OUTWARD' ? `${e.product_name || ''}${e.customer_name ? ` → ${e.customer_name}` : ''}` : (e.location || '—')}
+                      {e.type === 'OUTWARD'
+                        ? `${e.product_name || ''}${e.customer_name ? ` → ${e.customer_name}` : ''}`
+                        : e.type === 'ADJUSTMENT'
+                          ? `${e.reason || '—'}${e.adjusted_by ? ` · by ${e.adjusted_by}` : ''}`
+                          : (e.location || '—')}
                     </td>
                   )}
                   {columnVisibility.status && (
                     <td className="px-3 py-2.5 overflow-hidden">
                       <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ring-1 ring-inset ${
-                        e.status === 'PARTIAL' ? 'bg-amber-50 text-amber-700 ring-amber-200'
+                        e.type === 'ADJUSTMENT' ? 'bg-amber-50 text-amber-700 ring-amber-200'
+                        : e.status === 'PARTIAL' ? 'bg-amber-50 text-amber-700 ring-amber-200'
                         : e.type === 'INWARD' ? 'bg-blue-50 text-blue-700 ring-blue-200'
                         : 'bg-gray-100 text-gray-500 ring-gray-200'
-                      }`}>{e.status}</span>
+                      }`}>{e.type === 'ADJUSTMENT' ? (REASON_LABEL[e.status] || e.status) : e.status}</span>
                     </td>
                   )}
                 </tr>

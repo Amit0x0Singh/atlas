@@ -1,17 +1,22 @@
 import { useState } from 'react'
 import { BackButton, Button, PageHeader } from '../../../../components/ui'
-import { Can } from '../../../../components/common/Can.jsx'
-import { Repeat, ArrowDown, ArrowUp, ArrowLeft, ClipboardList, Plus, Upload } from 'lucide-react'
+import { Can, usePermission } from '../../../../components/common/Can.jsx'
+import { Repeat, ArrowDown, ArrowUp, ArrowLeft, ClipboardList, Plus, Upload, MinusCircle } from 'lucide-react'
 import InwardTab from '../components/inward-tab/InwardTab.jsx'
 import OutwardTab from '../components/outward-tab/OutwardTab.jsx'
+import AdjustmentTab from '../components/adjustment-tab/AdjustmentTab.jsx'
 import HistoryTab from '../components/history-tab/HistoryTab.jsx'
 
-const TABS = [
+const BASE_TABS = [
   ['inward', 'Inward', ArrowDown],
   ['outward', 'Outward', ArrowUp],
 ]
 
 export default function MicrobeTransaction() {
+  const { hasPermission } = usePermission()
+  const TABS = hasPermission('microbial.sfg-adjustment.view')
+    ? [...BASE_TABS, ['adjustment', 'Stock Loss', MinusCircle]]
+    : BASE_TABS
   const [tab, setTab] = useState('inward')
   const [showInwardForm, setShowInwardForm] = useState(false)
   const [showInwardImport, setShowInwardImport] = useState(false)
@@ -79,6 +84,7 @@ export default function MicrobeTransaction() {
           />
         )}
         {tab === 'outward' && <OutwardTab />}
+        {tab === 'adjustment' && <AdjustmentTab />}
         {tab === 'history' && <HistoryTab />}
       </div>
     </div>
