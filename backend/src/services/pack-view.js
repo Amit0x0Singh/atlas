@@ -45,9 +45,19 @@ export function flattenPack(bag) {
     warehouse: bag.warehouse ?? null,
     scannedAt: bag.scannedAt ?? null,
     inwardedAt: bag.inwardedAt ?? null,
+    // Lot-level (PrintMaster) audit fields — who generated this print job,
+    // same for every bag in the lot.
     createdAt: pm?.createdAt,
     createdBy: pm?.createdBy ?? null,
     updatedBy: pm?.updatedBy ?? null,
     updatedAt: pm?.updatedAt ?? null,
+    // Bag-level (PackDetail) audit fields — who actually created/last
+    // touched *this specific bag* row (e.g. who scanned it into inward,
+    // who edited its warehouse/expiry) — can differ bag-to-bag within the
+    // same lot, unlike the PrintMaster fields above.
+    bagCreatedAt: bag.createdAt,
+    bagCreatedBy: bag.createdBy ?? null,
+    bagUpdatedBy: bag.updatedBy ?? null,
+    bagUpdatedAt: bag.updatedAt,
   }
 }

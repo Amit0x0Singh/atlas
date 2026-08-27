@@ -12,6 +12,14 @@ export const STATUS_COLORS = {
 };
 export const statusColor = (s) => STATUS_COLORS[s] ?? "bg-gray-100 text-gray-600";
 
+// Distinct set of people who created/updated the underlying bag (PackDetail)
+// rows in a group — bags in the same lot can carry different actors if
+// they were scanned/edited individually, unlike the single lot-level
+// PrintMaster creator. `field` is 'bagCreatedBy' or 'bagUpdatedBy'.
+export function distinctActors(bags, field) {
+  return [...new Set(bags.map((b) => b[field]).filter(Boolean))];
+}
+
 export function groupStatus(bags) {
   const counts = {};
   for (const b of bags) counts[b.status] = (counts[b.status] || 0) + 1;

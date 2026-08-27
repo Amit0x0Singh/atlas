@@ -2,7 +2,7 @@ import { Fragment } from "react";
 import { Clock } from "lucide-react";
 import { packsApi } from "../../../../../../api/inventory.js";
 import { openAuthedFile } from "../../../../../../utils/authedFile.js";
-import { groupStatus, statusColor, fmtDate } from "../utils/groupPacks.js";
+import { groupStatus, statusColor, fmtDate, distinctActors } from "../utils/groupPacks.js";
 import { useUserDisplayNames } from "../../../../../../hooks/masters/useUserDisplayNames.js";
 
 import { toTitleCase } from '../../../../../../utils/textDisplay.js'
@@ -13,6 +13,15 @@ export default function PackTableRow({ group: g, isOpen, onToggle, columnVisibil
   const displayName = useUserDisplayNames();
   const totalQty = g.bags.reduce((s, b) => s + (b.packQty || 0), 0);
   const status   = groupStatus(g.bags);
+
+  // How many distinct people actually created/updated the bag rows in this
+  // lot — can be more than one if bags were scanned/edited individually,
+  // unlike the single lot-level PrintMaster creator shown in the footer.
+  const creatorEmails = distinctActors(g.bags, 'bagCreatedBy');
+  const updaterEmails = distinctActors(g.bags, 'bagUpdatedBy');
+  const actorSummary = (emails) =>
+    emails.length === 0 ? '—' : emails.length === 1 ? displayName(emails[0]) : `${emails.length} people`;
+  const actorTooltip = (emails) => emails.map(displayName).join(', ');
 
   return (
     <Fragment>
@@ -82,6 +91,18 @@ export default function PackTableRow({ group: g, isOpen, onToggle, columnVisibil
           </td>
         )}
 
+        {columnVisibility.createdBy && (
+          <td className="px-3 py-3 text-xs text-gray-600 truncate" title={actorTooltip(creatorEmails)}>
+            {actorSummary(creatorEmails)}
+          </td>
+        )}
+
+        {columnVisibility.updatedBy && (
+          <td className="px-3 py-3 text-xs text-gray-600 truncate" title={actorTooltip(updaterEmails)}>
+            {actorSummary(updaterEmails)}
+          </td>
+        )}
+
         <td
           className="px-3 py-3"
           onClick={(e) => e.stopPropagation()}
@@ -134,6 +155,20 @@ export default function PackTableRow({ group: g, isOpen, onToggle, columnVisibil
 
                 <span className="text-xs text-gray-500 w-24 shrink-0">
                   {fmtDate(b.expiryDate)}
+                </span>
+
+                <span
+                  className="text-xs text-gray-500 w-36 shrink-0 truncate mx-4"
+                  title={`Created by ${displayName(b.bagCreatedBy)}`}
+                >
+                  <span className="text-gray-400">By:</span> {displayName(b.bagCreatedBy)}
+                </span>
+
+                <span
+                  className="text-xs text-gray-500 w-36 shrink-0 truncate"
+                  title={`Updated by ${displayName(b.bagUpdatedBy)}`}
+                >
+                  <span className="text-gray-400">Upd:</span> {displayName(b.bagUpdatedBy)}
                 </span>
 
                 <button
