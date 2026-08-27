@@ -188,7 +188,7 @@ const SalesOrder = () => {
         actions={<BackButton />}
       />
 
-      <div className="max-w-7xl mx-auto px-4 py-6 w-full">
+      <div className="px-4 md:px-6 py-6 w-full">
       {err && (
         <div className="mb-4 text-sm text-red-600 bg-red-50 px-4 py-3 rounded-lg">
           {err}

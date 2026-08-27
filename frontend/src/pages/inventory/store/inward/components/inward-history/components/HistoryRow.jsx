@@ -1,12 +1,23 @@
 import { Fragment } from 'react'
 import { packsApi } from '../../../../../../../api/inventory.js'
 import { openAuthedFile } from '../../../../../../../utils/authedFile.js'
-import { fmtDate } from '../utils/groupPacks.js'
+import { fmtDate, distinctActors } from '../utils/groupPacks.js'
+import { useUserDisplayNames } from '../../../../../../../hooks/masters/useUserDisplayNames.js'
 
 import { toTitleCase } from '../../../../../../../utils/textDisplay.js'
 export default function HistoryRow({ group: g, isOpen, onToggle, columnVisibility, colSpan }) {
+  const displayName     = useUserDisplayNames()
   const totalQty        = g.bags.reduce((s, b) => s + (b.packQty || 0), 0)
   const groupWarehouses = [...new Set(g.bags.map(b => b.warehouse).filter(Boolean))]
+
+  // How many distinct people actually created/updated the bag rows in this
+  // lot — can be more than one if bags were scanned/edited individually,
+  // unlike a single lot-level creator.
+  const creatorEmails = distinctActors(g.bags, 'bagCreatedBy')
+  const updaterEmails = distinctActors(g.bags, 'bagUpdatedBy')
+  const actorSummary = (emails) =>
+    emails.length === 0 ? '—' : emails.length === 1 ? displayName(emails[0]) : `${emails.length} people`
+  const actorTooltip = (emails) => emails.map(displayName).join(', ')
 
   return (
     <Fragment>
@@ -36,7 +47,7 @@ export default function HistoryRow({ group: g, isOpen, onToggle, columnVisibilit
           </td>
         )}
 
-        {columnVisibility.supplier && <td className="px-3 py-3 text-sm text-gray-600">{g.supplier || '—'}</td>}
+        {columnVisibility.supplier && <td className="px-3 py-3 text-sm text-gray-600">{toTitleCase(g.supplier) || '—'}</td>}
 
         {columnVisibility.bags && (
           <td className="px-3 py-3 text-center">
@@ -65,13 +76,25 @@ export default function HistoryRow({ group: g, isOpen, onToggle, columnVisibilit
               <span className="text-gray-300 text-xs">—</span>
             ) : groupWarehouses.length === 1 ? (
               <span className="text-xs font-semibold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">
-                {groupWarehouses[0]}
+                {toTitleCase(groupWarehouses[0])}
               </span>
             ) : (
-              <span className="text-xs text-indigo-600 font-medium" title={groupWarehouses.join(', ')}>
+              <span className="text-xs text-indigo-600 font-medium" title={groupWarehouses.map(toTitleCase).join(', ')}>
                 {groupWarehouses.length} locations
               </span>
             )}
+          </td>
+        )}
+
+        {columnVisibility.createdBy && (
+          <td className="px-3 py-3 text-xs text-gray-600 truncate" title={actorTooltip(creatorEmails)}>
+            {actorSummary(creatorEmails)}
+          </td>
+        )}
+
+        {columnVisibility.updatedBy && (
+          <td className="px-3 py-3 text-xs text-gray-600 truncate" title={actorTooltip(updaterEmails)}>
+            {actorSummary(updaterEmails)}
           </td>
         )}
 
@@ -115,6 +138,18 @@ export default function HistoryRow({ group: g, isOpen, onToggle, columnVisibilit
               </span>
               <span className="text-xs text-gray-500 w-24 shrink-0">
                 {fmtDate(b.expiryDate)}
+              </span>
+              <span
+                className="text-xs text-gray-500 w-36 shrink-0 truncate mx-4"
+                title={`Created by ${displayName(b.bagCreatedBy)}`}
+              >
+                <span className="text-gray-400">By:</span> {displayName(b.bagCreatedBy)}
+              </span>
+              <span
+                className="text-xs text-gray-500 w-36 shrink-0 truncate"
+                title={`Updated by ${displayName(b.bagUpdatedBy)}`}
+              >
+                <span className="text-gray-400">Upd:</span> {displayName(b.bagUpdatedBy)}
               </span>
               <button
                 type="button"

@@ -41,6 +41,14 @@ export function groupPacks(packs) {
   })
 }
 
+// Distinct set of people who created/updated the underlying bag (PackDetail)
+// rows in a group — bags in the same lot can carry different actors if
+// they were scanned/edited individually. `field` is 'bagCreatedBy' or
+// 'bagUpdatedBy'.
+export function distinctActors(bags, field) {
+  return [...new Set(bags.map((b) => b[field]).filter(Boolean))]
+}
+
 export function groupStatus(bags) {
   const s = new Set(bags.map(b => b.status))
   if (s.size === 1) return [...s][0]

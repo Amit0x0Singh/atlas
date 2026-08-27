@@ -1,4 +1,5 @@
 import { fillBadgeCls, statusBadgeCls, fmtCfu, fmtDate } from '../../utils/format.js'
+import { toTitleCase } from '../../../../../utils/textDisplay.js'
 
 export default function InwardTable({ rows, loading }) {
   return (
@@ -29,7 +30,7 @@ export default function InwardTable({ rows, loading }) {
               {rows.map((r, i) => (
                 <tr key={r.inward_id} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
                   <td className="px-3 py-2.5 border-b border-gray-100 font-semibold text-gray-900">
-                    {r.microbe_name}
+                    {toTitleCase(r.microbe_name)}
                     <div className="text-[10px] text-gray-400 font-normal">{r.microbe_code}</div>
                   </td>
                   <td className="px-3 py-2.5 border-b border-gray-100 font-mono text-gray-700">{r.container_code}</td>

@@ -157,7 +157,7 @@ export default function HistoryTab() {
                   {columnVisibility.date && <td className="px-3 py-2.5 text-gray-700 whitespace-nowrap overflow-hidden">{fmtDateTime(e.date)}</td>}
                   {columnVisibility.microbe && (
                     <td className="px-3 py-2.5 font-semibold text-gray-900 truncate">
-                      {e.microbe_name}
+                      {toTitleCase(e.microbe_name)}
                       <div className="text-[10px] text-gray-400 font-normal">{e.microbe_code}</div>
                     </td>
                   )}

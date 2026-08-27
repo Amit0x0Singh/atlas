@@ -1,5 +1,6 @@
 import { Filter } from 'lucide-react'
 import { Modal, Button } from '../../../../../../../components/ui'
+import { toTitleCase } from '../../../../../../../utils/textDisplay.js'
 
 export const EMPTY_INWARD_HISTORY_FILTERS = { supplier: '', dateFrom: '', dateTo: '' }
 
@@ -27,7 +28,7 @@ export default function InwardHistoryFilterModal({ open, onClose, value, onApply
           </div>
           <select value={value.supplier} onChange={e => set({ supplier: e.target.value })} className={`${FIELD} cursor-pointer`}>
             <option value="">All Suppliers</option>
-            {suppliers.map(s => <option key={s} value={s}>{s}</option>)}
+            {suppliers.map(s => <option key={s} value={s}>{toTitleCase(s)}</option>)}
           </select>
         </div>
 

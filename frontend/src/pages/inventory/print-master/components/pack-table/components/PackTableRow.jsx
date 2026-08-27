@@ -58,7 +58,7 @@ export default function PackTableRow({ group: g, isOpen, onToggle, columnVisibil
 
         {columnVisibility.supplier && (
           <td className="px-3 py-3 text-sm text-gray-600">
-            {g.supplier || "—"}
+            {toTitleCase(g.supplier) || "—"}
           </td>
         )}
 

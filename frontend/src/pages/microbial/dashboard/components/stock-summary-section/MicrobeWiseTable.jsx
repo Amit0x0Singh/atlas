@@ -3,6 +3,7 @@ import { Search, Filter } from 'lucide-react'
 import { Button } from '../../../../../components/ui'
 import { stockStatusBadgeCls, fmtCfu, fmtDate } from '../../../transaction/utils/format.js'
 import { formatMeasurementString } from '../../../../../utils/measurement/formatMeasurement.js'
+import { toTitleCase } from '../../../../../utils/textDisplay.js'
 import MicrobeWiseFilterModal, { EMPTY_MICROBE_WISE_FILTERS } from './MicrobeWiseFilterModal.jsx'
 
 function countActiveFilters(f) {
@@ -72,7 +73,7 @@ export default function MicrobeWiseTable({ rows, onViewContainers }) {
               <tbody>
                 {filtered.map((r) => (
                   <tr key={`${r.microbe_code}-${r.microbe_type}`} className="border-b border-gray-100 hover:bg-blue-50/40 transition">
-                    <td className="px-3 py-2 font-bold text-gray-900">{r.microbe_name}</td>
+                    <td className="px-3 py-2 font-bold text-gray-900">{toTitleCase(r.microbe_name)}</td>
                     <td className="px-3 py-2 font-mono text-gray-600">{r.microbe_code}</td>
                     <td className="px-3 py-2"><span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 text-[10px] font-semibold">{r.microbe_type}</span></td>
                     <td className="px-3 py-2 text-center text-gray-700">{r.container_count}</td>

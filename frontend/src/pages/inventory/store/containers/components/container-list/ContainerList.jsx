@@ -183,7 +183,7 @@ export default function ContainerList() {
 
               {/* Item name */}
               <div className="text-xs text-gray-700 font-medium truncate">
-                {c.itemName || "—"}
+                {toTitleCase(c.itemName) || "—"}
               </div>
 
               {/* Progress bar + % */}
