@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { Send, RotateCcw, ArrowLeft } from 'lucide-react'
 import { Button } from '../../../../../components/ui'
 import { Can } from '../../../../../components/common/Can.jsx'
+import AdjustmentTab from '../adjustment-tab/AdjustmentTab.jsx'
+import AdjustmentRecords from '../adjustment-tab/AdjustmentRecords.jsx'
 import { usePreviewOutward, useCreateOutward, useMicrobialOutward, useEligibleBatches } from '../../../../../hooks/microbial/useMicrobialOutward.js'
 import { microbialSfgApi } from '../../../../../api/microbial.js'
 import { planTasksApi } from '../../../../../api/production.js'
@@ -28,7 +30,7 @@ const EMPTY_HEADER = {
   section: '', order_qty_kg: '', issuer_name: '', receiver_name: '',
 }
 
-export default function OutwardTab() {
+export default function OutwardTab({ adjustView = null }) {
   // Microbes are issued strictly against a planner-sent task's recipe — same
   // rule Store follows for "Material Issue by BOM." There is no path to a
   // blank manual form; a task must be selected first every time.
@@ -277,6 +279,9 @@ export default function OutwardTab() {
       backToSelect()
     } catch (err) { alert(err.message) }
   }
+
+  if (adjustView === 'form') return <AdjustmentTab />
+  if (adjustView === 'records') return <AdjustmentRecords />
 
   if (step === 'select') {
     return (

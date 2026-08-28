@@ -5,10 +5,11 @@ import { CACHE } from '../../lib/queryClient.js'
 
 // Recent stock loss adjustments for the "Recent Adjustments" list on the
 // Stock Loss tab. The full record is in Transaction History.
-export function useMicrobialAdjustments(filters) {
+export function useMicrobialAdjustments(filters, { enabled = true } = {}) {
   return useQuery({
     queryKey: queryKeys.microbialSfgAdjustment.all(filters),
     queryFn: () => microbialSfgApi.listAdjustments(filters).then((r) => r.data),
+    enabled,
     ...CACHE.MASTER,
   })
 }
@@ -26,6 +27,7 @@ export function useCreateAdjustment() {
       qc.invalidateQueries({ queryKey: queryKeys.microbialSfgInward.summary() })
       qc.invalidateQueries({ queryKey: queryKeys.microbialSfgOutward.all() })
       qc.invalidateQueries({ queryKey: queryKeys.microbialContainers.all() })
+      qc.invalidateQueries({ queryKey: ['microbial-sfg-containers'] })
       qc.invalidateQueries({ queryKey: queryKeys.microbialSfgDashboard.all() })
       qc.invalidateQueries({ queryKey: queryKeys.microbialSfgHistory.all() })
       qc.invalidateQueries({ queryKey: ['microbial-sfg-storage'] })

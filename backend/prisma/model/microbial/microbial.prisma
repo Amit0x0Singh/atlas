@@ -259,10 +259,8 @@ model MicrobialSfgAdjustment {
   reasonCategory  String   @map("reason_category")
   reason          String
   stage           String?
-  adjustedBy      String   @map("adjusted_by")
   remarks         String?
   batchCode       String?  @map("batch_code")
-  adjustedAt      DateTime @default(now()) @map("adjusted_at") @db.Timestamptz()
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt       DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
   createdBy       String?  @map("created_by") @db.VarChar(255)
@@ -272,6 +270,6 @@ model MicrobialSfgAdjustment {
 
   @@index([inwardId])
   @@index([microbeCode])
-  @@index([adjustedAt])
+  @@index([createdAt])
   @@map("microbial_sfg_adjustment")
 }

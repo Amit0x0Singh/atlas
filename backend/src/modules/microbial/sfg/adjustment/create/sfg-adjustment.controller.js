@@ -3,16 +3,19 @@ import { toSafeErrorMessage } from '../../../../../utils/safe-error.js'
 import { toSnakeRow } from '../../../../../utils/caseTransform.js'
 
 // Canonical reason categories — kept in sync with the frontend button set
-// (adjustment-tab/reasons.js). `reason` carries the free-text detail.
-export const REASON_CATEGORIES = [
-  'ISSUANCE',
-  'PRODUCTION_RELEASE',
-  'TRANSPORT',
-  'SPILLAGE',
-  'CONTAMINATION',
-  'WEIGHING_ERROR',
-  'OTHER',
-]
+// (adjustment-tab/reasons.js). The category is the only classification the
+// operator picks; `reason` is stored as its readable label so history rows
+// and exports stay self-describing.
+export const REASON_CATEGORY_LABELS = {
+  ISSUANCE:           'During issuance',
+  PRODUCTION_RELEASE: 'Production release',
+  TRANSPORT:          'Transportation',
+  SPILLAGE:           'Spillage',
+  CONTAMINATION:      'Contamination',
+  WEIGHING_ERROR:     'Weighing error',
+  OTHER:              'Other',
+}
+export const REASON_CATEGORIES = Object.keys(REASON_CATEGORY_LABELS)
 
 // Books a stock loss against one inward batch. The deduction is re-validated
 // against live remaining_qty_kg inside the transaction (a stale client view
@@ -21,10 +24,10 @@ export const REASON_CATEGORIES = [
 // container, exactly as createSfgOutward does per allocation.
 export const createSfgAdjustment = async (req, res) => {
   try {
-    const { inward_id, loss_qty_kg, reason_category, reason, stage, adjusted_by, remarks } = req.body || {}
+    const { inward_id, loss_qty_kg, reason_category, remarks } = req.body || {}
 
-    if (!inward_id || !reason_category || !reason || !adjusted_by)
-      return res.status(400).json({ success: false, error: 'inward_id, reason_category, reason, adjusted_by required', code: 'VALIDATION_ERROR' })
+    if (!inward_id || !reason_category)
+      return res.status(400).json({ success: false, error: 'inward_id and reason_category required', code: 'VALIDATION_ERROR' })
     if (!REASON_CATEGORIES.includes(reason_category))
       return res.status(400).json({ success: false, error: `reason_category must be one of: ${REASON_CATEGORIES.join(', ')}`, code: 'VALIDATION_ERROR' })
 
@@ -81,10 +84,9 @@ export const createSfgAdjustment = async (req, res) => {
           balanceBeforeKg: remaining,
           balanceAfterKg: newRemaining,
           reasonCategory: reason_category,
-          reason,
-          stage: stage || null,
-          adjustedBy: adjusted_by,
-          remarks: remarks || null,
+          reason: REASON_CATEGORY_LABELS[reason_category],
+          stage: null,
+          remarks: remarks?.trim() || null,
           batchCode: inward.biomassBatchCode || null,
         },
       })

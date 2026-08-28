@@ -5,6 +5,7 @@ import { Can } from '../../../../../components/common/Can.jsx'
 import { useMicrobeSuggestions } from '../../../../../hooks/masters/useMicrobes.js'
 import { useMicrobialHistory } from '../../../../../hooks/microbial/useMicrobialHistory.js'
 import { useColumnPreferences } from '../../../../../hooks/useColumnPreferences.js'
+import { useUserDisplayNames } from '../../../../../hooks/masters/useUserDisplayNames.js'
 import { fmtCfu, fmtDateTime } from '../../utils/format.js'
 import { toTitleCase } from '../../../../../utils/textDisplay.js'
 import { exportCsv } from '../../../dashboard/utils/exportCsv.js'
@@ -20,14 +21,17 @@ function countActiveFilters(f) {
 // as the Stock Ledger / Inward History tables. The leading type-icon column
 // stays fixed width, like those tables' own fixed leading columns.
 const COLUMN_DEFS = [
-  { key: 'date',      label: 'Date',        defaultWidth: 150 },
-  { key: 'microbe',   label: 'Microbe',     defaultWidth: 180 },
-  { key: 'container', label: 'Container',   defaultWidth: 150 },
-  { key: 'qty',       label: 'Qty (kg)',    defaultWidth: 110, align: 'right' },
-  { key: 'cfu',       label: 'CFU/g',       defaultWidth: 110 },
-  { key: 'batch',     label: 'Batch / Ref', defaultWidth: 150 },
-  { key: 'detail',    label: 'Detail',      defaultWidth: 180 },
-  { key: 'status',    label: 'Status',      defaultWidth: 100 },
+  { key: 'date', label: 'Date', defaultWidth: 150 },
+  { key: 'microbe', label: 'Microbe', defaultWidth: 180 },
+  { key: 'container', label: 'Container', defaultWidth: 150 },
+  { key: 'location', label: 'Location', defaultWidth: 130 },
+  { key: 'qty', label: 'Qty (kg)', defaultWidth: 110, align: 'right' },
+  { key: 'cfu', label: 'CFU/g', defaultWidth: 110 },
+  { key: 'batch', label: 'Batch / Ref', defaultWidth: 150 },
+  { key: 'status', label: 'Status', defaultWidth: 150 },
+  { key: 'createdBy', label: 'Created By', defaultWidth: 120 },
+  { key: 'updatedBy', label: 'Updated By', defaultWidth: 120 },
+  { key: 'detail', label: 'Detail', defaultWidth: 180, defaultVisible: false },
 ]
 const TYPE_COL_WIDTH = 40
 
@@ -39,6 +43,7 @@ export default function HistoryTab() {
   const [showSort, setShowSort] = useState(false)
 
   const { columnWidths, columnVisibility, visibleColumns, startResize, toggleColumn } = useColumnPreferences('microbial-transaction-history', COLUMN_DEFS)
+  const displayName = useUserDisplayNames()
 
   const { data: microbes = [] } = useMicrobeSuggestions()
   const apiFilters = useMemo(() => ({
@@ -57,7 +62,8 @@ export default function HistoryTab() {
       e.microbe_name?.toLowerCase().includes(q) ||
       e.microbe_code?.toLowerCase().includes(q) ||
       e.container_code?.toLowerCase().includes(q) ||
-      e.batch_code?.toLowerCase().includes(q)
+      e.batch_code?.toLowerCase().includes(q) ||
+      e.location?.toLowerCase().includes(q)
     )
   }, [ledger, search])
 
@@ -77,14 +83,19 @@ export default function HistoryTab() {
     { label: 'Microbe', value: (e) => toTitleCase(e.microbe_name) },
     { label: 'Code', value: (e) => e.microbe_code },
     { label: 'Container', value: (e) => e.container_code },
+    { label: 'Location', value: (e) => e.location || '' },
     { label: 'Qty (kg)', value: (e) => e.qty_kg },
     { label: 'CFU/g', value: (e) => e.cfu_per_g },
     { label: 'Batch / Ref', value: (e) => e.batch_code || '' },
-    { label: 'Detail', value: (e) =>
-      e.type === 'OUTWARD' ? `${e.product_name || ''}${e.customer_name ? ` -> ${e.customer_name}` : ''}`
-      : e.type === 'ADJUSTMENT' ? `${e.reason || ''}${e.adjusted_by ? ` (by ${e.adjusted_by})` : ''}`
-      : (e.location || '') },
     { label: 'Status', value: (e) => e.status },
+    { label: 'Created By', value: (e) => e.created_by ? toTitleCase(displayName(e.created_by)) : '' },
+    { label: 'Updated By', value: (e) => e.updated_by ? toTitleCase(displayName(e.updated_by)) : '' },
+    {
+      label: 'Detail', value: (e) =>
+        e.type === 'OUTWARD' ? `${e.product_name || ''}${e.customer_name ? ` -> ${e.customer_name}` : ''}`
+          : e.type === 'ADJUSTMENT' ? (e.remarks || '')
+            : ''
+    },
   ])
 
   return (
@@ -168,6 +179,7 @@ export default function HistoryTab() {
                     </td>
                   )}
                   {columnVisibility.container && <td className="px-3 py-2.5 font-mono text-gray-700 truncate">{e.container_code}</td>}
+                  {columnVisibility.location && <td className="px-3 py-2.5 font-mono text-gray-700 truncate">{e.location || '—'}</td>}
                   {columnVisibility.qty && (
                     <td className={`px-3 py-2.5 text-right font-bold overflow-hidden ${e.qty_kg >= 0 ? 'text-green-700' : 'text-red-600'}`}>
                       {e.qty_kg >= 0 ? '+' : ''}{Number(e.qty_kg).toFixed(3)}
@@ -175,23 +187,24 @@ export default function HistoryTab() {
                   )}
                   {columnVisibility.cfu && <td className="px-3 py-2.5 text-gray-700 overflow-hidden">{fmtCfu(e.cfu_per_g)}</td>}
                   {columnVisibility.batch && <td className="px-3 py-2.5 font-mono text-gray-700 truncate">{e.batch_code || '—'}</td>}
+                  {columnVisibility.status && (
+                    <td className="px-3 py-2.5 overflow-hidden">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ring-1 ring-inset ${e.type === 'ADJUSTMENT' ? 'bg-amber-50 text-amber-700 ring-amber-200'
+                        : e.status === 'PARTIAL' ? 'bg-amber-50 text-amber-700 ring-amber-200'
+                          : e.type === 'INWARD' ? 'bg-blue-50 text-blue-700 ring-blue-200'
+                            : 'bg-gray-100 text-gray-500 ring-gray-200'
+                        }`}>{e.type === 'ADJUSTMENT' ? (REASON_LABEL[e.status] || e.status) : e.status}</span>
+                    </td>
+                  )}
+                  {columnVisibility.createdBy && <td className="px-3 py-2.5 text-gray-600 truncate">{toTitleCase(displayName(e.created_by)) || '—'}</td>}
+                  {columnVisibility.updatedBy && <td className="px-3 py-2.5 text-gray-600 truncate">{toTitleCase(displayName(e.updated_by)) || '—'}</td>}
                   {columnVisibility.detail && (
                     <td className="px-3 py-2.5 text-gray-500 truncate">
                       {e.type === 'OUTWARD'
                         ? `${e.product_name || ''}${e.customer_name ? ` → ${e.customer_name}` : ''}`
                         : e.type === 'ADJUSTMENT'
-                          ? `${e.reason || '—'}${e.adjusted_by ? ` · by ${e.adjusted_by}` : ''}`
-                          : (e.location || '—')}
-                    </td>
-                  )}
-                  {columnVisibility.status && (
-                    <td className="px-3 py-2.5 overflow-hidden">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ring-1 ring-inset ${
-                        e.type === 'ADJUSTMENT' ? 'bg-amber-50 text-amber-700 ring-amber-200'
-                        : e.status === 'PARTIAL' ? 'bg-amber-50 text-amber-700 ring-amber-200'
-                        : e.type === 'INWARD' ? 'bg-blue-50 text-blue-700 ring-blue-200'
-                        : 'bg-gray-100 text-gray-500 ring-gray-200'
-                      }`}>{e.type === 'ADJUSTMENT' ? (REASON_LABEL[e.status] || e.status) : e.status}</span>
+                          ? (e.remarks || '—')
+                          : '—'}
                     </td>
                   )}
                 </tr>

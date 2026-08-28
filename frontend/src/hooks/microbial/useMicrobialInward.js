@@ -19,6 +19,17 @@ export function useMicrobialInwardSummary() {
   })
 }
 
+// Every container holding stock of one microbe (any fill status) — the
+// container step of the Stock Loss Adjustment drill-down.
+export function useSfgContainersByMicrobe(microbeCode, enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.microbialContainers.all({ microbe_code: microbeCode || null }),
+    queryFn: () => microbialSfgApi.listContainers({ microbe_code: microbeCode }).then(r => r.data),
+    enabled: enabled && !!microbeCode,
+    ...CACHE.MASTER,
+  })
+}
+
 function invalidateStockQueries(qc) {
   qc.invalidateQueries({ queryKey: queryKeys.microbialSfgInward.all() })
   qc.invalidateQueries({ queryKey: queryKeys.microbialSfgInward.summary() })

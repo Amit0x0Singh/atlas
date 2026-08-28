@@ -144,9 +144,9 @@ export const getSfgHistory = async (req, res) => {
     const adjustmentWhere = {}
     if (microbe_code) adjustmentWhere.microbeCode = microbe_code
     if (from || to) {
-      adjustmentWhere.adjustedAt = {}
-      if (from) adjustmentWhere.adjustedAt.gte = new Date(from)
-      if (to) adjustmentWhere.adjustedAt.lte = new Date(`${to}T23:59:59.999Z`)
+      adjustmentWhere.createdAt = {}
+      if (from) adjustmentWhere.createdAt.gte = new Date(from)
+      if (to) adjustmentWhere.createdAt.lte = new Date(`${to}T23:59:59.999Z`)
     }
 
     const [inwards, outwards, adjustments] = await Promise.all([
@@ -156,8 +156,30 @@ export const getSfgHistory = async (req, res) => {
         include: { lines: microbe_code ? { where: outwardLineWhere } : true },
         orderBy: { issuedAt: 'desc' },
       }),
-      prisma.microbialSfgAdjustment.findMany({ where: adjustmentWhere, orderBy: { adjustedAt: 'desc' } }),
+      // Guarded so the whole history endpoint still works before `prisma
+      // generate` has been re-run for the MicrobialSfgAdjustment model.
+      prisma.microbialSfgAdjustment
+        ? prisma.microbialSfgAdjustment.findMany({ where: adjustmentWhere, orderBy: { createdAt: 'desc' } })
+        : Promise.resolve([]),
     ])
+
+    // Current storage slot per container — the OUTWARD / ADJUSTMENT rows
+    // don't carry a location of their own, and even an INWARD row's stored
+    // slot can go stale if the container was moved afterwards.
+    const containerIds = [...new Set([
+      ...inwards.map((i) => i.containerId),
+      ...outwards.flatMap((o) => o.lines.map((l) => l.containerId)),
+      ...adjustments.map((a) => a.containerId),
+    ].filter(Boolean))]
+    const containerLoc = new Map(
+      (containerIds.length
+        ? await prisma.microbialSfgContainer.findMany({
+            where: { containerId: { in: containerIds } },
+            select: { containerId: true, location: true },
+          })
+        : []
+      ).map((c) => [c.containerId, c.location]),
+    )
 
     const ledger = []
     for (const i of inwards) {
@@ -171,8 +193,10 @@ export const getSfgHistory = async (req, res) => {
         qty_kg: Number(i.totalQtyKg),
         cfu_per_g: Number(i.inhouseCfuPerG),
         batch_code: i.biomassBatchCode,
-        location: i.location,
+        location: containerLoc.get(i.containerId) || i.location || null,
         status: i.status,
+        created_by: i.createdBy,
+        updated_by: i.updatedBy,
         ref_id: i.inwardId,
       })
     }
@@ -189,13 +213,15 @@ export const getSfgHistory = async (req, res) => {
           qty_kg: -Number(l.qtyIssuedKg),
           cfu_per_g: Number(l.cfuPerGAtIssue),
           batch_code: o.batchCode,
-          location: null,
+          location: containerLoc.get(l.containerId) || null,
           status: l.isPartial ? 'PARTIAL' : 'ISSUED',
           product_name: o.productName,
           customer_name: o.customerName,
           di_number: o.diNumber,
           issuer_name: o.issuerName,
           receiver_name: o.receiverName,
+          created_by: o.createdBy,
+          updated_by: o.updatedBy,
           ref_id: o.outwardId,
         })
       }
@@ -204,7 +230,7 @@ export const getSfgHistory = async (req, res) => {
     for (const a of adjustments) {
       ledger.push({
         type: 'ADJUSTMENT',
-        date: a.adjustedAt,
+        date: a.createdAt,
         microbe_code: a.microbeCode,
         microbe_name: a.microbeName,
         microbe_type: a.microbeType,
@@ -212,11 +238,12 @@ export const getSfgHistory = async (req, res) => {
         qty_kg: -Number(a.lossQtyKg),
         cfu_per_g: a.cfuPerGAtAdjust != null ? Number(a.cfuPerGAtAdjust) : null,
         batch_code: a.batchCode,
-        location: null,
+        location: containerLoc.get(a.containerId) || null,
         status: a.reasonCategory,
         reason: a.reason,
-        stage: a.stage,
-        adjusted_by: a.adjustedBy,
+        remarks: a.remarks,
+        created_by: a.createdBy,
+        updated_by: a.updatedBy,
         balance_after_kg: Number(a.balanceAfterKg),
         ref_id: a.adjustmentId,
       })

@@ -103,6 +103,7 @@ export const MODELS = {
   'microbial-sfg-outward': { model: 'microbialSfgOutward', group: 'microbial', title: 'Microbial SFG Outward',      idField: 'outwardId',     orderBy: { createdAt: 'desc' } },
   'microbial-sfg-outward-line': { model: 'microbialSfgOutwardLine', group: 'microbial', title: 'Microbial SFG Outward Lines',  idField: 'lineId',        orderBy: { createdAt: 'desc' } },
   'microbial-sfg-outward-session': { model: 'microbialSfgOutwardSession', group: 'microbial', title: 'Microbial SFG Outward Sessions', idField: 'id',        orderBy: { updatedAt: 'desc' } },
+  'microbial-sfg-adjustment': { model: 'microbialSfgAdjustment', group: 'microbial', title: 'Microbial SFG Adjustments',   idField: 'adjustmentId',  orderBy: { createdAt: 'desc' } },
 
   // ── Notifications ──────────────────────────────────────────────────────────
   'notifications': { model: 'erpNotification', group: 'notifications', title: 'Notifications',         idField: 'notifId',    orderBy: { createdAt: 'desc' } },
