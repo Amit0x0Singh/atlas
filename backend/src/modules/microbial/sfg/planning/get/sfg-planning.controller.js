@@ -135,6 +135,16 @@ export const getProductMicrobeRequirements = async (req, res) => {
         ? activeInward.reduce((s, i) => s + Number(i.inhouseCfuPerG) * Number(i.remainingQtyKg), 0) / totalKg
         : 0
 
+      // Required CFU/g is a formulation spec — it belongs to the recipe row
+      // (set in Recipe DB's BOM editor, RecipeDb.requiredCfu), not to
+      // whatever happens to be sitting in stock right now. Falls back to the
+      // current stock's weighted-average potency only when the recipe row
+      // has no real requirement set — >0 check (not just non-null) because
+      // plenty of existing rows carry a leftover `0` rather than a true
+      // null, same "not actually specified" convention checkPlanMicrobes
+      // (above) already uses for this same column.
+      const requiredCfu = recipe.requiredCfu != null && Number(recipe.requiredCfu) > 0 ? Number(recipe.requiredCfu) : null
+
       results.push({
         microbe_id: microbe.microbeId,
         microbe_code: microbe.microbeCode,
@@ -143,7 +153,7 @@ export const getProductMicrobeRequirements = async (req, res) => {
         rm_name: recipe.rmName,
         qty_per_unit: Number(recipe.qtyPerUnit),
         required_qty_kg: Number((Number(recipe.qtyPerUnit) * orderQty).toFixed(4)),
-        required_cfu_per_g: avgCfuPerG ? Number(avgCfuPerG.toFixed(2)) : null,
+        required_cfu_per_g: requiredCfu ?? (avgCfuPerG ? Number(avgCfuPerG.toFixed(2)) : null),
         current_stock_kg: Number(totalKg.toFixed(3)),
       })
     }

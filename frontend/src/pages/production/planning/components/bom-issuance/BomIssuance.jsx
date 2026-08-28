@@ -21,6 +21,11 @@ const TABS = [
 
 const todayISO = () => new Date().toISOString().slice(0, 10)
 
+// Blank rows shown before a recipe is loaded — once a product resolves the
+// table shrinks/grows to exactly that recipe's component count, and the
+// "Add Row" button / Excel paste extend it from there.
+const DEFAULT_BLANK_ROWS = 8
+
 const emptyForm = () => ({
   product: '', productCode: '',
   diNumber: '', shift: 'A', batchIncharge: '',
@@ -51,7 +56,7 @@ function canonicalBatchSize(batchSize, batchSizeUom) {
 export default function BomIssuance() {
   const [activeTab, setActiveTab] = useState('issue')
   const [form, setForm]     = useState(emptyForm)
-  const [rows, setRows]     = useState(() => makeRows(25))
+  const [rows, setRows]     = useState(() => makeRows(DEFAULT_BLANK_ROWS))
   const [settings, setSettings] = useState(defaultSettings)
   const [error, setError]       = useState('')
   const [generating, setGenerating] = useState(false)
@@ -106,11 +111,14 @@ export default function BomIssuance() {
       const perUnit = (r.data || []).map(l => ({
         sno: '', component: toTitleCase(l.rmName), qty: String(l.qtyPerUnit), uom: l.uom || '', remarks: l.roleType || '', isHeader: false,
         rmCode: l.rmCode,
+        // CFU/g concentration for microbe components — a fixed potency, not
+        // scaled by batch size (scaleToQty only touches qty).
+        cfu: l.requiredCfu != null && l.requiredCfu !== '' ? String(l.requiredCfu) : '',
       }))
       setActiveRecipe({ productCode, perUnit })
       const bsz = canonicalBatchSize(form.batchSize, form.batchSizeUom)
       const scaled = scaleToQty(perUnit, bsz)
-      setRows(prev => fromComponents(scaled, prev.length))
+      setRows(fromComponents(scaled, scaled.length))
       setRecipeLoadedMsg(`✓ Recipe loaded from Recipe Master · ${perUnit.length} components · scaled to ${form.batchSize} ${form.batchSizeUom}`)
     } catch (e) {
       setError('Failed to load recipe: ' + e.message)
@@ -147,6 +155,19 @@ export default function BomIssuance() {
       setRows(prev => makeRows(prev.length))
     }
   }, [form.productCode, form.product, activeRecipe])
+
+  // Batch UOM isn't a free choice — it's the product's own unit from Product
+  // Master. Lock `batchSizeUom` to that the moment a product resolves (and
+  // also once the products list finishes loading, if that lands later).
+  useEffect(() => {
+    if (!form.productCode || !products.length) return
+    const p = products.find((x) => x.productCode === form.productCode)
+      || products.find((x) => (x.productName || '').trim().toLowerCase() === form.product.trim().toLowerCase())
+    if (p?.uom && p.uom !== form.batchSizeUom) {
+      setForm((f) => ({ ...f, batchSizeUom: p.uom }))
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.productCode, products])
 
   // Re-scale the loaded recipe whenever batch size changes
   useEffect(() => {
@@ -277,7 +298,7 @@ export default function BomIssuance() {
 
       // Clear the form for the next entry
       setForm(emptyForm())
-      setRows(makeRows(25))
+      setRows(makeRows(DEFAULT_BLANK_ROWS))
       setActiveRecipe(null)
       setRecipeLoadedMsg('')
     } catch (e) {

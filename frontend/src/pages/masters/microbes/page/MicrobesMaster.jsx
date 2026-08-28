@@ -4,6 +4,8 @@ import { Button, BackButton, PageHeader, Modal } from '../../../../components/ui
 import { Can } from '../../../../components/common/Can.jsx'
 import MicrobeList   from '../components/microbe-list/MicrobeList.jsx'
 import MicrobeForm   from '../components/microbe-form/MicrobeForm.jsx'
+import { EMPTY_MICROBE_FILTERS } from '../components/microbe-list/MicrobeFilterModal.jsx'
+import { DEFAULT_MICROBE_SORT } from '../components/microbe-list/MicrobeSortModal.jsx'
 import { useMicrobes, useCreateMicrobe, useUpdateMicrobe, useDeleteMicrobe } from '../../../../hooks/masters/useMicrobes.js'
 import { useMicrobialContainers } from '../../../../hooks/masters/useMicrobialContainers.js'
 import { toTitleCase } from '../../../../utils/textDisplay.js'
@@ -15,6 +17,8 @@ export default function MicrobesMaster() {
   const [form, setForm]         = useState(EMPTY_FORM)
   const [editId, setEditId]     = useState(null)
   const [search, setSearch]     = useState('')
+  const [filters, setFilters]   = useState(EMPTY_MICROBE_FILTERS)
+  const [sort, setSort]         = useState(DEFAULT_MICROBE_SORT)
   const [page, setPage]         = useState(1)
   const [limit, setLimit]       = useState(15)
 
@@ -53,13 +57,50 @@ export default function MicrobesMaster() {
     try { await deleteMicrobe.mutateAsync(id) } catch (err) { alert(err.message) }
   }
 
+  const uoms = useMemo(() =>
+    Array.from(new Set(microbes.map(m => m.uom).filter(Boolean))).sort()
+  , [microbes])
+
   const filtered = useMemo(() => {
     const q = search.toLowerCase()
-    return microbes.filter(m =>
-      m.microbeName.toLowerCase().includes(q) || m.microbeCode.toLowerCase().includes(q)
-    )
-  }, [microbes, search])
+    let list = microbes.filter(m => {
+      if (q && !m.microbeName.toLowerCase().includes(q) && !m.microbeCode.toLowerCase().includes(q)) return false
+      if (filters.uom && m.uom !== filters.uom) return false
+      if (filters.stock === 'has' && !hasStock(m.microbeCode)) return false
+      if (filters.stock === 'no' && hasStock(m.microbeCode)) return false
+      const addedDate = m.createdAt?.slice(0, 10) || ''
+      if (filters.dateFrom && addedDate < filters.dateFrom) return false
+      if (filters.dateTo && addedDate > filters.dateTo) return false
+      return true
+    })
+
+    const dir = sort.direction === 'asc' ? 1 : -1
+    list = [...list].sort((a, b) => {
+      if (sort.field === 'code') return dir * (a.microbeCode || '').localeCompare(b.microbeCode || '')
+      if (sort.field === 'dateAdded') return dir * (a.createdAt || '').localeCompare(b.createdAt || '')
+      if (sort.field === 'stock') return dir * (Number(hasStock(a.microbeCode)) - Number(hasStock(b.microbeCode)))
+      return dir * (a.microbeName || '').localeCompare(b.microbeName || '') // 'name'
+    })
+
+    return list
+  }, [microbes, search, filters, sort, containers])
   const paginated = filtered.slice((page - 1) * limit, page * limit)
+
+  function exportMicrobesCsv() {
+    if (!filtered.length) { alert('No microbes to export — adjust your filters.'); return }
+    const headers = ['Microbe ID', 'Microbe Name', 'Code', 'UOM', 'Date Added', 'Stock']
+    const rows = filtered.map(m => [
+      m.microbeId, toTitleCase(m.microbeName), m.microbeCode, (m.uom || '').toUpperCase(),
+      m.createdAt ? new Date(m.createdAt).toLocaleDateString('en-IN') : '',
+      hasStock(m.microbeCode) ? 'Has stock' : 'No stock',
+    ].map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','))
+    const csv = [headers.join(','), ...rows].join('\n')
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }))
+    a.download = `microbes_${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(a.href)
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -83,10 +124,16 @@ export default function MicrobesMaster() {
           total={filtered.length}
           loading={loading}
           search={search}
+          filters={filters}
+          sort={sort}
+          uoms={uoms}
           page={page}
           limit={limit}
           hasStock={hasStock}
           onSearch={v => { setSearch(v); setPage(1) }}
+          onFiltersChange={f => { setFilters(f); setPage(1) }}
+          onSortChange={setSort}
+          onExport={exportMicrobesCsv}
           onEdit={handleEdit}
           onDelete={handleDelete}
           onPageChange={setPage}

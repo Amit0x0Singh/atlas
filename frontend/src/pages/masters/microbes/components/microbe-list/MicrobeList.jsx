@@ -1,23 +1,43 @@
-import { Pencil, Trash2, Search } from 'lucide-react'
-import { IconButton } from '../../../../../components/ui'
+import { Pencil, Trash2 } from 'lucide-react'
+import { IconButton, ColumnsMenu } from '../../../../../components/ui'
 import { Can } from '../../../../../components/common/Can.jsx'
 import Pagination from '../../../../../components/pagination/Pagination.jsx'
+import { useColumnPreferences } from '../../../../../hooks/useColumnPreferences.js'
+import MicrobeToolbar from './MicrobeToolbar.jsx'
 
 import { toTitleCase } from '../../../../../utils/textDisplay.js'
-export default function MicrobeList({ paginated, total, loading, search, page, limit, hasStock, onSearch, onEdit, onDelete, onPageChange, onLimitChange }) {
+
+// Resizable/toggleable columns — same drag-handle + Columns-menu mechanism
+// as the User Roles / Pack Records tables. The leading "#" and trailing
+// Actions columns stay fixed width.
+const COLUMN_DEFS = [
+  { key: 'name',       label: 'Microbe Name', defaultWidth: 260 },
+  { key: 'code',       label: 'Code',         defaultWidth: 140 },
+  { key: 'uom',        label: 'UOM',          defaultWidth: 100 },
+  { key: 'dateAdded',  label: 'Date Added',   defaultWidth: 140 },
+  { key: 'stock',      label: 'Stock',        defaultWidth: 130 },
+]
+const INDEX_COL_WIDTH   = 48
+const ACTIONS_COL_WIDTH = 110
+
+export default function MicrobeList({
+  paginated, total, loading, hasStock, onEdit, onDelete, onPageChange, onLimitChange, page, limit,
+  search, onSearch, filters, onFiltersChange, sort, onSortChange, uoms, onExport,
+}) {
+  const { columnWidths, columnVisibility, visibleColumns, startResize, toggleColumn } = useColumnPreferences('microbes-master', COLUMN_DEFS)
+
   return (
     <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-      <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-gray-100">
-        <span className="text-sm text-gray-500">{total} microbe{total !== 1 ? 's' : ''} registered</span>
-        <div className="relative w-56">
-          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-          <input
-            placeholder="Search name or code..."
-            value={search}
-            onChange={e => onSearch(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg pl-8 pr-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
+      <MicrobeToolbar
+        search={search} onSearchChange={onSearch}
+        filters={filters} onFiltersChange={onFiltersChange}
+        sort={sort} onSortChange={onSortChange}
+        uoms={uoms} onExport={onExport}
+        resultCount={total}
+      />
+
+      <div className="flex justify-end px-4 py-1.5 border-b border-gray-100">
+        <ColumnsMenu columns={COLUMN_DEFS} visibility={columnVisibility} onToggle={toggleColumn} />
       </div>
 
       {loading ? (
@@ -28,16 +48,24 @@ export default function MicrobeList({ paginated, total, loading, search, page, l
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="text-left px-4 py-3 font-semibold text-gray-700 w-10">#</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-700">Microbe Name</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-700">Code</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-700">UOM</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-700">Date Added</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-700">Stock</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-700">Actions</th>
+          <table className="w-full text-sm" style={{ tableLayout: 'fixed' }}>
+            <thead style={{ backgroundColor: 'rgb(226, 235, 240)' }}>
+              <tr className="text-gray-600 text-xs">
+                <th style={{ width: INDEX_COL_WIDTH }} className="text-left px-4 py-3 font-semibold">#</th>
+                {visibleColumns.map(c => (
+                  <th
+                    key={c.key}
+                    style={{ width: columnWidths[c.key] }}
+                    className="relative text-left px-4 py-3 font-semibold select-none"
+                  >
+                    {c.label}
+                    <div
+                      onMouseDown={startResize(c.key)}
+                      className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize select-none touch-none hover:bg-blue-400/50"
+                    />
+                  </th>
+                ))}
+                <th style={{ width: ACTIONS_COL_WIDTH }} className="text-left px-4 py-3 font-semibold">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -46,21 +74,31 @@ export default function MicrobeList({ paginated, total, loading, search, page, l
                 return (
                   <tr key={m.microbeId} className="hover:bg-gray-50">
                     <td className="px-4 py-3 text-gray-400">{(page - 1) * limit + i + 1}</td>
-                    <td className="px-4 py-3 font-medium text-gray-900">{toTitleCase(m.microbeName)}</td>
-                    <td className="px-4 py-3">
-                      <span className="font-mono text-xs font-semibold text-blue-700 bg-blue-50 ring-1 ring-inset ring-blue-200 px-2 py-0.5 rounded-md">{m.microbeCode}</span>
-                    </td>
-                    <td className="px-4 py-3 text-gray-600 text-xs">{m.uom ? m.uom.toUpperCase() : '—'}</td>
-                    <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">
-                      {m.createdAt ? new Date(m.createdAt).toLocaleDateString('en-IN') : '—'}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-md ring-1 ring-inset ${
-                        inStock ? 'bg-green-50 text-green-700 ring-green-200' : 'bg-gray-100 text-gray-500 ring-gray-200'
-                      }`}>
-                        {inStock ? 'Has stock' : 'No stock'}
-                      </span>
-                    </td>
+                    {columnVisibility.name && (
+                      <td className="px-4 py-3 font-medium text-gray-900 truncate">{toTitleCase(m.microbeName)}</td>
+                    )}
+                    {columnVisibility.code && (
+                      <td className="px-4 py-3">
+                        <span className="font-mono text-xs font-semibold text-blue-700 bg-blue-50 ring-1 ring-inset ring-blue-200 px-2 py-0.5 rounded-md">{m.microbeCode}</span>
+                      </td>
+                    )}
+                    {columnVisibility.uom && (
+                      <td className="px-4 py-3 text-gray-600 text-xs">{m.uom ? m.uom.toUpperCase() : '—'}</td>
+                    )}
+                    {columnVisibility.dateAdded && (
+                      <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">
+                        {m.createdAt ? new Date(m.createdAt).toLocaleDateString('en-IN') : '—'}
+                      </td>
+                    )}
+                    {columnVisibility.stock && (
+                      <td className="px-4 py-3">
+                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-md ring-1 ring-inset ${
+                          inStock ? 'bg-green-50 text-green-700 ring-green-200' : 'bg-gray-100 text-gray-500 ring-gray-200'
+                        }`}>
+                          {inStock ? 'Has stock' : 'No stock'}
+                        </span>
+                      </td>
+                    )}
                     <td className="px-4 py-3">
                       <div className="flex gap-1">
                         <Can permission="masters.microbe.update">

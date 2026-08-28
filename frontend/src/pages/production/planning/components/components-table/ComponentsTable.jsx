@@ -1,12 +1,25 @@
-import { useMemo, useRef, useState } from 'react'
-import { Link2 } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { Link2, Plus, X } from 'lucide-react'
 import { toTitleCase } from '../../../../../utils/textDisplay.js'
 
 const UOM_OPTIONS = ['kg', 'L', 'g', 'mg', 'mL', 'pcs', 'nos', 'bags', 'drums', '%w/w', '%v/v', 'MT']
-const COLS = ['sno', 'comp', 'qty', 'uom', 'rem']
+
+// CFU/g shown as "2.00×10¹¹". Accepts "2e11", "200000000000", 2e11, etc.
+const SUP = { '-': '⁻', 0: '⁰', 1: '¹', 2: '²', 3: '³', 4: '⁴', 5: '⁵', 6: '⁶', 7: '⁷', 8: '⁸', 9: '⁹' }
+export function fmtCfu(v) {
+  const n = Number(v)
+  if (v === '' || v == null || !isFinite(n) || n <= 0) return ''
+  const exp = Math.floor(Math.log10(n))
+  const mant = n / 10 ** exp
+  const sup = String(exp).split('').map((c) => SUP[c] ?? c).join('')
+  return `${mant.toFixed(2)}×10${sup}`
+}
+// `cfu` is kept last so an Excel paste of the historic 5-column block
+// (sno·comp·qty·uom·rem) still maps to the same fields.
+const COLS = ['sno', 'comp', 'qty', 'uom', 'rem', 'cfu']
 
 export function emptyRow(sno) {
-  return { sno: String(sno), comp: '', qty: '', uom: '', rem: '', rmCode: '' }
+  return { sno: String(sno), comp: '', qty: '', uom: '', rem: '', cfu: '', rmCode: '' }
 }
 
 export function makeRows(n) {
@@ -30,6 +43,7 @@ export function toComponents(rows) {
       component: isHeader ? comp.replace(/^##\s*/, '').trim() : comp,
       qty:       isHeader ? '' : (r.qty || '').trim(),
       uom:       isHeader ? '' : (r.uom || ''),
+      cfu:       isHeader ? '' : (r.cfu || '').trim(),
       remarks:   isHeader ? '' : (r.rem || '').trim(),
       rmCode:    isHeader ? '' : (r.rmCode || ''),
       isHeader,
@@ -47,6 +61,7 @@ export function fromComponents(comps, minRows) {
       comp: c.isHeader ? `## ${c.component || ''}` : (c.component || ''),
       qty: c.qty || '',
       uom: c.uom || '',
+      cfu: c.cfu || '',
       rem: c.remarks || '',
       rmCode: c.rmCode || '',
     }
@@ -55,8 +70,8 @@ export function fromComponents(comps, minRows) {
 }
 
 export default function ComponentsTable({ rows, onChange, rmList = [], products = [], microbes = [], onSaveCorrections, savingCorrections }) {
-  const rowCountRef = useRef(null)
   const [suggestIdx, setSuggestIdx] = useState(null)
+  const [editingCfu, setEditingCfu] = useState(null)
 
   const rmByNameLower = useMemo(() => {
     const map = new Map()
@@ -136,12 +151,18 @@ export default function ComponentsTable({ rows, onChange, rmList = [], products 
     return [...seen.values()]
   }, [rows, rmByNameLower, productByNameLower, microbeByNameLower])
 
-  const applyRowCount = () => {
-    const n = Math.max(1, Math.min(200, parseInt(rowCountRef.current.value, 10) || 25))
-    rowCountRef.current.value = n
-    const next = rows.slice(0, n)
-    while (next.length < n) next.push(emptyRow(next.length + 1))
-    onChange(next)
+  const addRow = () => onChange([...rows, emptyRow(rows.length + 1)])
+
+  // Renumbers the visible S.No on non-header rows after a delete so the
+  // column stays 1..N (toComponents recomputes the real numbering anyway).
+  const removeRow = (idx) => {
+    let s = 0
+    const next = rows.filter((_, i) => i !== idx).map((r) => {
+      const isH = (r.comp || '').trim().startsWith('##')
+      if (!isH) s += 1
+      return { ...r, sno: isH ? '' : String(s) }
+    })
+    onChange(next.length ? next : [emptyRow(1)])
   }
 
   const updateCell = (idx, key, value) => {
@@ -181,14 +202,12 @@ export default function ComponentsTable({ rows, onChange, rmList = [], products 
     <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
       <div className="flex items-center gap-2.5 px-4 py-2.5 bg-gray-50 border-b border-gray-200 flex-wrap">
         <span className="font-semibold text-[13px] text-gray-700">🧪 BOM Components</span>
-        <div className="ml-auto flex items-center gap-2 text-[12px]">
-          <label className="text-gray-500 font-medium">Rows:</label>
-          <input ref={rowCountRef} type="number" defaultValue={rows.length} min={1} max={200}
-            onKeyDown={e => e.key === 'Enter' && applyRowCount()}
-            className="w-16 border border-gray-300 rounded-md px-2 py-1 text-center outline-none focus:ring-2 focus:ring-indigo-400" />
-          <button type="button" onClick={applyRowCount}
-            className="px-2.5 py-1 border border-gray-300 rounded-md hover:bg-gray-100 font-medium">Apply</button>
-          <span className="text-gray-400">· paste rows from Excel directly</span>
+        <div className="ml-auto flex items-center gap-2.5 text-[12px]">
+          <span className="text-gray-400">{rows.length} row{rows.length !== 1 ? 's' : ''} · paste from Excel directly</span>
+          <button type="button" onClick={addRow}
+            className="inline-flex items-center gap-1 px-2.5 py-1 border border-gray-300 rounded-md hover:bg-gray-100 font-medium text-gray-700">
+            <Plus size={12} /> Add Row
+          </button>
         </div>
       </div>
 
@@ -227,7 +246,9 @@ export default function ComponentsTable({ rows, onChange, rmList = [], products 
               <th className="w-28 px-2 py-2 text-left font-semibold">Item Code</th>
               <th className="w-24 px-2 py-2 text-left font-semibold">Quantity</th>
               <th className="w-24 px-2 py-2 text-left font-semibold">UOM</th>
-              <th className="w-40 px-2 py-2 text-left font-semibold">Remarks</th>
+              <th className="w-28 px-2 py-2 text-left font-semibold">CFU/g</th>
+              <th className="w-36 px-2 py-2 text-left font-semibold">Remarks</th>
+              <th className="w-8 px-1 py-2" />
             </tr>
           </thead>
           <tbody>
@@ -236,6 +257,12 @@ export default function ComponentsTable({ rows, onChange, rmList = [], products 
               const matched  = !isHeader ? matchFor(r.comp) : null
               const hasText  = !!(r.comp || '').trim()
               const suggestions = suggestIdx === idx ? suggestionsFor(r.comp) : []
+              // CFU/g only means something for a microbial component — a real
+              // Microbe Master match, a row the recipe tagged MICROBE, or one
+              // that already carries a value.
+              const isMicrobeRow = matched?.kind === 'microbe'
+                || (r.rem || '').trim().toUpperCase() === 'MICROBE'
+                || !!(r.cfu || '').trim()
               return (
                 <tr key={idx} className={`border-t border-gray-100 ${isHeader ? 'bg-amber-50/50' : idx % 2 ? 'bg-gray-50/40' : ''}`}>
                   <td className="p-0"><input value={r.sno} onChange={e => updateCell(idx, 'sno', e.target.value)}
@@ -272,17 +299,11 @@ export default function ComponentsTable({ rows, onChange, rmList = [], products 
                   <td className="p-0 px-2">
                     {isHeader || !hasText ? null : matched ? (
                       matched.kind === 'product' ? (
-                        <span className="inline-flex items-center gap-1 font-mono text-[12px] text-blue-700" title="Matched a Product Master item (SFG) — this is a product code, not a raw material code">
-                          <span className="text-[9px] font-bold text-blue-600 bg-blue-50 border border-blue-200 rounded px-1 py-0.5 font-sans">SFG</span>
-                          {matched.code}
-                        </span>
+                        <span className="font-mono text-[12px] text-blue-700" title="Matched a Product Master item (SFG) — this is a product code, not a raw material code">{matched.code}</span>
                       ) : matched.kind === 'microbe' ? (
-                        <span className="inline-flex items-center gap-1 font-mono text-[12px] text-purple-700" title="Matched a Microbe Master item — this is a microbe code, and Store won't issue it. It routes to Microbe Outward instead.">
-                          <span className="text-[9px] font-bold text-purple-600 bg-purple-50 border border-purple-200 rounded px-1 py-0.5 font-sans">MICROBE</span>
-                          {matched.code}
-                        </span>
+                        <span className="font-mono text-[12px] text-purple-700" title="Matched a Microbe Master item — this is a microbe code, and Store won't issue it. It routes to Microbe Outward instead.">{matched.code}</span>
                       ) : (
-                        <span className="font-mono text-[12px] text-emerald-700">{matched.code}</span>
+                        <span className="font-mono text-[12px] text-emerald-700" title="Matched a Raw Material Master item">{matched.code}</span>
                       )
                     ) : (
                       <span className="font-mono text-[12px] font-bold text-red-600" title="This name doesn't match any Raw Material Master, Product Master, or Microbe Master item">NAN</span>
@@ -295,9 +316,35 @@ export default function ComponentsTable({ rows, onChange, rmList = [], products 
                     onPaste={e => handleCellPaste(e, idx, 'uom')} disabled={isHeader} list="bom-uom-list"
                     placeholder="kg/L/g…"
                     className="w-full px-2 py-1.5 outline-none bg-transparent focus:bg-indigo-50 disabled:bg-gray-50" /></td>
+                  <td className="p-0">
+                    {isHeader ? (
+                      <input disabled className="w-full px-2 py-1.5 bg-gray-50" />
+                    ) : editingCfu === idx ? (
+                      <input autoFocus value={r.cfu}
+                        onChange={e => updateCell(idx, 'cfu', e.target.value)}
+                        onPaste={e => handleCellPaste(e, idx, 'cfu')}
+                        onBlur={() => setEditingCfu(null)}
+                        onKeyDown={e => { if (e.key === 'Enter' || e.key === 'Escape') setEditingCfu(null) }}
+                        placeholder="e.g. 2e9 or 200000000000"
+                        className="w-full px-2 py-1.5 outline-none bg-indigo-50" />
+                    ) : (
+                      <button type="button" onClick={() => setEditingCfu(idx)}
+                        title="CFU/g — click to edit (applies to microbial components)"
+                        className={`w-full text-left px-2 py-1.5 hover:bg-indigo-50 ${isMicrobeRow ? 'text-purple-700 font-medium' : 'text-gray-300'}`}>
+                        {r.cfu ? fmtCfu(r.cfu) : (isMicrobeRow ? 'e.g. 2e9' : '—')}
+                      </button>
+                    )}
+                  </td>
                   <td className="p-0"><input value={r.rem} onChange={e => updateCell(idx, 'rem', e.target.value)}
                     onPaste={e => handleCellPaste(e, idx, 'rem')} disabled={isHeader}
                     className="w-full px-2 py-1.5 outline-none bg-transparent focus:bg-indigo-50 disabled:bg-gray-50" /></td>
+                  <td className="p-0 text-center">
+                    <button type="button" onClick={() => removeRow(idx)} tabIndex={-1}
+                      title="Remove this row"
+                      className="text-gray-300 hover:text-red-500 transition p-1">
+                      <X size={13} />
+                    </button>
+                  </td>
                 </tr>
               )
             })}
