@@ -5,7 +5,11 @@ import { X, Clock, Package, Warehouse, ClipboardList, FlaskConical } from 'lucid
 import './TransactionDetailModal.css'
 
 import { toTitleCase } from '../../../../../../utils/textDisplay.js'
+import { useUserDisplayNames } from '../../../../../../hooks/masters/useUserDisplayNames.js'
 export default function TransactionDetailModal({ detail, onClose }) {
+  // Resolve the createdBy email to a readable name, same as the Stock Ledger
+  // table's Created By / Updated By columns.
+  const displayName = useUserDisplayNames()
   // Keep rendering the last non-null detail while Modal fades out — `detail`
   // itself goes null the instant the parent starts closing, and rendering
   // nothing at that point would leave an empty white panel visible for the
@@ -31,7 +35,7 @@ export default function TransactionDetailModal({ detail, onClose }) {
               <>
                 <DSection icon={Clock} title="Transaction">
                   <DRow label="Date & Time"      value={new Date(shown.entry.timestamp).toLocaleString('en-IN')} />
-                  <DRow label="Performed By"     value={shown.entry.createdBy || '—'} />
+                  <DRow label="Performed By"     value={displayName(shown.entry.createdBy)} />
                   <DRow label="Item Code"        value={shown.entry.itemCode} mono />
                   <DRow label="Type"             value={shown.entry.transactionType} badge />
                   <DRow label="Source / Pack ID" value={shown.entry.sourceId} mono />

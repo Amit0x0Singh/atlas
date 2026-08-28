@@ -15,9 +15,6 @@ export default function NewOrderModal({ editing, products, profiles, onSave, onC
         justifyContent: "center",
         padding: "24px",
       }}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
     >
       <div
         style={{

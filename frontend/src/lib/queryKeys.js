@@ -166,6 +166,11 @@ export const queryKeys = {
     groups: ()           => ['options', 'groups'],
     group:  (groupCode)  => ['options', 'groups', groupCode],
   },
+  packingItems: {
+    all:    ()     => ['packing-items'],
+    byType: (type) => ['packing-items', type ?? null],
+    admin:  ()     => ['packing-items', 'admin'],
+  },
 
   // ── Audit Logs ──────────────────────────────────────────────────────────
   auditLogs: {

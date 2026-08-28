@@ -156,7 +156,8 @@ export const previewImport = async (req, res) => {
       const fileHasBom = /recipe|bom|bill.?of.?material|formula/i.test(fileName)
       const headers = columns.map(k => k.toLowerCase().replace(/[^a-z0-9]/g, ''))
 
-      if (/supplier|vendor/i.test(n)) detectedAs[name] = 'Supplier Master'
+      if (/packing.?item|packing.?master|^packing$|packing.?list/i.test(n)) detectedAs[name] = 'Packing Items'
+      else if (/supplier|vendor/i.test(n)) detectedAs[name] = 'Supplier Master'
       else if (/microbe/i.test(n)) detectedAs[name] = 'Microbe Master'
       else if (/product/i.test(n) && !/print|pack|recipe|bom|formula|rm|material|equipment|equip/i.test(n)) detectedAs[name] = 'Product Master'
       else if (/equipment|equip/i.test(n)) detectedAs[name] = 'Equipment Master'
@@ -178,6 +179,11 @@ export const previewImport = async (req, res) => {
           detectedAs[name] = 'Equipment Master (auto-detected by columns)'
         } else if (headers.some(h => h.includes('microbename')) || headers.includes('microbe')) {
           detectedAs[name] = 'Microbe Master (auto-detected by columns)'
+        } else if (
+          headers.some(h => h.includes('name') || h.includes('description') || h.includes('packing')) &&
+          headers.some(h => h === 'type' || h === 'packtype' || h.includes('packtype'))
+        ) {
+          detectedAs[name] = 'Packing Items (auto-detected by columns)'
         } else {
           // Column-based RM auto-detection
           const hasCode = headers.some(h => h.includes('code') || h.includes('itemcode') || h.includes('itemno') || h.includes('srno'))
@@ -204,6 +210,7 @@ export const executeImport = async (req, res) => {
       rmMaster: 0, productMaster: 0, equipmentMaster: 0, supplierMaster: 0,
       microbeMaster: 0,
       recipeBom: 0, printMaster: 0, inward: 0, outward: 0,
+      packingItems: 0,
       unmatchedRm: 0,
       errors: []
     }
@@ -399,12 +406,17 @@ export const executeImport = async (req, res) => {
       const alreadyClaimed = new Set([prodSheet, equipSheet].filter(Boolean))
       rmSheet = wb.SheetNames.find(s => {
         if (alreadyClaimed.has(s)) return false
+        // A Packing Items sheet (Item Name + Item Code + Type) also satisfies
+        // hasCode && hasName — exclude it here so it isn't swallowed as RM.
+        if (/packing/i.test(s)) return false
         const rows = XLSX.utils.sheet_to_json(wb.Sheets[s], { defval: '' })
         if (!rows.length) return false
         const headers = Object.keys(rows[0]).map(k => k.toLowerCase().replace(/[^a-z0-9]/g, ''))
         const hasCode = headers.some(h => h.includes('code') || h.includes('itemcode') || h.includes('itemno') || h.includes('srno'))
         const hasName = headers.some(h => h.includes('name') || h.includes('itemname') || h.includes('description') || h.includes('material'))
-        return hasCode && hasName
+        const looksLikePacking = headers.some(h => h === 'type' || h.includes('packtype')) &&
+          !headers.some(h => h.includes('uom') || h.includes('category') || h.includes('unit'))
+        return hasCode && hasName && !looksLikePacking
       })
       if (rmSheet) {
         results.errors.push(`ℹ️ RM sheet auto-detected: "${rmSheet}" (tip: name it "RM Master" to avoid this message)`)
@@ -842,6 +854,51 @@ export const executeImport = async (req, res) => {
       }
     }
 
+    // ── PACKING ITEMS ──────────────────────────────────────────────────────
+    // Sales Order Primary/Secondary Pack suggestion master. Sheet-name match
+    // first ("Packing Items", "Packing Master", "Packing"); falls back to
+    // column-signature detection (a name-ish header + a "Type" header) for
+    // files where the tab was never renamed. Matched on Item Code — re-import
+    // updates name/type rather than duplicating. Item Code is mandatory (not
+    // auto-generated); a blank code or an unrecognizable type skips the row.
+    let packingSheet = wb.SheetNames.find(s => /packing.?item|packing.?master|^packing$|packing.?list/i.test(s))
+    if (!packingSheet) {
+      const claimed = new Set([prodSheet, equipSheet, rmSheet, recipeSheet].filter(Boolean))
+      packingSheet = wb.SheetNames.find(s => {
+        if (claimed.has(s)) return false
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets[s], { defval: '' })
+        if (!rows.length) return false
+        const headers = Object.keys(rows[0]).map(k => k.toLowerCase().replace(/[^a-z0-9]/g, ''))
+        const hasName = headers.some(h => h.includes('name') || h.includes('description') || h.includes('packing'))
+        const hasType = headers.some(h => h === 'type' || h.includes('packtype'))
+        return hasName && hasType
+      })
+    }
+    if (packingSheet) {
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[packingSheet], { defval: '' })
+      for (const row of rows) {
+        try {
+          const name = col(row, 'itemname', 'item name', 'packingitem', 'packing item', 'packing', 'name', 'description')
+          const itemCode = col(row, 'itemcode', 'item code', 'item_code', 'code')
+          const typeRaw = col(row, 'type', 'packtype', 'pack type', 'category')
+          if (!name && !itemCode && !typeRaw) continue
+          let type = ''
+          if (/prim/i.test(typeRaw)) type = 'PRIMARY'
+          else if (/second|secondary|\bsec\b|outer/i.test(typeRaw)) type = 'SECONDARY'
+          if (!name || !itemCode || !type) {
+            results.errors.push(`⛔ Packing row skipped — ${!name ? 'missing Item Name; ' : ''}${!itemCode ? 'missing Item Code; ' : ''}${!type ? `unrecognized Type "${typeRaw}" (use Primary/Secondary); ` : ''}(name: "${name || ''}", code: "${itemCode || ''}")`)
+            continue
+          }
+          await prisma.packingItem.upsert({
+            where: { itemCode },
+            create: { itemCode, name, type },
+            update: { name, type },
+          })
+          results.packingItems++
+        } catch (e) { results.errors.push(`Packing row: ${e.message}`) }
+      }
+    }
+
     // ── CUSTOMER PROFILE ───────────────────────────────────────────────────
     const cpSheet = wb.SheetNames.find(s => /customer.?profile|customer.?master|client.?list|customers/i.test(s))
     if (cpSheet) {
@@ -885,7 +942,7 @@ export const executeImport = async (req, res) => {
     return res.json({
       success: true,
       data: results,
-      message: `Import complete — Suppliers: ${results.supplierMaster}, Microbes: ${results.microbeMaster}, Products: ${results.productMaster}, Equipment: ${results.equipmentMaster}, RM: ${results.rmMaster}, Recipe/BOM: ${results.recipeBom}, Customer Profiles: ${results.customerProfiles || 0}, Packs: ${results.printMaster}, Inward: ${results.inward}, Outward: ${results.outward}`
+      message: `Import complete — Suppliers: ${results.supplierMaster}, Microbes: ${results.microbeMaster}, Products: ${results.productMaster}, Equipment: ${results.equipmentMaster}, RM: ${results.rmMaster}, Recipe/BOM: ${results.recipeBom}, Packing Items: ${results.packingItems}, Customer Profiles: ${results.customerProfiles || 0}, Packs: ${results.printMaster}, Inward: ${results.inward}, Outward: ${results.outward}`
     })
   } catch (e) {
     console.error(e)

@@ -15,17 +15,8 @@ import OrdersTab from "../component/orders-tab/OrdersTab.jsx";
 import DispatchTab from "../component/dispatch-tab/DispatchTab.jsx";
 import DispatchOrder from "../component/dispatch-order/page/dispatch-order.jsx";
 import OrderHistory from "../component/order-history/order-history.jsx";
-import SalesFilterBar from "../component/sales-filter-bar/SalesFilterBar.jsx";
 import { BackButton, PageHeader } from "../../../../components/ui";
 import { ShoppingCart } from "lucide-react";
-
-const EMPTY_FILTERS = {
-  search: "",
-  status: "",
-  company: "",
-  from_date: "",
-  to_date: "",
-};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SalesOrder — main page
@@ -56,9 +47,6 @@ const SalesOrder = () => {
   const [editing, setEditing] = useState(null);
   const [dispatchOrder, setDispatchOrder] = useState(null);
   const [sfgAlert, setSfgAlert] = useState(null);
-
-  // ── Filter state ──────────────────────────────────────────────────────────
-  const [filters, setFilters] = useState(EMPTY_FILTERS);
 
   // ── Dispatch expandable rows ───────────────────────────────────────────────
   const [expandedDispatch, setExpandedDispatch] = useState(new Set());
@@ -132,13 +120,6 @@ const SalesOrder = () => {
     setDispatchOrder(null);
   }
 
-  // ── Filter handlers ───────────────────────────────────────────────────────
-  const handleFilterChange = (key, value) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const handleClearFilters = () => setFilters(EMPTY_FILTERS);
-
   // ── Derived state ─────────────────────────────────────────────────────────
 
   const summary = STATUSES.reduce((acc, s) => {
@@ -149,24 +130,6 @@ const SalesOrder = () => {
     return acc;
   }, {});
 
-  // History tab — client-side filtered
-  const ordersVisible = orders.filter((o) => {
-    const q = filters.search.toLowerCase();
-    const matchSearch =
-      !q ||
-      o.customerName?.toLowerCase().includes(q) ||
-      o.diNo?.toLowerCase().includes(q);
-    const matchStatus =
-      !filters.status || o.items.some((it) => it.status === filters.status);
-    const matchCompany = !filters.company || o.company === filters.company;
-    const d = o.orderReceivedDate ? new Date(o.orderReceivedDate) : null;
-    const matchFrom =
-      !filters.from_date || (d && d >= new Date(filters.from_date));
-    const matchTo =
-      !filters.to_date || (d && d <= new Date(filters.to_date + "T23:59:59"));
-    return matchSearch && matchStatus && matchCompany && matchFrom && matchTo;
-  });
-
   // Dispatch tab — only IN_INVENTORY orders
   const dispatchVisible = orders.filter((o) =>
     o.items.some((it) => it.status === "IN_INVENTORY"),
@@ -175,7 +138,7 @@ const SalesOrder = () => {
   const TABS = [
     { key: "orders", label: "Sales Orders", count: orders.length },
     { key: "dispatch", label: "Dispatch", count: dispatchVisible.length },
-    { key: "history", label: "Order History", count: ordersVisible.length },
+    { key: "history", label: "Order History", count: orders.length },
   ];
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -221,20 +184,11 @@ const SalesOrder = () => {
 
       {/* ── Tab: Order History ────────────────────────────────────────── */}
       {activeTab === "history" && (
-        <div>
-          <SalesFilterBar
-            filters={filters}
-            onChange={handleFilterChange}
-            onClear={handleClearFilters}
-            total={ordersVisible.length}
-          />
-          <OrderHistory
-            orders={ordersVisible}
-            loading={loading}
-            filterKey={filters}
-            onOpenDispatch={setDispatchOrder}
-          />
-        </div>
+        <OrderHistory
+          orders={orders}
+          loading={loading}
+          onOpenDispatch={setDispatchOrder}
+        />
       )}
 
       {/* Dispatch modal */}

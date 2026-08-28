@@ -19,7 +19,7 @@ export function fmtCfu(v) {
 const COLS = ['sno', 'comp', 'qty', 'uom', 'rem', 'cfu']
 
 export function emptyRow(sno) {
-  return { sno: String(sno), comp: '', qty: '', uom: '', rem: '', cfu: '', rmCode: '' }
+  return { sno: String(sno), comp: '', qty: '', uom: '', rem: '', cfu: '', rmCode: '', code: '' }
 }
 
 export function makeRows(n) {
@@ -117,6 +117,37 @@ export default function ComponentsTable({ rows, onChange, rmList = [], products 
     return undefined
   }
 
+  // Reverse of matchFor — resolve a typed/pasted Item Code back to its master
+  // record, so a row can also be added "by code" (paste a code, get the name
+  // + UOM filled). Same Microbe-first precedence as matchFor.
+  const rmByCodeLower = useMemo(() => {
+    const map = new Map()
+    rmList.forEach(rm => map.set((rm.itemCode || '').trim().toLowerCase(), rm))
+    return map
+  }, [rmList])
+  const microbeByCodeLower = useMemo(() => {
+    const map = new Map()
+    microbes.forEach(m => map.set((m.microbeCode || '').trim().toLowerCase(), m))
+    return map
+  }, [microbes])
+  const productByCodeLower = useMemo(() => {
+    const map = new Map()
+    products.forEach(p => map.set((p.productCode || '').trim().toLowerCase(), p))
+    return map
+  }, [products])
+
+  const matchForCode = (code) => {
+    const key = (code || '').trim().toLowerCase()
+    if (!key) return undefined
+    const microbe = microbeByCodeLower.get(key)
+    if (microbe) return { code: microbe.microbeCode, kind: 'microbe', name: microbe.microbeName, uom: microbe.uom }
+    const rm = rmByCodeLower.get(key)
+    if (rm) return { code: rm.itemCode, kind: 'rm', name: rm.itemName, uom: rm.inventoryUom }
+    const product = productByCodeLower.get(key)
+    if (product) return { code: product.productCode, kind: 'product', name: product.productName, uom: product.uom }
+    return undefined
+  }
+
   const suggestionsFor = (text) => {
     const q = (text || '').trim().toLowerCase()
     if (!q) return []
@@ -128,7 +159,7 @@ export default function ComponentsTable({ rows, onChange, rmList = [], products 
     const microbeHits = microbes.filter(m => (m.microbeName || '').toLowerCase().includes(q))
       .map(m => ({ kind: 'microbe', code: m.microbeCode, name: m.microbeName, uom: m.uom }))
     const productHits = products.filter(p => (p.productName || '').toLowerCase().includes(q))
-      .map(p => ({ kind: 'product', code: p.productCode, name: p.productName }))
+      .map(p => ({ kind: 'product', code: p.productCode, name: p.productName, uom: p.uom }))
     return [...rmHits, ...microbeHits, ...productHits].slice(0, 8)
   }
 
@@ -171,9 +202,39 @@ export default function ComponentsTable({ rows, onChange, rmList = [], products 
     onChange(next)
   }
 
+  // Picking a master item fills in everything the row needs — the exact
+  // master name, its UOM, and an INGREDIENT/MICROBE remark (only if the
+  // Remarks cell is still empty, so a manually-typed note is never clobbered).
+  // Item Code stays derived (shown live from the name via matchFor). This is
+  // what lets an operator add a component for planning without the product
+  // ever having a stored recipe — as long as the item exists in a master.
   const pickSuggestion = (idx, suggestion) => {
-    updateCell(idx, 'comp', toTitleCase(suggestion.name))
+    const next = rows.slice()
+    const cur = next[idx]
+    next[idx] = {
+      ...cur,
+      comp: toTitleCase(suggestion.name),
+      uom: suggestion.uom || cur.uom,
+      rem: (cur.rem || '').trim() ? cur.rem : (suggestion.kind === 'microbe' ? 'MICROBE' : 'INGREDIENT'),
+    }
+    onChange(next)
     setSuggestIdx(null)
+  }
+
+  // Resolve a typed/pasted Item Code — fills the exact master name, UOM and
+  // INGREDIENT/MICROBE remark on that row. No-op if the code matches nothing.
+  const applyCode = (idx, code) => {
+    const hit = matchForCode(code)
+    if (!hit) return
+    const next = rows.slice()
+    const cur = next[idx]
+    next[idx] = {
+      ...cur,
+      comp: toTitleCase(hit.name),
+      uom: hit.uom || cur.uom,
+      rem: (cur.rem || '').trim() ? cur.rem : (hit.kind === 'microbe' ? 'MICROBE' : 'INGREDIENT'),
+    }
+    onChange(next)
   }
 
   // Multi-row/column paste from Excel — fills down from the pasted cell,
@@ -211,10 +272,18 @@ export default function ComponentsTable({ rows, onChange, rmList = [], products 
         </div>
       </div>
 
-      <div className="px-4 py-2 bg-blue-50 border-b border-blue-100 text-[12px] text-blue-800">
-        💡 <b>Section headers:</b> start any Component name with <code className="bg-white/60 px-1 rounded">##</code> to
-        insert a section divider (e.g. <code className="bg-white/60 px-1 rounded">## NITROBACTER SP BROTH — Preparation</code>).
-        Leave qty/uom blank for that row.
+      <div className="px-4 py-2 bg-blue-50 border-b border-blue-100 text-[12px] text-blue-800 space-y-1">
+        <p>
+          💡 <b>Add a component:</b> type its name and pick from the list, or type/paste an <b>Item Code</b> in the
+          Item Code column — the name and UOM fill in automatically. Enter the Quantity by hand. Every item must
+          already exist in <b>Item Master</b> (raw materials) or <b>Microbe Master</b> (cultures); an unresolved
+          row shows <span className="font-mono font-bold text-red-600">NAN</span> and blocks issuing.
+        </p>
+        <p>
+          <b>Section headers:</b> start any Component name with <code className="bg-white/60 px-1 rounded">##</code> to
+          insert a divider (e.g. <code className="bg-white/60 px-1 rounded">## NITROBACTER SP BROTH — Preparation</code>).
+          Leave qty/uom blank for that row.
+        </p>
       </div>
 
       {corrections.length > 0 && (
@@ -289,6 +358,7 @@ export default function ComponentsTable({ rows, onChange, rmList = [], products 
                               {s.kind === 'microbe' && (
                                 <span className="text-[9px] font-bold text-purple-600 bg-purple-50 border border-purple-200 rounded px-1 py-0.5">MICROBE</span>
                               )}
+                              {s.uom && <span className="text-[10px] text-gray-400">{s.uom}</span>}
                               <span className="font-mono text-[10px] text-gray-400">{s.code}</span>
                             </span>
                           </button>
@@ -297,7 +367,7 @@ export default function ComponentsTable({ rows, onChange, rmList = [], products 
                     )}
                   </td>
                   <td className="p-0 px-2">
-                    {isHeader || !hasText ? null : matched ? (
+                    {isHeader ? null : matched ? (
                       matched.kind === 'product' ? (
                         <span className="font-mono text-[12px] text-blue-700" title="Matched a Product Master item (SFG) — this is a product code, not a raw material code">{matched.code}</span>
                       ) : matched.kind === 'microbe' ? (
@@ -306,7 +376,17 @@ export default function ComponentsTable({ rows, onChange, rmList = [], products 
                         <span className="font-mono text-[12px] text-emerald-700" title="Matched a Raw Material Master item">{matched.code}</span>
                       )
                     ) : (
-                      <span className="font-mono text-[12px] font-bold text-red-600" title="This name doesn't match any Raw Material Master, Product Master, or Microbe Master item">NAN</span>
+                      // No name match — let the operator add the row by its
+                      // Item Code instead (type or paste it); a hit fills the
+                      // name + UOM from the matching master.
+                      <input
+                        value={r.code || ''}
+                        onChange={e => { updateCell(idx, 'code', e.target.value); applyCode(idx, e.target.value) }}
+                        onPaste={e => { const v = e.clipboardData.getData('text').trim(); if (v && !v.includes('\t') && !v.includes('\n')) { e.preventDefault(); updateCell(idx, 'code', v); applyCode(idx, v) } }}
+                        placeholder={hasText ? 'NAN — code?' : 'code'}
+                        title="Type or paste an Item / Microbe / Product code to add this row by code"
+                        className={`w-full px-1.5 py-1.5 outline-none bg-transparent font-mono text-[12px] focus:bg-indigo-50 ${hasText && (r.code || '').trim() ? 'text-red-600 font-bold placeholder-red-400' : 'text-gray-500 placeholder-gray-300'}`}
+                      />
                     )}
                   </td>
                   <td className="p-0"><input value={r.qty} onChange={e => updateCell(idx, 'qty', e.target.value)}

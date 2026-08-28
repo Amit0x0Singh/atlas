@@ -1,6 +1,6 @@
 import {
   CircleCheckBig, FlaskConical, Layers, GitBranch, Wrench, Building, Microscope, Printer,
-  ArrowDownToLine, ArrowUpFromLine, Repeat2, Ban, CircleX, Info,
+  ArrowDownToLine, ArrowUpFromLine, Repeat2, Ban, CircleX, Info, Package,
 } from 'lucide-react'
 import ResultCard from '../result-card/ResultCard.jsx'
 
@@ -17,6 +17,7 @@ const CATEGORIES = [
   { key: 'equipmentMaster', label: 'Equipment Master', icon: Wrench },
   { key: 'rmMaster',        label: 'RM Master',        icon: Layers },
   { key: 'recipeBom',       label: 'Recipe / BOM',     icon: GitBranch, warningKeys: ['unmatchedRm', 'duplicateRecipeLineExtraRows', 'skippedMissingProductOrRm'] },
+  { key: 'packingItems',    label: 'Packing Items',    icon: Package },
   { key: 'printMaster',     label: 'Print Master',     icon: Printer },
   { key: 'inward',          label: 'Inward',           icon: ArrowDownToLine },
   { key: 'outward',         label: 'Outward',          icon: ArrowUpFromLine },
