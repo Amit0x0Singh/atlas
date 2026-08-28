@@ -1,11 +1,19 @@
 ﻿import { Fragment } from 'react'
 import './RmDetailTable.css'
 import Pagination from '../../../../../components/pagination/Pagination.jsx'
-import { fmtQty, fmtDate, statusMeta, groupStatus } from '../rmDetailHelpers.js'
+import { fmtQty, fmtDate, statusMeta, groupStatus, distinctActors } from '../rmDetailHelpers.js'
 import { Button } from '../../../../../components/ui'
 import { toTitleCase } from '../../../../../utils/textDisplay.js'
+import { useUserDisplayNames } from '../../../../../hooks/masters/useUserDisplayNames.js'
 
 export default function RmDetailTable({ loading, filteredGroups, paginatedGroups, allGroups, hasFilters, expanded, onToggle, onExpandAll, onCollapseAll, totalBags, uom, page, limit, onPageChange, onLimitChange }) {
+  const displayName = useUserDisplayNames()
+  // How many distinct people created/updated the bag rows in a lot — can be
+  // more than one if bags were scanned/edited individually.
+  const actorSummary = (emails) =>
+    emails.length === 0 ? '—' : emails.length === 1 ? displayName(emails[0]) : `${emails.length} people`
+  const actorTooltip = (emails) => emails.map(displayName).join(', ')
+
   return (
     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
@@ -43,12 +51,14 @@ export default function RmDetailTable({ loading, filteredGroups, paginatedGroups
                 <th className="text-left px-3 py-2.5 font-semibold">Received</th>
                 <th className="text-left px-3 py-2.5 font-semibold">Expiry Date</th>
                 <th className="text-left px-3 py-2.5 font-semibold">Status</th>
+                <th className="text-left px-3 py-2.5 font-semibold">Created By</th>
+                <th className="text-left px-3 py-2.5 font-semibold">Updated By</th>
               </tr>
             </thead>
             <tbody>
               {filteredGroups.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="text-center py-14 text-gray-400">
+                  <td colSpan={12} className="text-center py-14 text-gray-400">
                     {hasFilters ? 'No records match your filters.' : 'No inward history found.'}
                   </td>
                 </tr>
@@ -58,6 +68,8 @@ export default function RmDetailTable({ loading, filteredGroups, paginatedGroups
                 const remQty   = g.bags.reduce((s, b) => s + (b.remainingQty != null ? Number(b.remainingQty) : 0), 0)
                 const gStatus  = groupStatus(g.bags)
                 const sm       = statusMeta(gStatus)
+                const creatorEmails = distinctActors(g.bags, 'bagCreatedBy')
+                const updaterEmails = distinctActors(g.bags, 'bagUpdatedBy')
 
                 return (
                   <Fragment key={g.key}>
@@ -87,6 +99,12 @@ export default function RmDetailTable({ loading, filteredGroups, paginatedGroups
                       <td className="px-3 py-3" />
                       <td className="px-3 py-3">
                         <span className={`text-xs font-semibold px-2 py-0.5 rounded-md ${sm.cls}`}>{sm.label}</span>
+                      </td>
+                      <td className="px-3 py-3 text-xs text-gray-600 truncate" title={actorTooltip(creatorEmails)}>
+                        {actorSummary(creatorEmails)}
+                      </td>
+                      <td className="px-3 py-3 text-xs text-gray-600 truncate" title={actorTooltip(updaterEmails)}>
+                        {actorSummary(updaterEmails)}
                       </td>
                     </tr>
 
@@ -138,6 +156,12 @@ export default function RmDetailTable({ loading, filteredGroups, paginatedGroups
                           <td className="px-3 py-2.5 text-xs text-gray-400">{fmtDate(bag.expiryDate)}</td>
                           <td className="px-3 py-2.5">
                             <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-md ${bMeta.cls}`}>{bMeta.label}</span>
+                          </td>
+                          <td className="px-3 py-2.5 text-xs text-gray-400 truncate" title={`Created by ${displayName(bag.bagCreatedBy)}`}>
+                            {displayName(bag.bagCreatedBy)}
+                          </td>
+                          <td className="px-3 py-2.5 text-xs text-gray-400 truncate" title={`Updated by ${displayName(bag.bagUpdatedBy)}`}>
+                            {displayName(bag.bagUpdatedBy)}
                           </td>
                         </tr>
                       )

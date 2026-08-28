@@ -1,5 +1,6 @@
 import { Layers, CheckCircle2, Info, AlertTriangle } from 'lucide-react'
 import { PLANT_CONFIG } from '../../../data/plantConfig.js'
+import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 
 export default function SummarySidebar({ form, recipeLoadedMsg, n, lastBatch, totalQty, componentCount }) {
   return (
@@ -8,7 +9,7 @@ export default function SummarySidebar({ form, recipeLoadedMsg, n, lastBatch, to
         <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wide mb-3">Product</p>
         {form.product.trim() ? (
           <>
-            <p className="text-[14px] font-bold text-slate-800 leading-snug">{form.product}</p>
+            <p className="text-[14px] font-bold text-slate-800 leading-snug">{toTitleCase(form.product)}</p>
             {form.productCode && <p className="text-[11px] font-mono text-slate-400 mt-0.5">{form.productCode}</p>}
             <div className="mt-2.5">
               {recipeLoadedMsg ? (
@@ -63,13 +64,6 @@ export default function SummarySidebar({ form, recipeLoadedMsg, n, lastBatch, to
         </p>
         <p className="text-2xl font-bold text-slate-800">{componentCount}</p>
         <p className="text-[11.5px] text-slate-400 mt-0.5">ingredient row{componentCount === 1 ? '' : 's'} in this BOM</p>
-      </div>
-
-      <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4">
-        <p className="text-[11.5px] text-indigo-800 leading-relaxed">
-          💡 Tip: paste a schedule row above to auto-fill this whole form, or type a Product Name that exists in the
-          Recipe Master to pull its BOM in automatically — scaled to your Batch Size.
-        </p>
       </div>
     </aside>
   )

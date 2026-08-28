@@ -56,6 +56,9 @@ export const queryKeys = {
     all:    (filters) => filters ? ['microbial-sfg-outward', filters] : ['microbial-sfg-outward'],
     detail: (id) => ['microbial-sfg-outward', id],
   },
+  microbialSfgAdjustment: {
+    all: (filters) => filters ? ['microbial-sfg-adjustment', filters] : ['microbial-sfg-adjustment'],
+  },
   microbialSfgHistory: {
     all: (filters) => filters ? ['microbial-sfg-history', filters] : ['microbial-sfg-history'],
   },
@@ -162,6 +165,11 @@ export const queryKeys = {
     values: (groupCode) => ['options', groupCode],
     groups: ()           => ['options', 'groups'],
     group:  (groupCode)  => ['options', 'groups', groupCode],
+  },
+  packingItems: {
+    all:    ()     => ['packing-items'],
+    byType: (type) => ['packing-items', type ?? null],
+    admin:  ()     => ['packing-items', 'admin'],
   },
 
   // ── Audit Logs ──────────────────────────────────────────────────────────

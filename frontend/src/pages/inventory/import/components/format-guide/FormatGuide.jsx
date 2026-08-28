@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Building, Microscope, FlaskConical, Wrench, Layers, GitBranch, Printer, ArrowDownToLine, Info, ChevronDown } from 'lucide-react'
+import { Building, Microscope, FlaskConical, Wrench, Layers, GitBranch, Printer, ArrowDownToLine, Info, ChevronDown, Package } from 'lucide-react'
 
 const BADGE = {
   Required:  'bg-red-50 text-red-600 ring-red-100',
@@ -100,6 +100,19 @@ const SHEETS = [
       { name: 'CFU/g', kind: 'Optional' },
     ],
     behavior: 'Product Name and Recipe Item are the only required fields — a row missing either is skipped. Every other column defaults instead of failing: blank Qty and CFU/g become 0, blank Recipe UOM becomes "NOS", and blank Microbe becomes "No" (so the ingredient is filed as a plain INGREDIENT, not MICROBE). Recipe Items must already exist in RM Master (matched by exact name) — unmatched ones are imported anyway with a placeholder "NaN" code, listed in the warnings. Products are auto-created if missing, picking up Plant and Product UOM from the sheet.',
+  },
+  {
+    sheet: 'Packing Items',
+    icon: Package,
+    color: 'bg-amber-50 text-amber-600',
+    match: 'Sheet name contains "packing" — or auto-detected by an Item Name + Type column pair',
+    cols: [
+      { name: 'Item Name', kind: 'Required' },
+      { name: 'Item Code', kind: 'Required' },
+      { name: 'Type', kind: 'Required' },
+    ],
+    behavior: 'Type must read as "Primary" or "Secondary" (e.g. "Primary Pack", "Secondary Pack"). Item Code is used exactly as given — never auto-generated. Existing items are matched by Item Code and get their name/type refreshed; a blank code or an unrecognizable type skips that row (listed in the warnings). Import never re-activates an item that was deactivated in Settings.',
+    note: 'These populate the suggestion lists on the Sales Order Primary Pack / Secondary Pack fields. Manage them afterward in Settings → Packing Items.',
   },
   {
     sheet: 'Print Master (Pack Stock)',

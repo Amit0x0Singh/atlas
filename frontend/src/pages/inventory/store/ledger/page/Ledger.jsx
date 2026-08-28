@@ -8,6 +8,7 @@ import TransactionDetailModal  from '../components/transaction-detail-modal/Tran
 import { RefreshCw, ScrollText } from 'lucide-react'
 import { useLedger } from '../../../../../hooks/inventory/useLedger.js'
 import { useDebouncedValue } from '../../../../../hooks/useDebouncedValue.js'
+import { useUserDisplayNames } from '../../../../../hooks/masters/useUserDisplayNames.js'
 import { toTitleCase } from '../../../../../utils/textDisplay.js'
 import './Ledger.css'
 
@@ -19,6 +20,7 @@ export default function Ledger() {
   const [limit,   setLimit]   = useState(50)
   const [detail,  setDetail]  = useState(null)
   const [exporting, setExporting] = useState(false)
+  const displayName = useUserDisplayNames()
 
   // Debounce the free-text fields before they hit the query key, so typing
   // doesn't fire a request per keystroke — select/date fields already only
@@ -53,7 +55,7 @@ export default function Ledger() {
       const r = await ledgerApi.all({ ...debouncedFilters, page: 1, limit: 100000 })
       const all = r.data || []
       if (!all.length) { alert('No transactions to export — adjust your filters.'); return }
-      const headers = ['Date & Time', 'Item Name', 'Transaction Type', 'Qty', 'Reference']
+      const headers = ['Date & Time', 'Item Name', 'Transaction Type', 'Qty', 'Reference', 'Created By', 'Updated By']
       const csvRows = all.map(row => {
         const isIn  = row.inQty  > 0
         const isOut = row.outQty > 0
@@ -71,6 +73,8 @@ export default function Ledger() {
           row.transactionType.replace(/_/g, ' '),
           qty,
           row.reference || '',
+          row.createdBy ? toTitleCase(displayName(row.createdBy)) : '',
+          row.updatedBy ? toTitleCase(displayName(row.updatedBy)) : '',
         ].map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')
       })
       const csv = [headers.join(','), ...csvRows].join('\n')

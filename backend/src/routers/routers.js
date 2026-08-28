@@ -32,6 +32,10 @@ import AuditRouter from "../modules/admin/audit/router.js";
 import OptionsAdminRouter from "../modules/options/admin-router.js";
 import OptionsPublicRouter from "../modules/options/public-router.js";
 
+// Settings — Packing Item master (Sales Order Primary/Secondary Pack suggestions)
+import PackingItemsAdminRouter from "../modules/packing-items/admin-router.js";
+import PackingItemsPublicRouter from "../modules/packing-items/public-router.js";
+
 import { authenticate, authorize } from "../middleware/auth.js";
 
 const router = express.Router();
@@ -82,6 +86,12 @@ router.use("/", MicrobialRouter);
 // since every logged-in user's forms need to read these, not just admins.
 router.use("/options", authenticate, OptionsPublicRouter);
 
+// ── Packing Items (public read) ─────────────────────────────────────────────
+// Handles: /api/packing-items?type=PRIMARY|SECONDARY — active packing items
+// for the Sales Order line-item form's pack suggestions. authenticate-only,
+// same reasoning as /options above.
+router.use("/packing-items", authenticate, PackingItemsPublicRouter);
+
 // ---- RBAC management (roles/permissions/users) ────────────────────────────────
 // Must precede /admin below — AdminPanelRouter's own /:resource catch-all
 // would otherwise 404 "rbac" before this router is ever reached. Each route
@@ -114,6 +124,12 @@ router.use("/admin/bulk-transform", authorize("admin.bulk-transform.manage"), Bu
 // Same reason as data-management/backup/bulk-transform above — must precede
 // AdminPanelRouter's own /:resource catch-all.
 router.use("/admin/options", OptionsAdminRouter);
+
+// ---- packing item master routes ──────────────────────────────────────────────
+// Same reason as options above — must precede AdminPanelRouter's /:resource
+// catch-all. Per-route gating (admin.settings.access / .manage) lives in the
+// router itself.
+router.use("/admin/packing-items", PackingItemsAdminRouter);
 
 // ---- admin panel routes (not prefixed with /api) ──────────────────────────────
 // Full raw CRUD (incl. delete-all-rows per resource) across every model.

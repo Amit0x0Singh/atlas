@@ -24,9 +24,11 @@ export const SECTIONS = ["NANO", "BOTANICAL", "LIQUID", "POWDER", "GRANULES"];
 export const UOMS = ["KG", "LTR", "GM", "ML", "Number"];
 
 // ── Dropdown options ──────────────────────────────────────────────────────────
-// Carrier, Primary/Secondary Packing suggestions are now admin-managed — see
-// the CARRIER / PRIMARY_PACKING / SECONDARY_PACKING option groups (Settings >
-// Select Options) and useOptionValues(), not hardcoded lists here.
+// Carrier suggestions are admin-managed — see the CARRIER option group
+// (Settings > Select Options) and useOptionValues(), not a hardcoded list.
+// Primary/Secondary Pack suggestions come from the Packing Item master
+// (Settings > Packing Items) — see usePackingItems('PRIMARY' | 'SECONDARY')
+// in line-item-row/components/PackingSection.jsx.
 
 // Label Type options are now admin-managed — see the LABEL_TYPE option group
 // (Settings > Select Options) and useOptionValues('LABEL_TYPE').

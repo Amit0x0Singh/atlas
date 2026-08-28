@@ -29,6 +29,14 @@ export function groupPacks(packs) {
   })
 }
 
+// Distinct set of people who created/updated the underlying bag (PackDetail)
+// rows in a group — bags in the same lot can carry different actors if
+// they were scanned/edited individually, unlike the single lot-level
+// PrintMaster creator. `field` is 'bagCreatedBy' or 'bagUpdatedBy'.
+export function distinctActors(bags, field) {
+  return [...new Set(bags.map((b) => b[field]).filter(Boolean))]
+}
+
 export function fmtDate(d) {
   if (!d) return '—'
   return new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })

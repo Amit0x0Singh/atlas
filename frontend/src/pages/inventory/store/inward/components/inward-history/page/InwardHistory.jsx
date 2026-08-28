@@ -20,6 +20,11 @@ const COLUMN_DEFS = [
   { key: 'totalQty',    label: 'Total Qty',      defaultWidth: 120 },
   { key: 'received',    label: 'Received',       defaultWidth: 120 },
   { key: 'warehouse',   label: 'Warehouse(s)',   defaultWidth: 140 },
+  // Distinct count of people who created/updated the underlying bag rows —
+  // see HistoryRow.jsx's use of distinctActors(). Per-bag names show up in
+  // the expanded bag sub-rows instead of here.
+  { key: 'createdBy',   label: 'Created By',     defaultWidth: 130 },
+  { key: 'updatedBy',   label: 'Updated By',     defaultWidth: 130 },
 ]
 const EXPAND_COL_WIDTH = 32
 const PRINT_COL_WIDTH  = 150
@@ -112,13 +117,15 @@ export default function InwardHistory() {
 
   function exportInwardHistoryCsv() {
     if (!filteredGroups.length) { alert('No records to export — adjust your filters.'); return }
-    const headers = ['Item Name', 'Item Code', 'Lot No', 'Invoice No', 'Supplier', 'Bags', 'Received Date', 'Warehouse(s)']
+    const headers = ['Item Name', 'Item Code', 'Lot No', 'Invoice No', 'Supplier', 'Bags', 'Received Date', 'Warehouse(s)', 'Created By', 'Updated By']
     const rows = filteredGroups.map(g => {
       const warehouses = [...new Set(g.bags.map(b => b.warehouse).filter(Boolean))]
+      const creators = [...new Set(g.bags.map(b => b.bagCreatedBy).filter(Boolean))]
+      const updaters = [...new Set(g.bags.map(b => b.bagUpdatedBy).filter(Boolean))]
       return [
         g.itemName || '', g.itemCode || '', g.lotNo || '', g.invoiceNo || '', g.supplier || '',
         g.bags.length, g.receivedDate ? new Date(g.receivedDate).toLocaleDateString('en-IN') : '',
-        warehouses.join('; '),
+        warehouses.join('; '), creators.join('; '), updaters.join('; '),
       ].map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')
     })
     const csv = [headers.join(','), ...rows].join('\n')

@@ -20,6 +20,11 @@ const COLUMN_DEFS = [
   { key: 'totalQty',    label: 'Total Qty',      defaultWidth: 120 },
   { key: 'received',    label: 'Received',       defaultWidth: 120 },
   { key: 'status',      label: 'Status',         defaultWidth: 120 },
+  // Distinct count of people who created/updated the underlying bag rows —
+  // see PackTableRow.jsx's use of distinctActors(). Per-bag names show up
+  // in the expanded bag sub-rows instead of here.
+  { key: 'createdBy',   label: 'Created By',     defaultWidth: 130 },
+  { key: 'updatedBy',   label: 'Updated By',     defaultWidth: 130 },
 ]
 const EXPAND_COL_WIDTH = 32
 const PRINT_COL_WIDTH  = 150

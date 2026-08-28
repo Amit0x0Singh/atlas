@@ -1,0 +1,23 @@
+// Packing Item master — the curated list of primary/secondary pack
+// descriptions offered as suggestions in the Sales Order line-item form
+// (Primary Pack / Secondary Pack fields). Replaces the former
+// PRIMARY_PACKING / SECONDARY_PACKING option groups (now deactivated).
+//
+// Sales Order rows store the plain packing string on the row itself
+// (SalesOrderItem.unitPackType / .packingType) — no FK from there to
+// here — so deactivating a packing item can never break a historical
+// order. Same "deactivate, never hard-delete" rule as OptionValue.
+model PackingItem {
+  id        String   @id @default(cuid())
+  itemCode  String   @unique @map("item_code") @db.VarChar(50)
+  name      String   @db.VarChar(200)
+  type      String   @db.VarChar(20) // 'PRIMARY' | 'SECONDARY'
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+  createdBy String?  @map("created_by") @db.VarChar(255)
+  updatedBy String?  @map("updated_by") @db.VarChar(255)
+
+  @@index([type, isActive])
+  @@map("packing_items")
+}

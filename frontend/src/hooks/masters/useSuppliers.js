@@ -3,8 +3,11 @@ import { erpSuppliersApi } from '../../api/masters.js'
 import { queryKeys } from '../../lib/queryKeys.js'
 import { CACHE } from '../../lib/queryClient.js'
 
-// Filtering + pagination happen server-side — queryFn returns the current
-// page's rows alongside the server-reported total match count.
+// The endpoint's pagination is opt-in (see listSuppliers) — Supplier Master
+// calls this with no page/limit to get the full list back once (cached),
+// then does search/filter/sort/paginate client-side, same as Item Master.
+// `filters` still passes straight through as query params if a future
+// caller wants server-side filtering instead.
 export function useSuppliers(filters) {
   return useQuery({
     queryKey: queryKeys.suppliers.all(filters),

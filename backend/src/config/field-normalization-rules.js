@@ -299,6 +299,17 @@ export const FIELD_RULES = {
     id: RULES.NONE, // REVIEW: no confident naming signal — safe default [PK]
     planTaskId: RULES.UPPER, // business code/identifier
   },
+  MicrobialSfgAdjustment: {
+    containerCode: RULES.UPPER, // business code/identifier
+    microbeCode: RULES.UPPER, // business code/identifier
+    microbeName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
+    microbeType: RULES.NONE, // fixed-vocabulary/enum-like — no case change
+    reasonCategory: RULES.NONE, // fixed-vocabulary/enum-like — no case change
+    reason: RULES.NONE, // business name/free text — never case-changed
+    stage: RULES.NONE, // REVIEW: no confident naming signal — safe default
+    remarks: RULES.NONE, // business name/free text — never case-changed
+    batchCode: RULES.UPPER, // business code/identifier
+  },
   ErpNotification: {
     notifType: RULES.NONE, // fixed-vocabulary/enum-like — no case change
     title: RULES.NONE, // REVIEW: no confident naming signal — safe default

@@ -81,11 +81,21 @@ export default function BatchDetailsForm({
           <div className="flex gap-2">
             <input type="number" value={form.batchSize} onChange={e => patch({ batchSize: e.target.value })}
               placeholder="e.g. 300" className={`${inputBaseCls} flex-1 min-w-0`} />
-            <select value={form.batchSizeUom} onChange={e => patch({ batchSizeUom: e.target.value })}
-              className={`${inputBaseCls} w-20 flex-shrink-0`}>
-              {BATCH_UOMS.map(u => <option key={u}>{u}</option>)}
-            </select>
+            {form.productCode ? (
+              // UOM comes from Product Master once a product is selected — not editable.
+              <input value={(form.batchSizeUom || '').toUpperCase()} readOnly tabIndex={-1}
+                title="Unit is set by the selected product (Product Master)"
+                className={`${inputBaseCls} w-20 flex-shrink-0 bg-slate-100 text-slate-500 cursor-not-allowed text-center`} />
+            ) : (
+              <select value={form.batchSizeUom} onChange={e => patch({ batchSizeUom: e.target.value })}
+                className={`${inputBaseCls} w-20 flex-shrink-0`}>
+                {BATCH_UOMS.map(u => <option key={u}>{u}</option>)}
+              </select>
+            )}
           </div>
+          {form.productCode && (
+            <div className="text-[11px] text-slate-400 mt-1">Unit from Product Master</div>
+          )}
         </Field>
         <Field label="Plant *">
           <select value={form.section} onChange={e => patch({ section: e.target.value })} className={inputCls}>

@@ -2,6 +2,7 @@ import { ChevronUp, ChevronDown, ChevronsUpDown, Pencil, KeyRound, Power } from 
 import { IconButton, ColumnsMenu } from '../../../../components/ui'
 import { Can } from '../../../../components/common/Can.jsx'
 import { useColumnPreferences } from '../../../../hooks/useColumnPreferences.js'
+import { toTitleCase } from '../../../../utils/textDisplay.js'
 
 // key, header label, the shared `sort.field` value clicking this header
 // sets (so header-click sorting and the Sort-by modal stay in sync), and
@@ -85,7 +86,7 @@ export default function UsersTable({ users, loading, empty, emptyMessage, sort, 
               <tr key={u.userId} className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${!u.isActive ? 'opacity-50' : ''}`}>
                 {columnVisibility.user && (
                   <td style={{ width: columnWidths.user }} className="px-4 py-3 overflow-hidden">
-                    <div className="font-semibold text-gray-800 truncate">{u.fullName}</div>
+                    <div className="font-semibold text-gray-800 truncate">{toTitleCase(u.fullName)}</div>
                     <div className="text-xs text-gray-400 truncate">{u.email}</div>
                   </td>
                 )}

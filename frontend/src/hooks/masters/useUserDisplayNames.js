@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useUsers } from './useUserRoles.js'
+import { toTitleCase } from '../../utils/textDisplay.js'
 
 // createdBy/updatedBy columns store the actor's email (stamped server-side
 // by the Prisma audit-stamp extension) — this resolves that email to a
@@ -11,7 +12,9 @@ export function useUserDisplayNames() {
   const { data: users = [] } = useUsers()
   return useMemo(() => {
     const map = new Map()
-    for (const u of users) if (u.email) map.set(u.email.toLowerCase(), u.fullName || u.email)
+    // fullName is stored lowercase (e.g. "buddha") — Title Case it for
+    // display the same way item/category names already are, elsewhere.
+    for (const u of users) if (u.email) map.set(u.email.toLowerCase(), toTitleCase(u.fullName) || u.email)
     return (email) => (email ? map.get(email.toLowerCase()) || email : '—')
   }, [users])
 }

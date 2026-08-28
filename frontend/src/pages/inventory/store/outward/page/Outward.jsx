@@ -9,6 +9,7 @@ import StockLossAdjustment    from '../components/stock-loss-adjustment/StockLos
 import { RefreshCw, Warehouse, ClipboardList, Container, TriangleAlert, History, ArrowUpFromLine } from 'lucide-react'
 import './Outward.css'
 import { toTitleCase } from '../../../../../utils/textDisplay.js'
+import { useUserDisplayNames } from '../../../../../hooks/masters/useUserDisplayNames.js'
 
 const MODES = [
   {
@@ -85,6 +86,7 @@ function Panel({ mode, onBack, actions, children }) {
 }
 
 export default function Outward() {
+  const displayName = useUserDisplayNames()
   const [mode,      setMode]      = useState(null)
   const [bomView,   setBomView]   = useState('select') // 'select' | 'history' — bom-issue mode only
   const [resumeId,  setResumeId]  = useState(null)
@@ -182,12 +184,14 @@ export default function Outward() {
                   <th className="text-left px-4 py-3 font-semibold">Source</th>
                   <th className="text-right px-4 py-3 font-semibold">Qty Issued</th>
                   <th className="text-left px-4 py-3 font-semibold">Remarks</th>
+                  <th className="text-left px-4 py-3 font-semibold">Created By</th>
+                  <th className="text-left px-4 py-3 font-semibold">Updated By</th>
                 </tr>
               </thead>
               <tbody>
                 {history.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="text-center py-12 text-gray-400">
+                    <td colSpan={8} className="text-center py-12 text-gray-400">
                       <div className="text-2xl mb-2">📋</div>
                       <div className="text-sm font-medium text-gray-500">No transactions yet</div>
                     </td>
@@ -215,6 +219,8 @@ export default function Outward() {
                       )}
                     </td>
                     <td className="px-4 py-2.5 text-xs text-gray-400 max-w-[130px] truncate">{h.remarks || '—'}</td>
+                    <td className="px-4 py-2.5 text-xs text-gray-600 whitespace-nowrap">{displayName(h.createdBy)}</td>
+                    <td className="px-4 py-2.5 text-xs text-gray-600 whitespace-nowrap">{displayName(h.updatedBy)}</td>
                   </tr>
                 ))}
               </tbody>

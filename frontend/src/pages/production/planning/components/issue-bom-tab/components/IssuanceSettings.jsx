@@ -1,4 +1,4 @@
-import { Settings2, AlertTriangle, Sparkles } from 'lucide-react'
+import { Settings2, Sparkles } from 'lucide-react'
 import { Field, SectionHeader, inputCls } from './formPrimitives.jsx'
 
 export default function IssuanceSettings({ form, patch, settings, setSettings, n, lastBatch, totalQty }) {
@@ -9,9 +9,11 @@ export default function IssuanceSettings({ form, patch, settings, setSettings, n
         <Field label="Number of Cycles / Batches">
           <input type="number" min={1} value={form.cycles} onChange={e => patch({ cycles: e.target.value })} className={inputCls} />
         </Field>
-        <div className="sm:col-span-2 bg-slate-50 border border-slate-100 rounded-lg px-3.5 py-2.5 text-[12px] text-slate-600 flex items-center">
-          {form.batchNo ? <>Batches: <b>{form.batchNo}</b> → <b>{lastBatch}</b>{form.batchSize ? <> · Total: <b>{totalQty.toLocaleString()} {form.batchSizeUom}</b></> : ''}</> : <span className="text-red-500 flex items-center gap-1"><AlertTriangle size={13} /> Enter Batch No</span>}
-        </div>
+        {form.batchNo && (
+          <div className="sm:col-span-2 bg-slate-50 border border-slate-100 rounded-lg px-3.5 py-2.5 text-[12px] text-slate-600 flex items-center">
+            Batches: <b>{form.batchNo}</b> → <b>{lastBatch}</b>{form.batchSize ? <> · Total: <b>{totalQty.toLocaleString()} {form.batchSizeUom}</b></> : ''}
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-4">

@@ -13,6 +13,7 @@ const TEMPLATE_SHEETS = [
   { name: 'Equipment Master', columns: ['Equipment Name', 'Working Volume', 'Operation', 'Plant'] },
   { name: 'RM Master',        columns: ['Item Name', 'Item Code', 'Category', 'Sub-Category', 'Inventory UOM', 'Operational UOM', 'Conversion Required', 'Conversion Factor'] },
   { name: 'Recipe BOM',       columns: ['Plant', 'Product UOM', 'Product Name', 'Recipe Items', 'Qty (Per Kg of Product)', 'Recipe UOM', 'Microbe', 'CFU/g'] },
+  { name: 'Packing Items',    columns: ['Item Name', 'Item Code', 'Type'] },
 ]
 
 export function downloadImportTemplate() {
