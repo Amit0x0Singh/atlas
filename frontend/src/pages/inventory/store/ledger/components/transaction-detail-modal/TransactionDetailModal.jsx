@@ -40,7 +40,6 @@ export default function TransactionDetailModal({ detail, onClose }) {
                   {shown.detail?.outward?.operationalUom && Number(shown.detail.outward.operationalQty) !== Number(shown.detail.outward.qtyIssued) && (
                     <DRow label="Qty (Operational UOM)" value={`${Number(shown.detail.outward.operationalQty).toFixed(3)} ${(shown.detail.outward.operationalUom || '').toUpperCase()}`} />
                   )}
-                  <DRow label="Balance After"    value={Number(shown.entry.balance).toFixed(3)} />
                   <DRow label="Reference"        value={shown.entry.reference || '—'} full />
                 </DSection>
 

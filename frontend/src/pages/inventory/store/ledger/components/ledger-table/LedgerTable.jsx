@@ -3,6 +3,7 @@ import './LedgerTable.css'
 import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 import { ColumnsMenu } from '../../../../../../components/ui'
 import { useColumnPreferences } from '../../../../../../hooks/useColumnPreferences.js'
+import { useUserDisplayNames } from '../../../../../../hooks/masters/useUserDisplayNames.js'
 import LedgerToolbar from '../ledger-filters/LedgerToolbar.jsx'
 
 const TX_COLORS = {
@@ -21,6 +22,8 @@ const COLUMN_DEFS = [
   { key: 'transactionType', label: 'Transaction',       defaultWidth: 160 },
   { key: 'qty',             label: 'Qty',                defaultWidth: 150, align: 'right' },
   { key: 'reference',       label: 'Reference',         defaultWidth: 200 },
+  { key: 'createdBy',       label: 'Created By',         defaultWidth: 150 },
+  { key: 'updatedBy',       label: 'Updated By',         defaultWidth: 150 },
 ]
 const DETAIL_COL_WIDTH = 70
 
@@ -29,6 +32,7 @@ export default function LedgerTable({
   search, onSearchChange, filters, onFiltersChange, sort, onSortChange, onExport, exporting, resultCount,
 }) {
   const { columnWidths, columnVisibility, visibleColumns, startResize, toggleColumn } = useColumnPreferences('stock-ledger', COLUMN_DEFS)
+  const displayName = useUserDisplayNames()
 
   // `rows` is only the current page — the backend hardcodes
   // `orderBy: { timestamp: 'desc' }` with no dynamic sort param, so this only
@@ -125,6 +129,8 @@ export default function LedgerTable({
                   )}
                   {columnVisibility.qty && <td className="px-4 py-2.5 text-right overflow-hidden">{qty}</td>}
                   {columnVisibility.reference && <td className="px-4 py-2.5 text-gray-500 text-xs truncate">{row.reference || '—'}</td>}
+                  {columnVisibility.createdBy && <td className="px-4 py-2.5 text-gray-600 text-xs truncate">{toTitleCase(displayName(row.createdBy)) || '—'}</td>}
+                  {columnVisibility.updatedBy && <td className="px-4 py-2.5 text-gray-600 text-xs truncate">{toTitleCase(displayName(row.updatedBy)) || '—'}</td>}
                   <td className="px-4 py-2.5 text-center text-blue-400 hover:text-blue-600">🔍</td>
                 </tr>
               )
