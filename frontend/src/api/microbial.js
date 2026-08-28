@@ -36,7 +36,10 @@ export const microbialSfgApi = {
   createOutward:      (data)    => api.post('/microbial-sfg/outward', data),
   listOutward:        (params)  => api.get('/microbial-sfg/outward', { params }),
   getOutward:         (id)      => api.get(`/microbial-sfg/outward/${id}`),
-  // History (merged inward + outward ledger)
+  // Stock loss adjustment (biomass lost during issuance / production release / transport)
+  listAdjustments:    (params)  => api.get('/microbial-sfg/adjustment', { params }),
+  createAdjustment:   (data)    => api.post('/microbial-sfg/adjustment', data),
+  // History (merged inward + outward + adjustment ledger)
   history:            (params)  => api.get('/microbial-sfg/history', { params }),
   // Executive dashboard (KPIs, health score, reorder signals, velocity, ABC, dormancy, insights, decisions)
   dashboard:          ()        => api.get('/microbial-sfg/dashboard'),

@@ -3,7 +3,7 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import multer from "multer";
-import path from "path"; 
+import path from "path";
 import { fileURLToPath } from "url";
 import { existsSync } from "fs";
 import { startCronJobs } from "./services/cron-jobs.js";
@@ -45,13 +45,13 @@ app.use(
     // Prod: only origins explicitly listed in FRONTEND_URLS (comma-separated).
     origin: isDev
       ? (origin, cb) => {
-          if (!origin || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) cb(null, true);
-          else cb(new Error("CORS: origin not allowed"));
-        }
+        if (!origin || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) cb(null, true);
+        else cb(new Error("CORS: origin not allowed"));
+      }
       : (origin, cb) => {
-          if (!origin || allowedOrigins.includes(origin)) cb(null, true);
-          else cb(new Error("CORS: origin not allowed"));
-        },
+        if (!origin || allowedOrigins.includes(origin)) cb(null, true);
+        else cb(new Error("CORS: origin not allowed"));
+      },
     credentials: true,
   }),
 );
@@ -122,7 +122,7 @@ const server = app.listen(PORT, "127.0.0.1", () => {
   startCronJobs(app);
 });
 
- 
+
 const shutdown = async () => {
   console.log("Shutting down backend...");
   await disconnectDb();

@@ -56,6 +56,9 @@ export const queryKeys = {
     all:    (filters) => filters ? ['microbial-sfg-outward', filters] : ['microbial-sfg-outward'],
     detail: (id) => ['microbial-sfg-outward', id],
   },
+  microbialSfgAdjustment: {
+    all: (filters) => filters ? ['microbial-sfg-adjustment', filters] : ['microbial-sfg-adjustment'],
+  },
   microbialSfgHistory: {
     all: (filters) => filters ? ['microbial-sfg-history', filters] : ['microbial-sfg-history'],
   },

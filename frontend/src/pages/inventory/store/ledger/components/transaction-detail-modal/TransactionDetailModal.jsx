@@ -31,6 +31,7 @@ export default function TransactionDetailModal({ detail, onClose }) {
               <>
                 <DSection icon={Clock} title="Transaction">
                   <DRow label="Date & Time"      value={new Date(shown.entry.timestamp).toLocaleString('en-IN')} />
+                  <DRow label="Performed By"     value={shown.entry.createdBy || '—'} />
                   <DRow label="Item Code"        value={shown.entry.itemCode} mono />
                   <DRow label="Type"             value={shown.entry.transactionType} badge />
                   <DRow label="Source / Pack ID" value={shown.entry.sourceId} mono />

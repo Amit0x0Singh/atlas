@@ -100,6 +100,8 @@ export const PERMISSIONS = [
   // deliberately not duplicated as a separate microbial.sfg-master.* group.
   ...group('microbial', 'sfg-inward', ['view', 'create', 'update', 'import']),
   ...group('microbial', 'sfg-outward', ['view', 'create', 'update']),
+  ...group('microbial', 'sfg-adjustment', ['view', 'create'], (a) =>
+    a === 'view' ? 'View microbial SFG stock loss adjustments' : 'Record a microbial SFG stock loss adjustment'),
   ...group('microbial', 'sfg-planning', ['view', 'create', 'update']),
   ...group('microbial', 'sfg-storage', ['view', 'create', 'update']),
   ...group('microbial', 'sfg-dashboard', ['view']),
