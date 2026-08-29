@@ -8,7 +8,6 @@ import BomRow from '../components/BomRow.jsx'
 import BomRowEditModal from '../components/BomRowEditModal.jsx'
 import './BomEditor.css'
 
-import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 export default function BomEditor({ selectedProduct, bomRows, loadId, rmList, productList = [], microbeList = [], saving, msg, onAddRow, onSaveAll, onUpdateRow, onSelectRm, onRemoveRow }) {
   // Only one row is ever being edited at a time, via the modal — it owns all
   // of its own search/draft state, so this just needs to know which row.
@@ -49,18 +48,12 @@ export default function BomEditor({ selectedProduct, bomRows, loadId, rmList, pr
   return (
     <>
       {/* BOM header bar */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-bold text-gray-900">{toTitleCase(selectedProduct.productName)}</h1>
-          <div className="flex items-center gap-3 mt-0.5 flex-wrap">
-            <p className="text-sm text-gray-500 font-mono">
-              Code: <span className="text-blue-700 font-semibold">{selectedProduct.productCode}</span>
-              {selectedProduct.plant?.length > 0 && <span className="ml-3 text-gray-400">· {selectedProduct.plant.join(', ')}</span>}
-            </p>
-            <span className="bg-amber-100 text-amber-800 border border-amber-200 text-xs font-bold px-2 py-0.5 rounded-full whitespace-nowrap">
-              📐 Qty per 1 KG of product
-            </span>
-          </div>
+      <div className="bg-white border-b border-gray-200 px-6 py-3.5 flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-3 flex-wrap">
+          <h2 className="text-[15px] font-bold text-gray-900">Bill of Materials</h2>
+          <span className="bg-amber-100 text-amber-800 border border-amber-200 text-xs font-bold px-2 py-0.5 rounded-full whitespace-nowrap">
+            📐 Quantities per 1 KG of finished product
+          </span>
         </div>
         <div className="flex gap-2">
           <Can permission="masters.recipe.update">

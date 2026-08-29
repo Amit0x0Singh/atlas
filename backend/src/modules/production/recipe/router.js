@@ -1,9 +1,9 @@
 import express from "express";
 import { authorize, authenticate } from "../../../middleware/auth.js";
-import { listRecipe, listRecipeProducts, checkRmMapping } from "./get/recipe.controller.js";
-import { bulkSaveRecipe, fixRmMapping } from "./create/recipe.controller.js";
-import { validateBulkSaveRecipe, validateFixRmMapping } from "./create/recipe.middleware.js";
-import { deleteRecipeRow, deleteProductRecipe } from "./delete/recipe.controller.js";
+import { listRecipe, listRecipeProducts } from "./get/recipe.controller.js";
+import { bulkSaveRecipe, renameRecipe } from "./create/recipe.controller.js";
+import { validateBulkSaveRecipe } from "./create/recipe.middleware.js";
+import { deleteRecipeRow, deleteRecipe, deleteProductRecipe } from "./delete/recipe.controller.js";
 
 const RecipeRouter = express.Router();
 const canView = authorize("masters.recipe.view");
@@ -14,9 +14,9 @@ const canView = authorize("masters.recipe.view");
 // Recipe Master itself.
 RecipeRouter.get("/recipe/products/search", authenticate, listRecipeProducts);
 RecipeRouter.get("/recipe/products", canView, listRecipeProducts);
-RecipeRouter.get("/recipe/check-rm-mapping", canView, checkRmMapping);
-RecipeRouter.post("/recipe/fix-rm-mapping", authorize("masters.recipe.update"), validateFixRmMapping, fixRmMapping);
 RecipeRouter.post("/recipe/bulk-save", authorize("masters.recipe.create"), validateBulkSaveRecipe, bulkSaveRecipe);
+RecipeRouter.patch("/recipe/rename", authorize("masters.recipe.update"), renameRecipe);
+RecipeRouter.delete("/recipe/product/:productCode/recipe/:recipeNo", authorize("masters.recipe.delete"), deleteRecipe);
 RecipeRouter.delete("/recipe/product/:productCode", authorize("masters.recipe.delete"), deleteProductRecipe);
 RecipeRouter.delete("/recipe/:id", authorize("masters.recipe.delete"), deleteRecipeRow);
 RecipeRouter.get("/recipe", canView, listRecipe);

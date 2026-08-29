@@ -1,5 +1,6 @@
 import prisma from '../../../../../db.js'
 import { toSafeErrorMessage } from '../../../../../utils/safe-error.js'
+import { primaryRecipeNo } from '../../../../production/recipe/recipe-utils.js'
 
 export const checkPlanMicrobes = async (req, res) => {
   try {
@@ -13,7 +14,7 @@ export const checkPlanMicrobes = async (req, res) => {
     if (!plan) return res.status(404).json({ success: false, error: 'Plan not found', code: 'NOT_FOUND' })
 
     const recipe = await prisma.recipeDb.findMany({
-      where: { productCode: plan.productCode, isMicrobe: true },
+      where: { productCode: plan.productCode, recipeNo: await primaryRecipeNo(plan.productCode), isMicrobe: true },
     })
     if (!recipe.length) return res.json({ success: true, has_microbes: false, microbes: [], plan })
 
@@ -112,7 +113,7 @@ export const getProductMicrobeRequirements = async (req, res) => {
     const orderQty = Number(qty) || 0
 
     const [recipeRows, microbes] = await Promise.all([
-      prisma.recipeDb.findMany({ where: { productCode: product_code } }),
+      prisma.recipeDb.findMany({ where: { productCode: product_code, recipeNo: await primaryRecipeNo(product_code) } }),
       prisma.microbeMaster.findMany(),
     ])
 

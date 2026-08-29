@@ -1,5 +1,6 @@
 import prisma from '../../../../db.js'
 import { toSafeErrorMessage } from '../../../../utils/safe-error.js'
+import { primaryRecipeNo } from '../../../production/recipe/recipe-utils.js'
 
 const nextPlanId = async () => {
   const year = new Date().getFullYear()
@@ -8,7 +9,7 @@ const nextPlanId = async () => {
 }
 
 const checkRmAvailability = async (productCode, batchQtyKg) => {
-  const recipe = await prisma.recipeDb.findMany({ where: { productCode } })
+  const recipe = await prisma.recipeDb.findMany({ where: { productCode, recipeNo: await primaryRecipeNo(productCode) } })
   if (!recipe.length) return { status: 'AMBER', details: [], note: 'No BOM found' }
   const details = []
   let worstStatus = 'GREEN'

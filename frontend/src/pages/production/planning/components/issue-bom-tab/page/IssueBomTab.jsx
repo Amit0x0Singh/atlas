@@ -10,8 +10,9 @@ import SummarySidebar from '../components/SummarySidebar.jsx'
 export default function IssueBomTab({
   form, setForm, rows, setRows, settings, setSettings,
   productSuggestions, onProductSearch, onSelectProduct, recipeLoadedMsg,
+  productRecipes, selectedRecipeNo, onPickRecipe,
   onGenerate, generating, error,
-  rmList, products, microbes, onSaveCorrections, savingCorrections,
+  rmList, products, microbes,
 }) {
   const [showSugg, setShowSugg] = useState(false)
 
@@ -40,13 +41,14 @@ export default function IssueBomTab({
             form={form} patch={patch}
             productSuggestions={productSuggestions} onProductSearch={onProductSearch}
             onSelectProduct={onSelectProduct} recipeLoadedMsg={recipeLoadedMsg}
+            productRecipes={productRecipes} selectedRecipeNo={selectedRecipeNo} onPickRecipe={onPickRecipe}
             showSugg={showSugg} setShowSugg={setShowSugg}
             n={n} lastBatch={lastBatch}
           />
 
           <ComponentsTable
             rows={rows} onChange={setRows}
-            rmList={rmList} products={products} microbes={microbes} onSaveCorrections={onSaveCorrections} savingCorrections={savingCorrections}
+            rmList={rmList} products={products} microbes={microbes}
           />
 
           <IssuanceSettings

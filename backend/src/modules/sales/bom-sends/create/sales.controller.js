@@ -1,6 +1,7 @@
 import prisma from "../../../../db.js";
 import { toSafeErrorMessage } from "../../../../utils/safe-error.js";
 import getIssuedQty from "../utils/utils.js";
+import { primaryRecipeNo } from "../../../production/recipe/recipe-utils.js";
 
 const nextSendId = async () => {
   const yymm = new Date().toISOString().slice(2, 7).replace("-", "");
@@ -98,7 +99,7 @@ const issuePackToBomSend = async (req, res) => {
         .json({ success: false, error: "Pack is empty (no remaining qty)" });
 
     const recipe = await prisma.recipeDb.findFirst({
-      where: { productCode: send.productCode, rmCode },
+      where: { productCode: send.productCode, recipeNo: await primaryRecipeNo(send.productCode), rmCode },
     });
     if (!recipe)
       return res.status(404).json({
@@ -163,7 +164,7 @@ const issuePackToBomSend = async (req, res) => {
       });
 
       const allRecipe = await tx.recipeDb.findMany({
-        where: { productCode: send.productCode },
+        where: { productCode: send.productCode, recipeNo: await primaryRecipeNo(send.productCode, tx) },
       });
       allDone = true;
       anyDone = false;

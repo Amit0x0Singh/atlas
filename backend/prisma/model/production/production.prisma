@@ -86,6 +86,11 @@ model RecipeDb {
   productCode String   @map("product_code")
   productName String   @map("product_name")
   recipeNo    Int      @default(1) @map("recipe_no")
+  // A product can have several recipes (different raw-material / microbe /
+  // SFG routes to the same finished product). recipeName is denormalized
+  // across every row of one (productCode, recipeNo) so any one row names
+  // the recipe it belongs to. Null on legacy rows — shown as "Recipe <no>".
+  recipeName  String?  @map("recipe_name")
   rmCode      String   @map("rm_code")
   rmName      String   @map("rm_name")
   qtyPerUnit  Float    @map("qty_per_unit")

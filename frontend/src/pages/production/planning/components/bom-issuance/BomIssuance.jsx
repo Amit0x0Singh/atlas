@@ -65,11 +65,13 @@ export default function BomIssuance() {
   const [recipeProducts, setRecipeProducts] = useState([])
   const [products, setProducts]             = useState([])
   const [suggestions, setSuggestions]       = useState([])
-  const [activeRecipe, setActiveRecipe]     = useState(null) // { productCode, perUnitComponents }
+  const [activeRecipe, setActiveRecipe]     = useState(null) // { productCode, perUnit }
+  // A product can hold several named recipes — [{ recipeNo, recipeName, lines }].
+  const [productRecipes, setProductRecipes] = useState([])
+  const [selectedRecipeNo, setSelectedRecipeNo] = useState(null)
   const [recipeLoadedMsg, setRecipeLoadedMsg] = useState('')
   const [rmList, setRmList]                 = useState([])
   const [microbes, setMicrobes]             = useState([])
-  const [savingCorrections, setSavingCorrections] = useState(false)
 
   const [archivedBoms, setArchivedBoms] = useState(() => readArchivedBoms())
   const [meta, setMeta]                 = useState(() => readMeta())
@@ -104,27 +106,56 @@ export default function BomIssuance() {
     setSuggestions(recipeProducts.filter(p => p.productName?.toLowerCase().includes(q)).slice(0, 15))
   }, [recipeProducts])
 
+  // Turn one recipe's stored lines into the scaled component-table rows.
+  const applyRecipeLines = useCallback((lines, productCode, label) => {
+    const perUnit = (lines || []).map(l => ({
+      sno: '', component: toTitleCase(l.rmName), qty: String(l.qtyPerUnit), uom: l.uom || '', remarks: l.roleType || '', isHeader: false,
+      rmCode: l.rmCode,
+      // CFU/g concentration for microbe components — a fixed potency, not
+      // scaled by batch size (scaleToQty only touches qty).
+      cfu: l.requiredCfu != null && l.requiredCfu !== '' ? String(l.requiredCfu) : '',
+    }))
+    setActiveRecipe({ productCode, perUnit })
+    const bsz = canonicalBatchSize(form.batchSize, form.batchSizeUom)
+    const scaled = scaleToQty(perUnit, bsz)
+    setRows(fromComponents(scaled, scaled.length))
+    setRecipeLoadedMsg(`✓ ${label} · ${perUnit.length} components · scaled to ${form.batchSize} ${form.batchSizeUom}`)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.batchSize, form.batchSizeUom])
+
   const onSelectProduct = useCallback(async (productCode, productName) => {
     setForm(f => ({ ...f, product: productName, productCode }))
     try {
       const r = await recipeApi.list({ productCode })
-      const perUnit = (r.data || []).map(l => ({
-        sno: '', component: toTitleCase(l.rmName), qty: String(l.qtyPerUnit), uom: l.uom || '', remarks: l.roleType || '', isHeader: false,
-        rmCode: l.rmCode,
-        // CFU/g concentration for microbe components — a fixed potency, not
-        // scaled by batch size (scaleToQty only touches qty).
-        cfu: l.requiredCfu != null && l.requiredCfu !== '' ? String(l.requiredCfu) : '',
-      }))
-      setActiveRecipe({ productCode, perUnit })
-      const bsz = canonicalBatchSize(form.batchSize, form.batchSizeUom)
-      const scaled = scaleToQty(perUnit, bsz)
-      setRows(fromComponents(scaled, scaled.length))
-      setRecipeLoadedMsg(`✓ Recipe loaded from Recipe Master · ${perUnit.length} components · scaled to ${form.batchSize} ${form.batchSizeUom}`)
+      // Group the flat rows into recipes by recipeNo.
+      const byNo = new Map()
+      for (const l of r.data || []) {
+        if (!byNo.has(l.recipeNo)) byNo.set(l.recipeNo, { recipeNo: l.recipeNo, recipeName: l.recipeName || null, lines: [] })
+        const g = byNo.get(l.recipeNo)
+        g.lines.push(l)
+        if (l.recipeName) g.recipeName = l.recipeName
+      }
+      const recipes = [...byNo.values()].sort((a, b) => a.recipeNo - b.recipeNo)
+      setProductRecipes(recipes)
+
+      const first = recipes[0]
+      setSelectedRecipeNo(first?.recipeNo ?? null)
+      const label = recipes.length > 1
+        ? `Recipe loaded: ${first?.recipeName || `Recipe ${first?.recipeNo}`} (${recipes.length} available)`
+        : 'Recipe loaded from Recipe Master'
+      applyRecipeLines(first?.lines || [], productCode, label)
     } catch (e) {
       setError('Failed to load recipe: ' + e.message)
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.batchSize, form.batchSizeUom])
+  }, [applyRecipeLines])
+
+  // Operator switched recipes in the picker.
+  const pickRecipe = useCallback((recipeNo) => {
+    const g = productRecipes.find(x => x.recipeNo === recipeNo)
+    if (!g) return
+    setSelectedRecipeNo(recipeNo)
+    applyRecipeLines(g.lines, form.productCode, `Recipe: ${g.recipeName || `Recipe ${g.recipeNo}`}`)
+  }, [productRecipes, form.productCode, applyRecipeLines])
 
   // Auto-load the recipe whenever the Product Name field ends up holding an
   // exact match from the Recipe Master — not just when a suggestion is
@@ -152,6 +183,8 @@ export default function BomIssuance() {
     setRecipeLoadedMsg('')
     if (!form.product.trim() && activeRecipe) {
       setActiveRecipe(null)
+      setProductRecipes([])
+      setSelectedRecipeNo(null)
       setRows(prev => makeRows(prev.length))
     }
   }, [form.productCode, form.product, activeRecipe])
@@ -178,31 +211,6 @@ export default function BomIssuance() {
     setRecipeLoadedMsg(`✓ Recipe scaled to ${form.batchSize} ${form.batchSizeUom} (stored per 1 unit)`)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.batchSize, form.batchSizeUom])
-
-  // Renames a recipe_db rmCode to the RM Master or Product Master (SFG) item
-  // the user's corrected component text actually matched — same mechanism as
-  // Recipe Master's own "Fix RM Mapping" tool, just surfaced here where the
-  // mismatch is spotted. Reassigns every recipe row using the old code
-  // across all products, not just the one currently loaded (the banner in
-  // ComponentsTable says so).
-  const handleSaveCorrections = async (corrections) => {
-    if (!corrections.length) return
-    setSavingCorrections(true)
-    setBanner({ type: 'loading', msg: `Saving ${corrections.length} correction(s) to Recipe Master…` })
-    try {
-      const res = await recipeApi.fixRmMapping(corrections)
-      setBanner({ type: 'success', msg: `✓ ${res.totalFixed || 0} recipe row(s) updated across all products using the old code(s)` })
-      setRows(prev => prev.map(r => {
-        const hit = corrections.find(c => c.fromCode === r.rmCode)
-        return hit ? { ...r, rmCode: hit.toCode } : r
-      }))
-      rmApi.search({}).then(r => setRmList(r.data || [])).catch(() => {})
-    } catch (e) {
-      setBanner({ type: 'error', msg: `Failed to save corrections: ${e.message}` })
-    } finally {
-      setSavingCorrections(false)
-    }
-  }
 
   const onGenerate = async () => {
     setError('')
@@ -321,8 +329,9 @@ export default function BomIssuance() {
             settings={settings} setSettings={setSettings}
             productSuggestions={suggestions} onProductSearch={onProductSearch} onSelectProduct={onSelectProduct}
             recipeLoadedMsg={recipeLoadedMsg}
+            productRecipes={productRecipes} selectedRecipeNo={selectedRecipeNo} onPickRecipe={pickRecipe}
             onGenerate={onGenerate} generating={generating} error={error}
-            rmList={rmList} products={products} microbes={microbes} onSaveCorrections={handleSaveCorrections} savingCorrections={savingCorrections}
+            rmList={rmList} products={products} microbes={microbes}
           />
         )}
         {activeTab === 'archive' && (

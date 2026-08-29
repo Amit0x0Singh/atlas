@@ -10,6 +10,7 @@ const BATCH_UOMS = ['L', 'kg', 'mL', 'g', 'MT', 'pcs']
 export default function BatchDetailsForm({
   form, patch,
   productSuggestions, onProductSearch, onSelectProduct, recipeLoadedMsg,
+  productRecipes = [], selectedRecipeNo, onPickRecipe,
   showSugg, setShowSugg,
   n, lastBatch,
 }) {
@@ -36,6 +37,23 @@ export default function BatchDetailsForm({
                   <span className="text-[11px] text-slate-400 font-mono">{p.productCode}</span>
                 </div>
               ))}
+            </div>
+          )}
+          {productRecipes.length > 1 && (
+            <div className="mt-2 flex items-center gap-2">
+              <label className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Recipe</label>
+              <select
+                value={selectedRecipeNo ?? ''}
+                onChange={e => onPickRecipe(Number(e.target.value))}
+                className="rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-1.5 text-[13px] font-semibold text-indigo-800 outline-none focus:ring-2 focus:ring-indigo-400"
+              >
+                {productRecipes.map(r => (
+                  <option key={r.recipeNo} value={r.recipeNo}>
+                    {r.recipeName || `Recipe ${r.recipeNo}`} · {r.lines.length} items
+                  </option>
+                ))}
+              </select>
+              <span className="text-[11px] text-slate-400">{productRecipes.length} recipes for this product</span>
             </div>
           )}
           {recipeLoadedMsg && (

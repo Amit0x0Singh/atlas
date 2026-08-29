@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Link2, Plus, X } from 'lucide-react'
+import { Plus, X } from 'lucide-react'
 import { toTitleCase } from '../../../../../utils/textDisplay.js'
 
 const UOM_OPTIONS = ['kg', 'L', 'g', 'mg', 'mL', 'pcs', 'nos', 'bags', 'drums', '%w/w', '%v/v', 'MT']
@@ -69,7 +69,7 @@ export function fromComponents(comps, minRows) {
   return rows
 }
 
-export default function ComponentsTable({ rows, onChange, rmList = [], products = [], microbes = [], onSaveCorrections, savingCorrections }) {
+export default function ComponentsTable({ rows, onChange, rmList = [], products = [], microbes = [] }) {
   const [suggestIdx, setSuggestIdx] = useState(null)
   const [editingCfu, setEditingCfu] = useState(null)
 
@@ -162,25 +162,6 @@ export default function ComponentsTable({ rows, onChange, rmList = [], products 
       .map(p => ({ kind: 'product', code: p.productCode, name: p.productName, uom: p.uom }))
     return [...rmHits, ...microbeHits, ...productHits].slice(0, 8)
   }
-
-  // Rows whose typed name now resolves to a *different* code than the one
-  // this row was originally loaded from (recipe_db) — real, save-able
-  // corrections. Manually typed rows (no rmCode, never came from a saved
-  // recipe) have nothing to reconcile against, so they're excluded here even
-  // if unmatched. The match can be an RM Master item or a Product Master
-  // item (an SFG used as an ingredient) — either kind is save-able, tagged
-  // so the backend knows which master table to resolve it against.
-  const corrections = useMemo(() => {
-    const seen = new Map()
-    for (const r of rows) {
-      if (!r.rmCode || (r.comp || '').trim().startsWith('##')) continue
-      const matched = matchFor(r.comp)
-      if (matched && matched.code !== r.rmCode) {
-        seen.set(r.rmCode, { fromCode: r.rmCode, toCode: matched.code, kind: matched.kind })
-      }
-    }
-    return [...seen.values()]
-  }, [rows, rmByNameLower, productByNameLower, microbeByNameLower])
 
   const addRow = () => onChange([...rows, emptyRow(rows.length + 1)])
 
@@ -285,26 +266,6 @@ export default function ComponentsTable({ rows, onChange, rmList = [], products 
           Leave qty/uom blank for that row.
         </p>
       </div>
-
-      {corrections.length > 0 && (
-        <div className="px-4 py-2.5 bg-amber-50 border-b border-amber-200 flex items-center gap-3 flex-wrap text-[12px]">
-          <span className="text-amber-800">
-            ⚠ <b>{corrections.length}</b> corrected name{corrections.length !== 1 ? 's' : ''} ready to save back to Recipe Master
-            {corrections.some(c => c.kind === 'product') && (
-              <span className="ml-1 text-[9px] font-bold text-blue-600 bg-blue-50 border border-blue-200 rounded px-1 py-0.5 align-middle">includes SFG</span>
-            )}
-            {corrections.some(c => c.kind === 'microbe') && (
-              <span className="ml-1 text-[9px] font-bold text-purple-600 bg-purple-50 border border-purple-200 rounded px-1 py-0.5 align-middle">includes MICROBE</span>
-            )}.
-            This updates the mapping for <b>every product</b> that uses the old code, not just this batch.
-          </span>
-          <button type="button" onClick={() => onSaveCorrections?.(corrections)} disabled={savingCorrections}
-            className="ml-auto inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white rounded-lg font-semibold whitespace-nowrap">
-            <Link2 size={13} />
-            {savingCorrections ? 'Saving…' : `Save ${corrections.length} Correction${corrections.length !== 1 ? 's' : ''} to Recipe`}
-          </button>
-        </div>
-      )}
 
       <div className="overflow-x-auto">
         <table className="w-full text-[13px]">
