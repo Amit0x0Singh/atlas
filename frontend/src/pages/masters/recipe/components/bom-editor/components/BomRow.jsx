@@ -57,7 +57,10 @@ export default function BomRow({ row, idx, isProductCode, isMicrobeCode, onEdit,
         )}
       </td>
 
-      <td className="px-3 py-2 text-sm font-semibold text-gray-900 text-right">
+      <td
+        className="px-3 py-2 text-sm font-semibold text-gray-900 text-right"
+        title={`Stored: ${row.qtyPerUnit ?? 0} ${row.uom || ''} per 1 KG finished product`}
+      >
         {friendly.formatted}
       </td>
 
