@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { BackButton, Button, PageHeader } from '../../../../components/ui'
 import { Can } from '../../../../components/common/Can.jsx'
-import { Repeat, ArrowDown, ArrowUp, ArrowLeft, ClipboardList, Plus, Upload, MinusCircle, List } from 'lucide-react'
+import { Repeat, ArrowDown, ArrowUp, ArrowLeft, ClipboardList, Plus, Upload, MinusCircle, List, History } from 'lucide-react'
 import InwardTab from '../components/inward-tab/InwardTab.jsx'
 import OutwardTab from '../components/outward-tab/OutwardTab.jsx'
 import HistoryTab from '../components/history-tab/HistoryTab.jsx'
@@ -20,8 +20,15 @@ export default function MicrobeTransaction() {
   // Stock Loss Adjustment lives inside the Outward tab: null = normal outward,
   // 'form' = record-a-loss wizard, 'records' = list of past adjustments.
   const [adjustView, setAdjustView] = useState(null)
+  // Outward-side full-width views: null = issuance flow, 'history' = Outward History.
+  const [outwardView, setOutwardView] = useState(null)
+  // While a microbe issuance is open, OutwardTab registers its "pick a
+  // different task" handler here so the page-level Back button runs that
+  // instead of leaving the page.
+  const [outwardBack, setOutwardBack] = useState(null)
+  const registerBackHandler = useCallback((fn) => setOutwardBack(() => fn), [])
 
-  const selectTab = (key) => { setAdjustView(null); setTab(key) }
+  const selectTab = (key) => { setAdjustView(null); setOutwardView(null); setTab(key) }
 
   return (
     <div className="flex flex-col h-full">
@@ -39,7 +46,11 @@ export default function MicrobeTransaction() {
               <Button variant="outline-gray" size="md" icon={ClipboardList} onClick={() => setTab('history')}>
                 Transaction History
               </Button>
-              <BackButton />
+              {/* Viewing Outward History has its own dedicated "Back to
+                  Outward" control point — Back here does exactly that
+                  instead of leaving the page, so there's no separate button
+                  duplicating it below. */}
+              <BackButton onClick={outwardView === 'history' ? () => setOutwardView(null) : (outwardBack || undefined)} />
             </>
           )}
         </>}
@@ -94,12 +105,17 @@ export default function MicrobeTransaction() {
                   </Can>
                 )}
               </div>
-            ) : (
-              <Can anyOf={['microbial.sfg-adjustment.view', 'microbial.sfg-adjustment.create']}>
-                <Button variant="outline-gray" icon={MinusCircle} onClick={() => setAdjustView('form')}>
-                  Stock Loss Adjustment
+            ) : outwardView === 'history' ? null : (
+              <div className="flex gap-3">
+                <Button variant="outline-gray" icon={History} onClick={() => setOutwardView('history')}>
+                  Outward History
                 </Button>
-              </Can>
+                <Can anyOf={['microbial.sfg-adjustment.view', 'microbial.sfg-adjustment.create']}>
+                  <Button variant="outline-gray" icon={MinusCircle} onClick={() => setAdjustView('form')}>
+                    Stock Loss Adjustment
+                  </Button>
+                </Can>
+              </div>
             )
           )}
         </div>
@@ -112,7 +128,7 @@ export default function MicrobeTransaction() {
             showImport={showInwardImport} setShowImport={setShowInwardImport}
           />
         )}
-        {tab === 'outward' && <OutwardTab adjustView={adjustView} />}
+        {tab === 'outward' && <OutwardTab adjustView={adjustView} outwardView={outwardView} registerBackHandler={registerBackHandler} />}
         {tab === 'history' && <HistoryTab />}
       </div>
     </div>

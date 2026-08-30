@@ -108,12 +108,19 @@ export const checkPlanMicrobes = async (req, res) => {
 // potency exists yet) — the frontend keeps it editable.
 export const getProductMicrobeRequirements = async (req, res) => {
   try {
-    const { product_code, qty } = req.query
+    const { product_code, qty, recipe_no } = req.query
     if (!product_code) return res.status(400).json({ success: false, error: 'product_code required', code: 'VALIDATION_ERROR' })
     const orderQty = Number(qty) || 0
 
+    // Honour the recipe the task was planned against (BOM Issuance stores it
+    // on the production task); fall back to the product's primary recipe only
+    // when the caller didn't pass one.
+    const recipeNo = recipe_no != null && recipe_no !== ''
+      ? parseInt(recipe_no, 10)
+      : await primaryRecipeNo(product_code)
+
     const [recipeRows, microbes] = await Promise.all([
-      prisma.recipeDb.findMany({ where: { productCode: product_code, recipeNo: await primaryRecipeNo(product_code) } }),
+      prisma.recipeDb.findMany({ where: { productCode: product_code, recipeNo } }),
       prisma.microbeMaster.findMany(),
     ])
 

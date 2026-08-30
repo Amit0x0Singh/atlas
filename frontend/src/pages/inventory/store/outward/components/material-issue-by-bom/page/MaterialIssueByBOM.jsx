@@ -17,6 +17,9 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
   const [products, setProducts]     = useState([])
   const [selProduct, setSelProduct] = useState(null)
   const [selTaskId, setSelTaskId]   = useState(null)
+  // Recipe the picked task was planned against (BOM Issuance stores it) —
+  // null means "primary recipe", same as before this was tracked.
+  const [selRecipeNo, setSelRecipeNo] = useState(null)
   const [batchQty, setBatchQty]     = useState('')
   const [batchUom, setBatchUom]     = useState('KG')
   const [batchRef, setBatchRef]     = useState('')
@@ -137,10 +140,15 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
     setBatchRef(task.batchCode || task.taskId || '')
     setDiNo(task.diNo || '')
     setSelTaskId(task.id)
+    setSelRecipeNo(task.recipeNo ?? null)
     setError('')
   }
 
-  const clearSelection = () => { setSelProduct(null); setBatchQty(''); setBatchUom('KG'); setBatchRef(''); setDiNo(''); setSelTaskId(null) }
+  const clearSelection = () => { setSelProduct(null); setBatchQty(''); setBatchUom('KG'); setBatchRef(''); setDiNo(''); setSelTaskId(null); setSelRecipeNo(null) }
+
+  // recipe_no query param only when the task named one — otherwise the
+  // endpoint keeps its "primary recipe" default.
+  const recipeParams = selRecipeNo != null ? { recipe_no: selRecipeNo } : {}
 
   // Auto-save on every bomLines change — persisted server-side (not just this
   // browser) so the same in-progress session is visible from any device/login.
@@ -161,7 +169,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
     if (!selProduct || !batchQty || parseFloat(batchQty) <= 0) return
     setLoadingBom(true); setError('')
     try {
-      const res = await recipeApi.list({ productCode: selProduct.productCode })
+      const res = await recipeApi.list({ productCode: selProduct.productCode, ...recipeParams })
       // Microbe ingredients are issued separately on the Microbial Transaction
       // page (against the same recipe) — Store only handles raw materials here.
       const raw = (res.data || []).filter(r => !r.isMicrobe)
@@ -230,7 +238,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
   useEffect(() => {
     if (step !== 'bom' || !selProduct?.productCode) { setRecipeDrift(null); return }
     let cancelled = false
-    recipeApi.list({ productCode: selProduct.productCode }).then(res => {
+    recipeApi.list({ productCode: selProduct.productCode, ...recipeParams }).then(res => {
       if (cancelled) return
       // Same microbe exclusion as loadBom — a microbe added/edited in the
       // recipe since this session started must not surface as BOM drift here.

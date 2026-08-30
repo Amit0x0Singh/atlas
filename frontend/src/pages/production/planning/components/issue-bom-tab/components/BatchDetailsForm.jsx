@@ -9,8 +9,7 @@ const BATCH_UOMS = ['L', 'kg', 'mL', 'g', 'MT', 'pcs']
 
 export default function BatchDetailsForm({
   form, patch,
-  productSuggestions, onProductSearch, onSelectProduct, recipeLoadedMsg,
-  productRecipes = [], selectedRecipeNo, onPickRecipe,
+  productSuggestions, onProductSearch, onSelectProduct,
   showSugg, setShowSugg,
   n, lastBatch,
 }) {
@@ -38,34 +37,6 @@ export default function BatchDetailsForm({
                 </div>
               ))}
             </div>
-          )}
-          {productRecipes.length > 1 && (
-            <div className="mt-2 flex items-center gap-2">
-              <label className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Recipe</label>
-              <select
-                value={selectedRecipeNo ?? ''}
-                onChange={e => onPickRecipe(Number(e.target.value))}
-                className="rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-1.5 text-[13px] font-semibold text-indigo-800 outline-none focus:ring-2 focus:ring-indigo-400"
-              >
-                {productRecipes.map(r => (
-                  <option key={r.recipeNo} value={r.recipeNo}>
-                    {r.recipeName || `Recipe ${r.recipeNo}`} · {r.lines.length} items
-                  </option>
-                ))}
-              </select>
-              <span className="text-[11px] text-slate-400">{productRecipes.length} recipes for this product</span>
-            </div>
-          )}
-          {recipeLoadedMsg && (
-            <p className="text-[12px] text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-1.5 mt-1.5">{recipeLoadedMsg}</p>
-          )}
-          {/* No recipe matched what's typed — without this, an unmatched
-              name (typo, or a product with no BOM in Recipe Master yet)
-              silently leaves the components table empty with no clue why. */}
-          {!recipeLoadedMsg && !form.productCode && form.product.trim() && productSuggestions.length === 0 && (
-            <p className="text-[12px] text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5 mt-1.5">
-              ⚠ No recipe found matching "{form.product.trim()}" in the Recipe Master — check the spelling, or add its BOM in the Recipe Library tab first.
-            </p>
           )}
         </div>
 

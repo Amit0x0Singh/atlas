@@ -4,11 +4,12 @@ import ComponentsTable from '../../components-table/ComponentsTable.jsx'
 import { incrCode } from '../../../utils/bomPrintTemplates.js'
 import SchedulePasteZone from '../components/SchedulePasteZone.jsx'
 import BatchDetailsForm from '../components/BatchDetailsForm.jsx'
+import RecipeSelector from '../components/RecipeSelector.jsx'
 import IssuanceSettings from '../components/IssuanceSettings.jsx'
 import SummarySidebar from '../components/SummarySidebar.jsx'
 
 export default function IssueBomTab({
-  form, setForm, rows, setRows, settings, setSettings,
+  form, setForm, rows, settings, setSettings,
   productSuggestions, onProductSearch, onSelectProduct, recipeLoadedMsg,
   productRecipes, selectedRecipeNo, onPickRecipe,
   onGenerate, generating, error,
@@ -22,6 +23,11 @@ export default function IssueBomTab({
   const lastBatch = form.batchNo ? incrCode(form.batchNo, n - 1) : ''
   const componentCount = rows.filter(r => r.comp?.trim() && !r.comp.trim().startsWith('##')).length
   const totalQty = form.batchSize ? (parseFloat(form.batchSize || 0) * n) : 0
+
+  // Product typed but nothing in the Recipe Master matched it — surfaced in
+  // the Recipe card so the empty components table below isn't a mystery.
+  const showNoRecipeWarning =
+    !recipeLoadedMsg && !form.productCode && !!form.product.trim() && productSuggestions.length === 0
 
   return (
     <div className="max-w-[1700px] mx-auto p-6">
@@ -40,14 +46,22 @@ export default function IssueBomTab({
           <BatchDetailsForm
             form={form} patch={patch}
             productSuggestions={productSuggestions} onProductSearch={onProductSearch}
-            onSelectProduct={onSelectProduct} recipeLoadedMsg={recipeLoadedMsg}
-            productRecipes={productRecipes} selectedRecipeNo={selectedRecipeNo} onPickRecipe={onPickRecipe}
+            onSelectProduct={onSelectProduct}
             showSugg={showSugg} setShowSugg={setShowSugg}
             n={n} lastBatch={lastBatch}
           />
 
+          <RecipeSelector
+            productName={form.product}
+            productRecipes={productRecipes}
+            selectedRecipeNo={selectedRecipeNo}
+            onPickRecipe={onPickRecipe}
+            recipeLoadedMsg={recipeLoadedMsg}
+            showNoRecipeWarning={showNoRecipeWarning}
+          />
+
           <ComponentsTable
-            rows={rows} onChange={setRows}
+            rows={rows}
             rmList={rmList} products={products} microbes={microbes}
           />
 

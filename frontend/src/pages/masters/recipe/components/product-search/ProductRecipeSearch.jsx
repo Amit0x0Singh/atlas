@@ -69,8 +69,10 @@ export default function ProductRecipeSearch({
           onFocus={() => setOpen(true)}
           onKeyDown={onKeyDown}
           placeholder={placeholder}
-          className={`w-full border border-gray-300 bg-white text-gray-900 rounded-xl outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 ${
-            lg ? 'pl-10 pr-9 py-3 text-[15px]' : 'pl-9 pr-8 py-2 text-sm'
+          className={`w-full border text-gray-900 rounded-xl outline-none transition-colors focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 ${
+            lg
+              ? 'border-gray-300 bg-white pl-10 pr-9 py-3 text-[15px]'
+              : 'border-gray-200 bg-gray-50 focus:bg-white pl-9 pr-8 py-1.5 text-[13px]'
           }`}
         />
         {query && (

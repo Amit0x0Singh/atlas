@@ -92,6 +92,8 @@ export const createTask = async (req, res) => {
         diNo:            body.diNo            || null,
         shift:           body.shift           || 'General',
         productName:     body.productName,
+        productCode:     body.productCode     || null,
+        recipeNo:        body.recipeNo != null && body.recipeNo !== '' ? parseInt(body.recipeNo, 10) : null,
         batchCode:       body.batchCode       || null,
         batchKey:        body.batchKey        || null,
         qty:             parseFloat(body.qty) || 0,
@@ -156,8 +158,8 @@ export const updateTask = async (req, res) => {
     str('equipment'); str('location'); str('carrier'); str('specs'); str('remarks')
     str('primaryPack'); str('inners'); str('secondaryPack'); str('labels'); str('packAfter'); str('sfgSourceId')
     flt('unitPackQty'); flt('noUnits'); flt('unitsPerSecPack'); flt('totalSecPacks')
-    bool('sent'); bool('bmrSubmitted'); bool('sentToQc'); bool('bomIssueStarted'); bool('microbeIssueStarted')
-    dt('timerStart'); dt('timerEnd'); dt('bmrSubmittedAt'); dt('sentToQcAt'); dt('bomIssueStartedAt'); dt('microbeIssueStartedAt')
+    bool('sent'); bool('bmrSubmitted'); bool('sentToQc'); bool('bomIssueStarted'); bool('microbeIssueStarted'); bool('microbeIssueCompleted')
+    dt('timerStart'); dt('timerEnd'); dt('bmrSubmittedAt'); dt('sentToQcAt'); dt('bomIssueStartedAt'); dt('microbeIssueStartedAt'); dt('microbeIssueCompletedAt')
 
     const task = await prisma.productionTask.update({ where: { id }, data })
 

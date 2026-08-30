@@ -91,13 +91,14 @@ export const listOutwardSessions = async (req, res) => {
 
 export const listSfgOutward = async (req, res) => {
   try {
-    const { microbe_code, from, to } = req.query
+    const { microbe_code, from, to, plan_task_id } = req.query
     const where = {}
     if (from || to) {
       where.issuedAt = {}
       if (from) where.issuedAt.gte = new Date(from)
       if (to) where.issuedAt.lte = new Date(`${to}T23:59:59.999Z`)
     }
+    if (plan_task_id) where.planTaskId = plan_task_id
     if (microbe_code) where.lines = { some: { microbeCode: microbe_code } }
 
     const rows = await prisma.microbialSfgOutward.findMany({

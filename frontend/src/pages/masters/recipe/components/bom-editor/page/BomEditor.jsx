@@ -147,15 +147,10 @@ export default function BomEditor({ selectedProduct, bomRows, loadId, rmList, pr
             <div className="text-center py-8 text-gray-400 text-sm">No BOM rows yet. Click "+ Add Item Row".</div>
           )}
 
-          <div className="px-4 py-3 bg-gray-50 border-t flex justify-between items-center">
+          <div className="px-4 py-3 bg-gray-50 border-t">
             <span className="text-xs text-gray-400">
               {bomRows.filter(r => r.rmCode).length} items configured · All quantities per 1 KG finished product
             </span>
-            <Can permission="masters.recipe.update">
-              <Button variant="primary" icon={Save} onClick={onSaveAll} disabled={saving} loading={saving} size="sm">
-                {saving ? 'Saving...' : 'Save BOM'}
-              </Button>
-            </Can>
           </div>
         </div>
       </div>

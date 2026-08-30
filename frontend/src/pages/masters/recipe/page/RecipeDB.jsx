@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
-import { GitBranch, RefreshCw } from 'lucide-react'
-import { DeleteModal, ErrorModal, PageHeader, BackButton, Button } from '../../../../components/ui'
+import { GitBranch, FlaskConical } from 'lucide-react'
+import { DeleteModal, ErrorModal, PageHeader, BackButton } from '../../../../components/ui'
 import ProductRecipeSearch from '../components/product-search/ProductRecipeSearch.jsx'
 import RecipeLanding        from '../components/product-search/RecipeLanding.jsx'
 import RecipeTabs        from '../components/recipe-tabs/RecipeTabs.jsx'
@@ -248,29 +248,41 @@ export default function RecipeDB() {
         icon={GitBranch}
         title="Recipes"
         description="Build and manage the bill of materials for each product."
-        actions={<BackButton />}
+        actions={
+          // While a product is open, Back returns to the product search
+          // instead of leaving the page entirely.
+          selectedProduct
+            ? <BackButton label="Back to products" onClick={backToSearch} />
+            : <BackButton />
+        }
       >
         {selectedProduct && (
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="min-w-0">
-              <div className="text-sm font-bold text-gray-900 truncate">{toTitleCase(selectedProduct.productName)}</div>
-              <div className="text-[11px] font-mono text-gray-400 truncate">
-                {selectedProduct.productCode}
-                {selectedProduct.plant?.length > 0 && <span className="font-sans"> · {selectedProduct.plant.join(', ')}</span>}
+          <div className="flex items-center justify-between gap-4 flex-wrap rounded-xl border border-gray-200 bg-gray-50/70 px-3 py-2">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <span className="shrink-0 w-8 h-8 rounded-lg bg-white border border-gray-200 text-indigo-600 grid place-items-center">
+                <FlaskConical size={15} strokeWidth={2.2} />
+              </span>
+              <div className="min-w-0 leading-tight">
+                <div className="text-sm font-bold text-gray-900 truncate">{toTitleCase(selectedProduct.productName)}</div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] font-mono text-gray-400">{selectedProduct.productCode}</span>
+                  {selectedProduct.plant?.length > 0 && (
+                    <span className="text-[10px] font-bold uppercase tracking-wide text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-1 py-px">
+                      {selectedProduct.plant.join(' · ')}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
-            <div className="ml-auto flex items-center gap-2">
-              <ProductRecipeSearch
-                productList={productList}
-                loading={loading}
-                onSelect={selectProduct}
-                size="sm"
-                placeholder="Switch product…"
-              />
-              <Button variant="outline-gray" size="sm" icon={RefreshCw} onClick={backToSearch}>
-                Search
-              </Button>
-            </div>
+
+            {/* Switch to another product without leaving the editor */}
+            <ProductRecipeSearch
+              productList={productList}
+              loading={loading}
+              onSelect={selectProduct}
+              size="sm"
+              placeholder="Switch product…"
+            />
           </div>
         )}
       </PageHeader>

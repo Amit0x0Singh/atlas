@@ -233,30 +233,20 @@ export default function BomIssuance() {
       )
     }
 
-    // Every real component (not a section header) must resolve to a Raw
-    // Material Master item, a Microbe Master item, OR a Product Master item
-    // by exact name — a component can legitimately be an SFG (semi-finished
-    // good) used as an ingredient in another product's recipe, in which case
-    // it matches Product Master by product code instead of RM Master; or a
-    // microbial culture, matching Microbe Master instead (Store never issues
-    // these — they route to Microbe Outward). Same check ComponentsTable
-    // shows as a red "NAN" Item Code. Blocking here instead of just flagging
-    // it visually is deliberate: an unresolved component means Material
-    // Issue by BOM won't know which stock to deduct, so the batch can't be
-    // planned until it's fixed (rename the component to match one of the
-    // three masters exactly, or add the missing item first).
-    const rmByNameLower = new Map(rmList.map(rm => [(rm.itemName || '').trim().toLowerCase(), rm]))
-    const productByNameLowerForComps = new Map(products.map(p => [(p.productName || '').trim().toLowerCase(), p]))
-    const microbeByNameLowerForComps = new Map(microbes.map(m => [(m.microbeName || '').trim().toLowerCase(), m]))
+    // Components are loaded straight from the product's stored recipe, so
+    // each line already carries the master item code (rmCode) it resolves
+    // to. A missing or "NaN" code means that recipe row was never mapped to
+    // a real Raw Material / SFG / Microbe master item — Material Issue by BOM
+    // then won't know which stock to deduct, so block until it's fixed in
+    // the Recipe page.
     const unmatched = comps.filter(c => {
       if (c.isHeader || !c.component) return false
-      const key = c.component.trim().toLowerCase()
-      return !rmByNameLower.has(key) && !productByNameLowerForComps.has(key) && !microbeByNameLowerForComps.has(key)
+      return !c.rmCode || /^nan/i.test(String(c.rmCode))
     })
     if (unmatched.length) {
       return setError(
-        `${unmatched.length} component${unmatched.length !== 1 ? 's' : ''} don't match any Raw Material Master, Product Master, or Microbe Master item (shown as "NAN" in Item Code): ${unmatched.map(c => c.component).join(', ')}. ` +
-        `Fix the name to match one of those masters exactly, or add the item first, then try again.`
+        `${unmatched.length} recipe component${unmatched.length !== 1 ? 's' : ''} ${unmatched.length !== 1 ? 'are' : 'is'} not mapped to a master item (shown as "NAN"): ${unmatched.map(c => c.component).join(', ')}. ` +
+        `Open this product on the Recipe page and re-select those items from Item / Microbe / Product Master, then try again.`
       )
     }
 
@@ -287,6 +277,11 @@ export default function BomIssuance() {
         await planTasksApi.create({
           plant, date,
           productName: bom.productName,
+          // Persist which product + recipe this task was planned against so
+          // Microbe Outward / Material Issue by BOM issue the exact recipe
+          // that was selected here, not the product's primary one.
+          productCode: form.productCode || null,
+          recipeNo:    selectedRecipeNo ?? null,
           batchCode:   bom.batchNo || null,
           qty:         parseFloat(bom.batchSize) || 0,
           qtyUom:      bom.batchSizeUom || 'KG',
