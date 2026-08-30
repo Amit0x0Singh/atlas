@@ -41,7 +41,9 @@ export default function TaskPicker({
     })
 
     const taskItems = tasks
-      .filter((t) => t.sent && t.status !== 'Completed' && !t.microbeIssueStarted && !t.microbeIssueCompleted)
+      // Hide tasks whose planned recipe has no microbe ingredient — there's
+      // nothing to issue here for them (server flags this per task).
+      .filter((t) => t.sent && t.status !== 'Completed' && !t.microbeIssueStarted && !t.microbeIssueCompleted && t.hasMicrobeRecipe !== false)
       .map((t) => ({
         kind: 'task', key: `t-${t.id}`, raw: t,
         productName: t.productName, plant: t.plant, date: t.date,

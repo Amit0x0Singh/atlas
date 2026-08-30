@@ -59,6 +59,8 @@ export default function BomIssuance() {
   const [rows, setRows]     = useState(() => makeRows(DEFAULT_BLANK_ROWS))
   const [settings, setSettings] = useState(defaultSettings)
   const [error, setError]       = useState('')
+  // Per-field validation errors shown under each input in Batch Details.
+  const [fieldErrors, setFieldErrors] = useState({})
   const [generating, setGenerating] = useState(false)
   const [banner, setBanner]     = useState(null) // {type:'success'|'error', msg}
 
@@ -216,9 +218,19 @@ export default function BomIssuance() {
     setError('')
     const pn = form.product.trim()
     const comps = toComponents(rows)
-    if (!pn) return setError('Product name is required')
-    if (!form.batchSize || parseFloat(form.batchSize) <= 0) return setError('Batch Size is required and must be greater than 0')
-    if (!form.section) return setError('Select the plant this batch will be produced in')
+
+    // Required-field checks surface under the field itself (Batch Details),
+    // not just as a single banner — one pass so every missing field lights up.
+    const fe = {}
+    if (!pn) fe.product = 'Product name is required'
+    if (!form.batchNo.trim()) fe.batchNo = 'Batch No is required'
+    if (!form.batchSize || parseFloat(form.batchSize) <= 0) fe.batchSize = 'Batch Size is required and must be greater than 0'
+    if (!form.section) fe.section = 'Select the plant this batch will be produced in'
+    setFieldErrors(fe)
+    if (Object.keys(fe).length) {
+      return setError('Please fill in the required fields highlighted below')
+    }
+
     if (!comps.length) return setError('Add at least one component')
 
     // The product itself must exist in Product Master before it can be
@@ -304,6 +316,7 @@ export default function BomIssuance() {
       setRows(makeRows(DEFAULT_BLANK_ROWS))
       setActiveRecipe(null)
       setRecipeLoadedMsg('')
+      setFieldErrors({})
     } catch (e) {
       setBanner({ type: 'error', msg: `Failed to create tasks: ${e.message}` })
     } finally {
@@ -326,6 +339,7 @@ export default function BomIssuance() {
             recipeLoadedMsg={recipeLoadedMsg}
             productRecipes={productRecipes} selectedRecipeNo={selectedRecipeNo} onPickRecipe={pickRecipe}
             onGenerate={onGenerate} generating={generating} error={error}
+            fieldErrors={fieldErrors} setFieldErrors={setFieldErrors}
             rmList={rmList} products={products} microbes={microbes}
           />
         )}

@@ -125,6 +125,9 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
     t.sent &&
     t.status !== 'Completed' &&
     !t.bomIssueStarted &&
+    // Nothing to issue here when the planned recipe has no raw materials
+    // (e.g. a microbe-only product) — the server flags this per task.
+    t.hasRawMaterialRecipe !== false &&
     (!taskFilter.plant || t.plant === taskFilter.plant) &&
     (!taskFilter.date  || t.date  === taskFilter.date)
   )

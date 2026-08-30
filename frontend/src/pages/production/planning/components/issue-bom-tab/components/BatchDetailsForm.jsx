@@ -1,6 +1,6 @@
 import { FlaskConical } from 'lucide-react'
 import { PLANT_KEYS, PLANT_CONFIG } from '../../../data/plantConfig.js'
-import { Field, SectionHeader, inputCls, inputBaseCls } from './formPrimitives.jsx'
+import { Field, SectionHeader, inputCls, inputBaseCls, inputErrCls, inputErrBaseCls } from './formPrimitives.jsx'
 
 import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 const SHIFTS = ['A', 'B', 'C', 'General', 'Day', 'Night']
@@ -12,19 +12,20 @@ export default function BatchDetailsForm({
   productSuggestions, onProductSearch, onSelectProduct,
   showSugg, setShowSugg,
   n, lastBatch,
+  errors = {},
 }) {
   return (
     <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5">
       <SectionHeader icon={FlaskConical} title="Batch Details" description="Product, schedule and equipment for this requisition" />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="col-span-full relative">
-          <Field label="Product Name *">
+          <Field label="Product Name *" error={errors.product}>
             <input value={form.product}
               onChange={e => { patch({ product: e.target.value, productCode: '' }); onProductSearch(e.target.value); setShowSugg(true) }}
               onFocus={() => setShowSugg(true)}
               onBlur={() => setTimeout(() => setShowSugg(false), 150)}
               placeholder="Type to search recipes in the Recipe Master…"
-              className={inputCls} autoComplete="off" />
+              className={errors.product ? inputErrCls : inputCls} autoComplete="off" />
           </Field>
           {showSugg && productSuggestions.length > 0 && (
             <div className="absolute z-20 left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-56 overflow-y-auto">
@@ -55,8 +56,8 @@ export default function BatchDetailsForm({
           <input value={form.reactor} onChange={e => patch({ reactor: e.target.value })} placeholder="e.g. Reactor-1" className={inputCls} />
         </Field>
 
-        <Field label="Batch No (First) *">
-          <input value={form.batchNo} onChange={e => patch({ batchNo: e.target.value })} placeholder="e.g. LT-RO260402" className={inputCls} />
+        <Field label="Batch No (First) *" error={errors.batchNo}>
+          <input value={form.batchNo} onChange={e => patch({ batchNo: e.target.value })} placeholder="e.g. LT-RO260402" className={errors.batchNo ? inputErrCls : inputCls} />
           <div className="text-[11px] text-green-700 font-medium mt-1">
             {form.batchNo && n > 1 ? `Cycles ${n}: ${form.batchNo} → ${lastBatch}` : 'Auto-increments across cycles'}
           </div>
@@ -66,10 +67,10 @@ export default function BatchDetailsForm({
             {BATCH_TYPES.map(t => <option key={t}>{t}</option>)}
           </select>
         </Field>
-        <Field label="Batch Size * & UOM">
+        <Field label="Batch Size * & UOM" error={errors.batchSize}>
           <div className="flex gap-2">
             <input type="number" value={form.batchSize} onChange={e => patch({ batchSize: e.target.value })}
-              placeholder="e.g. 300" className={`${inputBaseCls} flex-1 min-w-0`} />
+              placeholder="e.g. 300" className={`${errors.batchSize ? inputErrBaseCls : inputBaseCls} flex-1 min-w-0`} />
             {form.productCode ? (
               // UOM comes from Product Master once a product is selected — not editable.
               <input value={(form.batchSizeUom || '').toUpperCase()} readOnly tabIndex={-1}
@@ -86,8 +87,8 @@ export default function BatchDetailsForm({
             <div className="text-[11px] text-slate-400 mt-1">Unit from Product Master</div>
           )}
         </Field>
-        <Field label="Plant *">
-          <select value={form.section} onChange={e => patch({ section: e.target.value })} className={inputCls}>
+        <Field label="Plant *" error={errors.section}>
+          <select value={form.section} onChange={e => patch({ section: e.target.value })} className={errors.section ? inputErrCls : inputCls}>
             <option value="">— Select Plant —</option>
             {PLANT_KEYS.map(p => <option key={p} value={p}>{PLANT_CONFIG[p]?.label || p}</option>)}
           </select>

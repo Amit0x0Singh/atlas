@@ -13,11 +13,24 @@ export default function IssueBomTab({
   productSuggestions, onProductSearch, onSelectProduct, recipeLoadedMsg,
   productRecipes, selectedRecipeNo, onPickRecipe,
   onGenerate, generating, error,
+  fieldErrors = {}, setFieldErrors,
   rmList, products, microbes,
 }) {
   const [showSugg, setShowSugg] = useState(false)
 
-  const patch = (fields) => setForm(f => ({ ...f, ...fields }))
+  const patch = (fields) => {
+    setForm(f => ({ ...f, ...fields }))
+    // Clear a field's validation error as soon as the operator edits it.
+    if (setFieldErrors) {
+      setFieldErrors(prev => {
+        const keys = Object.keys(fields).filter(k => prev[k])
+        if (!keys.length) return prev
+        const next = { ...prev }
+        for (const k of keys) delete next[k]
+        return next
+      })
+    }
+  }
 
   const n = Math.max(1, parseInt(form.cycles, 10) || 1)
   const lastBatch = form.batchNo ? incrCode(form.batchNo, n - 1) : ''
@@ -49,6 +62,7 @@ export default function IssueBomTab({
             onSelectProduct={onSelectProduct}
             showSugg={showSugg} setShowSugg={setShowSugg}
             n={n} lastBatch={lastBatch}
+            errors={fieldErrors}
           />
 
           <RecipeSelector
