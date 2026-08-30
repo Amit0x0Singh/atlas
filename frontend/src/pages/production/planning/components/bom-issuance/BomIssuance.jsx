@@ -10,6 +10,7 @@ import { makeRows, toComponents, fromComponents } from '../components-table/Comp
 import IssueBomTab from '../issue-bom-tab/page/IssueBomTab.jsx'
 import ArchiveTab from '../archive-tab/ArchiveTab.jsx'
 import StatusBanner from './components/StatusBanner.jsx'
+import { SuccessModal } from '../../../../../components/ui/index.js'
 import BomIssuanceTabs from './components/BomIssuanceTabs.jsx'
 import { FileText, Archive } from 'lucide-react'
 import { toTitleCase } from '../../../../../utils/textDisplay.js'
@@ -309,7 +310,7 @@ export default function BomIssuance() {
       const newMeta = archiveBoms(built)
       setArchivedBoms(readArchivedBoms())
       setMeta(newMeta)
-      setBanner({ type: 'success', msg: `✓ ${built.length} production task(s) created — visible in Store Outward → Material Issue by BOM` })
+      setBanner({ type: 'success', msg: `${built.length} production task(s) created — now visible in Store Outward → Material Issue by BOM.` })
 
       // Clear the form for the next entry
       setForm(emptyForm())
@@ -324,9 +325,21 @@ export default function BomIssuance() {
     }
   }
 
+  const isSuccess = banner?.type === 'success'
+
   return (
     <div className="flex flex-col h-full bg-slate-50">
-      <StatusBanner banner={banner} onDismiss={() => setBanner(null)} />
+      {/* Loading / error stay as an inline strip; success is a popup so it
+          can't be missed and doesn't shove the form down. */}
+      <StatusBanner banner={isSuccess ? null : banner} onDismiss={() => setBanner(null)} />
+
+      <SuccessModal
+        open={isSuccess}
+        title="BOM Issued"
+        message={isSuccess ? banner.msg : ''}
+        buttonText="Done"
+        onClose={() => setBanner(null)}
+      />
 
       <BomIssuanceTabs tabs={TABS} activeTab={activeTab} onChange={setActiveTab} />
 
