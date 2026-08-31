@@ -2,18 +2,25 @@ import express from 'express'
 import { authorize } from '../../../middleware/auth.js'
 import { requirePlantInScope, requireRecordPlantInScope } from '../../../middleware/scope.js'
 import {
-  listTasks, createTask, updateTask, deleteTask, sendSchedule,
+  listTasks, createTask, updateTask, deleteTask, sendSchedule, setIssueFlags,
   searchSalesOrders, getSalesOrderItems, searchProducts, listEquipmentByPlant,
 } from './tasks.controller.js'
 
 const TasksRouter = express.Router()
-const canView   = authorize('production.tasks.view')
-const canCreate = authorize('production.tasks.create')
-const canUpdate = authorize('production.tasks.update')
+// The planned-task list and the "issue has started" flags are also consumed
+// by the material-issuance screens outside the Production module — Store's
+// "Material Issue by BOM" (inventory.outward.*) and the Microbial plant's
+// transaction page (microbial.sfg-outward.*). Those roles get read + flag
+// access here without the full production.tasks.* capability.
+const canView       = authorize(['production.tasks.view', 'inventory.outward.view', 'microbial.sfg-outward.view'])
+const canCreate     = authorize('production.tasks.create')
+const canUpdate     = authorize('production.tasks.update')
+const canFlagIssue  = authorize(['production.tasks.update', 'inventory.outward.create', 'microbial.sfg-outward.create'])
 const scopedById = requireRecordPlantInScope({ model: 'productionTask', idParam: 'id', plantField: 'plant' })
 
 TasksRouter.get   ('/plan-tasks',                 canView, listTasks)
 TasksRouter.post  ('/plan-tasks',                 canCreate, requirePlantInScope('plant'), createTask)
+TasksRouter.patch ('/plan-tasks/:id/issue-flags', canFlagIssue, scopedById, setIssueFlags)
 TasksRouter.put   ('/plan-tasks/:id',             canUpdate, scopedById, requirePlantInScope('plant'), updateTask)
 TasksRouter.delete('/plan-tasks/:id',             authorize('production.tasks.delete'), scopedById, deleteTask)
 TasksRouter.post  ('/plan-tasks/send-schedule',   canUpdate, sendSchedule)

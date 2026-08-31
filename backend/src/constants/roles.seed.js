@@ -56,13 +56,21 @@ export const ROLE_SEEDS = [
       'masters.rm.view', 'masters.product.view',
       // Notification delivery log — previously authorize(['admin','store']).
       'sales.notification.view',
+      // "Material Issue by BOM" (Store Outward) reads the production-task
+      // list to pick a planned batch to issue against, and flags
+      // `bomIssueStarted` on that task once issuing begins. This mirrors the
+      // Microbial-plant equivalent, where Production Manager needs
+      // production.tasks.* for the microbe-issue picker. Without these the
+      // GET /plan-tasks and PUT /plan-tasks/:id calls 403 and the picker
+      // silently shows "No active tasks".
+      'production.tasks.view', 'production.tasks.update',
     ],
   },
   {
     name: 'Store Viewer',
     description: 'Read-only access to Store/Inventory records — no create, adjust, or approve.',
     isSystem: true,
-    permissions: viewOnly(inventoryAll),
+    permissions: [...viewOnly(inventoryAll), 'production.tasks.view'],
   },
   {
     name: 'Production Manager',

@@ -186,7 +186,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
       setLineMsg({})
       setStep('bom')
       if (selTaskId) {
-        planTasksApi.update(selTaskId, { bomIssueStarted: true, bomIssueStartedAt: new Date().toISOString() }).catch(() => {})
+        planTasksApi.setIssueFlags(selTaskId, { bomIssueStarted: true, bomIssueStartedAt: new Date().toISOString() }).catch(() => {})
         setTasks(prev => prev.map(t => t.id === selTaskId ? { ...t, bomIssueStarted: true } : t))
       }
     } catch (e) { setError(e.message) }

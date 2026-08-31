@@ -19,6 +19,9 @@ export const planTasksApi = {
   list:         (params) => api.get('/plan-tasks', { params }),
   create:       (data)   => api.post('/plan-tasks', data),
   update:       (id, data) => api.put(`/plan-tasks/${id}`, data),
+  // Narrow endpoint for just the "material issue started" markers — usable
+  // by Store / Microbial issuance roles that don't hold production.tasks.update.
+  setIssueFlags: (id, data) => api.patch(`/plan-tasks/${id}/issue-flags`, data),
   delete:       (id)     => api.delete(`/plan-tasks/${id}`),
   sendSchedule: (date)   => api.post('/plan-tasks/send-schedule', { date }),
   // Autocomplete lookups

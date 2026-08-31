@@ -146,7 +146,7 @@ export default function OutwardTab({ adjustView = null }) {
 
       newRows.filter((r) => Number(r.required_cfu_per_g) > 0).forEach((r) => calculateRow(r, { silent: true }))
 
-      planTasksApi.update(task.id, { microbeIssueStarted: true, microbeIssueStartedAt: new Date().toISOString() }).catch(() => {})
+      planTasksApi.setIssueFlags(task.id, { microbeIssueStarted: true, microbeIssueStartedAt: new Date().toISOString() }).catch(() => {})
       setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, microbeIssueStarted: true } : t)))
     } catch (err) { alert(err.message) }
     finally { setChecking(false) }
@@ -169,7 +169,7 @@ export default function OutwardTab({ adjustView = null }) {
     await microbialSfgApi.outwardSessions.delete(s.id).catch(() => {})
     setSessions((prev) => prev.filter((x) => x.id !== s.id))
     if (s.plan_task_id) {
-      planTasksApi.update(s.plan_task_id, { microbeIssueStarted: false, microbeIssueStartedAt: null }).catch(() => {})
+      planTasksApi.setIssueFlags(s.plan_task_id, { microbeIssueStarted: false, microbeIssueStartedAt: null }).catch(() => {})
       setTasks((prev) => prev.map((t) => (t.id === s.plan_task_id ? { ...t, microbeIssueStarted: false } : t)))
     }
   }
