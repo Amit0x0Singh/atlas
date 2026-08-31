@@ -14,7 +14,7 @@ export default function IssueBomTab({
   productRecipes, selectedRecipeNo, onPickRecipe,
   onGenerate, generating, error,
   fieldErrors = {}, setFieldErrors,
-  rmList, products, microbes,
+  rmList, products, microbes, stockByCode,
 }) {
   const [showSugg, setShowSugg] = useState(false)
 
@@ -76,7 +76,7 @@ export default function IssueBomTab({
 
           <ComponentsTable
             rows={rows}
-            rmList={rmList} products={products} microbes={microbes}
+            rmList={rmList} products={products} microbes={microbes} stockByCode={stockByCode}
           />
 
           <IssuanceSettings

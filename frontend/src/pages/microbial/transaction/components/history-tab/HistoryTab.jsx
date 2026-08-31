@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { Search, Filter, ArrowUpDown, Download, ArrowDownCircle, ArrowUpCircle, MinusCircle } from 'lucide-react'
 import { Button, ColumnsMenu } from '../../../../../components/ui'
+import Pagination from '../../../../../components/pagination/Pagination.jsx'
 import { Can } from '../../../../../components/common/Can.jsx'
 import { useMicrobeSuggestions } from '../../../../../hooks/masters/useMicrobes.js'
 import { useMicrobialHistory } from '../../../../../hooks/microbial/useMicrobialHistory.js'
@@ -41,6 +42,8 @@ export default function HistoryTab() {
   const [sort, setSort] = useState(DEFAULT_HISTORY_SORT)
   const [showFilter, setShowFilter] = useState(false)
   const [showSort, setShowSort] = useState(false)
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(25)
 
   const { columnWidths, columnVisibility, visibleColumns, startResize, toggleColumn } = useColumnPreferences('microbial-transaction-history', COLUMN_DEFS)
   const displayName = useUserDisplayNames()
@@ -76,6 +79,17 @@ export default function HistoryTab() {
       return dir * (new Date(a.date) - new Date(b.date)) // 'date'
     })
   }, [filtered, sort])
+
+  const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize))
+  const pageRows = useMemo(
+    () => sorted.slice((page - 1) * pageSize, page * pageSize),
+    [sorted, page, pageSize],
+  )
+
+  // Keep the page in range as the result set shrinks, and jump back to the
+  // first page whenever the search / filter / sort / page-size changes.
+  useEffect(() => { if (page > totalPages) setPage(totalPages) }, [page, totalPages])
+  useEffect(() => { setPage(1) }, [search, filters, sort, pageSize])
 
   const handleExport = () => exportCsv('microbial_transaction_history.csv', sorted, [
     { label: 'Date', value: (e) => fmtDateTime(e.date) },
@@ -162,8 +176,8 @@ export default function HistoryTab() {
               </tr>
             </thead>
             <tbody>
-              {sorted.map((e, i) => (
-                <tr key={`${e.type}-${e.ref_id}-${i}`} className="border-b border-gray-100 hover:bg-blue-50/40 transition">
+              {pageRows.map((e, i) => (
+                <tr key={`${e.type}-${e.ref_id}-${(page - 1) * pageSize + i}`} className="border-b border-gray-100 hover:bg-blue-50/40 transition">
                   <td className="px-3 py-2.5">
                     {e.type === 'INWARD'
                       ? <ArrowDownCircle size={16} className="text-green-600" />
@@ -211,6 +225,21 @@ export default function HistoryTab() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {!isLoading && sorted.length > 0 && (
+        <div className="flex items-center justify-between gap-3 flex-wrap px-4 border-t border-gray-100">
+          <span className="text-[11px] text-gray-400 whitespace-nowrap">
+            Showing {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, sorted.length)} of {sorted.length}
+          </span>
+          <Pagination
+            page={page}
+            total={sorted.length}
+            limit={pageSize}
+            onChange={setPage}
+            onLimitChange={setPageSize}
+          />
         </div>
       )}
 

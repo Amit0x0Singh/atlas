@@ -57,8 +57,9 @@ export default function ContainerDetailModal({ container, onClose }) {
     <Modal open={!!container} onClose={onClose} size="xl">
       {container && (
         <div className="flex flex-col max-h-[85vh]">
-          {/* Header */}
-          <div className="px-6 pt-6 pb-5 border-b border-gray-100 flex-shrink-0">
+          {/* Header — pr-8 clears the corner close button the base Modal
+              now always renders, so the status pill doesn't sit under it. */}
+          <div className="px-6 pr-8 pt-6 pb-5 border-b border-gray-100 flex-shrink-0">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <div className="text-[11px] font-bold text-gray-400 uppercase tracking-wide mb-1">{location}</div>

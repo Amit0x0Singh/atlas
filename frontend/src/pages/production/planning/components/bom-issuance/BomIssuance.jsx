@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { recipeApi, productApi } from '../../../../../api/masters.js'
-import { rmApi } from '../../../../../api/inventory.js'
+import { rmApi, stockApi, sfgApi } from '../../../../../api/inventory.js'
 import { planTasksApi } from '../../../../../api/production.js'
 import { microbialSfgApi } from '../../../../../api/microbial.js'
 import { genId, incrCode, scaleToQty, state as printState } from '../../utils/bomPrintTemplates.js'
@@ -75,6 +75,11 @@ export default function BomIssuance() {
   const [recipeLoadedMsg, setRecipeLoadedMsg] = useState('')
   const [rmList, setRmList]                 = useState([])
   const [microbes, setMicrobes]             = useState([])
+  // Item-code (lowercased) -> current total balance across RM packs+containers,
+  // SFG batches, and microbial SFG inward — feeds the BOM Components table's
+  // Availability column. Keyed by code rather than kind since a component
+  // row's kind (rm/product/microbe) already picks the right lookup.
+  const [stockByCode, setStockByCode]       = useState({})
 
   const [archivedBoms, setArchivedBoms] = useState(() => readArchivedBoms())
   const [meta, setMeta]                 = useState(() => readMeta())
@@ -84,6 +89,30 @@ export default function BomIssuance() {
     rmApi.search({}).then(r => setRmList(r.data || [])).catch(() => {})
     productApi.search().then(r => setProducts(r.data || [])).catch(() => {})
     microbialSfgApi.searchMicrobes().then(r => setMicrobes(r.data || [])).catch(() => {})
+  }, [])
+
+  // Current stock, bulk-fetched once per source and merged into one
+  // code -> balance map. RM balance is packs+containers; SFG balance is
+  // summed sfgQty across every batch of that product code; microbe balance
+  // is the microbe-wise stock summary's total_balance_kg.
+  useEffect(() => {
+    stockApi.summary().then(r => {
+      const map = {}
+      for (const s of (r.data || [])) map[(s.itemCode || '').toLowerCase()] = Number(s.totalStock) || 0
+      setStockByCode(prev => ({ ...prev, ...map }))
+    }).catch(() => {})
+
+    sfgApi.summary().then(r => {
+      const map = {}
+      for (const s of (r.data || [])) map[(s.productCode || '').toLowerCase()] = Number(s.totalSfgQty) || 0
+      setStockByCode(prev => ({ ...prev, ...map }))
+    }).catch(() => {})
+
+    microbialSfgApi.microbeWiseSummary().then(r => {
+      const map = {}
+      for (const s of (r.data || [])) map[(s.microbe_code || '').toLowerCase()] = Number(s.total_balance_kg) || 0
+      setStockByCode(prev => ({ ...prev, ...map }))
+    }).catch(() => {})
   }, [])
 
   // Keep the shared print-template settings singleton in sync with the React toggles.
@@ -353,7 +382,7 @@ export default function BomIssuance() {
             productRecipes={productRecipes} selectedRecipeNo={selectedRecipeNo} onPickRecipe={pickRecipe}
             onGenerate={onGenerate} generating={generating} error={error}
             fieldErrors={fieldErrors} setFieldErrors={setFieldErrors}
-            rmList={rmList} products={products} microbes={microbes}
+            rmList={rmList} products={products} microbes={microbes} stockByCode={stockByCode}
           />
         )}
         {activeTab === 'archive' && (

@@ -103,7 +103,23 @@ export const listSfgOutward = async (req, res) => {
 
     const rows = await prisma.microbialSfgOutward.findMany({
       where,
-      include: { lines: true },
+      // The Outward History picklist/label print-outs need to know where to
+      // physically find each picked batch (the container's current rack/
+      // shelf location, which can have moved since inward) and its harvest
+      // batch details — pulled via the line's inward → container chain
+      // rather than duplicated onto the line at issue time.
+      include: {
+        lines: {
+          include: {
+            inward: {
+              select: {
+                moisture: true, dateOfHarvest: true, biomassBatchCode: true,
+                container: { select: { location: true } },
+              },
+            },
+          },
+        },
+      },
       orderBy: { issuedAt: 'desc' },
     })
     return res.json({ success: true, data: toSnakeRow(rows) })

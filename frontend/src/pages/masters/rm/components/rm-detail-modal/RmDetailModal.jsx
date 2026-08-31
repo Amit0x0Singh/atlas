@@ -44,7 +44,7 @@ export default function RmDetailModal({ item, onClose }) {
   const highStock = item.highStockLevel != null && item.highStockLevel !== '' ? `${item.highStockLevel} ${(item.inventoryUom || '').toUpperCase()}` : null
 
   return (
-    <Modal open={!!item} onClose={onClose} size="md">
+    <Modal open={!!item} onClose={onClose} size="md" showCloseButton={false}>
       {/* Header */}
       <div className="flex items-start justify-between gap-3 px-6 pt-6 pb-5 bg-gradient-to-br from-blue-50/80 to-white">
         <div className="flex items-start gap-3 min-w-0">

@@ -76,7 +76,7 @@ const ROLE_LABEL = { INGREDIENT: 'Ingredient', CARRIER: 'Carrier', BASE: 'Base',
 // comes straight from the product's selected recipe (Recipe page) and is
 // scaled to the batch size — it cannot be added to, edited, renamed or
 // deleted here. Change the recipe itself in the Recipe page.
-export default function ComponentsTable({ rows, rmList = [], products = [], microbes = [] }) {
+export default function ComponentsTable({ rows, rmList = [], products = [], microbes = [], stockByCode = {} }) {
   const rmCodes      = useMemo(() => new Set(rmList.map(r => (r.itemCode || '').toLowerCase())), [rmList])
   const productCodes = useMemo(() => new Set(products.map(p => (p.productCode || '').toLowerCase())), [products])
   const microbeCodes = useMemo(() => new Set(microbes.map(m => (m.microbeCode || '').toLowerCase())), [microbes])
@@ -86,6 +86,18 @@ export default function ComponentsTable({ rows, rmList = [], products = [], micr
     if ((row.rem || '').trim().toUpperCase() === 'MICROBE' || microbeCodes.has(code)) return 'microbe'
     if (productCodes.has(code)) return 'product'
     return 'rm'
+  }
+
+  // Presence check only (balance > 0), not "enough for this batch" — RM,
+  // SFG and microbe balances come from three different sources/units
+  // (stockByCode is built by BomIssuance.jsx from all three), so a precise
+  // required-vs-available comparison isn't reliable here; whether *any*
+  // stock exists is still the signal that actually matters before issuing.
+  const availabilityOf = (row) => {
+    if (!row.rmCode) return null // "NAN" rows have nothing to look up
+    const balance = stockByCode[row.rmCode.toLowerCase()]
+    if (balance == null) return null // no stock record for this code at all
+    return balance > 0.0009
   }
 
   const items = (rows || []).filter(r => (r.comp || '').trim() && !(r.comp || '').trim().startsWith('##'))
@@ -132,6 +144,7 @@ export default function ComponentsTable({ rows, rmList = [], products = [], micr
                 <th className="w-20 px-3 py-2 text-left font-semibold">UOM</th>
                 <th className="w-28 px-3 py-2 text-right font-semibold">CFU/g</th>
                 <th className="w-36 px-3 py-2 text-left font-semibold">Role</th>
+                <th className="w-32 px-3 py-2 text-left font-semibold">Availability</th>
               </tr>
             </thead>
             <tbody>
@@ -139,6 +152,7 @@ export default function ComponentsTable({ rows, rmList = [], products = [], micr
                 const kind = kindOf(r)
                 const st = KIND_STYLE[kind]
                 const cfu = fmtCfu(r.cfu)
+                const availability = availabilityOf(r)
                 const roleLabel = kind === 'microbe'
                   ? 'Microbe / CFU'
                   : kind === 'product'
@@ -161,6 +175,17 @@ export default function ComponentsTable({ rows, rmList = [], products = [], micr
                     <td className="px-3 py-2">
                       <span className={`text-[11px] font-semibold px-2 py-0.5 rounded ${st.pill}`}>{roleLabel}</span>
                     </td>
+                    <td className="px-3 py-2">
+                      {availability == null ? (
+                        <span className="text-[11px] text-gray-300">—</span>
+                      ) : (
+                        <span className={`text-[11px] font-semibold px-2 py-0.5 rounded ${
+                          availability ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                        }`}>
+                          {availability ? 'In Stock' : 'Out of Stock'}
+                        </span>
+                      )}
+                    </td>
                   </tr>
                 )
               })}
@@ -171,7 +196,7 @@ export default function ComponentsTable({ rows, rmList = [], products = [], micr
                   <td colSpan={3} className="px-3 py-2 text-[11px] font-bold text-amber-800 uppercase tracking-wide">
                     Total for this batch
                   </td>
-                  <td colSpan={4} className="px-3 py-2 text-right font-bold text-amber-900">
+                  <td colSpan={5} className="px-3 py-2 text-right font-bold text-amber-900">
                     {Object.entries(totals).map(([uom, qty]) => {
                       const f = formatMeasurement(qty, uom, { precision: 6 })
                       return <div key={uom}>{f.value} <span className="text-xs text-amber-700">{f.unit}</span></div>

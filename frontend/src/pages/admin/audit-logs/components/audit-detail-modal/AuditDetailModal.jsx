@@ -81,7 +81,7 @@ export default function AuditDetailModal({ row, onClose }) {
   useEffect(() => { if (row) setShown(row) }, [row])
 
   return (
-    <Modal open={!!row} onClose={onClose} size="xl">
+    <Modal open={!!row} onClose={onClose} size="xl" showCloseButton={false}>
       {shown && (
         <>
           <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100">

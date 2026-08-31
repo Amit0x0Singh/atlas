@@ -18,7 +18,7 @@ export default function TransactionDetailModal({ detail, onClose }) {
   useEffect(() => { if (detail) setShown(detail) }, [detail])
 
   return (
-    <Modal open={!!detail} onClose={onClose} size="xl">
+    <Modal open={!!detail} onClose={onClose} size="xl" showCloseButton={false}>
       {shown && (
         <>
           <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100">

@@ -36,7 +36,7 @@ export default function ProductDetailModal({ item, onClose }) {
   const plants = item.plant?.length ? item.plant.join(', ') : null
 
   return (
-    <Modal open={!!item} onClose={onClose} size="md">
+    <Modal open={!!item} onClose={onClose} size="md" showCloseButton={false}>
       {/* Header */}
       <div className="flex items-start justify-between gap-3 px-6 pt-6 pb-5 bg-gradient-to-br from-green-50/80 to-white">
         <div className="flex items-start gap-3 min-w-0">

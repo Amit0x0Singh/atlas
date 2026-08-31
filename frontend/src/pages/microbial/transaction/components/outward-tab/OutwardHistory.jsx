@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react'
-import { Search, X, ChevronDown, ChevronRight, Loader2, Inbox } from 'lucide-react'
+import { Search, X, ChevronDown, ChevronRight, Loader2, Inbox, ClipboardList, Tag } from 'lucide-react'
 import { useMicrobialOutward } from '../../../../../hooks/microbial/useMicrobialOutward.js'
 import { PLANT_BADGE, PLANT_KEYS } from '../../../../production/planning/data/plantConfig.js'
 import { toTitleCase } from '../../../../../utils/textDisplay.js'
 import { fmtCfu, fmtDateTime } from '../../utils/format.js'
+import { printMicrobePicklist, printMicrobeLabels } from '../../utils/outwardPrintTemplates.js'
 
 const STATUS_MODES = [['all', 'All'], ['in_progress', 'In progress'], ['completed', 'Completed']]
 
@@ -74,6 +75,7 @@ export default function OutwardHistory({ tasks = [] }) {
       g.section = latestNonNull('section')
       g.issuerName = latestNonNull('issuer_name')
       g.receiverName = latestNonNull('receiver_name')
+      g.orderQtyKg = latestNonNull('order_qty_kg')
       const lines = g.records.flatMap((r) => (r.lines || []).map((l) => ({ ...l, issued_at: r.issued_at, issuer_name: r.issuer_name })))
       g.totalKg = lines.reduce((s, l) => s + Number(l.qty_issued_kg || 0), 0)
       // Regroup lines by microbe
@@ -152,8 +154,8 @@ export default function OutwardHistory({ tasks = [] }) {
             const open = expanded === g.key
             return (
               <div key={g.key}>
-                <button type="button" onClick={() => setExpanded(open ? null : g.key)}
-                  className={`w-full text-left px-5 py-3 flex items-start gap-3 transition-colors ${open ? 'bg-blue-50/50' : 'hover:bg-gray-50'}`}>
+                <div onClick={() => setExpanded(open ? null : g.key)}
+                  className={`w-full text-left px-5 py-3 flex items-start gap-3 cursor-pointer transition-colors ${open ? 'bg-blue-50/50' : 'hover:bg-gray-50'}`}>
                   {open ? <ChevronDown size={16} className="text-gray-400 mt-0.5 shrink-0" /> : <ChevronRight size={16} className="text-gray-400 mt-0.5 shrink-0" />}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
@@ -178,7 +180,21 @@ export default function OutwardHistory({ tasks = [] }) {
                       <span>Receiver: <b className="text-gray-600 font-semibold">{g.receiverName ? toTitleCase(g.receiverName) : '—'}</b></span>
                     </div>
                   </div>
-                </button>
+                  {/* Picklist tells the store person which rack/shelf to pick
+                      each container from; Labels get attached to the picked
+                      pack/bag so the receiver can read what's inside without
+                      opening it. Both reprint anytime from history. */}
+                  <div className="flex gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                    <button type="button" onClick={() => printMicrobePicklist(g)}
+                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2.5 py-1.5 rounded-lg transition whitespace-nowrap">
+                      <ClipboardList size={12} /> Picklist
+                    </button>
+                    <button type="button" onClick={() => printMicrobeLabels(g)}
+                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 px-2.5 py-1.5 rounded-lg transition whitespace-nowrap">
+                      <Tag size={12} /> Labels
+                    </button>
+                  </div>
+                </div>
 
                 {open && (
                   <div className="px-5 pb-4 pl-12 space-y-3">
