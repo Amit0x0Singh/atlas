@@ -172,6 +172,36 @@ export const updateTask = async (req, res) => {
   }
 }
 
+// ── set issue-start flags only ───────────────────────────────────────────────
+// A deliberately narrow endpoint for the two "material issue has begun"
+// markers (`bomIssueStarted` — Store's "Material Issue by BOM"; and
+// `microbeIssueStarted` — the Microbial plant's transaction page). Those
+// operators need to flip these flags but must NOT be able to edit the rest
+// of a production task (plant/date/qty/status/…), so this is authorized for
+// the issuance roles separately from the full `updateTask` route.
+export const setIssueFlags = async (req, res) => {
+  try {
+    const { id }   = req.params
+    const body     = req.body || {}
+    const existing = await prisma.productionTask.findUnique({ where: { id } })
+    if (!existing) return res.status(404).json({ success: false, error: 'Task not found' })
+
+    const data = {}
+    if (body.bomIssueStarted      !== undefined) data.bomIssueStarted      = Boolean(body.bomIssueStarted)
+    if (body.microbeIssueStarted  !== undefined) data.microbeIssueStarted  = Boolean(body.microbeIssueStarted)
+    if (body.bomIssueStartedAt    !== undefined) data.bomIssueStartedAt    = body.bomIssueStartedAt    ? new Date(body.bomIssueStartedAt)    : null
+    if (body.microbeIssueStartedAt!== undefined) data.microbeIssueStartedAt= body.microbeIssueStartedAt? new Date(body.microbeIssueStartedAt): null
+
+    if (Object.keys(data).length === 0)
+      return res.status(400).json({ success: false, error: 'No issue-flag fields supplied' })
+
+    const task = await prisma.productionTask.update({ where: { id }, data })
+    return res.json({ success: true, data: task })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err) })
+  }
+}
+
 // ── send schedule (bulk mark sent) ───────────────────────────────────────────
 export const sendSchedule = async (req, res) => {
   try {
