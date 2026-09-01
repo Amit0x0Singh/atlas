@@ -5,6 +5,7 @@ import { toCanonical } from "../../../../../utils/uom.js";
 import { flattenPack, packDetailInclude } from "../../../../../services/pack-view.js";
 import { getLotsInProgress, getLotProgress } from "../../../../../services/inward-service.js";
 import { toSafeErrorMessage } from '../../../../../utils/safe-error.js';
+import { writeAudit, auditUser } from "../../../../../middleware/audit.js";
 
 const getPendingInwardGroups = async (req, res) => {
   try {
@@ -243,6 +244,33 @@ const generatePacks = async (req, res) => {
     const result = await generatePackBatch({
       gateInwardId, itemCode, itemName, batches: parsedBatches, uom: canonicalUom,
     });
+
+    // Generating Print Master packs against a Gate Inward IS the store's
+    // approval of that entry — flip it here, server-side, instead of relying
+    // on a separate best-effort PATCH /gate/inward/:id/status call from the
+    // client (which silently no-ops for any role that can generate packs but
+    // lacks gate.inward.update, leaving the entry stuck on "pending").
+    // Conditional + idempotent: only a still-"pending" entry is advanced, so
+    // a second item generated on the same invoice — or a manually "rejected"
+    // entry — is left untouched.
+    try {
+      const { count } = await prisma.gateInward.updateMany({
+        where: { inwardId: gateInwardId, status: 'pending' },
+        data:  { status: 'approved' },
+      });
+      if (count > 0) {
+        await writeAudit({
+          ...auditUser(req), action: 'UPDATE', module: 'gate', tableName: 'gate_inward',
+          recordId: gateInwardId, newValue: { status: 'approved' },
+          notes: 'auto-approved on Print Master pack generation',
+        });
+      }
+    } catch (statusErr) {
+      // Pack generation already succeeded — don't fail the whole request just
+      // because the status bump didn't take. Surface it in the logs.
+      console.error('generatePacks: gate status auto-approve failed:', statusErr.message);
+    }
+
     return res.status(201).json({ success: true, data: result });
 
   } catch (err) {

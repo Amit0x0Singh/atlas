@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { DoorOpen, X } from "lucide-react";
 import { packsApi, rmApi, gateApi } from "../../../../../../api/inventory.js";
 import { Button, IconButton } from "../../../../../../components/ui";
 import { Can } from "../../../../../../components/common/Can.jsx";
-import { useGateInward, useUpdateGateInwardStatus } from "../../../../../../hooks/inventory/useGate.js";
+import { useGateInward } from "../../../../../../hooks/inventory/useGate.js";
 import { todayStr, resolveExpiryDate } from "../utils/expiryDate.js";
 import { inp, lbl, withError } from "../utils/formStyles.js";
 import ItemLine, { BLANK_BATCH } from "../components/ItemLine.jsx";
@@ -41,7 +42,7 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed, onUnlin
   // after this form approves one (see handleSubmit).
   const { data: pending } = useGateInward({ status: "pending", limit: 1 }, true, { refetchInterval: 30000 });
   const pendingCount = pending?.total ?? 0;
-  const updateGateStatus = useUpdateGateInwardStatus();
+  const qc = useQueryClient();
 
   // Load RM list once
   useEffect(() => {
@@ -166,7 +167,10 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed, onUnlin
       setHdr(BLANK_HDR);
       setFieldErrors({});
       setFormVersion(v => v + 1);
-      try { await updateGateStatus.mutateAsync({ id: gateInwardId, data: { status: "approved" } }) } catch { /* ignore */ }
+      // The backend flips this Gate Inward to "approved" as part of
+      // /packs/generate — just refresh the pending-count badge and any open
+      // gate picker list so they reflect it right away.
+      qc.invalidateQueries({ queryKey: ["gate-inward"] });
       setLinkedEntry(null);
       onGenerated?.({ results: allResults, totalPacks, itemNames, invoiceNo, lotNumbers, groups });
       onGateUsed?.();
