@@ -1,5 +1,5 @@
 import prisma from '../../../db.js';
-import { redactSecretFields, getSearchableFields, scalarFieldType } from '../shared/field-guard.js';
+import { redactSecretFields, getSearchableFields, scalarFieldType, getUuidFields, UUID_RE } from '../shared/field-guard.js';
 import { toSafeErrorMessage } from '../../../utils/safe-error.js';
 
 // ─── Model registry ───────────────────────────────────────────────────────────
@@ -161,9 +161,17 @@ function buildSearchAndFilterWhere(meta, { search, filtersJson }) {
 
   if (search && typeof search === 'string') {
     const term = search.trim().replace(/\s+/g, ' ');
-    const searchable = getSearchableFields(meta);
-    if (term && searchable.length) {
-      and.push({ OR: searchable.map((f) => ({ [f]: { contains: term, mode: 'insensitive' } })) });
+    if (term) {
+      const searchable = getSearchableFields(meta);
+      const or = searchable.map((f) => ({ [f]: { contains: term, mode: 'insensitive' } }));
+      // A full UUID pasted into the search box also matches any `@db.Uuid`
+      // column exactly (e.g. PrintMaster.gateInwardId) — those can't do
+      // `contains`, so they're only added when the term is a well-formed
+      // UUID.
+      if (UUID_RE.test(term)) {
+        for (const f of getUuidFields(meta)) or.push({ [f]: { equals: term } });
+      }
+      if (or.length) and.push({ OR: or });
     }
   }
 
@@ -171,8 +179,18 @@ function buildSearchAndFilterWhere(meta, { search, filtersJson }) {
     let filters;
     try { filters = JSON.parse(filtersJson); } catch { filters = null; }
     if (filters && typeof filters === 'object') {
+      const uuidFields = new Set(getUuidFields(meta));
       for (const [field, value] of Object.entries(filters)) {
         if (value === null || value === undefined || value === '') continue;
+        // A `@db.Uuid` column can't do `contains` — accept it as an exact
+        // filter only when a full UUID was supplied (a partial value is
+        // silently ignored, same as any other unusable filter).
+        if (uuidFields.has(field)) {
+          if (typeof value === 'string' && UUID_RE.test(value.trim())) {
+            and.push({ [field]: { equals: value.trim() } });
+          }
+          continue;
+        }
         const type = scalarFieldType(meta, field);
         if (!type) continue; // unknown/relation field — ignore rather than error
         if (type === 'DateTime' && value && typeof value === 'object') {

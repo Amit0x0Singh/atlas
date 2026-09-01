@@ -100,6 +100,9 @@ export const resources = [
     title: 'Print Master', model: 'PrintMaster', path: 'print-master',
     idField: 'id',
     description: 'Header: one row per item generated within a Gate Inward entry. Supplier/invoice/received-date are read through gateInwardId, not stored here.',
+    // gateInwardId is a @db.Uuid column — it matches on an exact (full) id
+    // both here and in the search box; the rest are partial-match text.
+    filters: ['gateInwardId', 'itemCode', 'itemName', 'lotNo', 'uom', 'createdBy', 'createdAt'],
     fields: [
       field('id', 'ID', 'text', { readOnly: true }),
       field('gateInwardId', 'Gate Inward ID'),

@@ -79,6 +79,25 @@ export function getSearchableFields(meta) {
     .map((f) => f.name)
 }
 
+// The `@db.Uuid` String columns on a model (PKs and FK-ish columns alike).
+// These are excluded from `contains` keyword search / partial filters (see
+// supportsContains), but a Uuid column still supports an EXACT `equals`
+// match — enough to look a row up by a full id pasted into the search box
+// or a filter field. Secret-named columns stay excluded here too.
+export function getUuidFields(meta) {
+  const model = dmmfModel(meta)
+  if (!model) return []
+  return model.fields
+    .filter((f) => f.kind === 'scalar' && f.type === 'String' && !f.isList && !supportsContains(model.name, f))
+    .filter((f) => !SECRET_FIELD_RE.test(f.name))
+    .map((f) => f.name)
+}
+
+// Canonical 8-4-4-4-12 hex UUID. Used to gate Uuid-column `equals` matching
+// so a partial/garbage search term is never sent to a UuidFilter (which
+// would 500).
+export const UUID_RE = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+
 // Scalar field -> Prisma DMMF type ('String' | 'DateTime' | ...), used to
 // decide how an incoming filter value should be matched. Returns undefined
 // for anything not a plain non-list scalar column (relations, unknown
