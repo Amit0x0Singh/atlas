@@ -50,7 +50,7 @@ export default function DispatchTab({ dispatchVisible, loading, expandedDispatch
                 <th className="text-left px-4 py-3">DI No.</th>
                 <th className="text-left px-4 py-3">Date</th>
                 <th className="text-left px-4 py-3">Customer</th>
-                <th className="text-right px-4 py-3">Total Qty</th>
+                <th className="text-right px-4 py-3">Remaining Qty</th>
                 <th className="text-left px-4 py-3">ETD</th>
                 <th className="text-left px-4 py-3">Items</th>
                 <th className="text-center px-4 py-3">Action</th>

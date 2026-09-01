@@ -48,6 +48,14 @@ export default function RmMaterial() {
       if (filters.state && (it.state || '').toLowerCase() !== filters.state.toLowerCase()) return false
       if (filters.minQty !== '' && it.totalStock < Number(filters.minQty)) return false
       if (filters.maxQty !== '' && it.totalStock > Number(filters.maxQty)) return false
+      // Reorder level is only meaningful for items that actually have a
+      // threshold configured — an item with no lowStockLevel set can't be
+      // classified as above/below it, so it's excluded from both buckets.
+      if (filters.reorderLevel) {
+        if (it.lowStockLevel == null) return false
+        if (filters.reorderLevel === 'below' && it.totalStock > it.lowStockLevel) return false
+        if (filters.reorderLevel === 'above' && it.totalStock <= it.lowStockLevel) return false
+      }
       return true
     })
 

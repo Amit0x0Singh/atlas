@@ -25,6 +25,7 @@ import {
   updateSalesOrderItem,
   cancelOrder,
   dispatchOrder,
+  dispatchSalesOrderItem,
 } from "./update/sales-order.controller.js";
 
 // ____________------ Router -----------------------
@@ -50,6 +51,7 @@ router.put("/:id", canUpdate, validateUpdateSalesOrder, updateSalesOrder);
 router.patch("/item/:itemId", canUpdate, updateSalesOrderItem);
 router.patch("/cancel/:id", authorize("sales.order.cancel"), cancelOrder);
 router.patch("/dispatch/:id", authorize("sales.order.dispatch"), dispatchOrder);
+router.post("/item/:itemId/dispatch", authorize("sales.order.dispatch"), dispatchSalesOrderItem);
 
 router.delete("/item/:itemId", authorize("sales.order.delete"), deleteSalesOrderItem);
 router.delete("/:id", authorize("sales.order.delete"), deleteSalesOrder);

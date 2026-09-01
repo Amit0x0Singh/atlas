@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { outwardApi, containerApi, rmApi } from '../../../../../../../api/inventory.js'
 import { recipeApi, productApi } from '../../../../../../../api/masters.js'
 import { planTasksApi } from '../../../../../../../api/production.js'
@@ -9,6 +9,33 @@ import BomChecklistStep from '../components/BomChecklistStep.jsx'
 import './MaterialIssueByBOM.css'
 
 import { toTitleCase } from '../../../../../../../utils/textDisplay.js'
+
+// ── Recipe line rules for Material Issue by BOM ──────────────────────────────
+// DM (demineralised) water is always kept in bulk surplus at the plant — the
+// store never issues it against a BOM — so it's stripped from every checklist.
+const DM_WATER_RE = /^\s*(d[.\s]*m[.\s]*|de[-\s]?mineral(?:is|iz)ed\s*)water\b/i
+const isDmWater = (name) => DM_WATER_RE.test(String(name || ''))
+
+// A line the Store actually issues here: a raw material (microbes go through
+// Microbe Outward) that isn't DM water.
+const isStoreIssuable = (r) => !r.isMicrobe && !isDmWater(r.rmName)
+
+// A production task is planned against exactly one recipe (BomIssuance persists
+// its `recipeNo`). Pick only that recipe's rows out of the product's full
+// recipe_db set — never merge several recipes' ingredients into one checklist.
+// A task with no recorded recipeNo (older plans) falls back to the product's
+// first recipe rather than the merge.
+function pickRecipeRows(rows, recipeNo) {
+  const all = rows || []
+  if (recipeNo != null && recipeNo !== '') {
+    return all.filter(r => Number(r.recipeNo) === Number(recipeNo))
+  }
+  const nos = [...new Set(all.map(r => Number(r.recipeNo)))]
+  if (nos.length <= 1) return all
+  const first = nos.sort((a, b) => a - b)[0]
+  return all.filter(r => Number(r.recipeNo) === first)
+}
+
 export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
   const isMobile = useIsMobile()
 
@@ -33,7 +60,20 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
   // Date defaults to blank ("All Dates") — a task planned yesterday and not
   // yet issued must stay visible today. Defaulting this to today's date used
   // to silently hide every still-pending task from a previous day.
-  const [taskFilter,   setTaskFilter]   = useState({ plant: '', date: '' })
+  // `q` free-text search, `status` one of 'all' | 'to-start' | 'in-progress'.
+  const [taskFilter,   setTaskFilter]   = useState({ plant: '', date: '', q: '', status: 'all' })
+
+  // In-progress / paused BOM issuance sessions — resume targets. Surfaced on
+  // this Select screen alongside the not-yet-started tasks so an operator sees
+  // everything actionable in one place; the BOM Issued page shows only the
+  // completed history.
+  const [sessions, setSessions] = useState([])
+  const loadSessions = useCallback(() => {
+    outwardApi.bomSessions.list().then(r => setSessions(r.data || [])).catch(() => {})
+  }, [])
+  // Refetch whenever we land back on the select screen (fresh mount, Back from
+  // the checklist, or a just-completed session that was deleted server-side).
+  useEffect(() => { if (step === 'select') loadSessions() }, [step, loadSessions])
 
   // ─── Session ──────────────────────────────────────────────────────────────
   const [sessionId, setSessionId] = useState(null)
@@ -121,6 +161,8 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
     planTasksApi.list().then(r => setTasks(r.data || [])).catch(() => {}).finally(() => setLoadingTasks(false))
   }, [])
 
+  const searchQ = taskFilter.q.trim().toLowerCase()
+
   const filteredTasks = tasks.filter(t =>
     t.sent &&
     t.status !== 'Completed' &&
@@ -129,8 +171,39 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
     // (e.g. a microbe-only product) — the server flags this per task.
     t.hasRawMaterialRecipe !== false &&
     (!taskFilter.plant || t.plant === taskFilter.plant) &&
-    (!taskFilter.date  || t.date  === taskFilter.date)
+    (!taskFilter.date  || t.date  === taskFilter.date) &&
+    (taskFilter.status === 'all' || taskFilter.status === 'to-start') &&
+    (!searchQ || `${t.productName || ''} ${t.productCode || ''} ${t.batchCode || ''} ${t.diNo || ''}`.toLowerCase().includes(searchQ))
   )
+
+  // Sessions decorated with progress + (from the linked plan task) plant/date,
+  // dropping any that are already fully issued — those belong on BOM Issued.
+  const sessionRows = useMemo(() => {
+    const taskById = new Map(tasks.map(t => [t.id, t]))
+    return sessions
+      .map(s => {
+        const active = (s.bomLines || []).filter(l => !l.orphaned)
+        const total  = active.length
+        const done   = active.filter(l => l.issued >= l.required - 0.001).length
+        const task   = s.planTaskId ? taskById.get(s.planTaskId) : null
+        return {
+          ...s,
+          _done: done,
+          _total: total,
+          _plant: task?.plant || '',
+          _date: task?.date || (s.startedAt ? String(s.startedAt).slice(0, 10) : ''),
+          _complete: total > 0 && done === total,
+        }
+      })
+      .filter(s => !s._complete)
+  }, [sessions, tasks])
+
+  const filteredSessions = useMemo(() => sessionRows.filter(s =>
+    (!taskFilter.plant || s._plant === taskFilter.plant) &&
+    (!taskFilter.date  || s._date  === taskFilter.date) &&
+    (taskFilter.status === 'all' || taskFilter.status === 'in-progress') &&
+    (!searchQ || `${s.productName || ''} ${s.productCode || ''} ${s.batchRef || ''} ${s.diNo || ''}`.toLowerCase().includes(searchQ))
+  ), [sessionRows, taskFilter, searchQ])
 
   function selectTask(task) {
     const match = products.find(p =>
@@ -148,10 +221,6 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
   }
 
   const clearSelection = () => { setSelProduct(null); setBatchQty(''); setBatchUom('KG'); setBatchRef(''); setDiNo(''); setSelTaskId(null); setSelRecipeNo(null) }
-
-  // recipe_no query param only when the task named one — otherwise the
-  // endpoint keeps its "primary recipe" default.
-  const recipeParams = selRecipeNo != null ? { recipe_no: selRecipeNo } : {}
 
   // Auto-save on every bomLines change — persisted server-side (not just this
   // browser) so the same in-progress session is visible from any device/login.
@@ -172,12 +241,13 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
     if (!selProduct || !batchQty || parseFloat(batchQty) <= 0) return
     setLoadingBom(true); setError('')
     try {
-      const res = await recipeApi.list({ productCode: selProduct.productCode, ...recipeParams })
-      // Microbe ingredients are issued separately on the Microbial Transaction
-      // page (against the same recipe) — Store only handles raw materials here.
-      const raw = (res.data || []).filter(r => !r.isMicrobe)
+      const res = await recipeApi.list({ productCode: selProduct.productCode })
+      // Only the recipe this task was planned against (never a merge of all of
+      // the product's recipes), and only lines the Store issues — microbes go
+      // through Microbial Transaction, DM water is never issued.
+      const raw = pickRecipeRows(res.data, selRecipeNo).filter(isStoreIssuable)
       if (raw.length === 0) {
-        setError('No raw material BOM found for this product. Add recipe lines in Recipe Master first.')
+        setError('No issuable raw material BOM found for this product / recipe. Add recipe lines in Recipe Master first.')
         setLoadingBom(false); return
       }
       const batch = parseFloat(batchQty)
@@ -214,6 +284,10 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
     setBomLines(s.bomLines)
     setSessionId(s.id)
     setSelTaskId(null)
+    // Recipe identity isn't stored on the session — recover it from the linked
+    // plan task so recipe-drift detection compares against the right recipe,
+    // not a merge of all of them.
+    setSelRecipeNo(tasks.find(t => t.id === s.planTaskId)?.recipeNo ?? null)
     setActiveIdx(null)
     setLineMsg({})
     setError('')
@@ -241,11 +315,11 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
   useEffect(() => {
     if (step !== 'bom' || !selProduct?.productCode) { setRecipeDrift(null); return }
     let cancelled = false
-    recipeApi.list({ productCode: selProduct.productCode, ...recipeParams }).then(res => {
+    recipeApi.list({ productCode: selProduct.productCode }).then(res => {
       if (cancelled) return
-      // Same microbe exclusion as loadBom — a microbe added/edited in the
-      // recipe since this session started must not surface as BOM drift here.
-      const current = (res.data || []).filter(r => !r.isMicrobe)
+      // Same scoping as loadBom — only the planned recipe's issuable lines, so
+      // a microbe / DM-water / other-recipe row can't surface as false drift.
+      const current = pickRecipeRows(res.data, selRecipeNo).filter(isStoreIssuable)
       const currentByCode = new Map(current.map(r => [r.rmCode, r]))
       const sessionCodes  = new Set(bomLines.map(l => l.rmCode))
 
@@ -473,6 +547,8 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
         taskFilter={taskFilter}
         setTaskFilter={setTaskFilter}
         filteredTasks={filteredTasks}
+        sessions={filteredSessions}
+        onResumeSession={resumeSession}
         loadingTasks={loadingTasks}
         loadingBom={loadingBom}
         onSelectTask={selectTask}
@@ -496,9 +572,9 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
       progress={progress}
       recipeDrift={recipeDrift}
       onSyncRecipe={syncToCurrentRecipe}
-      onBack={() => { setStep('select'); setActiveIdx(null) }}
+      onBack={() => { setStep('select'); setActiveIdx(null); clearSelection() }}
       onOpenIssuePanel={openIssuePanel}
-      onIssueAnother={() => { setStep('select'); setActiveIdx(null); setBomLines([]) }}
+      onIssueAnother={() => { setStep('select'); setActiveIdx(null); setBomLines([]); clearSelection() }}
       lineMsg={lineMsg}
       rmByCode={rmByCode}
       packs={packs}

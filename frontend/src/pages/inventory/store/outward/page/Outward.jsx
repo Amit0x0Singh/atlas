@@ -73,11 +73,9 @@ function Panel({ mode, onBack, actions, children }) {
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {actions}
-          {/* This "Back" returns to the mode-selection view within the same
-              page (client-side state, not a route change), so — unlike the
-              page-level back button below — it can't be replaced by the
-              device's native back gesture and must stay visible on mobile. */}
-          <BackButton onClick={onBack} label="Back to Outward" size="sm" />
+          {/* Single "Back" — one step back: from the BOM Issued view to the
+              BOM Issue picker, otherwise out to the Outward mode selection. */}
+          <BackButton onClick={onBack} size="sm" />
         </div>
       </div>
       <div className="flex-1 overflow-y-auto">{children}</div>
@@ -107,27 +105,27 @@ export default function Outward() {
 
   const goBack = () => { setMode(null); setBomView('select'); loadHistory() }
 
-  const resumeFromHistory = (session) => {
-    setResumeId(session.id)
-    setBomView('select')
-  }
-
   if (mode) {
-    const bomActions = mode === 'bom-issue' && (
-      <Button
-        onClick={() => setBomView(v => v === 'history' ? 'select' : 'history')}
-        variant={bomView === 'history' ? 'outline-gray' : 'purple'}
-        size="sm"
-        icon={History}>
-        {bomView === 'history' ? 'Back to BOM Issue' : 'BOM Issued'}
+    // On the BOM Issued history view the single "Back" button returns to the
+    // BOM Issue picker (not all the way out to Outward); elsewhere it's the
+    // page-level "Back to Outward".
+    const isBomHistory = mode === 'bom-issue' && bomView === 'history'
+
+    const bomActions = mode === 'bom-issue' && !isBomHistory && (
+      <Button onClick={() => setBomView('history')} variant="purple" size="sm" icon={History}>
+        BOM Issued
       </Button>
     )
 
     return (
-      <Panel mode={mode} onBack={goBack} actions={bomActions}>{
+      <Panel
+        mode={mode}
+        onBack={isBomHistory ? () => setBomView('select') : goBack}
+        actions={bomActions}
+      >{
         mode === 'bom-issue' ? (
           bomView === 'history'
-            ? <BomIssuedHistory onResume={resumeFromHistory} />
+            ? <BomIssuedHistory />
             : <MaterialIssueByBOM resumeSessionId={resumeId} onAutoResumed={() => setResumeId(null)} />
         ) :
         mode === 'wh-wh'      ? <WarehouseToWarehouse /> :

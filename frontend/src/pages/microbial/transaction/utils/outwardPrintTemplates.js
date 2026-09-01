@@ -11,6 +11,7 @@
 // inside without opening it.
 import { fmtCfu, fmtDate } from './format.js'
 import { toTitleCase } from '../../../../utils/textDisplay.js'
+import { openAuthedFilePost } from '../../../../utils/authedFile.js'
 
 function esc(s) {
   return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
@@ -145,8 +146,22 @@ export function printMicrobePicklist(session) {
 // ─── Labels — 100×50mm thermal, one per microbe, attached to the picked
 // pack/bag so the receiving person can read what's inside without opening
 // it (mirrors the RM/Container QR label convention already used elsewhere
-// in this app for the same reason). ────────────────────────────────────
-export function printMicrobeLabels(session) {
+// in this app for the same reason).
+//
+// Previously rendered as an HTML popup printed via window.print() under
+// `@page{size:A4}` — on a TSC thermal printer actually loaded with 100×50mm
+// label stock that page-size mismatch is what made the print come out
+// wrong (scaled down, shifted, or split across labels). Raw Material/pack
+// labels never had this problem because they're rendered server-side as a
+// real PDF whose page size IS the label size (see label-service.js) — this
+// now does the same, plus two changes from on-the-floor feedback on the
+// first printed batch: the letterhead row is gone (freed space went to
+// larger fonts, since small text was hard to read off the thermal print),
+// and each batch's CFU/g now travels WITH that batch's own qty (instead of
+// listing every distinct CFU/g reading once at the top, separately from
+// which batch/qty it belonged to — operators couldn't tell which batch a
+// given CFU reading was for).
+export async function printMicrobeLabels(session) {
   const product = toTitleCase(session.productName) || '—'
   const diNo = session.diNumber || '—'
   const orderQty = session.orderQtyKg || '—'
@@ -156,24 +171,25 @@ export function printMicrobeLabels(session) {
   for (const row of session.microbes || []) {
     if (!row.picks?.length) continue
     const totalQty = row.picks.reduce((t, x) => t + (Number(x.qty_issued_kg) || 0), 0)
-    const batches = {}
+    // Grouped by batch code, each batch keeps its OWN qty and CFU/g — a
+    // batch is drawn from one inward lot, so its CFU/g is a single value in
+    // the overwhelming majority of cases; the rare split (two picks of the
+    // same batch code recorded at different potencies) still shows both,
+    // joined, rather than silently picking one.
+    const batchMap = {}
     for (const p of row.picks) {
       const bc = p.inward?.biomass_batch_code || '—'
-      if (!batches[bc]) batches[bc] = { qty: 0 }
-      batches[bc].qty += Number(p.qty_issued_kg) || 0
+      if (!batchMap[bc]) batchMap[bc] = { qty: 0, cfus: new Set() }
+      batchMap[bc].qty += Number(p.qty_issued_kg) || 0
+      batchMap[bc].cfus.add(fmtCfu(p.cfu_per_g_at_issue))
     }
-    const bKeys = Object.keys(batches)
-    const batchHtml = bKeys.length === 1
-      ? `<div style="display:flex;justify-content:space-between;margin-bottom:.5mm"><span style="font-weight:700;font-size:7.5pt">Biomass Batch</span><span style="font-family:monospace;font-size:7.5pt">${esc(bKeys[0])}</span></div>`
-      : bKeys.map((bc) => `<div style="display:flex;justify-content:space-between"><span style="font-weight:700;font-size:7pt">Batch</span><span style="font-size:7pt;font-family:monospace">${esc(bc)} (${batches[bc].qty.toFixed(3)}kg)</span></div>`).join('')
-    const allCfu = [...new Set(row.picks.map((p) => fmtCfu(p.cfu_per_g_at_issue)))]
+    const batches = Object.entries(batchMap).map(([code, v]) => ({ code, qty: v.qty, cfu: [...v.cfus].join(' / ') }))
     const allMoist = [...new Set(row.picks.filter((p) => p.inward?.moisture != null).map((p) => p.inward.moisture))]
     const allHarv = [...new Set(row.picks.map((p) => p.inward?.date_of_harvest).filter(Boolean))]
     labels.push({
       microbe: toTitleCase(row.microbe_name),
       reqCfu: fmtCfu(row.picks[0]?.required_cfu_per_g),
-      totalQty, batchHtml,
-      cfuLine: allCfu.join(' / '),
+      totalQty, batches,
       moistLine: allMoist.length ? allMoist.join('/') + '%' : '—',
       harvLine: allHarv.map(fmtDate).join(' / '),
     })
@@ -181,41 +197,9 @@ export function printMicrobeLabels(session) {
 
   if (!labels.length) { alert('No picked batches in this session.'); return }
 
-  const labelHtml = labels.map((lb) => `
-    <div style="width:100mm;height:50mm;border:.5mm solid #000;box-sizing:border-box;padding:2.5mm 3mm;font-family:Arial,sans-serif;display:inline-block;vertical-align:top;overflow:hidden;margin:1mm">
-      <div style="border-bottom:.5mm solid #000;padding-bottom:1mm;margin-bottom:1mm;text-align:center">
-        <div style="font-size:8.5pt;font-weight:700">${LETTERHEAD_NAME}</div>
-      </div>
-      <div style="display:flex;justify-content:space-between;margin-bottom:.5mm">
-        <div style="font-size:7.5pt"><span style="font-weight:700">Product:</span> ${esc(product)}</div>
-        <div style="font-size:7.5pt"><span style="font-weight:700">Order Qty:</span> ${esc(orderQty)} kg</div>
-      </div>
-      <div style="font-size:7.5pt;margin-bottom:.5mm"><span style="font-weight:700">Req. Specs:</span> <span style="font-family:monospace">${lb.reqCfu} CFU/g</span></div>
-      <div style="border-top:.5mm solid #000;margin:1mm 0"></div>
-      <div style="font-size:9.5pt;font-weight:700;margin-bottom:.5mm">${esc(lb.microbe)}</div>
-      <div style="display:flex;justify-content:space-between;margin-bottom:.5mm">
-        <div style="font-size:7.5pt"><span style="font-weight:700">In-house CFU/g:</span> <span style="font-family:monospace">${lb.cfuLine}</span></div>
-        <div style="font-size:8pt;font-weight:700">Qty: ${lb.totalQty.toFixed(4)} kg</div>
-      </div>
-      ${lb.batchHtml}
-      <div style="display:flex;justify-content:space-between;margin-bottom:.5mm">
-        <div style="font-size:7pt"><span style="font-weight:700">Moisture:</span> ${lb.moistLine}</div>
-        <div style="font-size:7pt"><span style="font-weight:700">Harvest:</span> ${lb.harvLine}</div>
-      </div>
-      <div style="border-top:.5mm solid #000;margin-top:.5mm;padding-top:.5mm;display:flex;justify-content:space-between">
-        <div style="font-size:7pt"><span style="font-weight:700">DI No:</span> ${esc(diNo)}</div>
-        <div style="font-size:7pt"><span style="font-weight:700">Date of Issue:</span> ${dt}</div>
-      </div>
-    </div>`).join('')
-
-  const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Labels — ' + esc(product) + '</title>'
-    + '<style>@page{size:A4 portrait;margin:4mm}body{margin:0;padding:4mm;font-family:Arial,sans-serif}'
-    + '@media print{.np{display:none}}</style></head><body>'
-    + '<div class="np" style="background:#92400e;color:#fff;padding:9px 16px;display:flex;gap:10px;align-items:center;margin-bottom:8px">'
-    + '<b>Labels — Thermal Printer (100&times;50mm)</b>'
-    + '<button onclick="window.print()" style="background:#fff;color:#92400e;border:none;padding:5px 12px;border-radius:5px;font-weight:700;cursor:pointer">\u{1F5A8} Print Labels</button>'
-    + '<button onclick="window.close()" style="background:rgba(255,255,255,.2);color:#fff;border:none;padding:5px 10px;border-radius:5px;cursor:pointer">Close</button>'
-    + '<span style="font-size:12px;opacity:.8">' + labels.length + ' label(s)</span></div>'
-    + labelHtml + '</body></html>'
-  openPrintWindow(html)
+  try {
+    await openAuthedFilePost('/api/microbial-sfg/outward/labels/pdf', { product, diNo, orderQty, dt, labels })
+  } catch (e) {
+    alert('Could not generate labels: ' + (e.message || 'unknown error'))
+  }
 }

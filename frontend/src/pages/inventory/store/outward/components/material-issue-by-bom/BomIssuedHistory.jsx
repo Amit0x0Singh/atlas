@@ -1,7 +1,10 @@
 import { useState, useEffect, useMemo, Fragment } from 'react'
 import { outwardApi } from '../../../../../../api/inventory.js'
 import { Button } from '../../../../../../components/ui'
-import { ChevronDown, ChevronRight } from 'lucide-react'
+import Pagination from '../../../../../../components/pagination/Pagination.jsx'
+import { ChevronDown, ChevronRight, Search, Filter, ArrowUpDown } from 'lucide-react'
+import BomIssuedFilterModal, { EMPTY_BOM_ISSUED_FILTERS } from './BomIssuedFilterModal.jsx'
+import BomIssuedSortModal, { DEFAULT_BOM_ISSUED_SORT } from './BomIssuedSortModal.jsx'
 
 import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 function fmtDate(iso) {
@@ -19,28 +22,31 @@ function parseRemarks(remarks) {
   }
 }
 
-const STATUS_STYLE = {
-  Pending:            'bg-gray-100 text-gray-600',
-  'Partially Issued':  'bg-amber-100 text-amber-700',
-  'Fully Issued':      'bg-green-100 text-green-700',
+function countActiveFilters(f) {
+  return (f.from ? 1 : 0) + (f.to ? 1 : 0)
 }
 
-export default function BomIssuedHistory({ onResume }) {
-  const [sessions, setSessions] = useState([])
+// BOM Issued — the completed history only. Every raw-material line issued
+// against a BOM is grouped back into its batch here. In-progress / paused
+// sessions live on the Material Issue by BOM screen (resume targets), never
+// here.
+export default function BomIssuedHistory() {
   const [histRows, setHistRows] = useState([])
   const [loading, setLoading]   = useState(true)
   const [expanded, setExpanded] = useState(null)
 
+  const [search, setSearch]   = useState('')
+  const [filters, setFilters] = useState(EMPTY_BOM_ISSUED_FILTERS)
+  const [sort, setSort]       = useState(DEFAULT_BOM_ISSUED_SORT)
+  const [page, setPage]       = useState(1)
+  const [limit, setLimit]     = useState(15)
+  const [showFilter, setShowFilter] = useState(false)
+  const [showSort, setShowSort]     = useState(false)
+
   useEffect(() => {
     setLoading(true)
-    Promise.all([
-      outwardApi.history({ limit: 300 }),
-      outwardApi.bomSessions.list(),
-    ])
-      .then(([histRes, sessRes]) => {
-        setHistRows((histRes.data || []).filter(row => row.sourceType === 'BOM_ISSUANCE'))
-        setSessions(sessRes.data || [])
-      })
+    outwardApi.history({ limit: 300 })
+      .then(res => setHistRows((res.data || []).filter(row => row.sourceType === 'BOM_ISSUANCE')))
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [])
@@ -59,147 +65,179 @@ export default function BomIssuedHistory({ onResume }) {
     return [...map.values()]
   }, [histRows])
 
-  // Merge in-progress sessions with issued history into one unified table.
-  // A session already in progress "owns" its batch; only add the backend
-  // batch separately once that session has completed and disappeared.
+  // Search + filter + sort over the grouped batches.
   const rows = useMemo(() => {
-    const sessionKeys = new Set(sessions.map(s => `${toTitleCase(s.productName)}__${s.batchRef || ''}`))
+    let list = historyBatches.map(b => ({
+      key: `hist-${b.key}`,
+      productName: b.productName,
+      batchQty: b.batchSize,
+      batchRef: b.batchRef,
+      itemCount: b.lines.length,
+      lastUpdated: b.lastTs,
+      lines: b.lines.map(l => ({
+        rmName: l.rmName || l.rmCode,
+        rmCode: l.sourceId,
+        // Rows predating operationalUom have it null — fall back to the item's
+        // Inventory UOM (the unit qtyIssued is in) rather than a bare number.
+        detail: `${Number(l.operationalQty ?? l.qtyIssued).toFixed(3)} ${(l.operationalUom || l.inventoryUom || '').toUpperCase()} · ${fmtDate(l.timestamp)}`,
+      })),
+    }))
 
-    const sessionRows = sessions.map(s => {
-      // Orphaned lines (dropped from the recipe, kept only for audit) don't
-      // count toward completion — same exclusion as MaterialIssueByBOM.jsx.
-      const activeLines = (s.bomLines || []).filter(l => !l.orphaned)
-      const total     = activeLines.length
-      const done      = activeLines.filter(l => l.issued >= l.required - 0.001).length
-      const anyIssued = activeLines.some(l => (l.issued || 0) > 0.001)
-      const status    = total > 0 && done === total ? 'Fully Issued' : anyIssued ? 'Partially Issued' : 'Pending'
-      return {
-        key: `session-${s.id}`, isSession: true, session: s,
-        productName: s.productName, productCode: s.productCode,
-        batchQty: s.batchQty, batchRef: s.batchRef,
-        status, materials: `${done}/${total} materials`,
-        lastUpdated: s.updatedAt,
-        lines: (s.bomLines || []).map(l => ({
-          rmName: l.rmName, rmCode: l.rmCode,
-          detail: `${l.issued} / ${l.required} ${(l.uom || '').toUpperCase()}`,
-        })),
-      }
+    const q = search.trim().toLowerCase()
+    if (q) list = list.filter(r => `${r.productName} ${r.batchRef}`.toLowerCase().includes(q))
+    if (filters.from) {
+      const from = new Date(filters.from)
+      list = list.filter(r => new Date(r.lastUpdated) >= from)
+    }
+    if (filters.to) {
+      const to = new Date(`${filters.to}T23:59:59`)
+      list = list.filter(r => new Date(r.lastUpdated) <= to)
+    }
+
+    const dir = sort.direction === 'asc' ? 1 : -1
+    list.sort((a, b) => {
+      if (sort.field === 'product')  return dir * toTitleCase(a.productName).localeCompare(toTitleCase(b.productName))
+      if (sort.field === 'batchQty') return dir * ((parseFloat(a.batchQty) || 0) - (parseFloat(b.batchQty) || 0))
+      return dir * (new Date(a.lastUpdated) - new Date(b.lastUpdated)) // 'date'
     })
+    return list
+  }, [historyBatches, search, filters, sort])
 
-    const historyRows = historyBatches
-      .filter(b => !sessionKeys.has(`${toTitleCase(b.productName)}__${b.batchRef || ''}`))
-      .map(b => ({
-        key: `hist-${b.key}`, isSession: false,
-        productName: b.productName, productCode: '',
-        batchQty: b.batchSize, batchRef: b.batchRef,
-        status: 'Fully Issued', materials: `${b.lines.length} item${b.lines.length !== 1 ? 's' : ''} issued`,
-        lastUpdated: b.lastTs,
-        lines: b.lines.map(l => ({
-          rmName: l.rmName || l.rmCode, rmCode: l.sourceId,
-          // Rows predating operationalUom have it null — fall back to the
-          // item's Inventory UOM (the unit qtyIssued is in) rather than
-          // rendering a bare number with no unit at all.
-          detail: `${Number(l.operationalQty ?? l.qtyIssued).toFixed(3)} ${(l.operationalUom || l.inventoryUom || '').toUpperCase()} · ${fmtDate(l.timestamp)}`,
-        })),
-      }))
-
-    return [...sessionRows, ...historyRows].sort((a, b) => new Date(b.lastUpdated) - new Date(a.lastUpdated))
-  }, [sessions, historyBatches])
+  const total = rows.length
+  const pageRows = rows.slice((page - 1) * limit, page * limit)
+  const activeFilterCount = countActiveFilters(filters)
+  const sortIsDefault = sort.field === DEFAULT_BOM_ISSUED_SORT.field && sort.direction === DEFAULT_BOM_ISSUED_SORT.direction
 
   return (
-    <div className="p-4 md:p-6 max-w-4xl">
+    <div className="p-4 md:p-6">
       <div className="mb-5">
         <h2 className="text-lg font-bold text-gray-900">BOM Issued</h2>
-        <p className="text-sm text-gray-500 mt-0.5">In-progress issuance sessions and completed BOM issuance history</p>
+        <p className="text-sm text-gray-500 mt-0.5">Completed BOM issuance history — grouped by production batch</p>
       </div>
 
-      {loading ? (
-        <p className="text-sm text-gray-400 py-6 text-center">Loading...</p>
-      ) : rows.length === 0 ? (
-        <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-6 text-center text-sm text-gray-400">
-          No BOM sessions or issuances recorded yet
-        </div>
-      ) : (
-        <div className="rounded-xl border border-gray-200 overflow-hidden bg-white">
-          <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-700 text-white text-xs">
-              <tr>
-                <th className="px-4 py-2.5 w-8" />
-                <th className="text-left px-4 py-2.5 font-semibold">Status</th>
-                <th className="text-left px-4 py-2.5 font-semibold">Product</th>
-                <th className="text-left px-4 py-2.5 font-semibold">Batch Ref</th>
-                <th className="text-left px-4 py-2.5 font-semibold">Materials</th>
-                <th className="text-left px-4 py-2.5 font-semibold">Last Updated</th>
-                <th className="px-4 py-2.5" />
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map(row => {
-                const isOpen = expanded === row.key
-                return (
-                  <Fragment key={row.key}>
-                    <tr className="border-t border-gray-100 hover:bg-gray-50 cursor-pointer" onClick={() => setExpanded(isOpen ? null : row.key)}>
-                      <td className="px-4 py-2.5 text-gray-400">
-                        {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                      </td>
-                      <td className="px-4 py-2.5">
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${STATUS_STYLE[row.status]}`}>{row.status}</span>
-                      </td>
-                      <td className="px-4 py-2.5">
-                        <div className="font-semibold text-gray-900">{toTitleCase(row.productName)}</div>
-                        {row.productCode && <div className="text-xs text-gray-400 font-mono">{row.productCode}</div>}
-                      </td>
-                      <td className="px-4 py-2.5">
-                        <span className="font-medium text-gray-700">{row.batchQty} KG</span>
-                        {row.batchRef && <div className="text-xs text-gray-400 font-mono">{row.batchRef}</div>}
-                      </td>
-                      <td className="px-4 py-2.5 text-xs text-gray-500">{row.materials}</td>
-                      <td className="px-4 py-2.5 text-xs text-gray-400 whitespace-nowrap">
-                        {row.lastUpdated ? fmtDate(row.lastUpdated) : '—'}
-                      </td>
-                      <td className="px-4 py-2.5 text-right whitespace-nowrap" onClick={e => e.stopPropagation()}>
-                        {row.isSession && row.status !== 'Fully Issued' && (
-                          <Button onClick={() => onResume(row.session)} variant="purple" size="xs">
-                            Resume →
-                          </Button>
-                        )}
-                      </td>
-                    </tr>
-                    {isOpen && (
-                      <tr className="bg-gray-50/60">
-                        <td colSpan={7} className="px-4 py-3">
-                          <div className="overflow-x-auto">
-                          <table className="w-full text-xs">
-                            <thead className="text-gray-400">
-                              <tr>
-                                <th className="text-left font-medium pb-1">RM</th>
-                                <th className="text-left font-medium pb-1">Code / Source</th>
-                                <th className="text-left font-medium pb-1">Detail</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {row.lines.map((l, i) => (
-                                <tr key={i} className="border-t border-gray-200">
-                                  <td className="py-1 text-gray-700">{toTitleCase(l.rmName)}</td>
-                                  <td className="py-1 font-mono text-gray-400">{l.rmCode}</td>
-                                  <td className="py-1 text-gray-600">{l.detail}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </Fragment>
-                )
-              })}
-            </tbody>
-          </table>
+      <div className="rounded-xl border border-gray-200 overflow-hidden bg-white">
+        {/* ── Toolbar: search + count + Sort by + Filter ─────────────────── */}
+        <div className="flex flex-wrap items-center gap-2 px-4 py-3 border-b border-gray-100">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            <input
+              type="text"
+              value={search}
+              onChange={e => { setSearch(e.target.value); setPage(1) }}
+              placeholder="Search product or batch ref…"
+              className="w-full border border-gray-200 rounded-lg pl-8 pr-3 py-2 text-[13px] text-gray-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white"
+            />
+          </div>
+
+          <span className="text-[11px] text-gray-400 font-medium whitespace-nowrap px-1 hidden sm:inline">
+            {total} {total === 1 ? 'batch' : 'batches'}
+          </span>
+
+          <div className="flex items-center gap-2 ml-auto">
+            <Button variant={sortIsDefault ? 'outline-gray' : 'outline'} size="sm" icon={ArrowUpDown} onClick={() => setShowSort(true)}>
+              Sort by
+            </Button>
+            <Button variant={activeFilterCount ? 'outline' : 'outline-gray'} size="sm" icon={Filter} onClick={() => setShowFilter(true)}>
+              Filter{activeFilterCount > 0 && ` (${activeFilterCount})`}
+            </Button>
           </div>
         </div>
-      )}
+
+        {loading ? (
+          <p className="text-sm text-gray-400 py-10 text-center">Loading…</p>
+        ) : total === 0 ? (
+          <div className="px-4 py-10 text-center text-sm text-gray-400">
+            {search || activeFilterCount ? 'No BOM issuances match your search / filters' : 'No BOM issuances recorded yet'}
+          </div>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-700 text-white text-xs">
+                  <tr>
+                    <th className="px-4 py-2.5 w-8" />
+                    <th className="text-left px-4 py-2.5 font-semibold">Status</th>
+                    <th className="text-left px-4 py-2.5 font-semibold">Product</th>
+                    <th className="text-left px-4 py-2.5 font-semibold">Batch Ref</th>
+                    <th className="text-left px-4 py-2.5 font-semibold">Materials</th>
+                    <th className="text-left px-4 py-2.5 font-semibold">Last Issued</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pageRows.map(row => {
+                    const isOpen = expanded === row.key
+                    return (
+                      <Fragment key={row.key}>
+                        <tr className="border-t border-gray-100 hover:bg-gray-50 cursor-pointer" onClick={() => setExpanded(isOpen ? null : row.key)}>
+                          <td className="px-4 py-2.5 text-gray-400">
+                            {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                          </td>
+                          <td className="px-4 py-2.5">
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700">Issued</span>
+                          </td>
+                          <td className="px-4 py-2.5">
+                            <div className="font-semibold text-gray-900">{toTitleCase(row.productName)}</div>
+                          </td>
+                          <td className="px-4 py-2.5">
+                            <span className="font-medium text-gray-700">{row.batchQty} KG</span>
+                            {row.batchRef && <div className="text-xs text-gray-400 font-mono">{row.batchRef}</div>}
+                          </td>
+                          <td className="px-4 py-2.5 text-xs text-gray-500">{row.itemCount} item{row.itemCount !== 1 ? 's' : ''} issued</td>
+                          <td className="px-4 py-2.5 text-xs text-gray-400 whitespace-nowrap">
+                            {row.lastUpdated ? fmtDate(row.lastUpdated) : '—'}
+                          </td>
+                        </tr>
+                        {isOpen && (
+                          <tr className="bg-gray-50/60">
+                            <td colSpan={6} className="px-4 py-3">
+                              <div className="overflow-x-auto">
+                                <table className="w-full text-xs">
+                                  <thead className="text-gray-400">
+                                    <tr>
+                                      <th className="text-left font-medium pb-1">RM</th>
+                                      <th className="text-left font-medium pb-1">Code / Source</th>
+                                      <th className="text-left font-medium pb-1">Detail</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {row.lines.map((l, i) => (
+                                      <tr key={i} className="border-t border-gray-200">
+                                        <td className="py-1 text-gray-700">{toTitleCase(l.rmName)}</td>
+                                        <td className="py-1 font-mono text-gray-400">{l.rmCode}</td>
+                                        <td className="py-1 text-gray-600">{l.detail}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </Fragment>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <div className="px-4 pb-3">
+              <Pagination page={page} total={total} limit={limit} onChange={setPage} onLimitChange={l => { setLimit(l); setPage(1) }} />
+            </div>
+          </>
+        )}
+      </div>
+
+      <BomIssuedFilterModal
+        open={showFilter}
+        onClose={() => setShowFilter(false)}
+        value={filters}
+        onApply={f => { setFilters(f); setPage(1) }}
+      />
+      <BomIssuedSortModal
+        open={showSort}
+        onClose={() => setShowSort(false)}
+        value={sort}
+        onApply={setSort}
+      />
     </div>
   )
 }
