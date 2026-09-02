@@ -252,7 +252,7 @@ export default function RecipeDB() {
           // While a product is open, Back returns to the product search
           // instead of leaving the page entirely.
           selectedProduct
-            ? <BackButton label="Back to products" onClick={backToSearch} />
+            ? <BackButton onClick={backToSearch} />
             : <BackButton />
         }
       >

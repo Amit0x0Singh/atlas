@@ -94,7 +94,7 @@ export default function MicrobeChecklist({
           <CheckCircle2 size={32} className="mx-auto text-green-500 mb-2" />
           <p className="text-sm font-semibold text-gray-900">All microbes issued for this task</p>
           <p className="text-xs text-gray-400 mt-1">The task is marked complete and moves to Outward History.</p>
-          <Button type="button" variant="primary" size="sm" className="mt-4" onClick={onBack}>Back to tasks</Button>
+          <Button type="button" variant="primary" size="sm" className="mt-4" onClick={onBack}>Back</Button>
         </div>
       ) : (
         <div className="divide-y divide-gray-100">

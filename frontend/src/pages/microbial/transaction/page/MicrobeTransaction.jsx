@@ -39,7 +39,7 @@ export default function MicrobeTransaction() {
         actions={<>
           {tab === 'history' ? (
             <Button variant="outline-gray" size="md" icon={ArrowLeft} onClick={() => setTab('inward')}>
-              Back to Transactions
+              Back
             </Button>
           ) : (
             <>
@@ -91,7 +91,7 @@ export default function MicrobeTransaction() {
             adjustView ? (
               <div className="flex gap-3">
                 <Button variant="outline-gray" icon={ArrowLeft} onClick={() => setAdjustView(null)}>
-                  Back to Outward
+                  Back
                 </Button>
                 {adjustView === 'form' ? (
                   <Button variant="outline-gray" icon={List} onClick={() => setAdjustView('records')}>

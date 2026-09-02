@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Plus, Pencil, Search, Check, X, ArrowLeft, Filter, ArrowUpDown } from 'lucide-react'
+import { Plus, Pencil, Search, Check, X, Filter, ArrowUpDown } from 'lucide-react'
 import { Button, IconButton, Loading } from '../../../../components/ui'
 import Pagination from '../../../../components/pagination/Pagination.jsx'
 import PackingItemsFilterModal, { EMPTY_PACKING_FILTERS } from './PackingItemsFilterModal.jsx'
@@ -26,7 +26,7 @@ function countActiveFilters(f) {
 // Options management pattern (add / inline-edit / activate-deactivate, no
 // hard delete) but with the standard master-table chrome: search + Filter +
 // Sort by toolbar and client-side pagination (see SupplierTable.jsx).
-export default function PackingItemsSection({ onBack }) {
+export default function PackingItemsSection() {
   const { data: items = [], isLoading } = usePackingItemsAdmin()
   const createItem = useCreatePackingItem()
   const updateItem = useUpdatePackingItem()
@@ -107,7 +107,6 @@ export default function PackingItemsSection({ onBack }) {
     <div className="max-w-4xl">
       <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
         <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100">
-          {onBack && <IconButton icon={ArrowLeft} variant="outline-gray" size="sm" tooltip="Back to groups" onClick={onBack} />}
           <div className="min-w-0">
             <h2 className="text-sm font-bold text-gray-900">Packing Items</h2>
             <p className="text-xs text-gray-500 truncate">

@@ -1,9 +1,9 @@
 import { useState, useMemo } from 'react'
-import { ArrowLeft, ArrowUp, ArrowDown, Plus, Pencil, Search, Check, X } from 'lucide-react'
+import { ArrowUp, ArrowDown, Plus, Pencil, Search, Check, X } from 'lucide-react'
 import { Button, IconButton, Loading } from '../../../../components/ui'
 import { useOptionGroup, useCreateOptionValue, useUpdateOptionValue, useSetOptionActive, useReorderOptionValues } from '../../../../hooks/useOptionsAdmin.js'
 
-export default function OptionGroupDetail({ groupCode, onBack }) {
+export default function OptionGroupDetail({ groupCode }) {
   const { data: group, isLoading } = useOptionGroup(groupCode)
   const createValue = useCreateOptionValue()
   const updateValue = useUpdateOptionValue()
@@ -71,7 +71,6 @@ export default function OptionGroupDetail({ groupCode, onBack }) {
   return (
     <div className="bg-white border border-gray-200 rounded-xl overflow-hidden max-w-3xl">
       <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100">
-        <IconButton icon={ArrowLeft} variant="outline-gray" size="sm" tooltip="Back to groups" onClick={onBack} />
         <div className="min-w-0">
           <h2 className="text-sm font-bold text-gray-900">{group.label}</h2>
           {group.description && <p className="text-xs text-gray-500 truncate">{group.description}</p>}
