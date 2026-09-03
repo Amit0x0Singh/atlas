@@ -2,7 +2,7 @@ import { Filter } from 'lucide-react'
 import { Modal, Button } from '../../../../../components/ui'
 import { toTitleCase } from '../../../../../utils/textDisplay.js'
 
-export const EMPTY_RM_FILTERS = { status: '', uom: '', minQty: '', maxQty: '', category: '', subCategory: '', state: '' }
+export const EMPTY_RM_FILTERS = { status: '', uom: '', minQty: '', maxQty: '', category: '', subCategory: '', state: '', reorderLevel: '' }
 
 const LABEL = 'text-[11px] font-bold text-gray-500 uppercase tracking-wide block mb-1.5'
 const FIELD = 'w-full border border-gray-200 rounded-lg px-3 py-2 text-[13px] text-gray-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white'
@@ -78,6 +78,18 @@ export default function RmFilterModal({ open, onClose, value, onApply, uomOption
           <select value={value.state} onChange={e => set({ state: e.target.value })} className={`${FIELD} cursor-pointer`}>
             <option value="">All States</option>
             {stateOptions.map(s => <option key={s} value={s}>{s.toUpperCase()}</option>)}
+          </select>
+        </div>
+
+        <div>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className={LABEL}>Reorder Level</label>
+            {value.reorderLevel && <button type="button" onClick={() => set({ reorderLevel: '' })} className="text-[11px] font-semibold text-blue-600 hover:underline">Reset</button>}
+          </div>
+          <select value={value.reorderLevel} onChange={e => set({ reorderLevel: e.target.value })} className={`${FIELD} cursor-pointer`}>
+            <option value="">All</option>
+            <option value="below">Below Reorder Level</option>
+            <option value="above">Above Reorder Level</option>
           </select>
         </div>
 

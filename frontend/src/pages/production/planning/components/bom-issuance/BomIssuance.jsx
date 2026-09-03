@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { recipeApi, productApi } from '../../../../../api/masters.js'
-import { rmApi } from '../../../../../api/inventory.js'
+import { rmApi, stockApi, sfgApi } from '../../../../../api/inventory.js'
 import { planTasksApi } from '../../../../../api/production.js'
 import { microbialSfgApi } from '../../../../../api/microbial.js'
 import { genId, incrCode, scaleToQty, state as printState } from '../../utils/bomPrintTemplates.js'
@@ -10,6 +10,7 @@ import { makeRows, toComponents, fromComponents } from '../components-table/Comp
 import IssueBomTab from '../issue-bom-tab/page/IssueBomTab.jsx'
 import ArchiveTab from '../archive-tab/ArchiveTab.jsx'
 import StatusBanner from './components/StatusBanner.jsx'
+import { SuccessModal } from '../../../../../components/ui/index.js'
 import BomIssuanceTabs from './components/BomIssuanceTabs.jsx'
 import { FileText, Archive } from 'lucide-react'
 import { toTitleCase } from '../../../../../utils/textDisplay.js'
@@ -59,17 +60,26 @@ export default function BomIssuance() {
   const [rows, setRows]     = useState(() => makeRows(DEFAULT_BLANK_ROWS))
   const [settings, setSettings] = useState(defaultSettings)
   const [error, setError]       = useState('')
+  // Per-field validation errors shown under each input in Batch Details.
+  const [fieldErrors, setFieldErrors] = useState({})
   const [generating, setGenerating] = useState(false)
   const [banner, setBanner]     = useState(null) // {type:'success'|'error', msg}
 
   const [recipeProducts, setRecipeProducts] = useState([])
   const [products, setProducts]             = useState([])
   const [suggestions, setSuggestions]       = useState([])
-  const [activeRecipe, setActiveRecipe]     = useState(null) // { productCode, perUnitComponents }
+  const [activeRecipe, setActiveRecipe]     = useState(null) // { productCode, perUnit }
+  // A product can hold several named recipes — [{ recipeNo, recipeName, lines }].
+  const [productRecipes, setProductRecipes] = useState([])
+  const [selectedRecipeNo, setSelectedRecipeNo] = useState(null)
   const [recipeLoadedMsg, setRecipeLoadedMsg] = useState('')
   const [rmList, setRmList]                 = useState([])
   const [microbes, setMicrobes]             = useState([])
-  const [savingCorrections, setSavingCorrections] = useState(false)
+  // Item-code (lowercased) -> current total balance across RM packs+containers,
+  // SFG batches, and microbial SFG inward — feeds the BOM Components table's
+  // Availability column. Keyed by code rather than kind since a component
+  // row's kind (rm/product/microbe) already picks the right lookup.
+  const [stockByCode, setStockByCode]       = useState({})
 
   const [archivedBoms, setArchivedBoms] = useState(() => readArchivedBoms())
   const [meta, setMeta]                 = useState(() => readMeta())
@@ -79,6 +89,30 @@ export default function BomIssuance() {
     rmApi.search({}).then(r => setRmList(r.data || [])).catch(() => {})
     productApi.search().then(r => setProducts(r.data || [])).catch(() => {})
     microbialSfgApi.searchMicrobes().then(r => setMicrobes(r.data || [])).catch(() => {})
+  }, [])
+
+  // Current stock, bulk-fetched once per source and merged into one
+  // code -> balance map. RM balance is packs+containers; SFG balance is
+  // summed sfgQty across every batch of that product code; microbe balance
+  // is the microbe-wise stock summary's total_balance_kg.
+  useEffect(() => {
+    stockApi.summary().then(r => {
+      const map = {}
+      for (const s of (r.data || [])) map[(s.itemCode || '').toLowerCase()] = Number(s.totalStock) || 0
+      setStockByCode(prev => ({ ...prev, ...map }))
+    }).catch(() => {})
+
+    sfgApi.summary().then(r => {
+      const map = {}
+      for (const s of (r.data || [])) map[(s.productCode || '').toLowerCase()] = Number(s.totalSfgQty) || 0
+      setStockByCode(prev => ({ ...prev, ...map }))
+    }).catch(() => {})
+
+    microbialSfgApi.microbeWiseSummary().then(r => {
+      const map = {}
+      for (const s of (r.data || [])) map[(s.microbe_code || '').toLowerCase()] = Number(s.total_balance_kg) || 0
+      setStockByCode(prev => ({ ...prev, ...map }))
+    }).catch(() => {})
   }, [])
 
   // Keep the shared print-template settings singleton in sync with the React toggles.
@@ -104,27 +138,56 @@ export default function BomIssuance() {
     setSuggestions(recipeProducts.filter(p => p.productName?.toLowerCase().includes(q)).slice(0, 15))
   }, [recipeProducts])
 
+  // Turn one recipe's stored lines into the scaled component-table rows.
+  const applyRecipeLines = useCallback((lines, productCode, label) => {
+    const perUnit = (lines || []).map(l => ({
+      sno: '', component: toTitleCase(l.rmName), qty: String(l.qtyPerUnit), uom: l.uom || '', remarks: l.roleType || '', isHeader: false,
+      rmCode: l.rmCode,
+      // CFU/g concentration for microbe components — a fixed potency, not
+      // scaled by batch size (scaleToQty only touches qty).
+      cfu: l.requiredCfu != null && l.requiredCfu !== '' ? String(l.requiredCfu) : '',
+    }))
+    setActiveRecipe({ productCode, perUnit })
+    const bsz = canonicalBatchSize(form.batchSize, form.batchSizeUom)
+    const scaled = scaleToQty(perUnit, bsz)
+    setRows(fromComponents(scaled, scaled.length))
+    setRecipeLoadedMsg(`✓ ${label} · ${perUnit.length} components · scaled to ${form.batchSize} ${form.batchSizeUom}`)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.batchSize, form.batchSizeUom])
+
   const onSelectProduct = useCallback(async (productCode, productName) => {
     setForm(f => ({ ...f, product: productName, productCode }))
     try {
       const r = await recipeApi.list({ productCode })
-      const perUnit = (r.data || []).map(l => ({
-        sno: '', component: toTitleCase(l.rmName), qty: String(l.qtyPerUnit), uom: l.uom || '', remarks: l.roleType || '', isHeader: false,
-        rmCode: l.rmCode,
-        // CFU/g concentration for microbe components — a fixed potency, not
-        // scaled by batch size (scaleToQty only touches qty).
-        cfu: l.requiredCfu != null && l.requiredCfu !== '' ? String(l.requiredCfu) : '',
-      }))
-      setActiveRecipe({ productCode, perUnit })
-      const bsz = canonicalBatchSize(form.batchSize, form.batchSizeUom)
-      const scaled = scaleToQty(perUnit, bsz)
-      setRows(fromComponents(scaled, scaled.length))
-      setRecipeLoadedMsg(`✓ Recipe loaded from Recipe Master · ${perUnit.length} components · scaled to ${form.batchSize} ${form.batchSizeUom}`)
+      // Group the flat rows into recipes by recipeNo.
+      const byNo = new Map()
+      for (const l of r.data || []) {
+        if (!byNo.has(l.recipeNo)) byNo.set(l.recipeNo, { recipeNo: l.recipeNo, recipeName: l.recipeName || null, lines: [] })
+        const g = byNo.get(l.recipeNo)
+        g.lines.push(l)
+        if (l.recipeName) g.recipeName = l.recipeName
+      }
+      const recipes = [...byNo.values()].sort((a, b) => a.recipeNo - b.recipeNo)
+      setProductRecipes(recipes)
+
+      const first = recipes[0]
+      setSelectedRecipeNo(first?.recipeNo ?? null)
+      const label = recipes.length > 1
+        ? `Recipe loaded: ${first?.recipeName || `Recipe ${first?.recipeNo}`} (${recipes.length} available)`
+        : 'Recipe loaded from Recipe Master'
+      applyRecipeLines(first?.lines || [], productCode, label)
     } catch (e) {
       setError('Failed to load recipe: ' + e.message)
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.batchSize, form.batchSizeUom])
+  }, [applyRecipeLines])
+
+  // Operator switched recipes in the picker.
+  const pickRecipe = useCallback((recipeNo) => {
+    const g = productRecipes.find(x => x.recipeNo === recipeNo)
+    if (!g) return
+    setSelectedRecipeNo(recipeNo)
+    applyRecipeLines(g.lines, form.productCode, `Recipe: ${g.recipeName || `Recipe ${g.recipeNo}`}`)
+  }, [productRecipes, form.productCode, applyRecipeLines])
 
   // Auto-load the recipe whenever the Product Name field ends up holding an
   // exact match from the Recipe Master — not just when a suggestion is
@@ -152,6 +215,8 @@ export default function BomIssuance() {
     setRecipeLoadedMsg('')
     if (!form.product.trim() && activeRecipe) {
       setActiveRecipe(null)
+      setProductRecipes([])
+      setSelectedRecipeNo(null)
       setRows(prev => makeRows(prev.length))
     }
   }, [form.productCode, form.product, activeRecipe])
@@ -179,38 +244,23 @@ export default function BomIssuance() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.batchSize, form.batchSizeUom])
 
-  // Renames a recipe_db rmCode to the RM Master or Product Master (SFG) item
-  // the user's corrected component text actually matched — same mechanism as
-  // Recipe Master's own "Fix RM Mapping" tool, just surfaced here where the
-  // mismatch is spotted. Reassigns every recipe row using the old code
-  // across all products, not just the one currently loaded (the banner in
-  // ComponentsTable says so).
-  const handleSaveCorrections = async (corrections) => {
-    if (!corrections.length) return
-    setSavingCorrections(true)
-    setBanner({ type: 'loading', msg: `Saving ${corrections.length} correction(s) to Recipe Master…` })
-    try {
-      const res = await recipeApi.fixRmMapping(corrections)
-      setBanner({ type: 'success', msg: `✓ ${res.totalFixed || 0} recipe row(s) updated across all products using the old code(s)` })
-      setRows(prev => prev.map(r => {
-        const hit = corrections.find(c => c.fromCode === r.rmCode)
-        return hit ? { ...r, rmCode: hit.toCode } : r
-      }))
-      rmApi.search({}).then(r => setRmList(r.data || [])).catch(() => {})
-    } catch (e) {
-      setBanner({ type: 'error', msg: `Failed to save corrections: ${e.message}` })
-    } finally {
-      setSavingCorrections(false)
-    }
-  }
-
   const onGenerate = async () => {
     setError('')
     const pn = form.product.trim()
     const comps = toComponents(rows)
-    if (!pn) return setError('Product name is required')
-    if (!form.batchSize || parseFloat(form.batchSize) <= 0) return setError('Batch Size is required and must be greater than 0')
-    if (!form.section) return setError('Select the plant this batch will be produced in')
+
+    // Required-field checks surface under the field itself (Batch Details),
+    // not just as a single banner — one pass so every missing field lights up.
+    const fe = {}
+    if (!pn) fe.product = 'Product name is required'
+    if (!form.batchNo.trim()) fe.batchNo = 'Batch No is required'
+    if (!form.batchSize || parseFloat(form.batchSize) <= 0) fe.batchSize = 'Batch Size is required and must be greater than 0'
+    if (!form.section) fe.section = 'Select the plant this batch will be produced in'
+    setFieldErrors(fe)
+    if (Object.keys(fe).length) {
+      return setError('Please fill in the required fields highlighted below')
+    }
+
     if (!comps.length) return setError('Add at least one component')
 
     // The product itself must exist in Product Master before it can be
@@ -225,30 +275,20 @@ export default function BomIssuance() {
       )
     }
 
-    // Every real component (not a section header) must resolve to a Raw
-    // Material Master item, a Microbe Master item, OR a Product Master item
-    // by exact name — a component can legitimately be an SFG (semi-finished
-    // good) used as an ingredient in another product's recipe, in which case
-    // it matches Product Master by product code instead of RM Master; or a
-    // microbial culture, matching Microbe Master instead (Store never issues
-    // these — they route to Microbe Outward). Same check ComponentsTable
-    // shows as a red "NAN" Item Code. Blocking here instead of just flagging
-    // it visually is deliberate: an unresolved component means Material
-    // Issue by BOM won't know which stock to deduct, so the batch can't be
-    // planned until it's fixed (rename the component to match one of the
-    // three masters exactly, or add the missing item first).
-    const rmByNameLower = new Map(rmList.map(rm => [(rm.itemName || '').trim().toLowerCase(), rm]))
-    const productByNameLowerForComps = new Map(products.map(p => [(p.productName || '').trim().toLowerCase(), p]))
-    const microbeByNameLowerForComps = new Map(microbes.map(m => [(m.microbeName || '').trim().toLowerCase(), m]))
+    // Components are loaded straight from the product's stored recipe, so
+    // each line already carries the master item code (rmCode) it resolves
+    // to. A missing or "NaN" code means that recipe row was never mapped to
+    // a real Raw Material / SFG / Microbe master item — Material Issue by BOM
+    // then won't know which stock to deduct, so block until it's fixed in
+    // the Recipe page.
     const unmatched = comps.filter(c => {
       if (c.isHeader || !c.component) return false
-      const key = c.component.trim().toLowerCase()
-      return !rmByNameLower.has(key) && !productByNameLowerForComps.has(key) && !microbeByNameLowerForComps.has(key)
+      return !c.rmCode || /^nan/i.test(String(c.rmCode))
     })
     if (unmatched.length) {
       return setError(
-        `${unmatched.length} component${unmatched.length !== 1 ? 's' : ''} don't match any Raw Material Master, Product Master, or Microbe Master item (shown as "NAN" in Item Code): ${unmatched.map(c => c.component).join(', ')}. ` +
-        `Fix the name to match one of those masters exactly, or add the item first, then try again.`
+        `${unmatched.length} recipe component${unmatched.length !== 1 ? 's' : ''} ${unmatched.length !== 1 ? 'are' : 'is'} not mapped to a master item (shown as "NAN"): ${unmatched.map(c => c.component).join(', ')}. ` +
+        `Open this product on the Recipe page and re-select those items from Item / Microbe / Product Master, then try again.`
       )
     }
 
@@ -279,6 +319,11 @@ export default function BomIssuance() {
         await planTasksApi.create({
           plant, date,
           productName: bom.productName,
+          // Persist which product + recipe this task was planned against so
+          // Microbe Outward / Material Issue by BOM issue the exact recipe
+          // that was selected here, not the product's primary one.
+          productCode: form.productCode || null,
+          recipeNo:    selectedRecipeNo ?? null,
           batchCode:   bom.batchNo || null,
           qty:         parseFloat(bom.batchSize) || 0,
           qtyUom:      bom.batchSizeUom || 'KG',
@@ -294,13 +339,14 @@ export default function BomIssuance() {
       const newMeta = archiveBoms(built)
       setArchivedBoms(readArchivedBoms())
       setMeta(newMeta)
-      setBanner({ type: 'success', msg: `✓ ${built.length} production task(s) created — visible in Store Outward → Material Issue by BOM` })
+      setBanner({ type: 'success', msg: `${built.length} production task(s) created — now visible in Store Outward → Material Issue by BOM.` })
 
       // Clear the form for the next entry
       setForm(emptyForm())
       setRows(makeRows(DEFAULT_BLANK_ROWS))
       setActiveRecipe(null)
       setRecipeLoadedMsg('')
+      setFieldErrors({})
     } catch (e) {
       setBanner({ type: 'error', msg: `Failed to create tasks: ${e.message}` })
     } finally {
@@ -308,9 +354,21 @@ export default function BomIssuance() {
     }
   }
 
+  const isSuccess = banner?.type === 'success'
+
   return (
     <div className="flex flex-col h-full bg-slate-50">
-      <StatusBanner banner={banner} onDismiss={() => setBanner(null)} />
+      {/* Loading / error stay as an inline strip; success is a popup so it
+          can't be missed and doesn't shove the form down. */}
+      <StatusBanner banner={isSuccess ? null : banner} onDismiss={() => setBanner(null)} />
+
+      <SuccessModal
+        open={isSuccess}
+        title="BOM Issued"
+        message={isSuccess ? banner.msg : ''}
+        buttonText="Done"
+        onClose={() => setBanner(null)}
+      />
 
       <BomIssuanceTabs tabs={TABS} activeTab={activeTab} onChange={setActiveTab} />
 
@@ -321,8 +379,10 @@ export default function BomIssuance() {
             settings={settings} setSettings={setSettings}
             productSuggestions={suggestions} onProductSearch={onProductSearch} onSelectProduct={onSelectProduct}
             recipeLoadedMsg={recipeLoadedMsg}
+            productRecipes={productRecipes} selectedRecipeNo={selectedRecipeNo} onPickRecipe={pickRecipe}
             onGenerate={onGenerate} generating={generating} error={error}
-            rmList={rmList} products={products} microbes={microbes} onSaveCorrections={handleSaveCorrections} savingCorrections={savingCorrections}
+            fieldErrors={fieldErrors} setFieldErrors={setFieldErrors}
+            rmList={rmList} products={products} microbes={microbes} stockByCode={stockByCode}
           />
         )}
         {activeTab === 'archive' && (

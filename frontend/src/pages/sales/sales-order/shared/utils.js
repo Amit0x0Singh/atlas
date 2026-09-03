@@ -60,6 +60,29 @@ export function suggestNextBatch(lastBatchNo) {
   return p.prefix + yy + mm + nextSeq
 }
 
+// ── Dispatch progress ─────────────────────────────────────────────────────────
+
+/**
+ * Display-only label for a line item's dispatch progress — never stored,
+ * always derived from dispatchedQty/remainingQty (see the backend's
+ * withDispatchTotals). `status` itself still only ever holds one of the 5
+ * real production-stage values (…IN_INVENTORY, DISPATCHED); this just adds
+ * "how much of it, exactly" as a second axis for display, so a line that's
+ * been dispatched 500 of 1000 kg reads as "Partially Dispatched" instead of
+ * looking identical to one that hasn't been touched yet.
+ */
+export function dispatchProgressLabel(item) {
+  if (item.status !== 'IN_INVENTORY' && item.status !== 'DISPATCHED') return item.status
+  const dispatched = Number(item.dispatchedQty) || 0
+  // dispatchedQty is a Secondary Pack COUNT (see withDispatchTotals on the
+  // backend) — it must be compared against totalCS (also packs), never
+  // totalQty (the line's KG total); comparing packs to KG would flag a line
+  // "fully dispatched" or "partial" based on numbers that aren't the same unit.
+  if (item.status === 'DISPATCHED' || (item.totalCS && dispatched >= item.totalCS - 0.0009)) return 'FULLY_DISPATCHED'
+  if (dispatched > 0) return 'PARTIALLY_DISPATCHED'
+  return 'IN_INVENTORY'
+}
+
 // ── Packing calculation ───────────────────────────────────────────────────────
 
 /**

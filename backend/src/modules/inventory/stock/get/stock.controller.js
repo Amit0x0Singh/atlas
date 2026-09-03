@@ -43,6 +43,8 @@ const listStock = async (req, res) => {
         inventoryUom: rm.inventoryUom,
         operationalUom: rm.operationalUom,
         density: rm.density,
+        lowStockLevel: rm.lowStockLevel,
+        highStockLevel: rm.highStockLevel,
         stockInPacks: packStock?._sum.remainingQty || 0,
         activePacks: packStock?._count.packId || 0,
         stockInContainer: container?.currentQty || 0,

@@ -32,10 +32,10 @@ export const recipeApi = {
   // productApi.search note.
   productsSearch: ()         => api.get('/recipe/products/search'),
   bulkSave:       (rows)     => api.post('/recipe/bulk-save', { rows }),
+  renameRecipe:   (data)     => api.patch('/recipe/rename', data),
   deleteRow:      (id)       => api.delete(`/recipe/${id}`),
+  deleteRecipe:   (code, no) => api.delete(`/recipe/product/${code}/recipe/${no}`),
   deleteProduct:  (code)     => api.delete(`/recipe/product/${code}`),
-  checkRmMapping: ()         => api.get('/recipe/check-rm-mapping'),
-  fixRmMapping:   (mappings) => api.post('/recipe/fix-rm-mapping', { mappings }),
 }
 
 

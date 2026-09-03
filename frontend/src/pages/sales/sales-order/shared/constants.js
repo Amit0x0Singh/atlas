@@ -52,6 +52,11 @@ export const STATUS_STYLE = {
   UNDER_PRODUCTION: "bg-indigo-100 text-indigo-700",
   IN_INVENTORY: "bg-teal-100 text-teal-700",
   DISPATCHED: "bg-gray-100 text-gray-500",
+  // Display-only — see dispatchProgressLabel() in shared/utils.js. Never a
+  // real `status` value, only ever used to badge an IN_INVENTORY line that
+  // already has some (but not all) of its quantity dispatched.
+  PARTIALLY_DISPATCHED: "bg-amber-100 text-amber-700",
+  FULLY_DISPATCHED: "bg-gray-100 text-gray-500",
 };
 
 export const STATUS_LABELS = {
@@ -60,6 +65,8 @@ export const STATUS_LABELS = {
   UNDER_PRODUCTION: "Under Production",
   IN_INVENTORY: "Inventory",
   DISPATCHED: "Dispatch",
+  PARTIALLY_DISPATCHED: "Partially Dispatched",
+  FULLY_DISPATCHED: "Fully Dispatched",
 };
 
 // ── Blank line item — default shape for a new product line ───────────────────

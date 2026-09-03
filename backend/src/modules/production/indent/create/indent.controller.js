@@ -1,8 +1,9 @@
 import prisma from '../../../../db.js'
 import { toSafeErrorMessage } from '../../../../utils/safe-error.js'
+import { primaryRecipeNo } from '../../recipe/recipe-utils.js'
 
 const getStockChecks = async (productCode, batchSize) => {
-  const recipe = await prisma.recipeDb.findMany({ where: { productCode } })
+  const recipe = await prisma.recipeDb.findMany({ where: { productCode, recipeNo: await primaryRecipeNo(productCode) } })
   const size = parseFloat(batchSize)
   return Promise.all(recipe.map(async (r) => {
     const required = parseFloat((r.qtyPerUnit * size).toFixed(4))
@@ -34,7 +35,7 @@ export const createIndent = async (req, res) => {
     if (!productCode || !productName || !batchSize || !batchNo || !diNo)
       return res.status(400).json({ success: false, error: 'productCode, productName, batchSize, batchNo, diNo are required', code: 'VALIDATION_ERROR' })
 
-    const recipe = await prisma.recipeDb.findMany({ where: { productCode } })
+    const recipe = await prisma.recipeDb.findMany({ where: { productCode, recipeNo: await primaryRecipeNo(productCode) } })
     if (!recipe.length) return res.status(400).json({ success: false, error: 'No recipe found for this product. Add recipe in Recipe DB first.', code: 'VALIDATION_ERROR' })
 
     const totalSize = parseFloat(batchSize)

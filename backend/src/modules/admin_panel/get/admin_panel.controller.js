@@ -20,10 +20,15 @@ export const MODELS = {
   'stock-ledger': { model: 'stockLedger', group: 'inventory', title: 'Stock Ledger',            idField: 'id',                      orderBy: { timestamp: 'desc' } },
   'outward': { model: 'outward', group: 'inventory', title: 'Outward',                idField: 'id',                      orderBy: { timestamp: 'desc' } },
   'bom-issue-session': { model: 'bomIssueSession', group: 'inventory', title: 'BOM Issue',         idField: 'id',                      orderBy: { updatedAt: 'desc' } },
+  'material-indent': { model: 'materialIndent', group: 'inventory', title: 'Material Indents',       idField: 'id',                      orderBy: { createdAt: 'desc' } },
+  'material-indent-item': { model: 'materialIndentItem', group: 'inventory', title: 'Material Indent Items', idField: 'id',                      orderBy: { createdAt: 'desc' } },
+  'material-indent-sequence': { model: 'materialIndentSequence', group: 'inventory', title: 'Material Indent Sequence', idField: ['departmentCode', 'year'], orderBy: { year: 'desc' } },
+  'packing-item': { model: 'packingItem', group: 'masters', title: 'Packing Items',           idField: 'id',                      orderBy: { createdAt: 'desc' } },
 
   // ── Sales ──────────────────────────────────────────────────────────────────
   'sales-order': { model: 'salesOrder', group: 'sales', title: 'Sales Orders',             idField: 'id',         orderBy: { createdAt: 'desc' } },
   'sales-order-item': { model: 'salesOrderItem', group: 'sales', title: 'Sales Order Items',         idField: 'id',         orderBy: { createdAt: 'desc' } },
+  'sales-order-item-dispatch': { model: 'salesOrderItemDispatch', group: 'sales', title: 'Sales Order Item Dispatches', idField: 'id',         orderBy: { dispatchedAt: 'desc' } },
   'so-sequence': { model: 'soSequence', group: 'sales', title: 'SO Sequence',             idField: 'year', idType: 'int', orderBy: { year: 'desc' } },
   'customer-profile': { model: 'customerProfile', group: 'sales', title: 'Customer Profiles',        idField: 'id',         orderBy: { updatedAt: 'desc' } },
   'customer-product-profile': { model: 'customerProductProfile', group: 'sales', title: 'Customer Product Profiles', idField: 'id',         orderBy: { lastOrderedAt: 'desc' } },

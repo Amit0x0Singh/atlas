@@ -75,8 +75,10 @@ function toReqUser(user, { roles, permissions }) {
     email: user.email,
     username: user.username,
     full_name: user.fullName,
+    phone: user.phone ?? null,
     isActive: user.isActive,
     plants: user.plants,
+    department: user.department ?? null,
     roles,
     permissions: new Set(permissions),
   };

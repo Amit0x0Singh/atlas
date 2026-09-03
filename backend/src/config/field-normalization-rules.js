@@ -590,6 +590,13 @@ export const FIELD_RULES = {
     labelType: RULES.NONE, // fixed-vocabulary/enum-like — no case change
     status: RULES.NONE, // fixed-vocabulary/enum-like — no case change
   },
+  SalesOrderItemDispatch: {
+    uom: RULES.LOWER, // canonical unit code — normalized lowercase, uppercase on display
+    invoiceNo: RULES.UPPER, // business code/identifier — same treatment as SalesOrder.invoiceNo
+    transportName: RULES.LOWER, // business name — normalized lowercase, Title Case on display
+    dispatchedBy: RULES.NONE, // REVIEW: no confident naming signal — safe default, same as SalesOrder.dispatchedBy
+    remarks: RULES.NONE, // business name/free text — never case-changed
+  },
   CustomerProfile: {
     customerName: RULES.LOWER, // business name — normalized lowercase, Title Case on display [UNIQUE]
     company: RULES.LOWER, // business name — normalized lowercase, Title Case on display (small closed list, see gate.controller.js VALID_COMPANIES — now compared case-insensitively)

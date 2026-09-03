@@ -5,6 +5,7 @@ import {
   STATUS_STYLE,
   STATUS_LABELS,
 } from "../../../shared/constants.js";
+import { dispatchProgressLabel } from "../../../shared/utils.js";
 import { useOptionValues } from "../../../../../../hooks/useOptionValues.js";
 import { Button, IconButton } from "../../../../../../components/ui";
 import { Can } from "../../../../../../components/common/Can.jsx";
@@ -13,92 +14,119 @@ import DispatchLineCard from "../components/DispatchLineCard.jsx";
 import DispatchEntryFields from "../components/DispatchEntryFields.jsx";
 import { toTitleCase } from "../../../../../../utils/textDisplay.js";
 
-// Statuses that can be dispatched right now
-const DISPATCHABLE = ["IN_INVENTORY", "READY_TO_DISPATCH", "PACKED"];
+// Only a line sitting in Inventory, with a Secondary Pack quantity actually
+// set AND something left to send, can be dispatched right now. Dispatch is
+// tracked in pack count (totalCS), not the line's KG total — the backend
+// sends remainingQty back as `null` (not 0) when totalCS was never set, so
+// that case can't be mistaken for "fully dispatched" here.
+const isReady = (it) => it.status === "IN_INVENTORY" && it.remainingQty != null && Number(it.remainingQty) > 0.0009;
 
 export default function DispatchOrder({ order, onSave, onDelete, onClose }) {
   const today = new Date().toISOString().split("T")[0];
 
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
   const [invoiceNo, setInvoiceNo] = useState(order.invoiceNo || "");
   const [transportName, setTransportName] = useState(toTitleCase(order.transportName) || "");
   const [dispatchedBy, setDispatchedBy] = useState(order.dispatchedBy || "");
   const [remarks, setRemarks] = useState(order.remarks || "");
-  const [partialToggles, setPartialToggles] = useState({});
-  const [partialQty, setPartialQty] = useState({});
+  // Qty the operator wants to send for each line right now — keyed by item
+  // id, only populated once they actually edit a field (otherwise each
+  // ready line just defaults to its full remaining quantity, see `lines`).
+  const [dispatchQty, setDispatchQty] = useState({});
   const { data: labelTypes = [] } = useOptionValues('LABEL_TYPE')
 
   // ── Determine overall status for the header badge ─────────────────────────
   const dominantStatus = order.items.every((it) => it.status === "DISPATCHED")
     ? "DISPATCHED"
-    : order.items.find((it) =>
-        ["READY_TO_DISPATCH", "IN_INVENTORY", "PACKED"].includes(it.status),
-      )?.status ||
+    : order.items.find((it) => it.status === "IN_INVENTORY")?.status ||
       order.items[0]?.status ||
       "PENDING";
 
   const isAlreadyDispatched = dominantStatus === "DISPATCHED";
 
   // ── Normalise line data ───────────────────────────────────────────────────
-  const lines = order.items.map((it) => ({
-    id: it.id,
-    productName: toTitleCase(it.inhouseProductName || it.customerProductName),
-    totalQty: it.totalQty,
-    totalUom: (it.totalUom || "KG").toUpperCase(),
-    batchNo: it.batchNo || "—",
-    mrp: it.mrp || "—",
-    mfgDate: it.mfgDate
-      ? new Date(it.mfgDate).toLocaleDateString("en-IN")
-      : "—",
-    expDate: it.expDate
-      ? new Date(it.expDate).toLocaleDateString("en-IN")
-      : "—",
-    primaryPack: it.unitPackType || "—",
-    secondaryPack: it.packingType || "—",
-    noOfUnits: it.unitQty ? `${it.unitQty} ${(it.unitUom || "KG").toUpperCase()}` : "—",
-    noOfSecPacks: it.totalCS || "—",
-    labelType: it.labelType
-      ? labelTypes.find((l) => l.code === it.labelType)?.label || it.labelType
-      : "—",
-    currentStatus: it.status,
-    totalCSNum: parseInt(it.totalCS) || 0,
-    canDispatch: DISPATCHABLE.includes(it.status),
-  }));
+  const lines = order.items.map((it) => {
+    const dispatchedQty = Number(it.dispatchedQty) || 0;
+    const hasPackQty = it.remainingQty != null;
+    const remainingQty = hasPackQty ? Math.max(0, Number(it.remainingQty)) : 0;
+    const canDispatch = isReady(it);
+    return {
+      id: it.id,
+      productName: toTitleCase(it.inhouseProductName || it.customerProductName),
+      totalQty: it.totalQty,
+      totalUom: (it.totalUom || "KG").toUpperCase(),
+      totalCS: it.totalCS || 0,
+      hasPackQty,
+      dispatchedQty,
+      remainingQty,
+      dispatches: it.dispatches || [],
+      batchNo: it.batchNo || "—",
+      mrp: it.mrp || "—",
+      mfgDate: it.mfgDate
+        ? new Date(it.mfgDate).toLocaleDateString("en-IN")
+        : "—",
+      expDate: it.expDate
+        ? new Date(it.expDate).toLocaleDateString("en-IN")
+        : "—",
+      primaryPack: it.unitPackType || "—",
+      secondaryPack: it.packingType || "—",
+      noOfUnits: it.unitQty ? `${it.unitQty} ${(it.unitUom || "KG").toUpperCase()}` : "—",
+      currentStatus: it.status,
+      progressLabel: dispatchProgressLabel(it),
+      canDispatch,
+      // Defaults to "send every pack that's left" — untouched, this
+      // reproduces the old one-click full dispatch; edited down, it's a
+      // partial dispatch. Never auto-fills once already-DISPATCHED lines.
+      qtyValue: dispatchQty[it.id] ?? (canDispatch ? String(remainingQty) : ""),
+    };
+  });
 
   // Split into dispatchable vs. blocked
   const readyLines   = lines.filter((l) => l.canDispatch);
   const blockedLines = lines.filter((l) => !l.canDispatch);
   const hasMixed     = readyLines.length > 0 && blockedLines.length > 0;
 
-  // ── Mark as dispatched ────────────────────────────────────────────────────
+  // Lines actually queued to go out right now (qty > 0) — everything else
+  // in readyLines is skipped, letting the salesperson dispatch only some of
+  // the ready products in this pass and leave the rest for later.
+  const queuedLines = readyLines.filter((l) => {
+    const q = parseFloat(l.qtyValue);
+    return !isNaN(q) && q > 0;
+  });
+  const overLines = queuedLines.filter((l) => parseFloat(l.qtyValue) > l.remainingQty + 0.0009);
+
+  // ── Dispatch queued lines ─────────────────────────────────────────────────
   async function markDispatched() {
+    if (!queuedLines.length || overLines.length) return;
     setSaving(true);
+    setError("");
     try {
-      await salesOrderApi.patchDispatch(order.id, {
-        invoiceNo,
-        transportName,
-        dispatchedBy,
-        remarks,
-        invoiceDate: today,
-      });
-      // Only dispatch lines that are ready — skip PLANNED, PENDING, IN_PRODUCTION, etc.
-      for (const line of readyLines) {
-        if (partialToggles[line.id]) {
-          const dispatched = parseInt(partialQty[line.id] || 0);
-          const isFullyDispatched =
-            dispatched >= line.totalCSNum && line.totalCSNum > 0;
-          await salesOrderApi.updateItem(line.id, {
-            status: isFullyDispatched ? "DISPATCHED" : line.currentStatus,
-          });
-        } else {
-          await salesOrderApi.updateItem(line.id, { status: "DISPATCHED" });
-        }
+      for (const line of queuedLines) {
+        await salesOrderApi.dispatchItem(line.id, {
+          qty: parseFloat(line.qtyValue),
+          invoiceNo,
+          invoiceDate: today,
+          transportName,
+          dispatchedBy,
+          remarks,
+        });
       }
+      // Order-header fields (invoice/transport/etc.) reflect the most recent
+      // dispatch — each line's own dispatch row already keeps its own copy,
+      // so nothing from earlier dispatches is lost.
+      await salesOrderApi.patchDispatch(order.id, {
+        invoiceNo, transportName, dispatchedBy, remarks, invoiceDate: today,
+      });
       onSave();
+    } catch (err) {
+      setError(err.response?.data?.error || err.message || "Dispatch failed");
     } finally {
       setSaving(false);
     }
   }
+
+  const setQty = (lineId, val) => setDispatchQty((q) => ({ ...q, [lineId]: val }));
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -113,7 +141,7 @@ export default function DispatchOrder({ order, onSave, onDelete, onClose }) {
               {toTitleCase(order.customerName)} — {(order.company || '').toUpperCase()}
             </h2>
             <p className="text-xs text-white/70 mt-0.5">
-              {order.items.length} product line
+              {order.diNo} · {order.items.length} product line
               {order.items.length !== 1 ? "s" : ""}
               {hasMixed && (
                 <span className="ml-2 bg-white/20 px-2 py-0.5 rounded-full">
@@ -135,6 +163,12 @@ export default function DispatchOrder({ order, onSave, onDelete, onClose }) {
         {/* ── Body ────────────────────────────────────────────────────── */}
         <div className="overflow-y-auto flex-1 p-6 space-y-5">
 
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3">
+              {error}
+            </div>
+          )}
+
           {/* Mixed-status notice */}
           {hasMixed && !isAlreadyDispatched && (
             <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
@@ -142,9 +176,9 @@ export default function DispatchOrder({ order, onSave, onDelete, onClose }) {
               <div>
                 <p className="text-sm font-bold text-amber-800">Partial dispatch — {readyLines.length} of {lines.length} items ready</p>
                 <p className="text-xs text-amber-700 mt-0.5">
-                  Items in <strong>Inventory</strong> status will be dispatched now.
-                  Items still in production (Planned / In Production) will remain unchanged
-                  and can be dispatched in a separate dispatch once ready.
+                  Items in <strong>Inventory</strong> status can be dispatched now, in any quantity.
+                  Items still in production will remain unchanged here and can be dispatched
+                  separately once ready.
                 </p>
               </div>
             </div>
@@ -168,10 +202,7 @@ export default function DispatchOrder({ order, onSave, onDelete, onClose }) {
                   line={line}
                   idx={idx}
                   isAlreadyDispatched={isAlreadyDispatched}
-                  partialToggle={partialToggles[line.id]}
-                  onTogglePartial={(checked) => setPartialToggles((t) => ({ ...t, [line.id]: checked }))}
-                  partialQtyValue={partialQty[line.id]}
-                  onChangePartialQty={(val) => setPartialQty((q) => ({ ...q, [line.id]: val }))}
+                  onChangeQty={(val) => setQty(line.id, val)}
                 />
               ))}
             </div>
@@ -210,21 +241,26 @@ export default function DispatchOrder({ order, onSave, onDelete, onClose }) {
               Delete Order
             </Button>
           </Can>
-          <div className="flex gap-3">
+          <div className="flex items-center gap-3">
+            {overLines.length > 0 && (
+              <span className="text-xs font-semibold text-red-600">
+                {overLines.length} line{overLines.length !== 1 ? "s" : ""} exceed{overLines.length === 1 ? "s" : ""} remaining qty
+              </span>
+            )}
             {!isAlreadyDispatched && readyLines.length > 0 && (
               <Can permission="sales.order.dispatch" mode="disable">
                 <Button
                   variant="success"
                   icon={Truck}
                   loading={saving}
-                  disabled={saving}
+                  disabled={saving || !queuedLines.length || overLines.length > 0}
                   onClick={markDispatched}
                 >
                   {saving
                     ? "Processing…"
-                    : hasMixed
-                    ? `Dispatch ${readyLines.length} Ready Item${readyLines.length !== 1 ? "s" : ""}`
-                    : "Mark as Dispatched"}
+                    : queuedLines.length
+                      ? `Dispatch ${queuedLines.length} Item${queuedLines.length !== 1 ? "s" : ""}`
+                      : "Enter a qty to dispatch"}
                 </Button>
               </Can>
             )}

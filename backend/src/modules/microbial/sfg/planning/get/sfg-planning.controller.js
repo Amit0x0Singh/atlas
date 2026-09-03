@@ -1,5 +1,6 @@
 import prisma from '../../../../../db.js'
 import { toSafeErrorMessage } from '../../../../../utils/safe-error.js'
+import { primaryRecipeNo } from '../../../../production/recipe/recipe-utils.js'
 
 export const checkPlanMicrobes = async (req, res) => {
   try {
@@ -13,7 +14,7 @@ export const checkPlanMicrobes = async (req, res) => {
     if (!plan) return res.status(404).json({ success: false, error: 'Plan not found', code: 'NOT_FOUND' })
 
     const recipe = await prisma.recipeDb.findMany({
-      where: { productCode: plan.productCode, isMicrobe: true },
+      where: { productCode: plan.productCode, recipeNo: await primaryRecipeNo(plan.productCode), isMicrobe: true },
     })
     if (!recipe.length) return res.json({ success: true, has_microbes: false, microbes: [], plan })
 
@@ -107,12 +108,19 @@ export const checkPlanMicrobes = async (req, res) => {
 // potency exists yet) — the frontend keeps it editable.
 export const getProductMicrobeRequirements = async (req, res) => {
   try {
-    const { product_code, qty } = req.query
+    const { product_code, qty, recipe_no } = req.query
     if (!product_code) return res.status(400).json({ success: false, error: 'product_code required', code: 'VALIDATION_ERROR' })
     const orderQty = Number(qty) || 0
 
+    // Honour the recipe the task was planned against (BOM Issuance stores it
+    // on the production task); fall back to the product's primary recipe only
+    // when the caller didn't pass one.
+    const recipeNo = recipe_no != null && recipe_no !== ''
+      ? parseInt(recipe_no, 10)
+      : await primaryRecipeNo(product_code)
+
     const [recipeRows, microbes] = await Promise.all([
-      prisma.recipeDb.findMany({ where: { productCode: product_code } }),
+      prisma.recipeDb.findMany({ where: { productCode: product_code, recipeNo } }),
       prisma.microbeMaster.findMany(),
     ])
 

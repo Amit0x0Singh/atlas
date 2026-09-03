@@ -8,6 +8,10 @@ model User {
   pinHash      String?  @map("pin_hash") @db.VarChar(255)
   role         String   @default("") @db.VarChar(50)
   plants       String[] @default([]) @map("plants")
+  // Department / section code (from the MATERIAL_INDENT_DEPARTMENT option
+  // group). The Material Indent module raises every request against this —
+  // an account with no department set cannot raise indents.
+  department   String?  @map("department") @db.VarChar(50)
   employeeId   String?  @unique @map("employee_id")
   isActive     Boolean  @default(true) @map("is_active")
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz()

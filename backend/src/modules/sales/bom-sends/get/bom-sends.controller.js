@@ -2,6 +2,7 @@ import prisma from "../../../../db.js";
 import { toSafeErrorMessage } from "../../../../utils/safe-error.js";
 import getIssuedQty from "../utils/utils.js";
 import { flattenPack, packDetailInclude } from "../../../../services/pack-view.js";
+import { primaryRecipeNo } from "../../../production/recipe/recipe-utils.js";
 
 const getFifoPacks = async (rmCode) => {
   const packs = await prisma.packDetail.findMany({
@@ -90,7 +91,7 @@ const getBomSend = async (req, res) => {
     } catch {}
 
     const recipe = await prisma.recipeDb.findMany({
-      where: { productCode: send.productCode },
+      where: { productCode: send.productCode, recipeNo: await primaryRecipeNo(send.productCode) },
       orderBy: { roleType: "asc" },
     });
 

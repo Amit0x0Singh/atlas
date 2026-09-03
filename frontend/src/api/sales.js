@@ -9,6 +9,10 @@ export const salesOrderApi = {
   patchDispatch:(id, data)   => api.patch(`/sales-orders/dispatch/${id}`, data),
   remove:       (id)         => api.delete(`/sales-orders/${id}`),
   updateItem:   (itemId, data) => api.patch(`/sales-orders/item/${itemId}`, data),
+  // Records ONE dispatch transaction against ONE line item (partial-quantity
+  // aware — see update/sales-order.controller.js's dispatchSalesOrderItem).
+  // Never overwrites a prior dispatch; each call adds a new history row.
+  dispatchItem: (itemId, data) => api.post(`/sales-orders/item/${itemId}/dispatch`, data),
   removeItem:   (itemId)     => api.delete(`/sales-orders/item/${itemId}`),
   companies:    ()           => api.get('/sales-orders/companies'),
   addCompany:   (code, name) => api.post('/sales-orders/companies', { code, name }),

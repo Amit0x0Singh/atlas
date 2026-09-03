@@ -30,32 +30,62 @@ const EXPAND_COL_WIDTH = 32
 const PRINT_COL_WIDTH  = 150
 
 export default function PackTable({ reloadTrigger }) {
-  const [filterCode, setFilterCode]     = useState("");
+  const [search, setSearch]             = useState("");
   const [expandedKeys, setExpandedKeys] = useState(new Set());
   const [filters, setFilters]            = useState(EMPTY_PACK_TABLE_FILTERS);
   const [sort, setSort]                  = useState(DEFAULT_PACK_TABLE_SORT);
   const [page, setPage]                  = useState(1);
   const [limit, setLimit]                = useState(15);
-  const { packs, loading }              = usePacks(filterCode, reloadTrigger);
+  const { packs, loading }              = usePacks(reloadTrigger);
 
   const { columnWidths, columnVisibility, visibleColumns, startResize, toggleColumn } = useColumnPreferences('print-master-packs', COLUMN_DEFS)
 
   const allGroups = useMemo(() => groupPacks(packs), [packs]);
 
-  // "Status" filter drives the existing pending/completed split — Pending
-  // only (default) hides fully-scanned invoices, "Show completed too" shows
-  // everything. The small toolbar's completed badge stays wired to the same
-  // filters.status field so both controls always agree.
-  const showCompleted = filters.status === 'ALL'
+  // Distinct suppliers across every loaded group — feeds the Filter popup's
+  // Supplier dropdown.
+  const suppliers = useMemo(
+    () => [...new Set(allGroups.map(g => g.supplier).filter(Boolean))].sort((a, b) => a.localeCompare(b)),
+    [allGroups],
+  )
+
+  // "Status" filter: '' = Pending only (default, hides fully-scanned invoices),
+  // 'ALL' = show pending + completed, 'DONE' = completed only. The small
+  // toolbar toggle still flips between '' and 'ALL'.
+  const showCompleted = filters.status === 'ALL' || filters.status === 'DONE'
 
   // A group is "pending" if at least one bag is still AWAITING_INWARD
   const pendingGroups   = useMemo(() => allGroups.filter(g => g.bags.some(b => b.status === 'AWAITING_INWARD')), [allGroups]);
   const completedGroups = useMemo(() => allGroups.filter(g => g.bags.every(b => b.status !== 'AWAITING_INWARD')), [allGroups]);
-  const statusFiltered  = showCompleted ? allGroups : pendingGroups;
+  const statusFiltered  = filters.status === 'ALL' ? allGroups
+                        : filters.status === 'DONE' ? completedGroups
+                        : pendingGroups;
+
+  // Search (item name / code / lot / invoice / supplier) + Filter popup
+  // params (supplier, received-date range) — all client-side over the groups.
+  const filteredGroups = useMemo(() => {
+    const term = search.trim().toLowerCase()
+    const from = filters.receivedFrom ? new Date(filters.receivedFrom) : null
+    const to   = filters.receivedTo   ? new Date(`${filters.receivedTo}T23:59:59.999`) : null
+    return statusFiltered.filter(g => {
+      if (term) {
+        const hay = `${g.itemName || ''} ${g.itemCode || ''} ${g.lotNo || ''} ${g.invoiceNo || ''} ${g.supplier || ''}`.toLowerCase()
+        if (!hay.includes(term)) return false
+      }
+      if (filters.supplier && g.supplier !== filters.supplier) return false
+      if (from || to) {
+        const d = g.receivedDate ? new Date(g.receivedDate) : null
+        if (!d || isNaN(d)) return false
+        if (from && d < from) return false
+        if (to && d > to) return false
+      }
+      return true
+    })
+  }, [statusFiltered, search, filters])
 
   const groups = useMemo(() => {
     const dir = sort.direction === 'asc' ? 1 : -1
-    return [...statusFiltered].sort((a, b) => {
+    return [...filteredGroups].sort((a, b) => {
       if (sort.field === 'itemName') return dir * (a.itemName || '').localeCompare(b.itemName || '')
       if (sort.field === 'bags') return dir * (a.bags.length - b.bags.length)
       // 'receivedDate' sort option — receivedDate itself is a date-only
@@ -66,12 +96,12 @@ export default function PackTable({ reloadTrigger }) {
       // order correctly by when they were entered, not just which day.
       return dir * (new Date(a.createdAt || 0) - new Date(b.createdAt || 0))
     })
-  }, [statusFiltered, sort])
+  }, [filteredGroups, sort])
 
   const paginatedGroups = groups.slice((page - 1) * limit, page * limit);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { setPage(1) }, [filters, filterCode, sort]);
+  useEffect(() => { setPage(1) }, [filters, search, sort]);
 
   const toggle = (key) =>
     setExpandedKeys((prev) => {
@@ -118,11 +148,12 @@ export default function PackTable({ reloadTrigger }) {
       </div>
 
       <PackTableFilterToolbar
-        search={filterCode} onSearchChange={setFilterCode}
+        search={search} onSearchChange={setSearch}
         filters={filters} onFiltersChange={setFilters}
         sort={sort} onSortChange={setSort}
         onExport={exportPackTableCsv}
         resultCount={groups.length}
+        suppliers={suppliers}
       />
 
       <div className="flex justify-end px-4 py-1.5 border-b border-gray-100">

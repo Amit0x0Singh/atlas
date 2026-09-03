@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, memo, useCallback } from 'react'
 import { createPortal } from 'react-dom'
+import { X } from 'lucide-react'
 
 // ─── Panel size → max-width ───────────────────────────────────────────────────
 const SIZES = {
@@ -40,6 +41,11 @@ const FOCUSABLE = [
  * @param {boolean}    closeOnOverlay   (default true)
  * @param {boolean}    closeOnEsc       (default true)
  * @param {string}     className        extra classes for the panel
+ * @param {boolean}    showCloseButton  floating "X" in the panel's top-right
+ *                                      corner (default true) — set false only
+ *                                      when the content already renders its
+ *                                      own close control in its own header,
+ *                                      to avoid a redundant second X.
  */
 const Modal = memo(function Modal({
   open,
@@ -49,6 +55,7 @@ const Modal = memo(function Modal({
   closeOnOverlay  = true,
   closeOnEsc      = true,
   className       = '',
+  showCloseButton = true,
 }) {
   // Two-phase animation: mounted (in DOM) → visible (CSS transition fires)
   const [mounted, setMounted] = useState(false)
@@ -173,6 +180,16 @@ const Modal = memo(function Modal({
           className,
         ].join(' ')}
       >
+        {showCloseButton && (
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="absolute top-3 right-3 z-10 flex items-center justify-center w-7 h-7 rounded-full bg-white/90 text-gray-400 shadow-sm ring-1 ring-gray-200 hover:text-gray-700 hover:bg-white transition-colors"
+          >
+            <X size={15} />
+          </button>
+        )}
         {children}
       </div>
     </div>,

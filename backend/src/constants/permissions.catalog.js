@@ -67,6 +67,10 @@ export const PERMISSIONS = [
   ...group('inventory', 'outward', ['view', 'create', 'adjust'], (a) =>
     a === 'adjust' ? 'Inline stock-adjustment endpoint on the Outward screen' : `${a} outward`),
   ...group('inventory', 'containers', ['view', 'create', 'update']),
+  // Material Indent — plant sections request general store items (view/create),
+  // Store issues or rejects them from the Open Indents workflow (issue).
+  ...group('inventory', 'material-indent', ['view', 'create', 'issue'], (a) =>
+    a === 'issue' ? 'Issue or reject Material Indent lines from Store Outward' : `${a} a Material Indent`),
   // Note: Bulk Location and the Adjustments module (Stock Adjustments,
   // Warehouse Transfers, Decanting, FIFO Override) were removed as features
   // — no permission entries for them.

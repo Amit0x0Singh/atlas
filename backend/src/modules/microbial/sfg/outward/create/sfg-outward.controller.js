@@ -33,7 +33,7 @@ export const createSfgOutward = async (req, res) => {
   try {
     const {
       product_name, customer_name, di_number, batch_code, section,
-      order_qty_kg, issuer_name, receiver_name, requirements,
+      order_qty_kg, issuer_name, receiver_name, requirements, plan_task_id,
     } = req.body || {}
 
     if (!product_name || !Array.isArray(requirements) || !requirements.length)
@@ -59,12 +59,35 @@ export const createSfgOutward = async (req, res) => {
           orderQtyKg: order_qty_kg != null ? Number(order_qty_kg) : null,
           issuerName: issuer_name || null,
           receiverName: receiver_name || null,
+          planTaskId: plan_task_id || null,
         },
       })
 
+      const G_PER_KG = 1000
       for (const r of requirements) {
-        const pickedTotal = r.allocations.reduce((s, a) => s + Number(a.qty_issued_kg), 0)
-        const isPartial = pickedTotal + 0.0001 < Number(r.required_qty_kg)
+        // Whether this line is a partial fill is judged on delivered CFU, not
+        // on kg: each SFG batch has its own potency, so the kilograms picked
+        // from stock legitimately differ from the recipe's nominal kg. Sum
+        // (qty × 1000 × batch potency) and compare to the CFU requirement.
+        const neededCfu = Number(r.required_qty_kg) * G_PER_KG * Number(r.required_cfu_per_g)
+        const allocInwards = await tx.microbialSfgInward.findMany({
+          where: { inwardId: { in: r.allocations.map((a) => a.inward_id) } },
+          select: { inwardId: true, inhouseCfuPerG: true },
+        })
+        const potencyByInward = new Map(allocInwards.map((i) => [i.inwardId, Number(i.inhouseCfuPerG)]))
+        const coveredCfu = r.allocations.reduce(
+          (s, a) => s + Number(a.qty_issued_kg) * G_PER_KG * (potencyByInward.get(a.inward_id) || 0), 0,
+        )
+        // Never issue meaningfully more CFU than the requirement asks for —
+        // the 0.1% headroom only absorbs qty-rounding from the FEFO preview.
+        if (neededCfu > 0 && coveredCfu > neededCfu * 1.001) {
+          const overCfu = coveredCfu - neededCfu
+          throw new Error(
+            `${r.microbe_name || r.microbe_code}: allocations deliver ${coveredCfu.toExponential(2)} CFU but only ` +
+            `${neededCfu.toExponential(2)} is required (over by ${overCfu.toExponential(2)}). Reduce the issued quantities.`,
+          )
+        }
+        const isPartial = coveredCfu + 1 < neededCfu
 
         for (const a of r.allocations) {
           const inward = await tx.microbialSfgInward.findUnique({ where: { inwardId: a.inward_id }, include: { container: { select: { inactive: true } } } })

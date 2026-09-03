@@ -85,6 +85,10 @@ export const ROLE_SEEDS = [
       // Microbe Master CRUD, by contrast, WAS production-operation-gated
       // before this migration — full access preserved here.
       'masters.microbe.view', 'masters.microbe.create', 'masters.microbe.update', 'masters.microbe.delete',
+      // Plant sections raise Material Indents to the Store for general/daily-use
+      // items; they don't issue them (that's inventory.material-indent.issue,
+      // Store-only).
+      'inventory.material-indent.view', 'inventory.material-indent.create',
       // This one role is shared by all 6 plant-scoped accounts (Microbial,
       // Nano, Botanical, ...) — it carries full capability across every
       // plant module; which plant(s) a given login can actually reach is
@@ -99,6 +103,7 @@ export const ROLE_SEEDS = [
     permissions: viewOnly([
       ...productionAll,
       'masters.recipe.view', 'masters.product.view', 'masters.equipment.view', 'masters.microbe.view',
+      'inventory.material-indent.view',
       ...plantAll,
     ]),
   },

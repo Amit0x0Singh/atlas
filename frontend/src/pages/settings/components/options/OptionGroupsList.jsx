@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { ChevronRight, Package } from 'lucide-react'
 import { Loading } from '../../../../components/ui'
 import { useOptionGroups } from '../../../../hooks/useOptionsAdmin.js'
@@ -8,14 +7,16 @@ import PackingItemsSection from '../packing-items/PackingItemsSection.jsx'
 // Sentinel key for the one non-OptionGroup entry in this list — the Packing
 // Item master (its own table, richer shape: name + code + type), surfaced
 // here so it's managed alongside the plain dropdown option groups.
-const PACKING_ITEMS = '__PACKING_ITEMS__'
+export const PACKING_ITEMS = '__PACKING_ITEMS__'
 
-export default function OptionGroupsList() {
+// `selected` / `setSelected` are owned by SettingsPage so the single header
+// "Back" button can step out of a detail view instead of leaving the page —
+// no second, inner back control.
+export default function OptionGroupsList({ selected, setSelected }) {
   const { data: groups = [], isLoading } = useOptionGroups()
-  const [selected, setSelected] = useState(null)
 
-  if (selected === PACKING_ITEMS) return <PackingItemsSection onBack={() => setSelected(null)} />
-  if (selected) return <OptionGroupDetail groupCode={selected} onBack={() => setSelected(null)} />
+  if (selected === PACKING_ITEMS) return <PackingItemsSection />
+  if (selected) return <OptionGroupDetail groupCode={selected} />
 
   if (isLoading) return <Loading />
 

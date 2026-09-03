@@ -136,6 +136,86 @@ model Outward {
   @@map("outward")
 }
 
+// ─── Material Indent ──────────────────────────────────────────────────────────
+// Plant sections raise a Material Indent for general/daily-use store items
+// (PPE, cleaning consumables, IPA, hand wash, …) — items that live in RM
+// Master but aren't BOM raw materials. Submitting moves no stock; the Store
+// issues each line later via QR scan (see the Open Indents workflow under
+// Store Outward), which is what actually deducts inventory.
+model MaterialIndent {
+  id              String    @id @default(cuid())
+  // Null while DRAFT; assigned on submit as "{DEPT}-MR-{YY}-{0001}".
+  indentNo        String?   @unique @map("indent_no")
+  year            Int
+  departmentCode  String    @map("department_code")
+  departmentName  String    @map("department_name")
+  // Legacy from the prototype — no longer collected on the form (kept
+  // nullable so old rows and any future use still validate).
+  purpose         String?
+  otherPurpose    String?   @map("other_purpose")
+  priority        String    @default("Normal")
+  criticalReason  String?   @map("critical_reason")
+  overallRemarks  String?   @map("overall_remarks")
+  // DRAFT | OPEN | PARTIAL | COMPLETED | REJECTED | CANCELLED
+  status          String    @default("DRAFT")
+  rejectionReason String?   @map("rejection_reason")
+  submittedAt     DateTime? @map("submitted_at")
+  completedAt     DateTime? @map("completed_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at")
+  // createdBy holds the requester's email (auto-stamped) — "My Indents" filters on it.
+  createdBy       String?   @map("created_by") @db.VarChar(255)
+  updatedBy       String?   @map("updated_by") @db.VarChar(255)
+  // Snapshot of the requester taken at submit time from their account:
+  //  • requesterName   — full name, shown ("Amit Nano") instead of the raw email
+  //  • requesterPlants — their User.plants[]; drives plant-scoped visibility on
+  //    the requester listing (a Nano person sees only Nano-plant indents, etc.)
+  requesterName   String?   @map("requester_name")
+  requesterPlants String[]  @default([]) @map("requester_plants")
+
+  items MaterialIndentItem[]
+
+  @@index([status])
+  @@index([departmentCode])
+  @@index([createdBy])
+  @@index([submittedAt])
+  @@map("material_indent")
+}
+
+model MaterialIndentItem {
+  id                  String   @id @default(cuid())
+  indentId            String   @map("indent_id")
+  itemCode            String   @map("item_code")
+  itemName            String   @map("item_name")
+  category            String?
+  subCategory         String?  @map("sub_category")
+  uom                 String
+  requestedQty        Float    @map("requested_qty")
+  issuedQty           Float    @default(0) @map("issued_qty")
+  // PENDING | PARTIAL | ISSUED | REJECTED
+  lineStatus          String   @default("PENDING") @map("line_status")
+  lineRejectionReason String?  @map("line_rejection_reason")
+  remarks             String?
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @default(now()) @updatedAt @map("updated_at")
+  createdBy           String?  @map("created_by") @db.VarChar(255)
+  updatedBy           String?  @map("updated_by") @db.VarChar(255)
+
+  indent MaterialIndent @relation(fields: [indentId], references: [id], onDelete: Cascade)
+
+  @@index([indentId])
+  @@map("material_indent_item")
+}
+
+model MaterialIndentSequence {
+  departmentCode String @map("department_code")
+  year           Int
+  seq            Int    @default(0)
+
+  @@id([departmentCode, year])
+  @@map("material_indent_sequence")
+}
+
 model BomIssueSession {
   id          String   @id
   planTaskId  String?  @map("plan_task_id")

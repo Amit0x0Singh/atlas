@@ -185,6 +185,10 @@ model MicrobialSfgOutward {
   orderQtyKg   Float?   @map("order_qty_kg")
   issuerName   String?  @map("issuer_name")
   receiverName String?  @map("receiver_name")
+  // Links every per-microbe issuance to the production task it was issued
+  // against, so Outward History can group a task's issuances (which span
+  // several partial sessions) back together.
+  planTaskId   String?  @map("plan_task_id")
   issuedAt     DateTime @default(now()) @map("issued_at") @db.Timestamptz()
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()

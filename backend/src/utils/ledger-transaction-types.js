@@ -16,6 +16,7 @@
 //   WAREHOUSE_TRANSFER — outward.controller.js (warehouseTransfer)
 //   DIRECT_ISSUE       — outward.controller.js (directIssue)
 //   CONTAINER_ISSUE    — containers.controller.js (issueFromContainer)
+//   MATERIAL_INDENT    — modules/inventory/material-indent/issue/material-indent.controller.js (issueLine)
 export const TRANSACTION_TYPES = [
   { value: 'INWARD',             label: 'Inward' },
   { value: 'BOM_ISSUANCE',       label: 'BOM Issuance' },
@@ -24,6 +25,7 @@ export const TRANSACTION_TYPES = [
   { value: 'WAREHOUSE_TRANSFER', label: 'Warehouse Transfer' },
   { value: 'DIRECT_ISSUE',       label: 'Direct Issue' },
   { value: 'CONTAINER_ISSUE',    label: 'Container Issue' },
+  { value: 'MATERIAL_INDENT',    label: 'Material Indent' },
 ]
 
 export const TRANSACTION_TYPE_VALUES = new Set(TRANSACTION_TYPES.map(t => t.value))

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { packsApi } from "../../../../api/inventory.js";
 
-export function usePacks(filterCode, reloadTrigger) {
+export function usePacks(reloadTrigger) {
   const [packs, setPacks]   = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -9,9 +9,10 @@ export function usePacks(filterCode, reloadTrigger) {
     try {
       setLoading(true);
       const r = await packsApi.list({
-        itemCode: filterCode || undefined,
         // "all" — this page groups+paginates client-side and must see every
         // pending group, not just the most-recently-created 500 bag rows.
+        // Search / supplier / date filtering all happen client-side over the
+        // grouped list (see PackTable.jsx).
         limit: "all",
       });
       setPacks(r.data || []);
@@ -20,7 +21,7 @@ export function usePacks(filterCode, reloadTrigger) {
     } finally {
       setLoading(false);
     }
-  }, [filterCode]);
+  }, []);
 
   useEffect(() => {
     load();

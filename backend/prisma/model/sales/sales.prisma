@@ -42,6 +42,7 @@ model SalesOrderItem {
   unitUom             String?    @map("unit_uom")
   unitPackType        String?    @map("unit_pack_type")
   packingType         String?    @map("packing_type")
+  unitsPerCS          Int?       @map("units_per_cs")
   totalCS             Int?       @map("total_cs")
   labelType           String?    @map("label_type")
   mrp                 Float?
@@ -53,9 +54,41 @@ model SalesOrderItem {
   createdBy           String?    @map("created_by") @db.VarChar(255)
   updatedBy           String?    @map("updated_by") @db.VarChar(255)
 
+  dispatches          SalesOrderItemDispatch[]
+
   @@index([salesOrderId])
   @@index([status])
   @@map("sales_order_item")
+}
+
+// One row per dispatch transaction against a SalesOrderItem — never updated
+// or overwritten, only ever inserted. SalesOrderItem.totalQty stays the
+// original ordered quantity; how much of it has actually gone out the door
+// is SUM(qty) across these rows, so the same line can be dispatched several
+// times (different days, different partial quantities) independently of
+// every other line on the same DI. SalesOrderItem.status still flips to
+// DISPATCHED, but only once the running total reaches totalQty — see
+// dispatchSalesOrderItem in update/sales-order.controller.js.
+model SalesOrderItemDispatch {
+  id               String         @id @default(cuid())
+  salesOrderItemId String         @map("sales_order_item_id")
+  salesOrderItem   SalesOrderItem @relation(fields: [salesOrderItemId], references: [id], onDelete: Cascade)
+  qty              Float
+  uom              String
+  invoiceNo        String?        @map("invoice_no")
+  invoiceDate      DateTime?      @map("invoice_date")
+  transportName    String?        @map("transport_name")
+  dispatchedBy     String?        @map("dispatched_by")
+  remarks          String?
+  dispatchedAt     DateTime       @default(now()) @map("dispatched_at")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @default(now()) @updatedAt @map("updated_at")
+  createdBy        String?        @map("created_by") @db.VarChar(255)
+  updatedBy        String?        @map("updated_by") @db.VarChar(255)
+
+  @@index([salesOrderItemId])
+  @@index([dispatchedAt])
+  @@map("sales_order_item_dispatch")
 }
 
 model SoSequence {

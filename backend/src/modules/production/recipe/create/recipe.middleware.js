@@ -1,5 +1,5 @@
 import { preprocess } from '../../../../middleware/preprocessing/index.js'
-import { isNonEmptyArray, isEnum } from '../../../../middleware/validators/common.js'
+import { isNonEmptyArray } from '../../../../middleware/validators/common.js'
 import { isPositiveFloat, isNonNegativeFloat, isPositiveInteger } from '../../../../middleware/validators/number.js'
 
 // bulkSaveRecipe's body is `{ rows: [...] }` — a flat top-level schema can't
@@ -27,27 +27,5 @@ function validateRows(rows) {
 export const validateBulkSaveRecipe = preprocess({
   schema: {
     rows: { custom: (value) => validateRows(value) },
-  },
-})
-
-// fixRmMapping's body is `{ mappings: [...] }` — same array-body situation.
-// The controller already requires a non-empty array (`if (!Array.isArray
-// (mappings) || mappings.length === 0)`); this mirrors that check plus the
-// `kind` enum the controller itself branches on. The frontend sends 'rm'
-// explicitly (RecipeDB.jsx, ComponentsTable.jsx) for the implicit/default
-// `else` branch, so 'rm' is a valid value here too, not just 'product'/'microbe'.
-function validateMappings(mappings) {
-  const arrErr = isNonEmptyArray('mappings', mappings)
-  if (arrErr.length) return arrErr
-  const errors = []
-  mappings.forEach((m, i) => {
-    errors.push(...isEnum(`mappings[${i}].kind`, m?.kind, ['product', 'microbe', 'rm']))
-  })
-  return errors
-}
-
-export const validateFixRmMapping = preprocess({
-  schema: {
-    mappings: { custom: (value) => validateMappings(value) },
   },
 })

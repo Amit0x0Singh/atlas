@@ -12,8 +12,14 @@ export const PRIORITIES = ['URGENT', 'VERY_URGENT', 'MODERATE']
 // `_no`/`_code` suffixes or camelCase `...Id` — not camelCase `...No`) —
 // an all-digit DI number or invoice number would otherwise get silently
 // turned into a JS Number by convertTypes.
+// activeSpecs/activeIngredient are the same problem one level down: they're
+// String? columns on SalesOrderItem, but convertTypes walks the whole body
+// (items[] included) matching by bare key name regardless of nesting depth
+// — a spec entered as a plain digit string ("20000000", no "CFU/g" suffix)
+// was silently turned into a JS Number, which Prisma then rejected with
+// "Expected String or Null, provided Int" and the create call 500'd.
 export const validateCreateSalesOrder = preprocess({
-  excludeFromConversion: ['diNo', 'invoiceNo', 'company'],
+  excludeFromConversion: ['diNo', 'invoiceNo', 'company', 'activeSpecs', 'activeIngredient'],
   schema: {
     company:       { required: true, maxLength: 20 },       // company list is DB-driven (CompanyMaster), not a fixed enum here
     diNo:          { required: true, maxLength: 50 },

@@ -38,6 +38,10 @@ model ProductionTask {
   diNo                  String?   @map("di_no") @db.VarChar(50)
   shift                 String    @default("General") @db.VarChar(20)
   productName           String    @map("product_name") @db.VarChar(300)
+  productCode           String?   @map("product_code") @db.VarChar(50)
+  // Which of the product's recipes this task was planned against — set by
+  // BOM Issuance when a non-primary recipe is selected. Null = primary.
+  recipeNo              Int?      @map("recipe_no")
   batchCode             String?   @map("batch_code") @db.VarChar(100)
   batchKey              String?   @map("batch_key") @db.VarChar(200)
   qty                   Float     @default(0)
@@ -71,6 +75,8 @@ model ProductionTask {
   bomIssueStartedAt     DateTime? @map("bom_issue_started_at") @db.Timestamptz()
   microbeIssueStarted   Boolean   @default(false) @map("microbe_issue_started")
   microbeIssueStartedAt DateTime? @map("microbe_issue_started_at") @db.Timestamptz()
+  microbeIssueCompleted   Boolean   @default(false) @map("microbe_issue_completed")
+  microbeIssueCompletedAt DateTime? @map("microbe_issue_completed_at") @db.Timestamptz()
   createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt             DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
   createdBy             String?   @map("created_by") @db.VarChar(255)
@@ -86,6 +92,11 @@ model RecipeDb {
   productCode String   @map("product_code")
   productName String   @map("product_name")
   recipeNo    Int      @default(1) @map("recipe_no")
+  // A product can have several recipes (different raw-material / microbe /
+  // SFG routes to the same finished product). recipeName is denormalized
+  // across every row of one (productCode, recipeNo) so any one row names
+  // the recipe it belongs to. Null on legacy rows — shown as "Recipe <no>".
+  recipeName  String?  @map("recipe_name")
   rmCode      String   @map("rm_code")
   rmName      String   @map("rm_name")
   qtyPerUnit  Float    @map("qty_per_unit")

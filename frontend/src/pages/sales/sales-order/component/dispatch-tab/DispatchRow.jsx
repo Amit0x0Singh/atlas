@@ -2,7 +2,7 @@ import { Fragment } from "react";
 import { Clock } from "lucide-react";
 import { Button } from "../../../../../components/ui";
 import { STATUS_STYLE, STATUS_LABELS } from "../../shared/constants.js";
-import { fmtDate, etdDays } from "../../shared/utils.js";
+import { fmtDate, etdDays, dispatchProgressLabel } from "../../shared/utils.js";
 import { toTitleCase } from "../../../../../utils/textDisplay.js";
 import { useUserDisplayNames } from "../../../../../hooks/masters/useUserDisplayNames.js";
 
@@ -14,10 +14,13 @@ export default function DispatchRow({ order, expanded, onToggle, onDispatch }) {
   const displayName = useUserDisplayNames();
   const days = etdDays(order.estimatedDispatchDate);
   const overdue = days !== null && days < 0;
-  const totalQty = order.items.reduce(
-    (n, it) => n + parseFloat(it.totalQty || 0),
-    0,
-  );
+  // Dispatch is tracked in Secondary Pack count (totalCS), not the line's KG
+  // total — only lines that actually have a pack qty set contribute here;
+  // remainingQty comes back `null` (not 0) for a line that doesn't, so it's
+  // correctly excluded rather than silently miscounted as "0 remaining".
+  const packLines = order.items.filter((it) => it.remainingQty != null);
+  const totalPacks = packLines.reduce((n, it) => n + Number(it.totalCS || 0), 0);
+  const remainingPacks = packLines.reduce((n, it) => n + Math.max(0, Number(it.remainingQty || 0)), 0);
 
   return (
     <Fragment>
@@ -32,8 +35,15 @@ export default function DispatchRow({ order, expanded, onToggle, onDispatch }) {
         <td className="px-4 py-3 font-semibold text-gray-800">
           {toTitleCase(order.customerName)}
         </td>
-        <td className="px-4 py-3 text-right font-semibold text-xs">
-          {totalQty} {(order.items[0]?.totalUom || "KG").toUpperCase()}
+        <td className="px-4 py-3 text-right text-xs">
+          {packLines.length ? (
+            <>
+              <div className="font-bold text-amber-600">{remainingPacks} packs</div>
+              <div className="text-[10px] text-gray-400">of {totalPacks} ordered</div>
+            </>
+          ) : (
+            <span className="text-gray-300">— no pack qty set</span>
+          )}
         </td>
         <td
           className={`px-4 py-3 text-xs ${overdue ? "text-red-500 font-semibold" : days !== null && days <= 7 ? "text-orange-500 font-semibold" : "text-gray-500"}`}
@@ -88,7 +98,8 @@ export default function DispatchRow({ order, expanded, onToggle, onDispatch }) {
                   <tr style={{ background: "#f1f5f9" }}>
                     {[
                       "Product",
-                      "Qty",
+                      "Ordered (KG)",
+                      "Remaining Packs",
                       "Packing",
                       "Status",
                     ].map((h) => (
@@ -96,7 +107,7 @@ export default function DispatchRow({ order, expanded, onToggle, onDispatch }) {
                         key={h}
                         style={{
                           textAlign:
-                            h === "Qty" ? "right" : "left",
+                            h === "Ordered (KG)" || h === "Remaining Packs" ? "right" : "left",
                           padding: "6px 12px",
                           color: "#64748b",
                           fontWeight: 700,
@@ -158,6 +169,17 @@ export default function DispatchRow({ order, expanded, onToggle, onDispatch }) {
                       <td
                         style={{
                           padding: "8px 12px",
+                          textAlign: "right",
+                          fontSize: "12px",
+                          fontWeight: 700,
+                          color: it.remainingQty == null ? "#cbd5e1" : Number(it.remainingQty) > 0 ? "#b45309" : "#94a3b8",
+                        }}
+                      >
+                        {it.remainingQty == null ? "— no pack qty" : `${Number(it.remainingQty)} of ${it.totalCS || 0}`}
+                      </td>
+                      <td
+                        style={{
+                          padding: "8px 12px",
                           fontSize: "11px",
                           color: "#64748b",
                         }}
@@ -168,9 +190,9 @@ export default function DispatchRow({ order, expanded, onToggle, onDispatch }) {
                       </td>
                       <td style={{ padding: "8px 12px" }}>
                         <span
-                          className={`text-xs font-semibold px-2 py-0.5 rounded-full ${STATUS_STYLE[it.status] || "bg-gray-100 text-gray-600"}`}
+                          className={`text-xs font-semibold px-2 py-0.5 rounded-full ${STATUS_STYLE[dispatchProgressLabel(it)] || "bg-gray-100 text-gray-600"}`}
                         >
-                          {STATUS_LABELS[it.status] ||
+                          {STATUS_LABELS[dispatchProgressLabel(it)] ||
                             it.status}
                         </span>
                       </td>

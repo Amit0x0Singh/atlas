@@ -48,7 +48,7 @@ export default function BomRow({ row, idx, isProductCode, isMicrobeCode, onEdit,
     }`}>
       <td className="px-3 py-2 text-gray-400 text-xs">{idx + 1}</td>
 
-      <td className="px-3 py-2 text-sm text-gray-800 truncate" title={toTitleCase(row.rmName)}>{row.rmName || <span className="text-gray-300">—</span>}</td>
+      <td className="px-3 py-2 text-sm text-gray-800 truncate" title={toTitleCase(row.rmName)}>{row.rmName ? toTitleCase(row.rmName) : <span className="text-gray-300">—</span>}</td>
 
       <td className="px-3 py-2 truncate">
         <span className="font-mono text-xs text-blue-700">{row.rmCode || '—'}</span>
@@ -57,7 +57,10 @@ export default function BomRow({ row, idx, isProductCode, isMicrobeCode, onEdit,
         )}
       </td>
 
-      <td className="px-3 py-2 text-sm font-semibold text-gray-900 text-right">
+      <td
+        className="px-3 py-2 text-sm font-semibold text-gray-900 text-right"
+        title={`Stored: ${row.qtyPerUnit ?? 0} ${row.uom || ''} per 1 KG finished product`}
+      >
         {friendly.formatted}
       </td>
 

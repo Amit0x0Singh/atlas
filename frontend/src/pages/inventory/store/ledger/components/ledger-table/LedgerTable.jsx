@@ -21,7 +21,10 @@ const COLUMN_DEFS = [
   { key: 'itemName',        label: 'Item Name',         defaultWidth: 220 },
   { key: 'transactionType', label: 'Transaction',       defaultWidth: 160 },
   { key: 'qty',             label: 'Qty',                defaultWidth: 150, align: 'right' },
-  { key: 'reference',       label: 'Reference',         defaultWidth: 200 },
+  // Source / Pack ID of the stock unit this row moved. The full Reference
+  // string stays in the row-detail popup (see TransactionDetailModal), just
+  // not as a table column.
+  { key: 'sourceId',        label: 'Pack ID',           defaultWidth: 200 },
   { key: 'createdBy',       label: 'Created By',         defaultWidth: 150 },
   { key: 'updatedBy',       label: 'Updated By',         defaultWidth: 150 },
 ]
@@ -128,7 +131,7 @@ export default function LedgerTable({
                     </td>
                   )}
                   {columnVisibility.qty && <td className="px-4 py-2.5 text-right overflow-hidden">{qty}</td>}
-                  {columnVisibility.reference && <td className="px-4 py-2.5 text-gray-500 text-xs truncate">{row.reference || '—'}</td>}
+                  {columnVisibility.sourceId && <td className="px-4 py-2.5 text-gray-500 text-xs font-mono truncate">{row.sourceId || '—'}</td>}
                   {columnVisibility.createdBy && <td className="px-4 py-2.5 text-gray-600 text-xs truncate">{toTitleCase(displayName(row.createdBy)) || '—'}</td>}
                   {columnVisibility.updatedBy && <td className="px-4 py-2.5 text-gray-600 text-xs truncate">{toTitleCase(displayName(row.updatedBy)) || '—'}</td>}
                   <td className="px-4 py-2.5 text-center text-blue-400 hover:text-blue-600">🔍</td>

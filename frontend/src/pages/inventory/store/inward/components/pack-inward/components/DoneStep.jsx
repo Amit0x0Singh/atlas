@@ -16,7 +16,7 @@ export default function DoneStep({ doneStats, selected, onBack }) {
           <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mb-6 text-sm text-amber-800">
             ⏳ <span className="font-semibold">{doneStats.leftOver} bag{doneStats.leftOver !== 1 ? 's' : ''} still pending</span> — come back tomorrow and start a new session to scan the rest.
           </div>
-          <Button onClick={onBack} variant="primary">Back to Setup</Button>
+          <Button onClick={onBack} variant="primary">Back</Button>
         </div>
       ) : (
         <div className="bg-green-50 border border-green-200 rounded-xl p-8 text-center">

@@ -32,7 +32,7 @@ export default function AccessDenied({ variant = 'page', requiredPermission, hom
       {variant === 'page' && (
         <div className="mt-6">
           <Button variant="outline-gray" size="sm" icon={Home} onClick={() => navigate(homePath)}>
-            Go to my dashboard
+            Take me home
           </Button>
         </div>
       )}

@@ -2,9 +2,10 @@ import prisma from '../../../../db.js'
 import { toSafeErrorMessage } from '../../../../utils/safe-error.js'
 import { generateBatchNo } from '../../../../services/lot-generator.js'
 import { scopeWhereByPlant } from '../../../../middleware/scope.js'
+import { primaryRecipeNo } from '../../recipe/recipe-utils.js'
 
 const getStockChecks = async (productCode, batchSize) => {
-  const recipe = await prisma.recipeDb.findMany({ where: { productCode } })
+  const recipe = await prisma.recipeDb.findMany({ where: { productCode, recipeNo: await primaryRecipeNo(productCode) } })
   const size = parseFloat(batchSize)
   return Promise.all(recipe.map(async (r) => {
     const required = parseFloat((r.qtyPerUnit * size).toFixed(4))
@@ -19,7 +20,7 @@ export const stockCheck = async (req, res) => {
   try {
     const { productCode, batchSize } = req.query
     if (!productCode || !batchSize) return res.status(400).json({ success: false, error: 'productCode and batchSize required', code: 'VALIDATION_ERROR' })
-    const recipe = await prisma.recipeDb.findMany({ where: { productCode } })
+    const recipe = await prisma.recipeDb.findMany({ where: { productCode, recipeNo: await primaryRecipeNo(productCode) } })
     if (!recipe.length) return res.status(400).json({ success: false, error: 'No recipe found for this product', code: 'VALIDATION_ERROR' })
     const checks = await getStockChecks(productCode, batchSize)
     const allOk = checks.every(c => c.ok)

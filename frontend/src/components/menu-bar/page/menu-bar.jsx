@@ -1,15 +1,20 @@
 import './menu-bar.css'
 import { useState, useEffect, useMemo } from 'react'
 import { useLocation } from 'react-router-dom'
-import { PanelLeftOpen } from 'lucide-react'
+import { PanelLeftOpen, Home } from 'lucide-react'
 import { APP_NAV } from '../data/navData.js'
-import { permissionForPath } from '../../../routes/operationMap.js'
+import { permissionForPath, hasLandingDashboard } from '../../../routes/operationMap.js'
 import { useApp } from '../../../context/context.jsx'
 import SidebarHeader  from '../components/sidebar-header/SidebarHeader.jsx'
 import NavGroup       from '../components/nav-group/NavGroup.jsx'
 import SidebarFooter  from '../components/sidebar-footer/SidebarFooter.jsx'
 
-const INITIALLY_OPEN = new Set(['DASHBOARD'])
+const INITIALLY_OPEN = new Set(['DASHBOARD', 'HOME'])
+
+// Shown at the top of the sidebar only for accounts with no landing dashboard
+// (see hasLandingDashboard) — otherwise their own dashboard is their home and
+// this would just be a redundant second entry.
+const HOME_GROUP = { group: 'HOME', items: [{ to: '/home', label: 'Home', Icon: Home }] }
 
 const Sidebar = () => {
 
@@ -26,7 +31,7 @@ const Sidebar = () => {
   // for — a Super Admin (holding every permission) sees everything, without
   // any special-cased bypass here.
   const visibleNav = useMemo(() => {
-    return APP_NAV
+    const groups = APP_NAV
       .map(({ group, items }) => ({
         group,
         items: items.filter(i => {
@@ -35,6 +40,7 @@ const Sidebar = () => {
         }),
       }))
       .filter(({ items }) => items.length > 0)
+    return hasLandingDashboard(user) ? groups : [HOME_GROUP, ...groups]
   }, [user, hasPermission])
 
   useEffect(() => {

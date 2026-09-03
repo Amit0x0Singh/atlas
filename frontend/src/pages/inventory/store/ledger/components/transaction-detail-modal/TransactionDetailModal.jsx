@@ -18,7 +18,7 @@ export default function TransactionDetailModal({ detail, onClose }) {
   useEffect(() => { if (detail) setShown(detail) }, [detail])
 
   return (
-    <Modal open={!!detail} onClose={onClose} size="xl">
+    <Modal open={!!detail} onClose={onClose} size="xl" showCloseButton={false}>
       {shown && (
         <>
           <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100">
@@ -44,7 +44,7 @@ export default function TransactionDetailModal({ detail, onClose }) {
                   {shown.detail?.outward?.operationalUom && Number(shown.detail.outward.operationalQty) !== Number(shown.detail.outward.qtyIssued) && (
                     <DRow label="Qty (Operational UOM)" value={`${Number(shown.detail.outward.operationalQty).toFixed(3)} ${(shown.detail.outward.operationalUom || '').toUpperCase()}`} />
                   )}
-                  <DRow label="Reference"        value={shown.entry.reference || '—'} full />
+                  <DRow label="Reference"        value={toTitleCase(shown.entry.reference) || '—'} full />
                 </DSection>
 
                 {shown.detail?.pack && (
@@ -54,7 +54,7 @@ export default function TransactionDetailModal({ detail, onClose }) {
                     <DRow label="Lot No"    value={shown.detail.pack.lotNo} />
                     <DRow label="Bag No"    value={`#${shown.detail.pack.bagNo}`} />
                     <DRow label="Pack Qty"  value={`${shown.detail.pack.packQty} ${(shown.detail.pack.uom || '').toUpperCase()}`} />
-                    {shown.detail.pack.supplier  && <DRow label="Supplier"   value={shown.detail.pack.supplier} />}
+                    {shown.detail.pack.supplier  && <DRow label="Supplier"   value={toTitleCase(shown.detail.pack.supplier)} />}
                     {shown.detail.pack.invoiceNo && <DRow label="Invoice No" value={shown.detail.pack.invoiceNo} />}
                   </DSection>
                 )}

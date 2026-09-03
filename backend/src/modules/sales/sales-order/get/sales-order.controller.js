@@ -1,6 +1,31 @@
 import prisma from "../../../../db.js";
 import { toSafeErrorMessage } from "../../../../utils/safe-error.js";
 
+// Attaches computed dispatchedQty/remainingQty to every item (never stored —
+// always derived from the item's own dispatch rows, so it can't drift out
+// of sync with the history it's summarizing). Dispatch is tracked in
+// Secondary Pack COUNT (totalCS), not the line's KG total — see
+// dispatchSalesOrderItem's comment. A line with no totalCS set yet has
+// nothing to dispatch against, so remainingQty comes back `null` (meaning
+// "not configured for dispatch") rather than 0 ("fully dispatched") — the
+// two must never look the same to the frontend's dispatch-eligibility check.
+// `item.status` alone still tells the rest of the app "can this be
+// dispatched at all" (IN_INVENTORY) and "is it completely done"
+// (DISPATCHED); these two just add "how many packs, exactly" on top for
+// partial dispatch to work.
+function withDispatchTotals(item) {
+  const dispatchedQty = (item.dispatches || []).reduce((s, d) => s + Number(d.qty), 0);
+  const remainingQty = item.totalCS ? Math.max(0, item.totalCS - dispatchedQty) : null;
+  return { ...item, dispatchedQty, remainingQty };
+}
+function withOrderDispatchTotals(order) {
+  return { ...order, items: (order.items || []).map(withDispatchTotals) };
+}
+const itemsInclude = {
+  orderBy: { lineNo: "asc" },
+  include: { dispatches: { orderBy: { dispatchedAt: "desc" } } },
+};
+
 // ── GET /api/erp/sales-orders ─────────────────────────────────────────────────
 // Query params: company, status, priority, diNo, search, from, to, limit, offset
 
@@ -39,7 +64,7 @@ const getSalesOrders = async (req, res) => {
   const [orders, total] = await Promise.all([
     prisma.salesOrder.findMany({
       where,
-      include: { items: { orderBy: { lineNo: "asc" } } },
+      include: { items: itemsInclude },
       orderBy: [{ priority: "asc" }, { estimatedDispatchDate: "asc" }],
       take: Number(limit),
       skip: Number(offset),
@@ -47,7 +72,7 @@ const getSalesOrders = async (req, res) => {
     prisma.salesOrder.count({ where }),
   ]);
 
-  return res.json({ success: true, data: orders, total });
+  return res.json({ success: true, data: orders.map(withOrderDispatchTotals), total });
 };
 
 // ── GET /api/erp/sales-orders/:id  ───────────────────────────────────────
@@ -55,13 +80,13 @@ const getSalesOrders = async (req, res) => {
 const getSalesOrderById = async (req, res) => {
   const order = await prisma.salesOrder.findUnique({
     where: { id: req.params.id },
-    include: { items: { orderBy: { lineNo: "asc" } } },
+    include: { items: itemsInclude },
   });
 
   if (!order)
     return res.status(404).json({ success: false, error: "Order not found", code: 'NOT_FOUND' });
 
-  return res.json({ success: true, data: order });
+  return res.json({ success: true, data: withOrderDispatchTotals(order) });
 };
 
 // ── GET /api/erp/sales-orders/summary/dashboard  ─────────────────────────

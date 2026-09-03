@@ -3,6 +3,8 @@ import { recipeApi } from '../../api/masters.js'
 import { queryKeys } from '../../lib/queryKeys.js'
 import { CACHE } from '../../lib/queryClient.js'
 
+// Returns every RecipeDb row for the product — across all of its recipes.
+// Callers group by recipeNo.
 export function useRecipe(productCode) {
   return useQuery({
     queryKey: queryKeys.recipes.all(productCode),
@@ -21,6 +23,26 @@ export function useBulkSaveRecipe() {
     onSuccess: (_res, rows) => {
       const productCode = rows[0]?.productCode
       if (productCode) qc.invalidateQueries({ queryKey: queryKeys.recipes.all(productCode) })
+      qc.invalidateQueries({ queryKey: queryKeys.products.all() })
+    },
+  })
+}
+
+export function useRenameRecipe() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ productCode, recipeNo, recipeName }) => recipeApi.renameRecipe({ productCode, recipeNo, recipeName }),
+    onSuccess: (_res, { productCode }) => qc.invalidateQueries({ queryKey: queryKeys.recipes.all(productCode) }),
+  })
+}
+
+export function useDeleteRecipe() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ productCode, recipeNo }) => recipeApi.deleteRecipe(productCode, recipeNo),
+    onSuccess: (_res, { productCode }) => {
+      qc.invalidateQueries({ queryKey: queryKeys.recipes.all(productCode) })
+      qc.invalidateQueries({ queryKey: queryKeys.products.all() })
     },
   })
 }

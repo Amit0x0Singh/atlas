@@ -11,10 +11,11 @@ function extractFilename(res, fallback) {
   return match ? match[1] : fallback
 }
 
-async function fetchAuthedBlob(url) {
+async function fetchAuthedBlob(url, init = {}) {
   const token = localStorage.getItem('erp_token')
   const res = await fetch(url, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    ...init,
+    headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(init.headers || {}) },
   })
   if (!res.ok) throw new Error(`Request failed: ${res.status}`)
   return { blob: await res.blob(), res }
@@ -33,6 +34,27 @@ export async function openAuthedFile(url) {
   const win = window.open('', '_blank')
   try {
     const { blob } = await fetchAuthedBlob(url)
+    const blobUrl = URL.createObjectURL(blob)
+    if (win) win.location.href = blobUrl
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000)
+  } catch (e) {
+    win?.close()
+    throw e
+  }
+}
+
+// Same as openAuthedFile, but POSTs a JSON body instead of a plain GET — for
+// endpoints whose input (e.g. a rendered label's full field set) is too big
+// or structured for a query string. Used for the microbe label PDF, whose
+// payload is the already-derived label data the frontend has in memory.
+export async function openAuthedFilePost(url, body) {
+  const win = window.open('', '_blank')
+  try {
+    const { blob } = await fetchAuthedBlob(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
     const blobUrl = URL.createObjectURL(blob)
     if (win) win.location.href = blobUrl
     setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000)

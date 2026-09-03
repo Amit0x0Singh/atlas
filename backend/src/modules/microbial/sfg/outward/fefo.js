@@ -65,7 +65,12 @@ export function allocateFefo(batches, requiredQtyKg, requiredCfuPerG) {
       moisture: b.moisture,
       cfuPerG: Number(b.inhouseCfuPerG),
       availableKg: Number(b.remainingQtyKg),
-      qtyToIssueKg: Number(qtyTake.toFixed(6)),
+      // The kg to draw from THIS batch to cover its share of the CFU
+      // requirement — derived from the batch's own potency, so it differs
+      // from the recipe's nominal kg whenever stock CFU/g ≠ required CFU/g.
+      // Named to match what the create endpoint and the frontend both read
+      // (qty_issued_kg once snake-cased).
+      qtyIssuedKg: Number(qtyTake.toFixed(6)),
       cfuFromBatch: cfuFrom,
     })
   }

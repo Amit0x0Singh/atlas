@@ -138,15 +138,21 @@ const BottomSheet = memo(function BottomSheet({
           <div className="w-10 h-1.5 bg-gray-300 rounded-full" />
         </div>
 
+        {/* Close button is unconditional (not tied to `title`) — a sheet with
+            no title previously had no way to close it besides drag-down,
+            backdrop tap, or Esc, none of which are obvious from the sheet
+            itself. */}
+        <button
+          onClick={onClose}
+          aria-label="Close"
+          className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-white/90 text-gray-400 shadow-sm ring-1 ring-gray-200 hover:text-gray-700 hover:bg-white active:scale-90 transition-all"
+        >
+          <X size={16} />
+        </button>
+
         {title && (
-          <div className="shrink-0 flex items-center justify-between px-4 pb-3 border-b border-gray-100">
+          <div className="shrink-0 flex items-center justify-between px-4 pr-12 pb-3 border-b border-gray-100">
             <h3 className="text-base font-bold text-gray-900">{title}</h3>
-            <button
-              onClick={onClose}
-              className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 active:scale-90 transition-all"
-            >
-              <X size={18} />
-            </button>
           </div>
         )}
 

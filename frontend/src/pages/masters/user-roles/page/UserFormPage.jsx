@@ -4,9 +4,10 @@ import { UserCog, Shield } from 'lucide-react'
 import { Button, BackButton, PageHeader } from '../../../../components/ui'
 import { Can } from '../../../../components/common/Can.jsx'
 import { useUsers, useRoles, useCreateUser, useUpdateUser, useSetUserRoles } from '../../../../hooks/masters/useUserRoles.js'
+import { useOptionValues } from '../../../../hooks/useOptionValues.js'
 import { rolePlantLabels } from '../../../../constants/permissionMatrix.js'
 
-const EMPTY_FORM = { email: '', fullName: '', phone: '', password: '', confirmPassword: '', roleIds: [] }
+const EMPTY_FORM = { email: '', fullName: '', phone: '', department: '', password: '', confirmPassword: '', roleIds: [] }
 
 /** Union of every plant a set of roles' own permissions cover — plant access is entirely role-driven, set on the Roles page, never picked per-user. */
 function plantsForRoles(roleIds, roles) {
@@ -49,6 +50,7 @@ export default function UserFormPage() {
 
   const { data: users = [] } = useUsers()
   const { data: roles = [] } = useRoles()
+  const { data: departments = [] } = useOptionValues('MATERIAL_INDENT_DEPARTMENT')
   const existing = editing ? users.find(u => u.userId === userId) : null
 
   const [form, setForm] = useState(EMPTY_FORM)
@@ -59,6 +61,7 @@ export default function UserFormPage() {
     if (editing && existing && !loaded) {
       setForm({
         email: existing.email || '', fullName: existing.fullName || '', phone: existing.phone || '',
+        department: existing.department || '',
         password: '', roleIds: existing.roles.map(r => r.roleId),
       })
       setLoaded(true)
@@ -90,10 +93,10 @@ export default function UserFormPage() {
     const plants = plantsForRoles(form.roleIds, roles)
     try {
       if (editing) {
-        await updateUser.mutateAsync({ userId, data: { fullName: form.fullName, phone: form.phone || null, plants } })
+        await updateUser.mutateAsync({ userId, data: { fullName: form.fullName, phone: form.phone || null, plants, department: form.department || null } })
         await setUserRoles.mutateAsync({ userId, roleIds: form.roleIds })
       } else {
-        await createUser.mutateAsync({ email: form.email, fullName: form.fullName, password: form.password, plants, roleIds: form.roleIds })
+        await createUser.mutateAsync({ email: form.email, fullName: form.fullName, password: form.password, plants, department: form.department || null, roleIds: form.roleIds })
       }
       goBack()
     } catch (e) { setMsg(e.message) }
@@ -139,6 +142,14 @@ export default function UserFormPage() {
               <div>
                 <label className={LABEL}>Phone</label>
                 <input value={form.phone} onChange={e => onChange('phone', e.target.value)} className={FIELD} />
+              </div>
+              <div>
+                <label className={LABEL}>Department / Section</label>
+                <select value={form.department} onChange={e => onChange('department', e.target.value)} className={FIELD}>
+                  <option value="">— None —</option>
+                  {departments.map(d => <option key={d.code} value={d.code}>{d.label}</option>)}
+                </select>
+                <p className="text-[11px] text-gray-400 mt-1">Material Indents are raised for this department. An account with none set can't raise indents.</p>
               </div>
               {!editing && (
                 <>

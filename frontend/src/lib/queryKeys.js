@@ -158,6 +158,7 @@ export const queryKeys = {
     roles:       () => ['rbac', 'roles'],
     permissions: () => ['rbac', 'permissions'],
     users:       () => ['rbac', 'users'],
+    directory:   () => ['rbac', 'directory'],
   },
 
   // ── Settings ────────────────────────────────────────────────────────────

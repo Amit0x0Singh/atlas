@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { outwardApi } from '../../../../../api/inventory.js'
 import { BackButton, Button, PageHeader } from '../../../../../components/ui'
 import WarehouseToWarehouse   from '../components/warehouse-to-warehouse/WarehouseToWarehouse.jsx'
@@ -6,7 +6,8 @@ import WarehouseToContainer   from '../components/warehouse-to-container/Warehou
 import MaterialIssueByBOM     from '../components/material-issue-by-bom/page/MaterialIssueByBOM.jsx'
 import BomIssuedHistory       from '../components/material-issue-by-bom/BomIssuedHistory.jsx'
 import StockLossAdjustment    from '../components/stock-loss-adjustment/StockLossAdjustment.jsx'
-import { RefreshCw, Warehouse, ClipboardList, Container, TriangleAlert, History, ArrowUpFromLine } from 'lucide-react'
+import IndentIssue            from '../components/material-indent-issue/IndentIssue.jsx'
+import { RefreshCw, Warehouse, ClipboardList, Container, TriangleAlert, History, ArrowUpFromLine, Inbox } from 'lucide-react'
 import './Outward.css'
 import { toTitleCase } from '../../../../../utils/textDisplay.js'
 import { useUserDisplayNames } from '../../../../../hooks/masters/useUserDisplayNames.js'
@@ -40,6 +41,13 @@ const MODES = [
     desc:  'Record material lost due to spillage, damage or weighing error',
     accent: { border: 'border-red-200', hover: 'hover:border-red-400 hover:bg-red-50/60', icon: 'bg-red-100 text-red-600' },
   },
+  {
+    key:   'indent-issue',
+    icon:  <Inbox size={22} />,
+    label: 'Open Indents',
+    desc:  'Issue general store items requested by plant sections — scan QR',
+    accent: { border: 'border-teal-200', hover: 'hover:border-teal-400 hover:bg-teal-50/60', icon: 'bg-teal-100 text-teal-600' },
+  },
 ]
 
 const MODE_MAP = Object.fromEntries(MODES.map(m => [m.key, m]))
@@ -55,6 +63,7 @@ const TYPE_COLOR = {
   CONTAINER_ISSUE:    'bg-green-100 text-green-700',
   WAREHOUSE_TRANSFER: 'bg-gray-100 text-gray-700',
   STOCK_ADJUSTMENT:   'bg-red-100 text-red-700',
+  MATERIAL_INDENT:    'bg-teal-100 text-teal-700',
 }
 
 function Panel({ mode, onBack, actions, children }) {
@@ -73,11 +82,9 @@ function Panel({ mode, onBack, actions, children }) {
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {actions}
-          {/* This "Back" returns to the mode-selection view within the same
-              page (client-side state, not a route change), so — unlike the
-              page-level back button below — it can't be replaced by the
-              device's native back gesture and must stay visible on mobile. */}
-          <BackButton onClick={onBack} label="Back to Outward" size="sm" />
+          {/* Single "Back" — one step back: from the BOM Issued view to the
+              BOM Issue picker, otherwise out to the Outward mode selection. */}
+          <BackButton onClick={onBack} size="sm" />
         </div>
       </div>
       <div className="flex-1 overflow-y-auto">{children}</div>
@@ -93,6 +100,7 @@ export default function Outward() {
   const [history,   setHistory]   = useState([])
   const [histPage,  setHistPage]  = useState(1)
   const [histTotal, setHistTotal] = useState(0)
+  const indentIssueRef            = useRef(null)
   const LIMIT = 15
 
   useEffect(() => { loadHistory() }, [histPage])
@@ -107,32 +115,42 @@ export default function Outward() {
 
   const goBack = () => { setMode(null); setBomView('select'); loadHistory() }
 
-  const resumeFromHistory = (session) => {
-    setResumeId(session.id)
-    setBomView('select')
-  }
-
   if (mode) {
-    const bomActions = mode === 'bom-issue' && (
-      <Button
-        onClick={() => setBomView(v => v === 'history' ? 'select' : 'history')}
-        variant={bomView === 'history' ? 'outline-gray' : 'purple'}
-        size="sm"
-        icon={History}>
-        {bomView === 'history' ? 'Back to BOM Issue' : 'BOM Issued'}
+    // On the BOM Issued history view the single "Back" button returns to the
+    // BOM Issue picker (not all the way out to Outward); elsewhere it's the
+    // page-level "Back to Outward".
+    const isBomHistory = mode === 'bom-issue' && bomView === 'history'
+
+    const bomActions = mode === 'bom-issue' && !isBomHistory && (
+      <Button onClick={() => setBomView('history')} variant="purple" size="sm" icon={History}>
+        BOM Issued
       </Button>
     )
 
+    // Open Indents owns its own list ↔ checklist ↔ detail navigation; give its
+    // header Back button first crack at stepping back inside that flow, and
+    // only fall through to leaving the Outward mode once it's back at the list.
+    const indentBack = () => { if (!indentIssueRef.current?.handleBack()) goBack() }
+
     return (
-      <Panel mode={mode} onBack={goBack} actions={bomActions}>{
+      <Panel
+        mode={mode}
+        onBack={
+          mode === 'indent-issue' ? indentBack
+          : isBomHistory          ? () => setBomView('select')
+          : goBack
+        }
+        actions={bomActions}
+      >{
         mode === 'bom-issue' ? (
           bomView === 'history'
-            ? <BomIssuedHistory onResume={resumeFromHistory} />
+            ? <BomIssuedHistory />
             : <MaterialIssueByBOM resumeSessionId={resumeId} onAutoResumed={() => setResumeId(null)} />
         ) :
-        mode === 'wh-wh'      ? <WarehouseToWarehouse /> :
-        mode === 'wh-cont'    ? <WarehouseToContainer /> :
-        mode === 'stock-loss' ? <StockLossAdjustment /> : null
+        mode === 'wh-wh'        ? <WarehouseToWarehouse /> :
+        mode === 'wh-cont'      ? <WarehouseToContainer /> :
+        mode === 'stock-loss'   ? <StockLossAdjustment /> :
+        mode === 'indent-issue' ? <IndentIssue ref={indentIssueRef} /> : null
       }</Panel>
     )
   }
@@ -151,7 +169,7 @@ export default function Outward() {
       <div className="p-4 md:p-6">
         {/* Outward action cards */}
         <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3">Outward Actions</h2>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3 mb-7">
+        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2 md:gap-3 mb-7">
           {MODES.map(m => (
             <button key={m.key} onClick={() => setMode(m.key)}
               className={`bg-white border-2 ${m.accent.border} ${m.accent.hover} rounded-xl p-3 md:p-4 text-left transition-all group`}>

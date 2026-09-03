@@ -2,6 +2,7 @@ import prisma from '../../../../../db.js'
 import { toSafeErrorMessage } from '../../../../../utils/safe-error.js'
 import { toSnakeRow } from '../../../../../utils/caseTransform.js'
 import { allocateFefo } from '../fefo.js'
+import { generateMicrobeLabelBuffer } from '../../../../../services/microbe-label-service.js'
 
 async function eligibleBatches(microbeCode, excludeInwardIds = []) {
   const rows = await prisma.microbialSfgInward.findMany({
@@ -91,18 +92,35 @@ export const listOutwardSessions = async (req, res) => {
 
 export const listSfgOutward = async (req, res) => {
   try {
-    const { microbe_code, from, to } = req.query
+    const { microbe_code, from, to, plan_task_id } = req.query
     const where = {}
     if (from || to) {
       where.issuedAt = {}
       if (from) where.issuedAt.gte = new Date(from)
       if (to) where.issuedAt.lte = new Date(`${to}T23:59:59.999Z`)
     }
+    if (plan_task_id) where.planTaskId = plan_task_id
     if (microbe_code) where.lines = { some: { microbeCode: microbe_code } }
 
     const rows = await prisma.microbialSfgOutward.findMany({
       where,
-      include: { lines: true },
+      // The Outward History picklist/label print-outs need to know where to
+      // physically find each picked batch (the container's current rack/
+      // shelf location, which can have moved since inward) and its harvest
+      // batch details — pulled via the line's inward → container chain
+      // rather than duplicated onto the line at issue time.
+      include: {
+        lines: {
+          include: {
+            inward: {
+              select: {
+                moisture: true, dateOfHarvest: true, biomassBatchCode: true,
+                container: { select: { location: true } },
+              },
+            },
+          },
+        },
+      },
       orderBy: { issuedAt: 'desc' },
     })
     return res.json({ success: true, data: toSnakeRow(rows) })
@@ -251,6 +269,29 @@ export const getSfgHistory = async (req, res) => {
 
     ledger.sort((a, b) => new Date(b.date) - new Date(a.date))
     return res.json({ success: true, data: toSnakeRow(ledger) })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
+  }
+}
+
+// POST /microbial-sfg/outward/labels/pdf — renders one 100x50mm PDF page per
+// microbe label. The frontend already derives the per-label data (product,
+// microbe, qty, batches, CFU, moisture, harvest, DI No — see
+// outwardPrintTemplates.js's printMicrobeLabels) from the outward session it
+// has in memory; this endpoint only lays that data out as a real PDF sized
+// to the label stock, since a browser `window.print()` of an A4-sized HTML
+// page is what was printing incorrectly on the TSC thermal printer.
+export const getMicrobeLabelsPdf = async (req, res) => {
+  try {
+    const { product, diNo, orderQty, dt, labels } = req.body || {}
+    if (!Array.isArray(labels) || !labels.length)
+      return res.status(400).json({ success: false, error: 'labels array required', code: 'VALIDATION_ERROR' })
+
+    const buf = await generateMicrobeLabelBuffer({ product, diNo, orderQty, dt, labels })
+    const safeName = String(product || 'microbe').replace(/[^a-zA-Z0-9]/g, '_').slice(0, 30)
+    res.setHeader('Content-Type', 'application/pdf')
+    res.setHeader('Content-Disposition', `inline; filename="labels-${safeName}.pdf"`)
+    return res.send(buf)
   } catch (err) {
     return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }

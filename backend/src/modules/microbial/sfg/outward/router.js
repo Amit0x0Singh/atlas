@@ -1,6 +1,6 @@
 import express from "express";
 import { authorize } from "../../../../middleware/auth.js";
-import { previewSfgOutward, listSfgOutward, getSfgOutwardById, getSfgHistory, listEligibleBatches, listOutwardSessions } from "./get/sfg-outward.controller.js";
+import { previewSfgOutward, listSfgOutward, getSfgOutwardById, getSfgHistory, listEligibleBatches, listOutwardSessions, getMicrobeLabelsPdf } from "./get/sfg-outward.controller.js";
 import { createSfgOutward, upsertOutwardSession } from "./create/sfg-outward.controller.js";
 import { validateCreateSfgOutward, validateUpsertOutwardSession } from "./create/sfg-outward.middleware.js";
 import { deleteOutwardSession } from "./delete/sfg-outward.controller.js";
@@ -10,6 +10,7 @@ const canView   = authorize("microbial.sfg-outward.view");
 const canCreate = authorize("microbial.sfg-outward.create");
 
 SfgOutwardRouter.post("/microbial-sfg/outward/preview", canView, previewSfgOutward);
+SfgOutwardRouter.post("/microbial-sfg/outward/labels/pdf", canView, getMicrobeLabelsPdf);
 SfgOutwardRouter.get("/microbial-sfg/outward/eligible-batches", canView, listEligibleBatches);
 SfgOutwardRouter.get("/microbial-sfg/history", canView, getSfgHistory);
 // Sessions — MUST be registered before the /:id wildcard below, otherwise

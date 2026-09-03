@@ -1,13 +1,14 @@
 import { Fragment, useEffect, useMemo, useState } from 'react'
-import { Clock } from 'lucide-react'
+import { Clock, Eye, History } from 'lucide-react'
 import Pagination from '../../../../../components/pagination/Pagination.jsx'
 import { STATUS_STYLE, STATUS_LABELS } from '../../shared/constants.js'
-import { fmtDate, etdDays } from '../../shared/utils.js'
-import { Button, ColumnsMenu } from '../../../../../components/ui'
+import { fmtDate, etdDays, dispatchProgressLabel } from '../../shared/utils.js'
+import { Button, IconButton, ColumnsMenu } from '../../../../../components/ui'
 import { toTitleCase } from '../../../../../utils/textDisplay.js'
 import { useUserDisplayNames } from '../../../../../hooks/masters/useUserDisplayNames.js'
 import { useColumnPreferences } from '../../../../../hooks/useColumnPreferences.js'
 import SalesHistoryToolbar, { EMPTY_SALES_HISTORY_FILTERS, DEFAULT_SALES_HISTORY_SORT } from './components/SalesHistoryToolbar.jsx'
+import OrderDetailModal from './components/OrderDetailModal.jsx'
 
 const fmtDateTime = (d) => d
   ? new Date(d).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })
@@ -32,7 +33,7 @@ const COLUMN_DEFS = [
   { key: 'updatedBy', label: 'Updated By', defaultWidth: 150, defaultVisible: false },
 ]
 const EXPAND_COL_WIDTH  = 32
-const ACTIONS_COL_WIDTH = 90
+const ACTIONS_COL_WIDTH = 130
 
 function TypeBadge({ type }) {
   const isExport = type === 'EXPORT'
@@ -88,6 +89,7 @@ export default function OrderHistory({ orders, loading, onOpenDispatch }) {
   const [limit,        setLimit]        = useState(15)
   const [page,         setPage]         = useState(1)
   const [expandedKeys, setExpandedKeys] = useState(new Set())
+  const [viewOrder,    setViewOrder]    = useState(null)
 
   const { columnWidths, columnVisibility, visibleColumns, startResize, toggleColumn } =
     useColumnPreferences('sales-order-history', COLUMN_DEFS)
@@ -278,44 +280,91 @@ export default function OrderHistory({ orders, loading, onOpenDispatch }) {
                         </td>
                       )}
 
-                      <td className="px-3 py-3.5 text-right" onClick={e => e.stopPropagation()}>
-                        <Button variant="outline-gray" size="xs" onClick={() => onOpenDispatch(order)}>Edit</Button>
+                      <td className="px-3 py-3.5" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center gap-1.5">
+                          <IconButton icon={Eye} tooltip="View details" variant="outline-gray" size="sm" onClick={() => setViewOrder(order)} />
+                          <Button variant="outline-gray" size="xs" onClick={() => onOpenDispatch(order)}>Edit</Button>
+                        </div>
                       </td>
                     </tr>
 
-                    {/* ── Item sub-rows (visible when expanded) ── */}
-                    {isOpen && order.items.map((it, idx) => (
-                      <tr key={it.id || idx} className="bg-indigo-50/30 border-t border-indigo-100/60">
-                        <td colSpan={colSpan} className="px-0 py-0">
-                          <div className="flex items-center pl-8 pr-4 py-2 gap-0">
-                            <div className="w-px h-8 bg-indigo-300 mr-4 shrink-0" />
-
-                            <div className="flex-1 min-w-0">
-                              <span className="text-sm font-semibold text-gray-800">
-                                {toTitleCase(it.inhouseProductName || it.customerProductName) || '—'}
-                              </span>
-                              {it.customerProductName && it.customerProductName !== it.inhouseProductName && (
-                                <span className="ml-2 text-[10px] text-gray-400 italic">
-                                  ({toTitleCase(it.customerProductName)})
-                                </span>
-                              )}
-                            </div>
-
-                            <span className="text-sm font-bold text-gray-700 w-28 shrink-0">
-                              {it.totalQty} <span className="text-xs font-normal text-gray-400">{it.totalUom?.toUpperCase()}</span>
-                            </span>
-
-                            <span className="text-xs text-gray-500 w-52 shrink-0">
-                              {[it.unitPackType, it.packingType].filter(Boolean).join(' / ') || '—'}
-                            </span>
-
-                            <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full w-28 text-center shrink-0 ${STATUS_STYLE[it.status] || 'bg-gray-100 text-gray-600'}`}>
-                              {STATUS_LABELS[it.status] || it.status}
-                            </span>
+                    {/* ── Item sub-rows (visible when expanded) — per-product dispatch
+                         progress: how much has actually gone out (Dispatched) and how
+                         many separate dispatch transactions built up that total. ── */}
+                    {isOpen && (
+                      <tr className="bg-indigo-50/30 border-t border-indigo-100/60">
+                        <td colSpan={colSpan} className="px-8 py-2.5">
+                          <div className="border border-indigo-100 rounded-lg overflow-hidden bg-white">
+                            <table className="w-full text-xs">
+                              <thead>
+                                <tr className="bg-indigo-50/60 text-indigo-400">
+                                  <th className="text-left px-3 py-2 font-bold uppercase tracking-wide text-[10px]">Product</th>
+                                  <th className="text-right px-3 py-2 font-bold uppercase tracking-wide text-[10px]">Ordered</th>
+                                  <th className="text-left px-3 py-2 font-bold uppercase tracking-wide text-[10px]">Packing</th>
+                                  <th className="text-right px-3 py-2 font-bold uppercase tracking-wide text-[10px]">Dispatched</th>
+                                  <th className="text-right px-3 py-2 font-bold uppercase tracking-wide text-[10px]">Remaining</th>
+                                  <th className="text-center px-3 py-2 font-bold uppercase tracking-wide text-[10px]">Dispatches</th>
+                                  <th className="text-left px-3 py-2 font-bold uppercase tracking-wide text-[10px]">Status</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {order.items.map((it, idx) => {
+                                  const dispatched     = Number(it.dispatchedQty) || 0
+                                  const hasPackQty      = it.remainingQty != null
+                                  const dispatchCount  = it.dispatches?.length || 0
+                                  return (
+                                    <tr key={it.id || idx} className={`border-t border-gray-100 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/60'}`}>
+                                      <td className="px-3 py-2">
+                                        <span className="font-semibold text-gray-800">
+                                          {toTitleCase(it.inhouseProductName || it.customerProductName) || '—'}
+                                        </span>
+                                        {it.customerProductName && it.customerProductName !== it.inhouseProductName && (
+                                          <span className="ml-1.5 text-[10px] text-gray-400 italic">
+                                            ({toTitleCase(it.customerProductName)})
+                                          </span>
+                                        )}
+                                      </td>
+                                      <td className="px-3 py-2 text-right font-semibold text-gray-700 whitespace-nowrap">
+                                        {it.totalQty} <span className="text-[10px] font-normal text-gray-400">{it.totalUom?.toUpperCase()}</span>
+                                      </td>
+                                      <td className="px-3 py-2 text-gray-500 whitespace-nowrap">
+                                        {[it.unitPackType, it.packingType].filter(Boolean).join(' / ') || '—'}
+                                      </td>
+                                      <td className="px-3 py-2 text-right whitespace-nowrap">
+                                        {hasPackQty ? (
+                                          <span className="font-bold text-emerald-600">
+                                            {dispatched} <span className="text-[10px] font-normal text-gray-400">packs</span>
+                                          </span>
+                                        ) : <span className="text-gray-300">—</span>}
+                                      </td>
+                                      <td className="px-3 py-2 text-right whitespace-nowrap">
+                                        {hasPackQty ? (
+                                          <span className={`font-bold ${Number(it.remainingQty) > 0 ? 'text-amber-600' : 'text-gray-400'}`}>
+                                            {it.remainingQty} <span className="text-[10px] font-normal text-gray-400">packs</span>
+                                          </span>
+                                        ) : <span className="text-gray-300">—</span>}
+                                      </td>
+                                      <td className="px-3 py-2 text-center">
+                                        {dispatchCount > 0 ? (
+                                          <span className="inline-flex items-center gap-1 bg-indigo-100 text-indigo-700 font-bold px-2 py-0.5 rounded-full">
+                                            <History size={10} /> {dispatchCount}×
+                                          </span>
+                                        ) : <span className="text-gray-300">—</span>}
+                                      </td>
+                                      <td className="px-3 py-2">
+                                        <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${STATUS_STYLE[dispatchProgressLabel(it)] || 'bg-gray-100 text-gray-600'}`}>
+                                          {STATUS_LABELS[dispatchProgressLabel(it)] || it.status}
+                                        </span>
+                                      </td>
+                                    </tr>
+                                  )
+                                })}
+                              </tbody>
+                            </table>
                           </div>
                         </td>
                       </tr>
-                    ))}
+                    )}
 
                     {/* ── Created / Updated footer row (visible when expanded) ── */}
                     {isOpen && (
@@ -345,6 +394,15 @@ export default function OrderHistory({ orders, loading, onOpenDispatch }) {
           />
         </div>
         </>
+      )}
+
+      {viewOrder && (
+        <OrderDetailModal
+          order={viewOrder}
+          displayName={displayName}
+          onClose={() => setViewOrder(null)}
+          onEdit={(order) => { setViewOrder(null); onOpenDispatch(order) }}
+        />
       )}
     </div>
   )

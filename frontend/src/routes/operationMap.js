@@ -11,6 +11,10 @@ export const PERMISSION_ROUTES = [
 
   { prefix: '/inward',          permission: 'inventory.inward.view' },
   { prefix: '/outward',         permission: 'inventory.outward.view' },
+  // Material Indent (the request form) is open to every authenticated user —
+  // any plant/section person raises indents to the Store. No entry here so
+  // permissionForPath('/material-indent') stays null. The Store-side issuing
+  // workflow lives under /outward and keeps its own gate.
   { prefix: '/containers',      permission: 'inventory.containers.view' },
   { prefix: '/ledger',          permission: 'inventory.ledger.view' },
   { prefix: '/grn',             permission: 'inventory.grn.view' },
@@ -81,5 +85,15 @@ export function defaultPathForUser(user) {
   for (const rule of DEFAULT_PATH_RULES) {
     if (perms.has(rule.permission)) return rule.path
   }
-  return '/stock'
+  // No dashboard-type permission at all (e.g. a plant account that only
+  // raises Material Indents) — land them on the always-accessible /home
+  // welcome page instead of a page they'll be bounced off of.
+  return '/home'
+}
+
+// True when the account has any of the "landing dashboard" permissions above —
+// i.e. defaultPathForUser returns a real dashboard, not the /home fallback.
+export function hasLandingDashboard(user) {
+  const perms = new Set(user?.permissions || [])
+  return DEFAULT_PATH_RULES.some((rule) => perms.has(rule.permission))
 }

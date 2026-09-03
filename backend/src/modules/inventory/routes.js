@@ -6,6 +6,7 @@ import LedgerRouter from "./ledger/router.js";
 import GrnRouter from "./grn/router.js";
 import InwardRouter from "./store/inward/router.js";
 import OutwardRouter from "./store/outward/router.js";
+import MaterialIndentRouter from "./material-indent/router.js";
 import ContainersRouter from "./store/containers/router.js";
 import ImportRouter from "./import/router.js";
 
@@ -28,6 +29,9 @@ InventoryRouter.use("/", InwardRouter);
 
 // ── Outward ───────────────────────────────────────────────────────────────────
 InventoryRouter.use("/outward", OutwardRouter);
+
+// ── Material Indent (general store-item requests from plant sections) ─────────
+InventoryRouter.use("/material-indent", MaterialIndentRouter);
 
 // ── Containers ────────────────────────────────────────────────────────────────
 InventoryRouter.use("/containers", ContainersRouter);

@@ -8,6 +8,52 @@ export function fmtCfu(v) {
   return n.toExponential(2)
 }
 
+// CFU coverage for one microbe issuance requirement against its (possibly
+// user-edited) batch allocations.
+//
+// The requirement is a target CFU: required_qty_kg × required_cfu_per_g (with
+// the kg→g factor). Each SFG batch in stock has its OWN potency (cfu_per_g),
+// so the kilograms drawn from stock almost never equal the recipe's nominal
+// kg — a lower-potency batch needs more kg, a higher-potency one needs less.
+// "Short" / "partial" therefore has to be judged on delivered CFU, never on
+// a kg-vs-kg comparison (which is what produced the "Short by NaN kg" bug and
+// false PARTIAL flags).
+export const G_PER_KG = 1000
+export function cfuCoverage(row) {
+  const reqCfuPerG = Number(row?.required_cfu_per_g) || 0
+  const neededCfu = Number(row?.calc?.total_cfu_needed)
+    || (Number(row?.required_qty_kg) || 0) * G_PER_KG * reqCfuPerG
+  const allocs = row?.calc?.allocations || []
+  const pickedKg = allocs.reduce((s, a) => s + (Number(a.qty_issued_kg) || 0), 0)
+  const coveredCfu = allocs.reduce(
+    (s, a) => s + (Number(a.qty_issued_kg) || 0) * G_PER_KG * (Number(a.cfu_per_g) || 0), 0,
+  )
+  const shortCfu = Math.max(0, neededCfu - coveredCfu)
+  const shortKgEq = reqCfuPerG > 0 ? shortCfu / (G_PER_KG * reqCfuPerG) : 0
+  const overCfu = Math.max(0, coveredCfu - neededCfu)
+  const overKgEq = reqCfuPerG > 0 ? overCfu / (G_PER_KG * reqCfuPerG) : 0
+  const fulfilled = neededCfu > 0 && coveredCfu >= neededCfu * 0.999999
+  // Issuing meaningfully more CFU than the requirement is not allowed — a
+  // small headroom absorbs rounding from the FEFO qty rounding (toFixed 6).
+  const isOver = neededCfu > 0 && coveredCfu > neededCfu * 1.001
+  return { neededCfu, coveredCfu, shortCfu, shortKgEq, overCfu, overKgEq, pickedKg, fulfilled, isOver }
+}
+
+// Cumulative issue progress for one microbe requirement row, derived from the
+// persisted `issued_cfu` / `issued_qty_kg` (these accumulate across partial
+// issuances — independent of the transient FEFO `calc`). The per-microbe
+// issue panel targets `remainingCfu`; the checklist shows done/started.
+export function microbeProgress(row) {
+  const reqCfuPerG = Number(row?.required_cfu_per_g) || 0
+  const requiredCfu = (Number(row?.required_qty_kg) || 0) * G_PER_KG * reqCfuPerG
+  const issuedCfu = Number(row?.issued_cfu) || 0
+  const issuedKg = Number(row?.issued_qty_kg) || 0
+  const remainingCfu = Math.max(0, requiredCfu - issuedCfu)
+  const remainingKgEq = reqCfuPerG > 0 ? remainingCfu / (G_PER_KG * reqCfuPerG) : 0
+  const done = requiredCfu > 0 && issuedCfu >= requiredCfu * 0.999999
+  return { requiredCfu, issuedCfu, issuedKg, remainingCfu, remainingKgEq, done, started: issuedCfu > 0, reqCfuPerG }
+}
+
 const BADGE_BASE = 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ring-1 ring-inset'
 
 export function fillBadgeCls(fill) {

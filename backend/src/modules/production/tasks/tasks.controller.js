@@ -40,6 +40,61 @@ async function syncSoStatus(diNo, productName, taskStatus, sent) {
   } catch { /* SalesOrder table may not exist in all environments */ }
 }
 
+// ── recipe-content flags ─────────────────────────────────────────────────────
+// Microbe Outward only has something to issue when the planned recipe carries
+// a microbe line; Material Issue by BOM only when it carries a raw-material
+// line. Compute both per task from RecipeDb so those pages can hide tasks
+// there's nothing for them to do — matching how each page filters the recipe
+// it loads (Material Issue by BOM keeps `!isMicrobe` rows, Microbe Outward the
+// `isMicrobe` ones). A product with no recipe at all comes back false/false.
+async function attachRecipeFlags(tasks) {
+  if (!tasks.length) return tasks
+
+  // Tasks planned before productCode was tracked carry only a name — resolve
+  // those to a code via Product Master so their recipe can still be found.
+  const codes = new Set(tasks.map(t => t.productCode).filter(Boolean))
+  const namesNeedingCode = [...new Set(
+    tasks.filter(t => !t.productCode && t.productName).map(t => t.productName)
+  )]
+  const nameToCode = new Map()
+  if (namesNeedingCode.length) {
+    const pm = await prisma.productMaster.findMany({
+      where: { OR: namesNeedingCode.map(n => ({ productName: { equals: n, mode: 'insensitive' } })) },
+      select: { productCode: true, productName: true },
+    })
+    for (const p of pm) {
+      nameToCode.set(p.productName.trim().toLowerCase(), p.productCode)
+      codes.add(p.productCode)
+    }
+  }
+
+  const byCode = new Map()
+  if (codes.size) {
+    const rows = await prisma.recipeDb.findMany({
+      where: { productCode: { in: [...codes] } },
+      select: { productCode: true, recipeNo: true, isMicrobe: true },
+    })
+    for (const r of rows) {
+      if (!byCode.has(r.productCode)) byCode.set(r.productCode, [])
+      byCode.get(r.productCode).push(r)
+    }
+  }
+
+  return tasks.map(t => {
+    const code = t.productCode || nameToCode.get((t.productName || '').trim().toLowerCase()) || null
+    const all = (code && byCode.get(code)) || []
+    // A task planned against a specific recipe scopes to it; one with no
+    // recipeNo ("primary") looks across every recipe of the product, the
+    // same way both issuing pages query the recipe when no recipe_no is set.
+    const scoped = t.recipeNo != null ? all.filter(r => r.recipeNo === t.recipeNo) : all
+    return {
+      ...t,
+      hasMicrobeRecipe:     scoped.some(r => r.isMicrobe),
+      hasRawMaterialRecipe: scoped.some(r => !r.isMicrobe),
+    }
+  })
+}
+
 // ── list ──────────────────────────────────────────────────────────────────────
 export const listTasks = async (req, res) => {
   try {
@@ -58,7 +113,7 @@ export const listTasks = async (req, res) => {
       where,
       orderBy: [{ date: 'desc' }, { createdAt: 'asc' }],
     })
-    return res.json({ success: true, data: tasks })
+    return res.json({ success: true, data: await attachRecipeFlags(tasks) })
   } catch (err) {
     return res.status(500).json({ success: false, error: toSafeErrorMessage(err) })
   }
@@ -92,6 +147,8 @@ export const createTask = async (req, res) => {
         diNo:            body.diNo            || null,
         shift:           body.shift           || 'General',
         productName:     body.productName,
+        productCode:     body.productCode     || null,
+        recipeNo:        body.recipeNo != null && body.recipeNo !== '' ? parseInt(body.recipeNo, 10) : null,
         batchCode:       body.batchCode       || null,
         batchKey:        body.batchKey        || null,
         qty:             parseFloat(body.qty) || 0,
@@ -156,8 +213,8 @@ export const updateTask = async (req, res) => {
     str('equipment'); str('location'); str('carrier'); str('specs'); str('remarks')
     str('primaryPack'); str('inners'); str('secondaryPack'); str('labels'); str('packAfter'); str('sfgSourceId')
     flt('unitPackQty'); flt('noUnits'); flt('unitsPerSecPack'); flt('totalSecPacks')
-    bool('sent'); bool('bmrSubmitted'); bool('sentToQc'); bool('bomIssueStarted'); bool('microbeIssueStarted')
-    dt('timerStart'); dt('timerEnd'); dt('bmrSubmittedAt'); dt('sentToQcAt'); dt('bomIssueStartedAt'); dt('microbeIssueStartedAt')
+    bool('sent'); bool('bmrSubmitted'); bool('sentToQc'); bool('bomIssueStarted'); bool('microbeIssueStarted'); bool('microbeIssueCompleted')
+    dt('timerStart'); dt('timerEnd'); dt('bmrSubmittedAt'); dt('sentToQcAt'); dt('bomIssueStartedAt'); dt('microbeIssueStartedAt'); dt('microbeIssueCompletedAt')
 
     const task = await prisma.productionTask.update({ where: { id }, data })
 

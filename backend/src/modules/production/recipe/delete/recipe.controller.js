@@ -14,6 +14,20 @@ export const deleteRecipeRow = async (req, res) => {
   }
 }
 
+// Delete one whole recipe (every row of a single productCode + recipeNo).
+export const deleteRecipe = async (req, res) => {
+  try {
+    const { productCode, recipeNo } = req.params
+    const rows = await prisma.recipeDb.findMany({ where: { productCode, recipeNo: parseInt(recipeNo, 10) } })
+    const result = await prisma.recipeDb.deleteMany({ where: { productCode, recipeNo: parseInt(recipeNo, 10) } })
+    await syncTotalRecipe(productCode)
+    await writeAudit({ ...auditUser(req), action: 'DELETE', module: 'masters', tableName: 'recipe_db', recordId: `${productCode}#${recipeNo}`, oldValue: { rows } })
+    return res.json({ success: true, deleted: result.count })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
+  }
+}
+
 export const deleteProductRecipe = async (req, res) => {
   try {
     const rows = await prisma.recipeDb.findMany({ where: { productCode: req.params.productCode } })

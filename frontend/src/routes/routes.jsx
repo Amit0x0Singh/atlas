@@ -16,6 +16,8 @@ import { qualityRoutes }   from "./modules/qualityRoutes.jsx";
 import { reportsRoutes }   from "./modules/reportsRoutes.jsx";
 import { erpRoutes }       from "./modules/erpRoutes.jsx";
 import { settingsRoutes }  from "./modules/settingsRoutes.jsx";
+import { profileRoutes }   from "./modules/profileRoutes.jsx";
+import { homeRoutes }      from "./modules/homeRoutes.jsx";
 
 function AppLayout() {
   const { user, hasPermission } = useApp();
@@ -53,6 +55,8 @@ function AppLayout() {
             {reportsRoutes}
             {erpRoutes}
             {settingsRoutes}
+            {profileRoutes}
+            {homeRoutes}
             <Route path="*" element={<Navigate to={defaultPath} replace />} />
           </Routes>
         ) : (

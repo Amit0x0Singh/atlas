@@ -123,3 +123,45 @@ export function rolePlantLabels(role) {
   const present = new Set((role.permissions || []).map((rp) => rp.permission?.module).filter(Boolean))
   return PLANT_MODULE_ORDER.filter((m) => present.has(m)).map((m) => PLANT_MODULE_LABELS[m])
 }
+
+// Friendlier phrasing of the coarse action columns for a read-only summary
+// (the Profile page) — "Read/Write" reads oddly out of the Role-editor grid
+// context.
+const COARSE_ACTION_SUMMARY_LABELS = {
+  read: 'View',
+  write: 'Add',
+  update: 'Edit',
+  delete: 'Delete',
+  export: 'Export',
+}
+
+/**
+ * Turns a user's flat `module.resource.action` permission key list into a
+ * human-readable, code-free summary: one row per access area (module) with
+ * the plain-language things they can do there. Used by the Profile page so a
+ * user sees "Administration — View, Add, Edit, Delete" instead of the raw
+ * `admin.users.view` strings (which leak the app's internal naming).
+ */
+export function summarizePermissionKeys(keys = []) {
+  const byModule = {}
+  for (const key of keys) {
+    const parts = String(key).split('.')
+    if (parts.length < 2) continue
+    const module = parts[0]
+    const action = parts[parts.length - 1]
+    const coarse = COARSE_ACTIONS.find((c) => ACTION_CLASS[c.key].includes(action))?.key
+    if (!coarse) continue
+    ;(byModule[module] ??= new Set()).add(coarse)
+  }
+
+  const order = [...MODULE_ORDER, ...PLANT_MODULE_ORDER]
+  return Object.keys(byModule)
+    .sort((a, b) => {
+      const ia = order.indexOf(a), ib = order.indexOf(b)
+      return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib)
+    })
+    .map((module) => ({
+      area: ALL_LABELS[module] || module.replace(/(^|[-_])(\w)/g, (_, s, c) => (s ? ' ' : '') + c.toUpperCase()),
+      actions: COARSE_ACTIONS.filter((c) => byModule[module].has(c.key)).map((c) => COARSE_ACTION_SUMMARY_LABELS[c.key]),
+    }))
+}
