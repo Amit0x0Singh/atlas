@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { outwardApi } from '../../../../../api/inventory.js'
 import { BackButton, Button, PageHeader } from '../../../../../components/ui'
 import WarehouseToWarehouse   from '../components/warehouse-to-warehouse/WarehouseToWarehouse.jsx'
@@ -100,6 +100,7 @@ export default function Outward() {
   const [history,   setHistory]   = useState([])
   const [histPage,  setHistPage]  = useState(1)
   const [histTotal, setHistTotal] = useState(0)
+  const indentIssueRef            = useRef(null)
   const LIMIT = 15
 
   useEffect(() => { loadHistory() }, [histPage])
@@ -126,10 +127,19 @@ export default function Outward() {
       </Button>
     )
 
+    // Open Indents owns its own list ↔ checklist ↔ detail navigation; give its
+    // header Back button first crack at stepping back inside that flow, and
+    // only fall through to leaving the Outward mode once it's back at the list.
+    const indentBack = () => { if (!indentIssueRef.current?.handleBack()) goBack() }
+
     return (
       <Panel
         mode={mode}
-        onBack={isBomHistory ? () => setBomView('select') : goBack}
+        onBack={
+          mode === 'indent-issue' ? indentBack
+          : isBomHistory          ? () => setBomView('select')
+          : goBack
+        }
         actions={bomActions}
       >{
         mode === 'bom-issue' ? (
@@ -140,7 +150,7 @@ export default function Outward() {
         mode === 'wh-wh'        ? <WarehouseToWarehouse /> :
         mode === 'wh-cont'      ? <WarehouseToContainer /> :
         mode === 'stock-loss'   ? <StockLossAdjustment /> :
-        mode === 'indent-issue' ? <IndentIssue /> : null
+        mode === 'indent-issue' ? <IndentIssue ref={indentIssueRef} /> : null
       }</Panel>
     )
   }

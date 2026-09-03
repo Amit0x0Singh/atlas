@@ -1,16 +1,17 @@
 import prisma from '../../../../db.js'
 import { toSafeErrorMessage } from '../../../../utils/safe-error.js'
-import { decorateIndent } from '../shared.js'
+import { decorateIndent, canSeeAllIndents } from '../shared.js'
 
 // GET /material-indent
 // Query: scope (informational only now), status, priority, department,
 // dateFrom, dateTo, q, page, limit.
 //
-// Visibility is capability-driven, NOT taken from the `scope` param:
-//   • The Store (inventory.material-indent.issue) and admins
-//     (admin.panel.access) see every indent, and may narrow with ?department=
-//     — this is the Store's Open Indents / Indent History queue and the admin
-//     "All Indents" view.
+// Visibility is capability-driven, NOT taken from the `scope` param
+// (see canSeeAllIndents):
+//   • The Store (inventory.outward.create / inventory.material-indent.issue)
+//     and admins (admin.panel.access) see every indent, and may narrow with
+//     ?department= — this is the Store's Open Indents / Indent History queue
+//     and the admin "All Indents" view.
 //   • Everyone else (plant / section requesters) is confined to indents raised
 //     by someone from THEIR OWN plant(s) — a Nano-plant person only ever sees
 //     Nano-plant requests, a Botanical person only Botanical, etc. — whatever
@@ -26,9 +27,7 @@ export const listIndents = async (req, res) => {
       dateFrom, dateTo, q, page = 1, limit = 50,
     } = req.query
 
-    const perms = req.user?.permissions
-    const canSeeAll =
-      !!perms?.has?.('admin.panel.access') || !!perms?.has?.('inventory.material-indent.issue')
+    const canSeeAll = canSeeAllIndents(req.user)
 
     const where = {}
     if (!canSeeAll) {
@@ -92,13 +91,11 @@ export const getIndent = async (req, res) => {
     if (!indent) return res.status(404).json({ success: false, error: 'Indent not found', code: 'NOT_FOUND' })
 
     // A requester may only open an indent raised by their own plant; the
-    // Store (issue permission) and admins can open any. 404 (not 403) so a
-    // stray id doesn't confirm another plant's indent exists.
-    const perms = req.user?.permissions
-    const canSeeAny = !!perms?.has?.('admin.panel.access') || !!perms?.has?.('inventory.material-indent.issue')
+    // Store and admins can open any. 404 (not 403) so a stray id doesn't
+    // confirm another plant's indent exists.
     const myPlants = Array.isArray(req.user?.plants) ? req.user.plants.filter(Boolean) : []
     const samePlant = (indent.requesterPlants || []).some(p => myPlants.includes(p))
-    if (!canSeeAny && !samePlant && indent.createdBy !== req.user?.email) {
+    if (!canSeeAllIndents(req.user) && !samePlant && indent.createdBy !== req.user?.email) {
       return res.status(404).json({ success: false, error: 'Indent not found', code: 'NOT_FOUND' })
     }
 

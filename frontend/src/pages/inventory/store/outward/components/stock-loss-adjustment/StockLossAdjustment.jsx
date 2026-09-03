@@ -38,6 +38,21 @@ export default function StockLossAdjustment() {
 
   const clearEntry = () => { setTarget(null); setRm(null); setLossQty(''); setReason(''); setCustomReason('') }
 
+  // The scanned item's RM Master row (operationalUom / density /
+  // conversionRequired) — needed so the operator can enter the loss in the
+  // unit they actually measured it in. Uses the auth-only /rm/search lookup
+  // rather than GET /rm/:code (which is gated by `masters.rm.view`), so a
+  // Store account without Item-Master access still gets the conversion — the
+  // same screen looks identical whichever role opens it.
+  const loadRm = (code) => {
+    rmApi.search({ search: code })
+      .then(res => {
+        const rows = res.data || []
+        setRm(rows.find(x => x.itemCode === code) || rows[0] || null)
+      })
+      .catch(() => setRm(null))
+  }
+
   // ─── Load a scanned bag ──────────────────────────────────────────────────
   const loadPack = async (packId) => {
     if (!packId) return
@@ -61,7 +76,7 @@ export default function StockLossAdjustment() {
       })
       // Best-effort — a missing RM row just means no conversion is offered
       // (entry stays in the item's own unit); the server is the authority.
-      rmApi.get(r.data.itemCode).then(res => setRm(res.data || null)).catch(() => setRm(null))
+      loadRm(r.data.itemCode)
     } catch (e) {
       setError(e.response?.data?.error || e.message || 'Failed to load bag.')
     } finally {
@@ -86,7 +101,7 @@ export default function StockLossAdjustment() {
         type: 'container', id: c.containerId, itemCode: c.itemCode, itemName: c.itemName,
         uom: c.uom, remainingQty: c.currentQty, originalQty: c.capacity,
       })
-      rmApi.get(c.itemCode).then(res => setRm(res.data || null)).catch(() => setRm(null))
+      loadRm(c.itemCode)
     } catch (e) {
       setError(e.response?.data?.error || e.message || 'Failed to load container.')
     } finally {
@@ -105,6 +120,10 @@ export default function StockLossAdjustment() {
 
   const isContainer = target?.type === 'container'
   const unitLabel = isContainer ? 'container' : 'bag'
+
+  // Stored quantities are raw floats (e.g. 43.68099999999998) — always show
+  // them to 3 dp.
+  const fmtQty = (n) => (Number.isFinite(Number(n)) ? Number(n).toFixed(3) : (n ?? '—'))
 
   // ─── UOM conversion (display + validation only) ───────────────────────────
   // Inventory UOM is what target.remainingQty and every ledger figure are in;
@@ -146,7 +165,7 @@ export default function StockLossAdjustment() {
     // (Operational) UOM while remainingQty is Inventory UOM, so it has to be
     // converted before comparing. The server re-derives and re-checks this.
     if (toInventory(loss) > target.remainingQty) {
-      setError(`Loss exceeds remaining qty (${target.remainingQty} ${inventoryUom})`); return
+      setError(`Loss exceeds remaining qty (${fmtQty(target.remainingQty)} ${inventoryUom})`); return
     }
     if (!finalReason || finalReason.length < 3) { setError('Select or enter a reason'); return }
 
@@ -224,14 +243,14 @@ export default function StockLossAdjustment() {
             <div className="mt-3 bg-white rounded-lg px-3 py-2.5">
               <div className="flex justify-between text-xs mb-1.5">
                 <span className="text-gray-500 font-medium">Remaining Qty</span>
-                <span className="font-bold text-gray-800">{target.remainingQty} {inventoryUom?.toUpperCase()}</span>
+                <span className="font-bold text-gray-800">{fmtQty(target.remainingQty)} {inventoryUom?.toUpperCase()}</span>
               </div>
               <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                 <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${Math.min(100, (target.remainingQty / (target.originalQty || target.remainingQty)) * 100)}%` }} />
               </div>
               <div className="flex justify-between text-[10px] text-gray-400 mt-1">
                 <span>0</span>
-                <span>{isContainer ? 'Capacity' : 'Original'}: {target.originalQty || '—'} {inventoryUom?.toUpperCase()}</span>
+                <span>{isContainer ? 'Capacity' : 'Original'}: {fmtQty(target.originalQty)} {inventoryUom?.toUpperCase()}</span>
               </div>
               {/* Only shown for items configured with a distinct Operational
                   UOM — makes it explicit that the same physical stock reads

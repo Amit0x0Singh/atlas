@@ -11,6 +11,17 @@ export function useUsers() {
   })
 }
 
+// Auth-only staff directory (id / username / email / full name). Unlike
+// useUsers() this needs no admin.users.view — use it wherever a list only
+// needs to turn a createdBy/updatedBy email into a display name.
+export function useUserDirectory() {
+  return useQuery({
+    queryKey: queryKeys.rbac.directory(),
+    queryFn: () => rbacApi.userDirectory().then(r => r.data),
+    ...CACHE.MASTER,
+  })
+}
+
 export function useRoles() {
   return useQuery({
     queryKey: queryKeys.rbac.roles(),

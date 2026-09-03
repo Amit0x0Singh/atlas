@@ -12,6 +12,10 @@ export const rbacApi = {
   listPermissions: ()               => api.get('/admin/rbac/permissions'),
 
   listUsers:       ()               => api.get('/admin/rbac/users'),
+  // Auth-only staff directory (id / username / email / full name) — for
+  // resolving createdBy/updatedBy emails to names on any list, without
+  // needing admin.users.view. See useUserDisplayNames.
+  userDirectory:   ()               => api.get('/auth/directory'),
   createUser:      (data)           => api.post('/admin/rbac/users', data),
   updateUser:      (userId, data)   => api.put(`/admin/rbac/users/${userId}`, data),
   setUserActive:   (userId, isActive) => api.patch(`/admin/rbac/users/${userId}/active`, { isActive }),

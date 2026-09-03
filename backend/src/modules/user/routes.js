@@ -9,6 +9,7 @@ import { getSetupStatus, bootstrapAdmin } from "./setup/setup.controller.js";
 import { verifyPassword } from "./verify-password/verify-password.controller.js";
 import { resolveEffectivePermissions } from "../../services/permission-resolver.js";
 import { writeAudit, auditUser } from "../../middleware/audit.js";
+import prisma from "../../db.js";
 
 const UserRouter = express.Router();
 
@@ -50,5 +51,19 @@ UserRouter.get("/me", authenticate, async (req, res) => {
 });
 
 UserRouter.post("/verify-password", authLimiter, authenticate, verifyPassword);
+
+// Lightweight staff directory — id / username / email / full name only, no
+// roles, permissions, or contact details. Any authenticated user may read it:
+// audit-stamp columns (createdBy / updatedBy / raisedBy …) across the app
+// store the actor's email, and every list/detail view wants to render a
+// readable name instead. This is the non-admin counterpart to
+// GET /admin/rbac/users (which stays gated by admin.users.view).
+UserRouter.get("/directory", authenticate, async (_req, res) => {
+  const users = await prisma.user.findMany({
+    select: { userId: true, username: true, email: true, fullName: true },
+    orderBy: { fullName: "asc" },
+  });
+  res.json({ success: true, data: users });
+});
 
 export default UserRouter;

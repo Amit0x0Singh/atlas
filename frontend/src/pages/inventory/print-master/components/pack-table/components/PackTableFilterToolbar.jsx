@@ -10,7 +10,7 @@ function countActiveFilters(f) {
 }
 
 /** Search + Sort by + Filter + Export in one row, above the table header — same toolbar as Item/Product/Equipment Master. */
-export default function PackTableFilterToolbar({ search, onSearchChange, filters, onFiltersChange, sort, onSortChange, onExport, resultCount }) {
+export default function PackTableFilterToolbar({ search, onSearchChange, filters, onFiltersChange, sort, onSortChange, onExport, resultCount, suppliers = [] }) {
   const [showFilter, setShowFilter] = useState(false)
   const [showSort, setShowSort] = useState(false)
   const activeFilterCount = countActiveFilters(filters)
@@ -24,7 +24,7 @@ export default function PackTableFilterToolbar({ search, onSearchChange, filters
           type="text"
           value={search}
           onChange={e => onSearchChange(e.target.value)}
-          placeholder="Filter by item code…"
+          placeholder="Search item, code, lot, invoice, supplier…"
           className="w-full border border-gray-200 rounded-lg pl-8 pr-3 py-2 text-[13px] text-gray-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white"
         />
       </div>
@@ -47,7 +47,7 @@ export default function PackTableFilterToolbar({ search, onSearchChange, filters
         </Can>
       </div>
 
-      <PackTableFilterModal open={showFilter} onClose={() => setShowFilter(false)} value={filters} onApply={onFiltersChange} />
+      <PackTableFilterModal open={showFilter} onClose={() => setShowFilter(false)} value={filters} onApply={onFiltersChange} suppliers={suppliers} />
       <PackTableSortModal open={showSort} onClose={() => setShowSort(false)} value={sort} onApply={onSortChange} />
     </div>
   )

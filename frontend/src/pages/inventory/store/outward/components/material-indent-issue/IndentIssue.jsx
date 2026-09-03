@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react'
 import { Button } from '../../../../../../components/ui'
 import { History, Inbox } from 'lucide-react'
 import { materialIndentApi } from '../../../../../../api/inventory.js'
@@ -8,7 +8,12 @@ import IndentDetailModal from '../../../material-indent/components/IndentDetailM
 
 // "Open Indents" workflow, mounted as a mode on Store Outward. Lets the store
 // person work through incoming Material Indents, issuing each line by QR scan.
-export default function IndentIssue() {
+//
+// The Outward page's header "Back" button is the only back control — it calls
+// this component's imperative `handleBack()` first (drops out of the open
+// checklist / detail modal back to the list) and only exits the Outward mode
+// when there's no sub-view left.
+const IndentIssue = forwardRef(function IndentIssue(_props, ref) {
   const [view, setView]         = useState('open') // 'open' | 'history'
   const [indents, setIndents]   = useState([])
   const [loading, setLoading]   = useState(true)
@@ -40,8 +45,19 @@ export default function IndentIssue() {
     else { setSelected(null); load() }
   }
 
+  // Driven by the Outward page's header Back button. Returns true when it
+  // stepped back within this workflow (so the caller shouldn't also exit the
+  // Outward mode), false when already at the list.
+  useImperativeHandle(ref, () => ({
+    handleBack() {
+      if (detail)   { setDetail(null); return true }
+      if (selected) { setSelected(null); return true }
+      return false
+    },
+  }), [detail, selected])
+
   if (selected) {
-    return <IndentChecklistStep indent={selected} onBack={() => setSelected(null)} onChanged={onChanged} />
+    return <IndentChecklistStep indent={selected} onChanged={onChanged} />
   }
 
   return (
@@ -54,4 +70,6 @@ export default function IndentIssue() {
       <IndentDetailModal indent={detail} open={!!detail} onClose={() => setDetail(null)} />
     </>
   )
-}
+})
+
+export default IndentIssue

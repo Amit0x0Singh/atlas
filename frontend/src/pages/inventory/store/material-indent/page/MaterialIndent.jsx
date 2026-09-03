@@ -7,7 +7,7 @@ import MyIndentsTab from '../components/MyIndentsTab.jsx'
 
 export default function MaterialIndent() {
   const { hasAnyPermission } = useApp()
-  const canSeeAll = hasAnyPermission(['admin.panel.access', 'inventory.material-indent.issue'])
+  const canSeeAll = hasAnyPermission(['admin.panel.access', 'inventory.material-indent.issue', 'inventory.outward.create'])
 
   const TABS = [
     { key: 'new',  label: 'New Indent' },

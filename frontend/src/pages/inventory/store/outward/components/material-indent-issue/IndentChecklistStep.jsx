@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Ban } from 'lucide-react'
-import { Button, BackButton, ConfirmModal, Modal } from '../../../../../../components/ui'
+import { Button, ConfirmModal, Modal } from '../../../../../../components/ui'
 import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 import { materialIndentApi } from '../../../../../../api/inventory.js'
 import IndentIssuePanel from './IndentIssuePanel.jsx'
@@ -33,7 +33,7 @@ function RejectModal({ open, title, onClose, onConfirm }) {
   )
 }
 
-export default function IndentChecklistStep({ indent, onBack, onChanged }) {
+export default function IndentChecklistStep({ indent, onChanged }) {
   const [activeId, setActiveId]   = useState(null)
   const [issueNonce, setNonce]    = useState(0)
   const [lineMsg, setLineMsg]     = useState({})
@@ -86,7 +86,6 @@ export default function IndentChecklistStep({ indent, onBack, onChanged }) {
           {indent.status !== 'COMPLETED' && (
             <Button variant="danger" size="sm" icon={Ban} onClick={() => setRejectAll(true)}>Reject Indent</Button>
           )}
-          <BackButton onClick={onBack} size="sm" label="Back" />
         </div>
       </div>
 

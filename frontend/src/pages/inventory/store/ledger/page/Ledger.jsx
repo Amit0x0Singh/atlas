@@ -55,7 +55,7 @@ export default function Ledger() {
       const r = await ledgerApi.all({ ...debouncedFilters, page: 1, limit: 100000 })
       const all = r.data || []
       if (!all.length) { alert('No transactions to export — adjust your filters.'); return }
-      const headers = ['Date & Time', 'Item Name', 'Transaction Type', 'Qty', 'Reference', 'Created By', 'Updated By']
+      const headers = ['Date & Time', 'Item Name', 'Transaction Type', 'Qty', 'Pack ID', 'Reference', 'Created By', 'Updated By']
       const csvRows = all.map(row => {
         const isIn  = row.inQty  > 0
         const isOut = row.outQty > 0
@@ -72,6 +72,7 @@ export default function Ledger() {
           toTitleCase(row.itemName) || row.itemCode,
           row.transactionType.replace(/_/g, ' '),
           qty,
+          row.sourceId || '',
           row.reference || '',
           row.createdBy ? toTitleCase(displayName(row.createdBy)) : '',
           row.updatedBy ? toTitleCase(displayName(row.updatedBy)) : '',

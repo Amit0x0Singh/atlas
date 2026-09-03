@@ -2,6 +2,18 @@
 
 const EPS = 0.001
 
+// Who sees / works EVERY indent (the Store's Open Indents + Indent History
+// queue, the admin "All Indents" view) rather than just their own plant's:
+// admins, the dedicated indent-issue grant, and anyone who can issue store
+// outward (the Store role does this all day — the Open Indents workflow is a
+// Store-Outward action). Everyone else is plant-scoped in listIndents.
+export function canSeeAllIndents(reqUser) {
+  const p = reqUser?.permissions
+  return !!p?.has?.('admin.panel.access')
+      || !!p?.has?.('inventory.material-indent.issue')
+      || !!p?.has?.('inventory.outward.create')
+}
+
 // Recompute one line's status from its requested/issued/rejected state.
 export function lineStatusFor(item) {
   if (item.lineStatus === 'REJECTED') return 'REJECTED'

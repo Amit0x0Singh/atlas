@@ -13,7 +13,7 @@ export default function MyIndentsTab({ onEditDraft, refreshKey }) {
   const { user, hasAnyPermission } = useApp()
   // The Store and admins see every department's indents here and can filter by
   // department; everyone else is scoped server-side to their own department.
-  const canSeeAll = hasAnyPermission(['admin.panel.access', 'inventory.material-indent.issue'])
+  const canSeeAll = hasAnyPermission(['admin.panel.access', 'inventory.material-indent.issue', 'inventory.outward.create'])
   const { data: departments = [] } = useOptionValues(canSeeAll ? 'MATERIAL_INDENT_DEPARTMENT' : null)
 
   const [rows, setRows]       = useState([])
