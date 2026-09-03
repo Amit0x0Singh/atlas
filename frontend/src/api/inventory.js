@@ -64,6 +64,19 @@ export const outwardApi = {
   },
 }
 
+// Material Indent — plant sections request general/daily-use store items;
+// the Store issues each line by QR scan from the Open Indents workflow.
+export const materialIndentApi = {
+  list:       (params)          => api.get('/material-indent', { params }),
+  get:        (id)              => api.get(`/material-indent/${id}`),
+  create:     (data)            => api.post('/material-indent', data),
+  update:     (id, data)        => api.put(`/material-indent/${id}`, data),
+  cancel:     (id)              => api.patch(`/material-indent/${id}/cancel`),
+  reject:     (id, data)        => api.patch(`/material-indent/${id}/reject`, data),
+  rejectLine: (id, itemId, data) => api.patch(`/material-indent/${id}/items/${itemId}/reject`, data),
+  issue:      (id, data)        => api.post(`/material-indent/${id}/issue`, data),
+}
+
 export const sfgApi = {
   list:    (params) => api.get('/sfg', { params }),
   listAll: (params) => api.get('/sfg', { params: { ...params, showAll: 'true' } }),

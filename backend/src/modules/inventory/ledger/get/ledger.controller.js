@@ -20,9 +20,10 @@ import { toSafeErrorMessage } from '../../../../utils/safe-error.js';
 // AND matched by closest timestamp, rather than a plain findFirst that
 // could silently grab the wrong event's row.
 const OPERATIONAL_QTY_SOURCE_TYPES = {
-  BOM_ISSUANCE: 'BOM_ISSUANCE',
-  STOCK_RECON:  'STOCK_ADJUSTMENT',
-  DIRECT_ISSUE: 'DIRECT_ISSUE',
+  BOM_ISSUANCE:    'BOM_ISSUANCE',
+  STOCK_RECON:     'STOCK_ADJUSTMENT',
+  DIRECT_ISSUE:    'DIRECT_ISSUE',
+  MATERIAL_INDENT: 'MATERIAL_INDENT',
 }
 
 async function attachOperationalQty(rows) {

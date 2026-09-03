@@ -118,7 +118,7 @@ export async function listUsers() {
   const users = await prisma.user.findMany({
     select: {
       userId: true, email: true, username: true, fullName: true, phone: true,
-      plants: true, isActive: true, createdAt: true,
+      plants: true, department: true, isActive: true, createdAt: true,
       roles: { select: { role: { select: { roleId: true, name: true } } } },
     },
     orderBy: { fullName: 'asc' },
@@ -126,7 +126,7 @@ export async function listUsers() {
   return users.map((u) => ({ ...u, roles: u.roles.map((r) => r.role) }))
 }
 
-export async function createUser({ email, username, fullName, password, plants = [], roleIds = [] }, actor) {
+export async function createUser({ email, username, fullName, password, plants = [], department = null, roleIds = [] }, actor) {
   const passwordHash = await bcrypt.hash(password, 10)
   const user = await prisma.user.create({
     data: {
@@ -135,17 +135,20 @@ export async function createUser({ email, username, fullName, password, plants =
       fullName,
       passwordHash,
       plants,
+      department: department || null,
       isActive: true,
       roles: { create: roleIds.map((roleId) => ({ roleId })) },
     },
   })
-  await writeAudit({ ...actor, action: 'CREATE', tableName: 'users', recordId: user.userId, newValue: { email, fullName, plants, roleIds } })
+  await writeAudit({ ...actor, action: 'CREATE', tableName: 'users', recordId: user.userId, newValue: { email, fullName, plants, department, roleIds } })
   return user
 }
 
-export async function updateUser(userId, { fullName, phone, plants }, actor) {
-  const user = await prisma.user.update({ where: { userId }, data: { fullName, phone, plants } })
-  await writeAudit({ ...actor, action: 'UPDATE', tableName: 'users', recordId: userId, newValue: { fullName, phone, plants } })
+export async function updateUser(userId, { fullName, phone, plants, department }, actor) {
+  const data = { fullName, phone, plants }
+  if (department !== undefined) data.department = department || null
+  const user = await prisma.user.update({ where: { userId }, data })
+  await writeAudit({ ...actor, action: 'UPDATE', tableName: 'users', recordId: userId, newValue: data })
   invalidateUser(userId)
   return user
 }

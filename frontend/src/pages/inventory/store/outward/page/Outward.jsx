@@ -6,7 +6,8 @@ import WarehouseToContainer   from '../components/warehouse-to-container/Warehou
 import MaterialIssueByBOM     from '../components/material-issue-by-bom/page/MaterialIssueByBOM.jsx'
 import BomIssuedHistory       from '../components/material-issue-by-bom/BomIssuedHistory.jsx'
 import StockLossAdjustment    from '../components/stock-loss-adjustment/StockLossAdjustment.jsx'
-import { RefreshCw, Warehouse, ClipboardList, Container, TriangleAlert, History, ArrowUpFromLine } from 'lucide-react'
+import IndentIssue            from '../components/material-indent-issue/IndentIssue.jsx'
+import { RefreshCw, Warehouse, ClipboardList, Container, TriangleAlert, History, ArrowUpFromLine, Inbox } from 'lucide-react'
 import './Outward.css'
 import { toTitleCase } from '../../../../../utils/textDisplay.js'
 import { useUserDisplayNames } from '../../../../../hooks/masters/useUserDisplayNames.js'
@@ -40,6 +41,13 @@ const MODES = [
     desc:  'Record material lost due to spillage, damage or weighing error',
     accent: { border: 'border-red-200', hover: 'hover:border-red-400 hover:bg-red-50/60', icon: 'bg-red-100 text-red-600' },
   },
+  {
+    key:   'indent-issue',
+    icon:  <Inbox size={22} />,
+    label: 'Open Indents',
+    desc:  'Issue general store items requested by plant sections — scan QR',
+    accent: { border: 'border-teal-200', hover: 'hover:border-teal-400 hover:bg-teal-50/60', icon: 'bg-teal-100 text-teal-600' },
+  },
 ]
 
 const MODE_MAP = Object.fromEntries(MODES.map(m => [m.key, m]))
@@ -55,6 +63,7 @@ const TYPE_COLOR = {
   CONTAINER_ISSUE:    'bg-green-100 text-green-700',
   WAREHOUSE_TRANSFER: 'bg-gray-100 text-gray-700',
   STOCK_ADJUSTMENT:   'bg-red-100 text-red-700',
+  MATERIAL_INDENT:    'bg-teal-100 text-teal-700',
 }
 
 function Panel({ mode, onBack, actions, children }) {
@@ -128,9 +137,10 @@ export default function Outward() {
             ? <BomIssuedHistory />
             : <MaterialIssueByBOM resumeSessionId={resumeId} onAutoResumed={() => setResumeId(null)} />
         ) :
-        mode === 'wh-wh'      ? <WarehouseToWarehouse /> :
-        mode === 'wh-cont'    ? <WarehouseToContainer /> :
-        mode === 'stock-loss' ? <StockLossAdjustment /> : null
+        mode === 'wh-wh'        ? <WarehouseToWarehouse /> :
+        mode === 'wh-cont'      ? <WarehouseToContainer /> :
+        mode === 'stock-loss'   ? <StockLossAdjustment /> :
+        mode === 'indent-issue' ? <IndentIssue /> : null
       }</Panel>
     )
   }
@@ -149,7 +159,7 @@ export default function Outward() {
       <div className="p-4 md:p-6">
         {/* Outward action cards */}
         <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3">Outward Actions</h2>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3 mb-7">
+        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2 md:gap-3 mb-7">
           {MODES.map(m => (
             <button key={m.key} onClick={() => setMode(m.key)}
               className={`bg-white border-2 ${m.accent.border} ${m.accent.hover} rounded-xl p-3 md:p-4 text-left transition-all group`}>
