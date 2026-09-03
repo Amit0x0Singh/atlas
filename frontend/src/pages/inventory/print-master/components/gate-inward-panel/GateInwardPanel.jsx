@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
-import { RefreshCw, Search, X, DoorOpen } from "lucide-react";
+import { RefreshCw, Search, X, DoorOpen, Paperclip } from "lucide-react";
 import { useGateInward } from "../../../../../hooks/inventory/useGate.js";
 import { useDebouncedValue } from "../../../../../hooks/useDebouncedValue.js";
 import { IconButton } from "../../../../../components/ui";
 import Pagination from "../../../../../components/pagination/Pagination.jsx";
+import { gateApi } from "../../../../../api/inventory.js";
+import { openAuthedFile } from "../../../../../utils/authedFile.js";
 
 import { toTitleCase } from '../../../../../utils/textDisplay.js'
 const STATUS_COLORS = {
@@ -39,8 +41,19 @@ function StatusBadge({ status }) {
 export default function GateInwardPanel({ onSelect, selectedId, onClose }) {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [docError, setDocError] = useState("");
   const debouncedSearch = useDebouncedValue(search, 300);
   useEffect(() => { setPage(1); }, [debouncedSearch]);
+
+  // Open a Gate Inward's attached invoice document (PDF/JPG/PNG) in a new
+  // tab so the Store can check it against what it's about to print. Must be
+  // called straight from the click handler (openAuthedFile opens the tab
+  // synchronously for popup blockers).
+  const viewInvoiceDoc = (inwardId, fileName) => {
+    setDocError("");
+    openAuthedFile(gateApi.invoiceDocUrl(inwardId, fileName))
+      .catch((e) => setDocError(`Could not open the invoice document: ${e.message}`));
+  };
 
   const { data, isLoading, isFetching, error, refetch } = useGateInward({
     status: "pending",
@@ -89,6 +102,12 @@ export default function GateInwardPanel({ onSelect, selectedId, onClose }) {
         </div>
       </div>
 
+      {docError && (
+        <div style={{ margin: "10px 20px 0", color: "#dc2626", fontSize: "12px", padding: "8px 12px", background: "#fef2f2", borderRadius: "6px", flexShrink: 0 }}>
+          {docError}
+        </div>
+      )}
+
       {/* List */}
       <div style={{ flex: 1, overflowY: "auto", padding: "14px 20px", minHeight: "200px" }}>
         {error ? (
@@ -110,11 +129,14 @@ export default function GateInwardPanel({ onSelect, selectedId, onClose }) {
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
             {rows.map((r) => {
               const isSelected = selectedId === r.inwardId;
+              const docs = r.invoiceDocFileNames || [];
               return (
-                <button
+                <div
                   key={r.inwardId}
-                  type="button"
+                  role="button"
+                  tabIndex={0}
                   onClick={() => onSelect(r)}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(r); } }}
                   style={{
                     width: "100%", textAlign: "left",
                     padding: "12px 14px",
@@ -130,12 +152,28 @@ export default function GateInwardPanel({ onSelect, selectedId, onClose }) {
                     <span style={{ fontWeight: 700, fontSize: "13px", color: "#0f172a" }}>{toTitleCase(r.supplierName)}</span>
                     <StatusBadge status={r.status} />
                   </div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", fontSize: "11px", color: "#64748b" }}>
+                  <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px", fontSize: "11px", color: "#64748b" }}>
                     {r.invoiceNo && <span>📄 {r.invoiceNo}</span>}
                     {r.vehicleNo && <span>🚛 {r.vehicleNo}</span>}
+                    {docs.map((name, i) => (
+                      <button
+                        key={name}
+                        type="button"
+                        title="View invoice document"
+                        onClick={(e) => { e.stopPropagation(); viewInvoiceDoc(r.inwardId, name); }}
+                        style={{
+                          display: "inline-flex", alignItems: "center", gap: "3px",
+                          padding: "2px 7px", borderRadius: "6px",
+                          border: "1px solid #bfdbfe", background: "#eff6ff", color: "#2563eb",
+                          fontSize: "10px", fontWeight: 700, cursor: "pointer",
+                        }}
+                      >
+                        <Paperclip size={11} /> Invoice{docs.length > 1 ? ` ${i + 1}` : ""}
+                      </button>
+                    ))}
                     <span style={{ marginLeft: "auto" }}>{fmtDate(r.createdAt)}</span>
                   </div>
-                </button>
+                </div>
               );
             })}
           </div>
