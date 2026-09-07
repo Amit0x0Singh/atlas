@@ -25,7 +25,7 @@ export default function RawMaterialsSection({ rm, loading }) {
     <div>
       <SLabel>Raw Materials · Current Snapshot</SLabel>
       <div className="grid grid-cols-3 gap-3">
-        <StatCard dot="indigo" label="Total RM Items"
+        <StatCard dot="indigo" label="Total Items"
           value={fmt(rm.totalItems)} sub="registered in system" loading={loading} />
         <StatCard dot="green" label="Items in Stock"
           value={fmt(rm.inStock)} sub="have available quantity" subColor="text-emerald-600" loading={loading} />

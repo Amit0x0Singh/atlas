@@ -123,23 +123,50 @@ export function formatQty(canonicalQty, canonicalUom, decimals = 3) {
 }
 
 /**
- * Converts a quantity between two units using density (kg per liter) as the
- * KG<->L pivot — mirrors backend/src/utils/uom.js's convertByDensity. Used
- * for client-side display only (e.g. showing an Inventory-UOM stock ceiling
- * in Operational UOM terms); the server always re-derives and validates this
- * itself before actually deducting stock. Same-unit pairs pass through
- * untouched. NOS can't be converted this way — only KG<->L.
+ * Converts a quantity between two units — mirrors backend/src/utils/uom.js's
+ * convertByDensity. Handles BOTH:
+ *   • sub-unit scale within one family (g <-> kg, mg <-> g, ml <-> L) using
+ *     the alias factors — density is NOT needed for these; and
+ *   • cross-family mass <-> volume, pivoting through the canonical KG<->L via
+ *     `density` (kg per litre).
+ * Used for client-side display / default-qty only; the server always
+ * re-derives and validates the real conversion before deducting stock.
+ * Genuinely identical units pass through untouched. NOS / special units
+ * can't be scaled — only a same-unit passthrough is allowed for those.
  */
 export function convertByDensity(qty, fromUom, toUom, density) {
-  const from = normalizeUom(fromUom)
-  const to = normalizeUom(toUom)
-  if (!from || !to) throw new Error(`Unknown unit — cannot convert "${fromUom}" to "${toUom}"`)
-  if (from === to) return { qty: Number(qty), converted: false }
-  const massOrVolume = (u) => u === CANONICAL.MASS || u === CANONICAL.VOLUME
-  if (!massOrVolume(from) || !massOrVolume(to))
-    throw new Error(`Cannot convert between ${from} and ${to} — density conversion only supports KG <-> L`)
+  // Tolerate dirty unit strings seen in older recipe data ("gms.", "KG ").
+  const clean   = (u) => String(u || '').trim().toLowerCase().replace(/\.+$/, '').trim()
+  const fromKey = clean(fromUom)
+  const toKey   = clean(toUom)
+  const n = Number(qty)
+
+  // Special units (potency / ratio) — never rescaled.
+  if (SPECIAL_UNITS.has(fromKey) || SPECIAL_UNITS.has(toKey)) {
+    if (fromKey === toKey) return { qty: n, converted: false }
+    throw new Error(`Cannot convert "${fromUom}" to "${toUom}"`)
+  }
+
+  const a = ALIASES[fromKey]
+  const b = ALIASES[toKey]
+  if (!a || !b) throw new Error(`Unknown unit — cannot convert "${fromUom}" to "${toUom}"`)
+
+  // Same unit (or two spellings / equal-factor aliases of it) — nothing to do.
+  if (fromKey === toKey || (a.family === b.family && a.factor === b.factor))
+    return { qty: n, converted: false }
+
+  if (a.family === 'COUNT' || b.family === 'COUNT')
+    throw new Error(`Cannot convert between ${fromUom} and ${toUom} — NOS is a plain count`)
+
+  // Within one family: pure scale factor (e.g. 150 g -> kg = 150 * 0.001 / 1).
+  if (a.family === b.family)
+    return { qty: n * a.factor / b.factor, converted: true }
+
+  // Cross-family mass <-> volume: pivot through canonical KG <-> L via density.
   if (!density || density <= 0)
-    throw new Error('Density is required to convert between KG and L for this item')
-  const kg = from === CANONICAL.MASS ? Number(qty) : Number(qty) * density
-  return { qty: to === CANONICAL.MASS ? kg : kg / density, converted: true }
+    throw new Error('Density is required to convert between mass and volume for this item')
+  const canonicalFrom = n * a.factor                                   // KG if MASS, L if VOLUME
+  const kg = a.family === 'MASS' ? canonicalFrom : canonicalFrom * density
+  const canonicalTo = b.family === 'MASS' ? kg : kg / density          // KG or L
+  return { qty: canonicalTo / b.factor, converted: true }
 }

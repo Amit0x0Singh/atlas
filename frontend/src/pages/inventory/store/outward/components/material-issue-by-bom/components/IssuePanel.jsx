@@ -2,6 +2,7 @@ import ScannerPanel from '../../../../../../../components/ScannerPanel/ScannerPa
 import StockShortageBanner from './StockShortageBanner.jsx'
 import { Can } from '../../../../../../../components/common/Can.jsx'
 import { convertByDensity } from '../../../../../../../utils/uom.js'
+import { QTY_EPS, fmtQty } from '../../../../../../../utils/qty.js'
 
 import { toTitleCase } from '../../../../../../../utils/textDisplay.js'
 export default function IssuePanel({
@@ -30,7 +31,7 @@ export default function IssuePanel({
     catch { totalAvailableInLineUom = totalAvailable }
   }
   const noStock          = !loadingRes && packs.length === 0 && containers.length === 0
-  const insufficientStock = !loadingRes && !noStock && totalAvailableInLineUom < remaining
+  const insufficientStock = !loadingRes && !noStock && totalAvailableInLineUom < remaining - QTY_EPS
 
   const rescan = () => { setFoundSource(null); setScanErr(''); setIssueQty('') }
 
@@ -53,7 +54,7 @@ export default function IssuePanel({
             <StockShortageBanner
               theme="orange"
               title={`Stock insufficient for ${toTitleCase(line.rmName)}`}
-              message={<>Only <strong>{totalAvailable.toFixed(3)} {inventoryUom}</strong> available but <strong>{remaining} {line.uom?.toUpperCase()}</strong> still needed. You can issue what's available now.</>}
+              message={<>Only <strong>{fmtQty(totalAvailable)} {inventoryUom}</strong> available but <strong>{fmtQty(remaining)} {line.uom?.toUpperCase()}</strong> still needed. You can issue what's available now.</>}
             />
           )}
 
@@ -111,11 +112,11 @@ export default function IssuePanel({
                   </div>
                   <div>
                     <span className="text-gray-400">Available: </span>
-                    <span className="font-bold text-green-700">{foundSource.availableQty} {foundSource.uom?.toUpperCase()}</span>
+                    <span className="font-bold text-green-700">{fmtQty(foundSource.availableQty)} {foundSource.uom?.toUpperCase()}</span>
                   </div>
                   <div>
                     <span className="text-gray-400">Total Qty: </span>
-                    <span className="font-bold text-gray-800">{totalAvailable.toFixed(3)} {inventoryUom}</span>
+                    <span className="font-bold text-gray-800">{fmtQty(totalAvailable)} {inventoryUom}</span>
                   </div>
                   {rm?.conversionRequired && (
                     <div>
@@ -131,7 +132,7 @@ export default function IssuePanel({
                   )}
                   <div>
                     <span className="text-gray-400">Still needed: </span>
-                    <span className="font-bold text-red-600">{remaining} {line.uom?.toUpperCase()}</span>
+                    <span className="font-bold text-red-600">{fmtQty(remaining)} {line.uom?.toUpperCase()}</span>
                   </div>
                 </div>
               </div>
@@ -142,7 +143,7 @@ export default function IssuePanel({
                     <label className="text-xs font-semibold text-gray-700 mb-1 block">
                       Qty to Issue ({(foundSource.entryUom || line.uom || '').toUpperCase()})
                     </label>
-                    <input type="number" min="0.001" step="0.001"
+                    <input type="number" min="0" step="any"
                       max={foundSource.maxEntryQty ?? Math.min(foundSource.availableQty, remaining)}
                       value={issueQty}
                       onChange={e => setIssueQty(e.target.value)}
@@ -153,7 +154,7 @@ export default function IssuePanel({
                       }`}
                     />
                     <p className="text-xs text-gray-400 mt-1">
-                      Max: {(foundSource.maxEntryQty ?? Math.min(foundSource.availableQty, remaining)).toFixed(3)} {(foundSource.entryUom || line.uom || '').toUpperCase()}
+                      Max: {fmtQty(foundSource.maxEntryQty ?? Math.min(foundSource.availableQty, remaining))} {(foundSource.entryUom || line.uom || '').toUpperCase()}
                       {foundSource.entryUom && foundSource.entryUom !== inventoryUom && (
                         <> (stock tracked in {inventoryUom})</>
                       )}

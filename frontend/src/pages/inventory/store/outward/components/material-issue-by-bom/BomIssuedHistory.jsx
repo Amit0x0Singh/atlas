@@ -7,6 +7,7 @@ import BomIssuedFilterModal, { EMPTY_BOM_ISSUED_FILTERS } from './BomIssuedFilte
 import BomIssuedSortModal, { DEFAULT_BOM_ISSUED_SORT } from './BomIssuedSortModal.jsx'
 
 import { toTitleCase } from '../../../../../../utils/textDisplay.js'
+import { fmtQty } from '../../../../../../utils/qty.js'
 function fmtDate(iso) {
   return new Date(iso).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
@@ -79,7 +80,7 @@ export default function BomIssuedHistory() {
         rmCode: l.sourceId,
         // Rows predating operationalUom have it null — fall back to the item's
         // Inventory UOM (the unit qtyIssued is in) rather than a bare number.
-        detail: `${Number(l.operationalQty ?? l.qtyIssued).toFixed(3)} ${(l.operationalUom || l.inventoryUom || '').toUpperCase()} · ${fmtDate(l.timestamp)}`,
+        detail: `${fmtQty(l.operationalQty ?? l.qtyIssued)} ${(l.operationalUom || l.inventoryUom || '').toUpperCase()} · ${fmtDate(l.timestamp)}`,
       })),
     }))
 

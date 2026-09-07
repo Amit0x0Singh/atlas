@@ -4,6 +4,7 @@ import { recipeApi, productApi } from '../../../../../../../api/masters.js'
 import { planTasksApi } from '../../../../../../../api/production.js'
 import { useIsMobile } from '../../../../../../../hooks/useIsMobile.js'
 import { convertByDensity } from '../../../../../../../utils/uom.js'
+import { QTY_EPS, roundQty } from '../../../../../../../utils/qty.js'
 import SelectStep from '../components/SelectStep.jsx'
 import BomChecklistStep from '../components/BomChecklistStep.jsx'
 import './MaterialIssueByBOM.css'
@@ -184,7 +185,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
       .map(s => {
         const active = (s.bomLines || []).filter(l => !l.orphaned)
         const total  = active.length
-        const done   = active.filter(l => l.issued >= l.required - 0.001).length
+        const done   = active.filter(l => l.issued >= l.required - QTY_EPS).length
         const task   = s.planTaskId ? taskById.get(s.planTaskId) : null
         return {
           ...s,
@@ -255,7 +256,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
         rmCode:     r.rmCode,
         rmName:     r.rmName,
         qtyPerUnit: parseFloat(r.qtyPerUnit),
-        required:   parseFloat((r.qtyPerUnit * batch).toFixed(3)),
+        required:   roundQty(r.qtyPerUnit * batch),
         issued:     0,
         uom:        r.uom || 'KG',
         roleType:   r.roleType || 'INGREDIENT',
@@ -354,7 +355,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
         rmCode:     r.rmCode,
         rmName:     r.rmName,
         qtyPerUnit: parseFloat(r.qtyPerUnit),
-        required:   parseFloat((r.qtyPerUnit * batch).toFixed(3)),
+        required:   roundQty(r.qtyPerUnit * batch),
         issued:     existing?.issued || 0,
         uom:        r.uom || 'KG',
         roleType:   r.roleType || 'INGREDIENT',
@@ -372,7 +373,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
     // issued and the only drift was a since-removed, never-issued line) —
     // there's no manual Delete button on the history page anymore, so a
     // session left "fully issued" here would otherwise sit stuck forever.
-    if (merged.every(l => l.issued >= l.required - 0.001)) outwardApi.bomSessions.delete(sessionId).catch(() => {})
+    if (merged.every(l => l.issued >= l.required - QTY_EPS)) outwardApi.bomSessions.delete(sessionId).catch(() => {})
   }
 
   // ─── Load packs + containers silently (for scan matching only) ───────────
@@ -411,7 +412,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
 
     const line = bomLines[activeIdx]
     if (!line) return
-    const remaining = parseFloat((line.required - line.issued).toFixed(3))
+    const remaining = roundQty(line.required - line.issued)
     // remaining is in line.uom — convert it to entryUom separately from the
     // pack/container qty (which starts from Inventory UOM via toEntryQty)
     // before combining with Math.min. Taking Math.min(remaining, stockQty)
@@ -431,7 +432,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
         const maxEntryQty = Math.min(remainingInEntryUom, toEntryQty(line, cont.currentQty))
         const rm = rmByCode.get(line.rmCode)
         setFoundSource({ type: 'container', id: cont.containerId, availableQty: cont.currentQty, uom: rm?.inventoryUom || cont.uom || line.uom, entryUom, maxEntryQty, itemName: cont.itemName })
-        setIssueQty(String(maxEntryQty.toFixed(3)))
+        setIssueQty(String(roundQty(maxEntryQty)))
       } else {
         setScanErr(`Container "${containerId}" has no stock for ${toTitleCase(line.rmName)}. Check the container or inward stock first.`)
       }
@@ -449,7 +450,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
       // inventoryUom for the correct label.
       const rm = rmByCode.get(line.rmCode)
       setFoundSource({ type: 'pack', id: pack.packId, availableQty: pack.remainingQty, uom: rm?.inventoryUom || line.uom, entryUom, maxEntryQty, lotNo: pack.lotNo, bagNo: pack.bagNo, supplier: pack.supplier })
-      setIssueQty(String(maxEntryQty.toFixed(3)))
+      setIssueQty(String(roundQty(maxEntryQty)))
       return
     }
 
@@ -502,7 +503,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
         try { deductedInLineUom = convertByDensity(deducted, rm.inventoryUom, line.uom, rm.density).qty }
         catch { deductedInLineUom = deducted }
       }
-      const newIssued  = parseFloat((line.issued + deductedInLineUom).toFixed(3))
+      const newIssued  = roundQty(line.issued + deductedInLineUom)
       const updatedLines = bomLines.map((l, i) =>
         i === activeIdx ? { ...l, issued: newIssued } : l
       )
@@ -512,13 +513,14 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
         [activeIdx]: `Issued ${qty} ${entryUomFor(line)}${deducted !== deductedInLineUom ? ` (${deducted} ${(rm?.inventoryUom || line.uom || '').toUpperCase()} deducted)` : ''} from ${foundSource.type === 'pack' ? 'Pack' : 'Container'}: ${foundSource.id}`,
       }))
 
-      const remaining = parseFloat((line.required - newIssued).toFixed(3))
-      if (remaining <= 0.001) {
+      const remaining = roundQty(line.required - newIssued)
+      if (remaining <= QTY_EPS) {
         setActiveIdx(null)
-        if (updatedLines.filter(l => !l.orphaned).every(l => l.issued >= l.required - 0.001)) outwardApi.bomSessions.delete(sessionId).catch(() => {})
+        if (updatedLines.filter(l => !l.orphaned).every(l => l.issued >= l.required - QTY_EPS)) outwardApi.bomSessions.delete(sessionId).catch(() => {})
       } else {
-        // More qty needed — reset scan, keep panel open
-        setFoundSource(null); setScanErr(''); setIssueQty(String(remaining.toFixed(3)))
+        // More qty needed — reset scan, keep panel open. `remaining` is in
+        // line.uom; the issue field is in entryUom, so convert before pre-filling.
+        setFoundSource(null); setScanErr(''); setIssueQty(String(roundQty(lineUomToEntryQty(line, remaining))))
         await loadResources(line.rmCode)
       }
     } catch (e) { setIssueError(e.message) }
@@ -530,7 +532,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
   // count toward progress — they're no longer part of what's required.
   const activeLines   = bomLines.filter(l => !l.orphaned)
   const totalRequired = activeLines.length
-  const totalDone     = activeLines.filter(l => l.issued >= l.required - 0.001).length
+  const totalDone     = activeLines.filter(l => l.issued >= l.required - QTY_EPS).length
   const progress      = totalRequired > 0 ? Math.round((totalDone / totalRequired) * 100) : 0
 
   if (step === 'select') {
