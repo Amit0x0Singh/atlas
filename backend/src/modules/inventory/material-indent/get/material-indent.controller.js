@@ -1,6 +1,6 @@
 import prisma from '../../../../db.js'
 import { toSafeErrorMessage } from '../../../../utils/safe-error.js'
-import { decorateIndent, canSeeAllIndents } from '../shared.js'
+import { decorateIndent, canSeeAllIndents, attachRmUom } from '../shared.js'
 
 // GET /material-indent
 // Query: scope (informational only now), status, priority, department,
@@ -99,7 +99,7 @@ export const getIndent = async (req, res) => {
       return res.status(404).json({ success: false, error: 'Indent not found', code: 'NOT_FOUND' })
     }
 
-    return res.json({ success: true, data: decorateIndent(indent) })
+    return res.json({ success: true, data: await attachRmUom(decorateIndent(indent)) })
   } catch (err) {
     return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }

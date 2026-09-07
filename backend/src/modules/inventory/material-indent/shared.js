@@ -1,6 +1,17 @@
 // Shared helpers for the Material Indent module.
 
-const EPS = 0.001
+import prisma from '../../../db.js'
+
+// A line is "fully covered" once issued reaches requested bar a
+// floating-point hair — RELATIVE (1 ppb), never an absolute floor, so a
+// legitimately tiny requested qty (2 mg of a solvent) is never treated as
+// already-satisfied. requested ≤ 0 ⇒ nothing to issue ⇒ covered.
+export function lineCovered(requested, issued) {
+  const r = Number(requested)
+  const i = Number(issued)
+  if (!(r > 0)) return true
+  return i >= r - Math.abs(r) * 1e-9
+}
 
 // Who sees / works EVERY indent (the Store's Open Indents + Indent History
 // queue, the admin "All Indents" view) rather than just their own plant's:
@@ -17,8 +28,8 @@ export function canSeeAllIndents(reqUser) {
 // Recompute one line's status from its requested/issued/rejected state.
 export function lineStatusFor(item) {
   if (item.lineStatus === 'REJECTED') return 'REJECTED'
-  if (item.issuedQty <= EPS)                       return 'PENDING'
-  if (item.issuedQty >= item.requestedQty - EPS)   return 'ISSUED'
+  if (!(Number(item.issuedQty) > 0))       return 'PENDING'
+  if (lineCovered(item.requestedQty, item.issuedQty)) return 'ISSUED'
   return 'PARTIAL'
 }
 
@@ -27,9 +38,8 @@ export function lineStatusFor(item) {
 export function headerStatusFor(items) {
   const live = items.filter(i => i.lineStatus !== 'REJECTED')
   if (live.length === 0) return 'REJECTED' // every line rejected
-  const allIssued = live.every(i => i.issuedQty >= i.requestedQty - EPS)
-  if (allIssued) return 'COMPLETED'
-  const anyMovement = live.some(i => i.issuedQty > EPS) || items.some(i => i.lineStatus === 'REJECTED')
+  if (live.every(i => lineCovered(i.requestedQty, i.issuedQty))) return 'COMPLETED'
+  const anyMovement = live.some(i => Number(i.issuedQty) > 0) || items.some(i => i.lineStatus === 'REJECTED')
   return anyMovement ? 'PARTIAL' : 'OPEN'
 }
 
@@ -37,10 +47,10 @@ export function headerStatusFor(items) {
 export function decorateIndent(indent) {
   const items = (indent.items || []).map(it => ({
     ...it,
-    pendingQty: Math.max(0, +(it.requestedQty - it.issuedQty).toFixed(3)),
+    pendingQty: Math.max(0, Number((it.requestedQty - it.issuedQty).toPrecision(12))),
   }))
   const live = items.filter(i => i.lineStatus !== 'REJECTED')
-  const doneLines = live.filter(i => i.issuedQty >= i.requestedQty - EPS).length
+  const doneLines = live.filter(i => lineCovered(i.requestedQty, i.issuedQty)).length
   return {
     ...indent,
     items,
@@ -48,6 +58,28 @@ export function decorateIndent(indent) {
     doneLines,
     liveLines: live.length,
     progress: live.length ? Math.round((doneLines / live.length) * 100) : 0,
+  }
+}
+
+// Attaches each line's RM Master UOM/density so the Open Indents issue panel
+// can convert between Inventory UOM (packs/containers) and Operational UOM
+// (what the operator types) — same reconciliation Material Issue by BOM does.
+export async function attachRmUom(indent) {
+  if (!indent?.items?.length) return indent
+  const codes = [...new Set(indent.items.map(i => i.itemCode))]
+  const rms = await prisma.rmMaster.findMany({
+    where: { itemCode: { in: codes } },
+    select: { itemCode: true, inventoryUom: true, operationalUom: true, density: true, conversionRequired: true },
+  })
+  const byCode = new Map(rms.map(r => [r.itemCode, r]))
+  return {
+    ...indent,
+    items: indent.items.map(it => {
+      const rm = byCode.get(it.itemCode)
+      return rm
+        ? { ...it, inventoryUom: rm.inventoryUom, operationalUom: rm.operationalUom, density: rm.density, conversionRequired: rm.conversionRequired }
+        : it
+    }),
   }
 }
 

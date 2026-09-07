@@ -1,9 +1,12 @@
 import prisma from '../../../../db.js'
 import { toSafeErrorMessage } from '../../../../utils/safe-error.js'
 import { resolveIssueQty } from '../../store/outward/services/uom-conversion.service.js'
-import { decorateIndent, lineStatusFor, headerStatusFor } from '../shared.js'
+import { decorateIndent, lineStatusFor, headerStatusFor, lineCovered, attachRmUom } from '../shared.js'
 
 const EPS = 0.001
+// "Send back the fresh indent" — decorated + RM-UOM enriched, the exact shape
+// getIndent returns so the checklist stays consistent after any mutation.
+const freshResponse = (indent) => attachRmUom(decorateIndent(indent))
 
 // POST /material-indent/:id/issue
 // body: { itemId, source: 'pack'|'container', sourceId, qty }
@@ -32,8 +35,7 @@ export const issueLine = async (req, res) => {
     if (line.lineStatus === 'REJECTED')
       return res.status(409).json({ success: false, error: 'This line was rejected', code: 'CONFLICT' })
 
-    const remaining = +(line.requestedQty - line.issuedQty).toFixed(3)
-    if (remaining <= EPS)
+    if (lineCovered(line.requestedQty, line.issuedQty))
       return res.status(409).json({ success: false, error: 'This line is already fully issued', code: 'CONFLICT' })
 
     const entered = parseFloat(qty)
@@ -64,9 +66,9 @@ export const issueLine = async (req, res) => {
         await tx.outward.create({ data: { indentId: indent.id, sourceId, sourceType: 'MATERIAL_INDENT', rmCode: line.itemCode, qtyIssued: issue, operationalQty, operationalUom, remarks: ref } })
         const prev = await tx.stockLedger.findFirst({ where: { itemCode: line.itemCode }, orderBy: { timestamp: 'desc' } })
         await tx.stockLedger.create({ data: { itemCode: line.itemCode, sourceId, transactionType: 'MATERIAL_INDENT', outQty: issue, balance: (prev?.balance || 0) - issue, reference: ref } })
-        return applyLineIssue(tx, indent, line, issue)
+        return applyLineIssue(tx, indent, line, operationalQty)
       })
-      return res.json({ success: true, issued: issue, remaining: result.lineRemaining, data: result.indent })
+      return res.json({ success: true, issued: issue, remaining: result.lineRemaining, data: await freshResponse(result.fresh) })
     }
 
     // ── Container ───────────────────────────────────────────────────────────
@@ -82,18 +84,22 @@ export const issueLine = async (req, res) => {
       await tx.outward.create({ data: { indentId: indent.id, sourceId, sourceType: 'MATERIAL_INDENT', rmCode: line.itemCode, qtyIssued: issue, operationalQty, operationalUom, remarks: ref } })
       const prev = await tx.stockLedger.findFirst({ where: { itemCode: line.itemCode }, orderBy: { timestamp: 'desc' } })
       await tx.stockLedger.create({ data: { itemCode: line.itemCode, sourceId, transactionType: 'MATERIAL_INDENT', outQty: issue, balance: (prev?.balance || 0) - issue, reference: ref } })
-      return applyLineIssue(tx, indent, line, issue)
+      return applyLineIssue(tx, indent, line, operationalQty)
     })
-    return res.json({ success: true, issued: issue, remaining: result.lineRemaining, data: result.indent })
+    return res.json({ success: true, issued: issue, remaining: result.lineRemaining, data: await freshResponse(result.fresh) })
   } catch (err) {
     return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
 }
 
-// Bump the line's issued qty, recompute line + header status, return the
-// fresh decorated indent. Runs inside the caller's transaction.
-async function applyLineIssue(tx, indent, line, issue) {
-  const newIssued = +(line.issuedQty + issue).toFixed(3)
+// Bump the line's issued qty by `addedInLineUom` — the operator-entered
+// amount, which is already in the line's own UOM (Operational UOM, same as
+// requestedQty), NOT the Inventory-UOM figure that left stock. Accumulating
+// the Inventory qty here would compare a KG number against an L requirement
+// and leave a fully-issued Methanol line stuck at "Partial" forever.
+// Recomputes line + header status. Runs inside the caller's transaction.
+async function applyLineIssue(tx, indent, line, addedInLineUom) {
+  const newIssued = Number((line.issuedQty + Number(addedInLineUom)).toPrecision(12))
   const updatedLine = { ...line, issuedQty: newIssued }
   await tx.materialIndentItem.update({
     where: { id: line.id },
@@ -109,7 +115,7 @@ async function applyLineIssue(tx, indent, line, issue) {
     },
     include: { items: { orderBy: { createdAt: 'asc' } } },
   })
-  return { indent: decorateIndent(fresh), lineRemaining: Math.max(0, +(line.requestedQty - newIssued).toFixed(3)) }
+  return { fresh, lineRemaining: Math.max(0, Number((line.requestedQty - newIssued).toPrecision(12))) }
 }
 
 // PATCH /material-indent/:id/reject   body: { reason }
@@ -134,7 +140,7 @@ export const rejectIndent = async (req, res) => {
         include: { items: { orderBy: { createdAt: 'asc' } } },
       })
     })
-    return res.json({ success: true, data: decorateIndent(updated) })
+    return res.json({ success: true, data: await freshResponse(updated) })
   } catch (err) {
     return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
@@ -172,7 +178,7 @@ export const rejectLine = async (req, res) => {
         include: { items: { orderBy: { createdAt: 'asc' } } },
       })
     })
-    return res.json({ success: true, data: decorateIndent(updated) })
+    return res.json({ success: true, data: await freshResponse(updated) })
   } catch (err) {
     return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }
@@ -193,7 +199,7 @@ export const cancelIndent = async (req, res) => {
       data: { status: 'CANCELLED' },
       include: { items: { orderBy: { createdAt: 'asc' } } },
     })
-    return res.json({ success: true, data: decorateIndent(updated) })
+    return res.json({ success: true, data: await freshResponse(updated) })
   } catch (err) {
     return res.status(500).json({ success: false, error: toSafeErrorMessage(err), code: 'INTERNAL_ERROR' })
   }

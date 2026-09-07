@@ -57,7 +57,7 @@ const IndentIssue = forwardRef(function IndentIssue(_props, ref) {
   }), [detail, selected])
 
   if (selected) {
-    return <IndentChecklistStep indent={selected} onChanged={onChanged} />
+    return <IndentChecklistStep indent={selected} onChanged={onChanged} onBack={() => setSelected(null)} />
   }
 
   return (

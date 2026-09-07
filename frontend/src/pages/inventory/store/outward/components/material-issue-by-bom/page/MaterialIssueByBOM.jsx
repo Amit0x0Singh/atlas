@@ -3,10 +3,8 @@ import { outwardApi, containerApi, rmApi } from '../../../../../../../api/invent
 import { recipeApi, productApi } from '../../../../../../../api/masters.js'
 import { planTasksApi } from '../../../../../../../api/production.js'
 import { useIsMobile } from '../../../../../../../hooks/useIsMobile.js'
-import { convertByDensity, toCanonical } from '../../../../../../../utils/uom.js'
-import { pickTier } from '../../../../../../../utils/measurement/convertMeasurement.js'
-import { CANONICAL_UNIT_TO_CATEGORY } from '../../../../../../../utils/measurement/measurement.config.js'
-import { isCovered, roundQty, humanQty } from '../../../../../../../utils/qty.js'
+import { convertByDensity } from '../../../../../../../utils/uom.js'
+import { isCovered, roundQty, humanQty, pickDisplayUnit } from '../../../../../../../utils/qty.js'
 import SelectStep from '../components/SelectStep.jsx'
 import BomChecklistStep from '../components/BomChecklistStep.jsx'
 import './MaterialIssueByBOM.css'
@@ -160,18 +158,11 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
 
   // The unit the operator TYPES the issue qty in — a friendly tier
   // (mg / mcg / g / kg  ·  ml / mcl / L) picked for `refQtyInEntryUom` so a
-  // trace line reads "12 MG" to key in, not "0.000012 KG". Same family as
-  // the item's Operational/Inventory UOM; NOS / unknown units are untouched.
-  const displayUomFor = useCallback((line, refQtyInEntryUom) => {
-    const entryUom = entryUomFor(line)
-    try {
-      const { qty: canonical, uom: canonicalUom } = toCanonical(Math.abs(Number(refQtyInEntryUom)) || 0, entryUom)
-      const category = CANONICAL_UNIT_TO_CATEGORY[canonicalUom]
-      if (!category || category === 'count') return entryUom
-      const tier = pickTier(category, canonical)
-      return tier ? tier.unit.toUpperCase() : entryUom
-    } catch { return entryUom }
-  }, [entryUomFor])
+  // trace line reads "12 MG" to key in, not "0.000012 KG".
+  const displayUomFor = useCallback(
+    (line, refQtyInEntryUom) => pickDisplayUnit(refQtyInEntryUom, entryUomFor(line)),
+    [entryUomFor],
+  )
 
   // entryUom qty → the operator-facing display unit (best-effort; the real
   // conversion for the deduction happens server-side).

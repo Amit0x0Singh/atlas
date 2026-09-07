@@ -3,8 +3,9 @@ import { Ban } from 'lucide-react'
 import { Button, ConfirmModal, Modal } from '../../../../../../components/ui'
 import { toTitleCase } from '../../../../../../utils/textDisplay.js'
 import { materialIndentApi } from '../../../../../../api/inventory.js'
+import { humanQty, isCovered, roundQty } from '../../../../../../utils/qty.js'
 import IndentIssuePanel from './IndentIssuePanel.jsx'
-import { PRIORITY_META, fmtDate, fmtNum, requesterLabel } from '../../../material-indent/shared.js'
+import { PRIORITY_META, fmtDate, requesterLabel } from '../../../material-indent/shared.js'
 
 function RejectModal({ open, title, onClose, onConfirm }) {
   const [reason, setReason] = useState('')
@@ -33,7 +34,7 @@ function RejectModal({ open, title, onClose, onConfirm }) {
   )
 }
 
-export default function IndentChecklistStep({ indent, onChanged }) {
+export default function IndentChecklistStep({ indent, onChanged, onBack }) {
   const [activeId, setActiveId]   = useState(null)
   const [issueNonce, setNonce]    = useState(0)
   const [lineMsg, setLineMsg]     = useState({})
@@ -42,17 +43,20 @@ export default function IndentChecklistStep({ indent, onChanged }) {
 
   const items      = indent.items || []
   const live       = items.filter(i => i.lineStatus !== 'REJECTED')
-  const done       = live.filter(i => i.issuedQty >= i.requestedQty - 0.001)
-  const partial    = live.filter(i => i.issuedQty > 0 && i.issuedQty < i.requestedQty - 0.001)
-  const pending    = live.filter(i => i.issuedQty <= 0.001)
+  const done       = live.filter(i => isCovered(i.requestedQty, i.issuedQty))
+  const partial    = live.filter(i => i.issuedQty > 0 && !isCovered(i.requestedQty, i.issuedQty))
+  const pending    = live.filter(i => !(i.issuedQty > 0))
   const progress   = live.length ? Math.round((done.length / live.length) * 100) : 0
 
   const issue = async (payload) => {
     const res = await materialIndentApi.issue(indent.id, payload)
-    setLineMsg(m => ({ ...m, [payload.itemId]: `Issued ${payload.qty} from ${payload.source === 'pack' ? 'Pack' : 'Container'} ${payload.sourceId}` }))
+    const shown = payload.displayQty != null
+      ? `${roundQty(payload.displayQty)} ${(payload.displayUom || '').toUpperCase()}`
+      : humanQty(payload.qty, '')
+    setLineMsg(m => ({ ...m, [payload.itemId]: `Issued ${shown} from ${payload.source === 'pack' ? 'Pack' : 'Container'} ${payload.sourceId}` }))
     const fresh = res.data
     const freshLine = (fresh.items || []).find(i => i.id === payload.itemId)
-    if (freshLine && freshLine.issuedQty >= freshLine.requestedQty - 0.001) setActiveId(null)
+    if (freshLine && isCovered(freshLine.requestedQty, freshLine.issuedQty)) setActiveId(null)
     else setNonce(n => n + 1) // remount the panel so it re-reads stock for the next scan
     onChanged(fresh)
   }
@@ -108,8 +112,8 @@ export default function IndentChecklistStep({ indent, onChanged }) {
       <div className="space-y-2">
         {items.map((line, idx) => {
           const rejected  = line.lineStatus === 'REJECTED'
-          const remaining = Math.max(0, +(line.requestedQty - line.issuedQty).toFixed(3))
-          const isDone    = !rejected && remaining <= 0.001
+          const remaining = Math.max(0, roundQty(line.requestedQty - line.issuedQty))
+          const isDone    = !rejected && isCovered(line.requestedQty, line.issuedQty)
           const isActive  = activeId === line.id
           const isPartial = line.issuedQty > 0 && !isDone
 
@@ -134,9 +138,9 @@ export default function IndentChecklistStep({ indent, onChanged }) {
                   </div>
                   {!rejected && (
                     <div className="flex items-center gap-4 mt-0.5 text-xs text-gray-500 flex-wrap">
-                      <span>Requested: <strong className="text-gray-800">{fmtNum(line.requestedQty)} {(line.uom || '').toUpperCase()}</strong></span>
-                      <span>Issued: <strong className={line.issuedQty > 0 ? 'text-green-700' : 'text-gray-400'}>{fmtNum(line.issuedQty)} {(line.uom || '').toUpperCase()}</strong></span>
-                      {!isDone && <span>Remaining: <strong className="text-red-600">{fmtNum(remaining)} {(line.uom || '').toUpperCase()}</strong></span>}
+                      <span>Requested: <strong className="text-gray-800">{humanQty(line.requestedQty, line.uom)}</strong></span>
+                      <span>Issued: <strong className={line.issuedQty > 0 ? 'text-green-700' : 'text-gray-400'}>{humanQty(line.issuedQty, line.uom)}</strong></span>
+                      {!isDone && <span>Remaining: <strong className="text-red-600">{humanQty(remaining, line.uom)}</strong></span>}
                     </div>
                   )}
                   {line.remarks && !rejected && <p className="text-[11px] text-gray-400 mt-0.5">{line.remarks}</p>}
@@ -167,7 +171,7 @@ export default function IndentChecklistStep({ indent, onChanged }) {
         <div className="mt-5 bg-green-50 border border-green-200 rounded-xl p-5 text-center">
           <p className="text-2xl mb-2">🎉</p>
           <p className="font-bold text-green-800 text-lg">All lines issued — indent complete</p>
-          <Button onClick={onBack} variant="success" className="mt-4">Back to Open Indents</Button>
+          {onBack && <Button onClick={onBack} variant="success" className="mt-4">Back to Open Indents</Button>}
         </div>
       )}
 

@@ -11,7 +11,9 @@
 // reads as "2 MCG", not "0.000000002 KG" or a rounded-away "0".
 
 import { formatMeasurementString } from './measurement/formatMeasurement.js'
-import { unitFamily } from './uom.js'
+import { pickTier } from './measurement/convertMeasurement.js'
+import { CANONICAL_UNIT_TO_CATEGORY } from './measurement/measurement.config.js'
+import { unitFamily, toCanonical } from './uom.js'
 
 // Human-readable quantity for an operator — auto-tiers to ng / mcg / mg / g /
 // kg (or nl / mcl / ml / L). precision 4 keeps real BOM figures intact
@@ -49,3 +51,20 @@ export const isCovered = (required, issued) => {
 // Plain numeric string (no unit) — noise-trimmed, trailing zeros gone.
 // Prefer humanQty() for anything shown to an operator.
 export const fmtQty = (n) => String(roundQty(n))
+
+// The friendly unit an operator should type a quantity into — the display
+// tier (mg / mcg / g / kg  ·  ml / mcl / L) for `refQty`, staying in
+// `unit`'s own family. Returns `unit` (uppercased) unchanged for NOS /
+// unknown / special units. Used by the QR issue flows so a trace line
+// reads "12 MG" to key in, not "0.000012 KG".
+export const pickDisplayUnit = (refQty, unit) => {
+  try {
+    const { qty: canonical, uom } = toCanonical(Math.abs(Number(refQty)) || 0, unit)
+    const category = CANONICAL_UNIT_TO_CATEGORY[uom]
+    if (!category || category === 'count') return String(unit || '').toUpperCase()
+    const tier = pickTier(category, canonical)
+    return (tier ? tier.unit : uom).toUpperCase()
+  } catch {
+    return String(unit || '').toUpperCase()
+  }
+}

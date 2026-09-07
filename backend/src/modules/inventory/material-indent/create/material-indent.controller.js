@@ -31,7 +31,9 @@ async function resolveItems(rawItems) {
       category:     rm.category || null,
       subCategory:  rm.subCategory || null,
       uom:          rm.operationalUom || rm.inventoryUom,
-      requestedQty: +it.requestedQty.toFixed(3),
+      // 12 significant figures — trims float noise without flooring a
+      // legitimately small requested qty to 0.
+      requestedQty: Number(it.requestedQty.toPrecision(12)),
       remarks:      it.remarks || null,
     }
   })

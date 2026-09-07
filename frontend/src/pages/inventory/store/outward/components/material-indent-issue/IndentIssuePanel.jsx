@@ -4,20 +4,26 @@ import { Button } from '../../../../../../components/ui'
 import ScannerPanel from '../../../../../../components/ScannerPanel/ScannerPanel.jsx'
 import { outwardApi, containerApi } from '../../../../../../api/inventory.js'
 import { toTitleCase } from '../../../../../../utils/textDisplay.js'
+import { convertByDensity } from '../../../../../../utils/uom.js'
+import { humanQty, roundQty, pickDisplayUnit } from '../../../../../../utils/qty.js'
 
-// Inline issue panel for one Material Indent line — mirrors the Material
-// Issue by BOM IssuePanel: scan a pack (raw packId) or container
-// ("CONT:{id}") QR, enter a qty, submit. The server (materialIndentApi.issue
-// → issueLine) is the authority on the UOM conversion and stock deduction.
+// Inline issue panel for one Material Indent line — mirrors Material Issue by
+// BOM's IssuePanel: scan a pack / container QR, key a qty in a friendly unit,
+// submit. `line` carries the item's RM-Master UOM/density (attached by the
+// backend), so pack/container stock (Inventory UOM) is reconciled with what
+// the operator types (Operational UOM) exactly the way the store issues.
 export default function IndentIssuePanel({ line, onIssue }) {
-  const uom = (line.uom || '').toUpperCase()
-  const remaining = Math.max(0, +(line.requestedQty - line.issuedQty).toFixed(3))
+  const entryUom = (line.operationalUom || line.inventoryUom || line.uom || '').toUpperCase()
+  const invUom   = (line.inventoryUom || line.uom || '').toUpperCase()
+  const density  = line.density
+  // requestedQty / issuedQty are both in the line's UOM (== entryUom).
+  const remaining = Math.max(0, roundQty(line.requestedQty - line.issuedQty))
 
   const [packs, setPacks]           = useState([])
   const [containers, setContainers] = useState([])
   const [loading, setLoading]       = useState(true)
   const [scanErr, setScanErr]       = useState('')
-  const [found, setFound]           = useState(null) // { type, id, availableQty }
+  const [found, setFound]           = useState(null) // { type, id, availableInv, displayUom, maxDisplay, ... }
   const [qty, setQty]               = useState('')
   const [busy, setBusy]             = useState(false)
   const [err, setErr]               = useState('')
@@ -35,8 +41,24 @@ export default function IndentIssuePanel({ line, onIssue }) {
 
   useEffect(() => { loadStock() }, [loadStock])
 
-  const totalAvailable = packs.reduce((s, p) => s + (p.remainingQty || 0), 0)
-                       + containers.reduce((s, c) => s + (c.currentQty || 0), 0)
+  // Sum of stock, all in Inventory UOM.
+  const totalAvailableInv = packs.reduce((s, p) => s + (p.remainingQty || 0), 0)
+                          + containers.reduce((s, c) => s + (c.currentQty || 0), 0)
+
+  // Inventory-UOM qty → Operational (entry) UOM. Best-effort; the server
+  // re-derives and validates the real conversion before deducting stock.
+  const invToEntry = useCallback((n) => {
+    try { return convertByDensity(n, invUom, entryUom, density).qty } catch { return n }
+  }, [invUom, entryUom, density])
+
+  const buildFound = (base, availInv) => {
+    const maxEntry   = Math.min(remaining, invToEntry(availInv))
+    const displayUom = pickDisplayUnit(maxEntry, entryUom)
+    let maxDisplay = maxEntry
+    try { maxDisplay = convertByDensity(maxEntry, entryUom, displayUom, density).qty } catch { /* keep */ }
+    setFound({ ...base, availInv, displayUom, maxDisplay: roundQty(maxDisplay) })
+    setQty(String(roundQty(maxDisplay)))
+  }
 
   const handleScan = (raw) => {
     const val = String(raw || '').trim()
@@ -46,32 +68,43 @@ export default function IndentIssuePanel({ line, onIssue }) {
       const id = val.slice(5)
       const cont = containers.find(c => c.containerId === id)
       if (!cont) { setScanErr(`Container "${id}" has no stock for ${toTitleCase(line.itemName)}.`); return }
-      const max = Math.min(remaining, cont.currentQty)
-      setFound({ type: 'container', id: cont.containerId, availableQty: cont.currentQty })
-      setQty(String(+max.toFixed(3)))
+      buildFound({ type: 'container', id: cont.containerId }, cont.currentQty)
       return
     }
     const pack = packs.find(p => p.packId === val)
     if (!pack) { setScanErr(`"${val}" not found for ${toTitleCase(line.itemName)}. Scan the correct pack or container QR.`); return }
-    const max = Math.min(remaining, pack.remainingQty)
-    setFound({ type: 'pack', id: pack.packId, availableQty: pack.remainingQty, lotNo: pack.lotNo, supplier: pack.supplier })
-    setQty(String(+max.toFixed(3)))
+    buildFound({ type: 'pack', id: pack.packId, lotNo: pack.lotNo, supplier: pack.supplier }, pack.remainingQty)
   }
 
   const submit = async () => {
-    const n = parseFloat(qty)
+    const displayQty = parseFloat(qty)
     if (!found) { setErr('Scan a pack or container QR code first.'); return }
-    if (!n || n <= 0) { setErr('Enter a valid quantity.'); return }
-    if (n > found.availableQty + 0.001) { setErr(`Qty exceeds available stock (${found.availableQty} ${uom}).`); return }
+    if (!displayQty || displayQty <= 0) { setErr('Enter a valid quantity.'); return }
+
+    // Convert what the operator typed (friendly unit) → Operational UOM,
+    // which is what the server's resolveIssueQty expects.
+    let entryQty = displayQty
+    try { entryQty = roundQty(convertByDensity(displayQty, found.displayUom, entryUom, density).qty) } catch { entryQty = displayQty }
+
+    // Best-effort ceiling check — entryQty vs the source's stock, both in
+    // Inventory UOM. The server re-validates before deducting.
+    let entryInInv = entryQty
+    try { entryInInv = convertByDensity(entryQty, entryUom, invUom, density).qty } catch { /* same unit */ }
+    if (entryInInv > found.availInv + 1e-9) {
+      setErr(`Qty exceeds available stock (${humanQty(found.availInv, invUom)}).`); return
+    }
+
     setBusy(true); setErr('')
     try {
-      await onIssue({ itemId: line.id, source: found.type, sourceId: found.id, qty: n })
+      await onIssue({ itemId: line.id, source: found.type, sourceId: found.id, qty: entryQty, displayQty, displayUom: found.displayUom })
     } catch (e) {
       setErr(e?.response?.data?.error || e.message || 'Could not issue.')
     } finally {
       setBusy(false)
     }
   }
+
+  const shortStock = (packs.length > 0 || containers.length > 0) && invToEntry(totalAvailableInv) < remaining - 1e-9
 
   return (
     <div className="border-t border-indigo-200 bg-white p-4">
@@ -84,9 +117,9 @@ export default function IndentIssuePanel({ line, onIssue }) {
               No warehouse packs or containers have stock for {toTitleCase(line.itemName)}.
             </div>
           )}
-          {(packs.length > 0 || containers.length > 0) && totalAvailable < remaining && (
+          {shortStock && (
             <div className="rounded-lg bg-orange-50 border border-orange-200 px-3 py-2.5 text-xs text-orange-800">
-              Only <strong>{totalAvailable.toFixed(3)} {uom}</strong> in stock, <strong>{remaining} {uom}</strong> still needed. Issue what's available now.
+              Only <strong>{humanQty(totalAvailableInv, invUom)}</strong> in stock, <strong>{humanQty(remaining, entryUom)}</strong> still needed. Issue what's available now.
             </div>
           )}
 
@@ -112,16 +145,21 @@ export default function IndentIssuePanel({ line, onIssue }) {
                 </div>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                   <div><span className="text-gray-400">ID: </span><span className="font-mono font-semibold text-gray-900">{found.id}</span></div>
-                  <div><span className="text-gray-400">Available: </span><span className="font-bold text-green-700">{found.availableQty} {uom}</span></div>
+                  <div><span className="text-gray-400">Available: </span><span className="font-bold text-green-700">{humanQty(found.availInv, invUom)}</span></div>
                   {found.lotNo && <div><span className="text-gray-400">Lot: </span><span className="text-gray-800">{found.lotNo}</span></div>}
                   {found.supplier && <div><span className="text-gray-400">Supplier: </span><span className="text-gray-800">{found.supplier}</span></div>}
+                  <div><span className="text-gray-400">Still needed: </span><span className="font-bold text-red-600">{humanQty(remaining, entryUom)}</span></div>
                 </div>
               </div>
               <div className="p-4 flex items-end gap-3 flex-wrap">
                 <div>
-                  <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Qty to Issue ({uom})</label>
-                  <input type="number" min="0" step="any" value={qty} onChange={e => setQty(e.target.value)}
+                  <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Qty to Issue ({found.displayUom})</label>
+                  <input type="number" min="0" step="any" max={found.maxDisplay} value={qty} onChange={e => setQty(e.target.value)}
                     className="w-40 border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-500" />
+                  <p className="text-xs text-gray-400 mt-1">
+                    Max: {roundQty(found.maxDisplay)} {found.displayUom}
+                    {entryUom !== invUom && <> (stock tracked in {invUom})</>}
+                  </p>
                 </div>
                 <Button variant="purple" onClick={submit} loading={busy}>Issue</Button>
               </div>
