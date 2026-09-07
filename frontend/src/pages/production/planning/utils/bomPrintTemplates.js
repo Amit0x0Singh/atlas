@@ -37,13 +37,20 @@ export const state = {
       return `${pre}${String(parseInt(num, 10) + offset).padStart(num.length, '0')}${suf}`;
     }
 
+    // Trim only IEEE-754 arithmetic noise (0.147*12 = 1.7639999999999998),
+    // never magnitude — 12 significant figures, so a trace value like
+    // 2e-9 * 12 stays 2.4e-8 instead of being floored to 0 by a toFixed().
+    function trimNoise(n) {
+      return Number.isFinite(n) && n !== 0 ? Number(n.toPrecision(12)) : (n || 0);
+    }
+
     function normalizeToUnit(comps, batchQty) {
       const q = parseFloat(batchQty);
       if (!q || isNaN(q) || q === 1) return comps.map(c => ({ ...c }));
       return comps.map(c => ({
         ...c,
         // Section headers have no qty — don't divide
-        qty: (c.isHeader || !c.qty) ? c.qty : String(parseFloat((parseFloat(c.qty) / q).toFixed(6)))
+        qty: (c.isHeader || !c.qty) ? c.qty : String(trimNoise(parseFloat(c.qty) / q))
       }));
     }
 
@@ -53,7 +60,7 @@ export const state = {
       return comps.map(c => ({
         ...c,
         // Section headers have no qty — don't multiply
-        qty: (c.isHeader || !c.qty) ? c.qty : String(parseFloat((parseFloat(c.qty) * q).toFixed(4)))
+        qty: (c.isHeader || !c.qty) ? c.qty : String(trimNoise(parseFloat(c.qty) * q))
       }));
     }
 

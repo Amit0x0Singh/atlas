@@ -1,19 +1,51 @@
-// Quantity helpers for issue/BOM flows.
+// Quantity helpers for issue / BOM flows.
 //
-// Recipe requirements (qtyPerUnit × batch) can legitimately be sub-gram —
-// rounding them to 3 decimals used to floor tiny lines to exactly 0
-// ("Required: 0 KG"). Round to 6 dp instead: fine enough for any real
-// recipe (µg / µL scale) while still killing IEEE-754 float noise.
+// Recipe requirements (qtyPerUnit × batch) can legitimately be trace amounts
+// — e.g. 2e-9 kg/L of a catalyst. NOTHING here rounds a value toward zero:
+//   • roundQty trims to 12 SIGNIFICANT figures (kills IEEE-754 arithmetic
+//     noise like 0.1+0.2=0.30000000000000004) without ever flooring a small
+//     value — 2e-9 stays 2e-9, 2.4e-8 stays 2.4e-8.
+//   • "line covered" is a RELATIVE check (isCovered), never an absolute
+//     floor, so a tiny requirement is never silently auto-completed.
+// For display, always pass values through humanQty() so a trace amount
+// reads as "2 MCG", not "0.000000002 KG" or a rounded-away "0".
 
-// "Line fully covered" tolerance. Absolute, in the line's own unit. At 1e-4
-// a line only auto-completes when what's left is genuinely unweighable
-// (<0.1 mg when the line is in g, <0.1 g when it's in kg).
-export const QTY_EPS = 1e-4
+import { formatMeasurementString } from './measurement/formatMeasurement.js'
+import { unitFamily } from './uom.js'
 
-export const roundQty = (n) => {
-  const x = Number(n)
-  return Number.isFinite(x) ? Math.round(x * 1e6) / 1e6 : 0
+// Human-readable quantity for an operator — auto-tiers to ng / mcg / mg / g /
+// kg (or nl / mcl / ml / L). precision 4 keeps real BOM figures intact
+// (1.764 KG, not the default-tier "1.76 KG") while the sub-mg tiers keep
+// trace amounts non-zero. When the unit is missing/unrecognised (so no tier
+// applies) it degrades to a plain noise-trimmed number + the raw label —
+// still never a rounded-away "0".
+export const humanQty = (qty, unit) => {
+  const fam = unitFamily(unit)
+  if (fam === 'MASS' || fam === 'VOLUME') return formatMeasurementString(qty, unit, { precision: 4 })
+  const label = String(unit || '').trim().toUpperCase()
+  return `${roundQty(qty)}${label ? ` ${label}` : ''}`
 }
 
-// Display string — up to 6 dp, trailing zeros trimmed: "0.15", "150", "0.0004".
-export const fmtQty = (n) => String(Number(roundQty(n).toFixed(6)))
+// Trim IEEE-754 arithmetic noise to 12 significant figures — NOT decimal
+// places, so magnitude is irrelevant: 1.764 → 1.764, 2e-9 → 2e-9,
+// 0.1 + 0.2 → 0.3. A true 0 (or non-finite) comes back as 0.
+export const roundQty = (n) => {
+  const x = Number(n)
+  if (!Number.isFinite(x) || x === 0) return 0
+  return Number(x.toPrecision(12))
+}
+
+// A BOM line is "fully covered" only when `issued` reaches `required` bar a
+// floating-point hair (a RELATIVE 1e-9, i.e. one part per billion — enough
+// to absorb accumulated arithmetic noise, far too tight to ever swallow a
+// real shortfall). A zero/negative requirement means "nothing to issue".
+export const isCovered = (required, issued) => {
+  const r = Number(required)
+  const i = Number(issued)
+  if (!(r > 0)) return true
+  return i >= r - Math.abs(r) * 1e-9
+}
+
+// Plain numeric string (no unit) — noise-trimmed, trailing zeros gone.
+// Prefer humanQty() for anything shown to an operator.
+export const fmtQty = (n) => String(roundQty(n))

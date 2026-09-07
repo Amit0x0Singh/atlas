@@ -5,6 +5,7 @@ import { X, Clock, Package, Warehouse, ClipboardList, FlaskConical } from 'lucid
 import './TransactionDetailModal.css'
 
 import { toTitleCase } from '../../../../../../utils/textDisplay.js'
+import { humanQty } from '../../../../../../utils/qty.js'
 import { useUserDisplayNames } from '../../../../../../hooks/masters/useUserDisplayNames.js'
 export default function TransactionDetailModal({ detail, onClose }) {
   // Resolve the createdBy email to a readable name, same as the Stock Ledger
@@ -39,10 +40,10 @@ export default function TransactionDetailModal({ detail, onClose }) {
                   <DRow label="Item Code"        value={shown.entry.itemCode} mono />
                   <DRow label="Type"             value={shown.entry.transactionType} badge />
                   <DRow label="Source / Pack ID" value={shown.entry.sourceId} mono />
-                  <DRow label="In Qty"           value={shown.entry.inQty  > 0 ? `+${Number(shown.entry.inQty).toFixed(3)}`  : '—'} tone="in" />
-                  <DRow label="Out Qty"          value={shown.entry.outQty > 0 ? `-${Number(shown.entry.outQty).toFixed(3)}` : '—'} tone="out" />
+                  <DRow label="In Qty"           value={shown.entry.inQty  > 0 ? `+${humanQty(shown.entry.inQty, shown.entry.uom)}`  : '—'} tone="in" />
+                  <DRow label="Out Qty"          value={shown.entry.outQty > 0 ? `−${humanQty(shown.entry.outQty, shown.entry.uom)}` : '—'} tone="out" />
                   {shown.detail?.outward?.operationalUom && Number(shown.detail.outward.operationalQty) !== Number(shown.detail.outward.qtyIssued) && (
-                    <DRow label="Qty (Operational UOM)" value={`${Number(shown.detail.outward.operationalQty).toFixed(3)} ${(shown.detail.outward.operationalUom || '').toUpperCase()}`} />
+                    <DRow label="Qty (Operational UOM)" value={humanQty(shown.detail.outward.operationalQty, shown.detail.outward.operationalUom)} />
                   )}
                   <DRow label="Reference"        value={toTitleCase(shown.entry.reference) || '—'} full />
                 </DSection>

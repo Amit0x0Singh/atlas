@@ -2,7 +2,7 @@ import { Button, BackButton } from '../../../../../../../components/ui'
 import IssuePanel from './IssuePanel.jsx'
 
 import { toTitleCase } from '../../../../../../../utils/textDisplay.js'
-import { QTY_EPS, roundQty, fmtQty } from '../../../../../../../utils/qty.js'
+import { isCovered, roundQty, humanQty } from '../../../../../../../utils/qty.js'
 export default function BomChecklistStep({
   selProduct, batchQty, batchUom, batchRef, diNo,
   bomLines, activeIdx, totalDone, totalRequired, progress,
@@ -80,8 +80,8 @@ export default function BomChecklistStep({
         {bomLines.filter(l => !l.orphaned).length > 0 && (() => {
           const activeLines = bomLines.filter(l => !l.orphaned)
           const pending   = activeLines.filter(l => l.issued <= 0).length
-          const partial   = activeLines.filter(l => l.issued > 0 && (l.required - l.issued) > QTY_EPS).length
-          const complete  = activeLines.filter(l => (l.required - l.issued) <= QTY_EPS).length
+          const partial   = activeLines.filter(l => l.issued > 0 && !isCovered(l.required, l.issued)).length
+          const complete  = activeLines.filter(l => isCovered(l.required, l.issued)).length
           return (
             <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-4">
               <div className="bg-gray-50 border border-gray-200 rounded-xl px-2 sm:px-4 py-3 text-center">
@@ -114,7 +114,7 @@ export default function BomChecklistStep({
                       <span className="text-xs px-1.5 py-0.5 rounded font-medium bg-gray-200 text-gray-600">No longer in recipe</span>
                     </div>
                     <div className="text-xs text-gray-500 mt-0.5">
-                      Previously issued: <strong className="text-gray-700">{fmtQty(line.issued)} {line.uom?.toUpperCase()}</strong> — kept here for audit only.
+                      Previously issued: <strong className="text-gray-700">{humanQty(line.issued, line.uom)}</strong> — kept here for audit only.
                     </div>
                   </div>
                 </div>
@@ -122,7 +122,7 @@ export default function BomChecklistStep({
             }
 
             const remaining = Math.max(0, roundQty(line.required - line.issued))
-            const done      = remaining <= QTY_EPS
+            const done      = isCovered(line.required, line.issued)
             const partial   = line.issued > 0 && !done
             const isActive  = activeIdx === idx
             const pct       = line.required > 0 ? Math.min(100, Math.round((line.issued / line.required) * 100)) : (done ? 100 : 0)
@@ -156,12 +156,12 @@ export default function BomChecklistStep({
                       )}
                     </div>
                     <div className="flex items-center gap-4 mt-0.5 text-xs text-gray-500 flex-wrap">
-                      <span>Required: <strong className="text-gray-800">{fmtQty(line.required)} {line.uom?.toUpperCase()}</strong></span>
+                      <span>Required: <strong className="text-gray-800">{humanQty(line.required, line.uom)}</strong></span>
                       <span>Issued: <strong className={line.issued > 0 ? 'text-green-700' : 'text-gray-400'}>
-                        {fmtQty(line.issued)} {line.uom?.toUpperCase()}
+                        {humanQty(line.issued, line.uom)}
                       </strong></span>
                       {!done && remaining > 0 && (
-                        <span>Remaining: <strong className="text-red-600">{fmtQty(remaining)} {line.uom?.toUpperCase()}</strong></span>
+                        <span>Remaining: <strong className="text-red-600">{humanQty(remaining, line.uom)}</strong></span>
                       )}
                     </div>
                     {lineMsg[idx] && (

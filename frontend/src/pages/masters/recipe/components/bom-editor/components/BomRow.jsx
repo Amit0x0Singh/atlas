@@ -36,7 +36,9 @@ function fmtCfu(v) {
 // stays a clean, glanceable summary instead of a wall of inline inputs.
 export default function BomRow({ row, idx, isProductCode, isMicrobeCode, onEdit, onRemoveRow }) {
   const qty = parseFloat(row.qtyPerUnit) || 0
-  const friendly = formatMeasurement(qty, row.uom)
+  // precision 6 + the sub-mg tiers (mcg / ng) so a trace ingredient like
+  // 2e-9 kg reads as "2 mcg", never a rounded-away "0 mg".
+  const friendly = formatMeasurement(qty, row.uom, { precision: 6 })
   const isMicrobeRow = row.isMicrobe || row.roleType === 'MICROBE' || isMicrobeCode(row.rmCode)
   const isSfgRow = isProductCode(row.rmCode)
 

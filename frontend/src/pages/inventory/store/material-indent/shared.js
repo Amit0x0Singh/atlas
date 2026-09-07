@@ -45,5 +45,7 @@ export function fmtDate(v) {
 
 export function fmtNum(n) {
   const x = Number(n) || 0
-  return x % 1 === 0 ? x.toLocaleString('en-IN') : x.toLocaleString('en-IN', { maximumFractionDigits: 3 })
+  // 6 fraction digits, not 3 — a small-but-real issued qty must never round
+  // to "0" (data-consistency with the ledger / outward records).
+  return x % 1 === 0 ? x.toLocaleString('en-IN') : x.toLocaleString('en-IN', { maximumFractionDigits: 6 })
 }

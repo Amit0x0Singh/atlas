@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import './LedgerTable.css'
 import { toTitleCase } from '../../../../../../utils/textDisplay.js'
+import { humanQty } from '../../../../../../utils/qty.js'
 import { ColumnsMenu } from '../../../../../../components/ui'
 import { useColumnPreferences } from '../../../../../../hooks/useColumnPreferences.js'
 import { useUserDisplayNames } from '../../../../../../hooks/masters/useUserDisplayNames.js'
@@ -105,11 +106,11 @@ export default function LedgerTable({
                 : (
                   <span className={`font-semibold ${color}`}>
                     {showOperational
-                      ? <>{sign}{Number(row.operationalQty).toFixed(3)} {row.operationalUom?.toUpperCase()}</>
-                      : <>{sign}{Number(invQty).toFixed(3)} {(row.uom || '').toUpperCase()}</>}
+                      ? <>{sign}{humanQty(row.operationalQty, row.operationalUom)}</>
+                      : <>{sign}{humanQty(invQty, row.uom)}</>}
                     {showOperational && (
                       <div className="text-[10px] font-normal text-gray-400">
-                        ({Number(invQty).toFixed(3)} {(row.uom || '').toUpperCase()} deducted)
+                        ({humanQty(invQty, row.uom)} deducted)
                       </div>
                     )}
                   </span>

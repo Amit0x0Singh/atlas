@@ -23,26 +23,31 @@ export const MEASUREMENT_CATEGORIES = {
   weight: {
     canonicalUnit: 'KG',
     units: [
-      // mg is the last-resort tier for anything smaller than a gram — no
-      // tier below it to fall back on — so it gets more decimal headroom
-      // than the others; a genuinely tiny value (0.012 mg) should still
-      // read as non-zero instead of rounding straight to "0 mg". Clean
-      // whole-number cases (528 mg) are unaffected: the toFixed()+Number()
-      // cleanup in formatMeasurement.js strips the extra trailing zeros
-      // automatically, so raising this precision never adds visual noise.
-      { unit: 'mg',    factor: 0.000001, maxCanonical: 0.001,  precision: 2 },
-      { unit: 'g',     factor: 0.001,    maxCanonical: 1,      precision: 1 },
-      { unit: 'kg',    factor: 1,        maxCanonical: 1000,   precision: 2 },
-      { unit: 'tonne', factor: 1000,     maxCanonical: Infinity, precision: 2 },
+      // Sub-milligram tiers (ng, mcg) exist purely so a trace recipe
+      // ingredient — e.g. 2e-9 kg/L of a catalyst — reads as "2 mcg"
+      // instead of a rounded-away "0 mg". They're the floor tiers, so they
+      // carry extra decimal headroom; clean whole-number cases (528 mg,
+      // 24 mcg) are unaffected — formatMeasurement.js's toFixed()+Number()
+      // cleanup strips the extra trailing zeros automatically.
+      { unit: 'ng',    factor: 0.000000000001, maxCanonical: 0.000000001, precision: 3 },
+      { unit: 'mcg',   factor: 0.000000001,    maxCanonical: 0.000001,    precision: 3 },
+      { unit: 'mg',    factor: 0.000001,       maxCanonical: 0.001,       precision: 3 },
+      { unit: 'g',     factor: 0.001,          maxCanonical: 1,           precision: 1 },
+      { unit: 'kg',    factor: 1,              maxCanonical: 1000,        precision: 2 },
+      { unit: 'tonne', factor: 1000,           maxCanonical: Infinity,    precision: 2 },
     ],
   },
   volume: {
     canonicalUnit: 'L',
     units: [
-      // Same reasoning as weight's mg tier above — ml is volume's floor tier.
-      { unit: 'ml', factor: 0.001, maxCanonical: 1,        precision: 2 },
-      { unit: 'L',  factor: 1,     maxCanonical: 1000,     precision: 2 },
-      { unit: 'kL', factor: 1000,  maxCanonical: Infinity, precision: 2 },
+      // Same reasoning as weight's ng/mcg tiers — nl/mcl are volume's floor.
+      // (Volume's canonical is L, so the sub-unit factors sit 1e3 shallower
+      // than weight's: 1 mcl = 1e-6 L, 1 nl = 1e-9 L.)
+      { unit: 'nl',  factor: 0.000000001, maxCanonical: 0.000001, precision: 3 },
+      { unit: 'mcl', factor: 0.000001,    maxCanonical: 0.001,    precision: 3 },
+      { unit: 'ml',  factor: 0.001,       maxCanonical: 1,        precision: 3 },
+      { unit: 'L',   factor: 1,           maxCanonical: 1000,     precision: 2 },
+      { unit: 'kL',  factor: 1000,        maxCanonical: Infinity, precision: 2 },
     ],
   },
   // No smaller/larger tier — a count is a count. Still routed through the

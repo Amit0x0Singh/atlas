@@ -167,8 +167,21 @@ export default function ComponentsTable({ rows, rmList = [], products = [], micr
                     <td className={`px-3 py-2 font-mono text-[12px] ${r.rmCode ? st.code : 'text-red-600 font-bold'}`}>
                       {r.rmCode || 'NAN'}
                     </td>
-                    <td className="px-3 py-2 text-right font-semibold text-gray-900 tabular-nums">{r.qty || '—'}</td>
-                    <td className="px-3 py-2 text-gray-500">{(r.uom || '').toUpperCase()}</td>
+                    {(() => {
+                      // Show the batch-scaled qty in a readable tier (24 MCG,
+                      // not "2.4e-8 KG" or a rounded "0"); raw value on hover.
+                      const n = parseFloat(r.qty)
+                      const f = (r.qty && Number.isFinite(n)) ? formatMeasurement(n, r.uom, { precision: 6 }) : null
+                      return (
+                        <>
+                          <td className="px-3 py-2 text-right font-semibold text-gray-900 tabular-nums"
+                            title={f ? `${r.qty} ${(r.uom || '').toUpperCase()}` : undefined}>
+                            {f ? f.value : (r.qty || '—')}
+                          </td>
+                          <td className="px-3 py-2 text-gray-500">{f ? f.unit : (r.uom || '').toUpperCase()}</td>
+                        </>
+                      )
+                    })()}
                     <td className="px-3 py-2 text-right font-medium text-purple-700 tabular-nums">
                       {cfu || <span className="text-gray-300">—</span>}
                     </td>

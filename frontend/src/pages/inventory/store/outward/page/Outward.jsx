@@ -10,6 +10,7 @@ import IndentIssue            from '../components/material-indent-issue/IndentIs
 import { RefreshCw, Warehouse, ClipboardList, Container, TriangleAlert, History, ArrowUpFromLine, Inbox } from 'lucide-react'
 import './Outward.css'
 import { toTitleCase } from '../../../../../utils/textDisplay.js'
+import { humanQty } from '../../../../../utils/qty.js'
 import { useUserDisplayNames } from '../../../../../hooks/masters/useUserDisplayNames.js'
 
 const MODES = [
@@ -229,10 +230,10 @@ export default function Outward() {
                           UOM); the sub-line is what actually left inventory,
                           so it carries the Inventory UOM — without the unit,
                           "12.000 L (18.000 deducted)" reads as nonsense. */}
-                      {Number(h.operationalQty ?? h.qtyIssued).toFixed(3)} {(h.operationalUom || h.inventoryUom || '').toUpperCase()}
+                      {humanQty(h.operationalQty ?? h.qtyIssued, h.operationalUom || h.inventoryUom)}
                       {h.operationalUom && Number(h.operationalQty) !== Number(h.qtyIssued) && (
                         <div className="text-[10px] font-normal text-gray-400">
-                          ({Number(h.qtyIssued).toFixed(3)} {(h.inventoryUom || '').toUpperCase()} deducted)
+                          ({humanQty(h.qtyIssued, h.inventoryUom)} deducted)
                         </div>
                       )}
                     </td>

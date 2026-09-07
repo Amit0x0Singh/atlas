@@ -100,7 +100,7 @@ export default function BomRowEditModal({
   }
 
   const qty = parseFloat(draft.qtyPerUnit) || 0
-  const friendly = formatMeasurement(qty, draft.uom)
+  const friendly = formatMeasurement(qty, draft.uom, { precision: 6 })
   const showHint = friendly.category !== 'special' && friendly.unit.toLowerCase() !== String(draft.uom || '').trim().toLowerCase()
 
   return (

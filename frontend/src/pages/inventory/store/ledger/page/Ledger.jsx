@@ -38,7 +38,9 @@ export default function Ledger() {
     setDetail({ entry, detail: null, loading: true })
     try {
       const res = await ledgerApi.entryDetail(entry.id)
-      setDetail({ entry: res.data, detail: res.data.detail, loading: false })
+      // Keep the list row's joined fields (uom, itemName) — the detail
+      // endpoint returns the bare stock_ledger row without them.
+      setDetail({ entry: { ...entry, ...res.data }, detail: res.data.detail, loading: false })
     } catch (e) {
       setDetail({ entry, detail: null, loading: false, error: e.message })
     }

@@ -28,18 +28,28 @@ export const ALL_DISPLAY_UNITS = [...MASS_UNITS, ...VOLUME_UNITS, ...COUNT_UNITS
 // Same alias table as the backend — lookup is case-insensitive.
 const ALIASES = {
   // ── Mass -> KG ──
-  kg: { family: 'MASS', factor: 1 },
-  g:  { family: 'MASS', factor: 0.001 },
-  gm: { family: 'MASS', factor: 0.001 },
-  gms:{ family: 'MASS', factor: 0.001 },
-  mg: { family: 'MASS', factor: 0.000001 },
-  mt: { family: 'MASS', factor: 1000 },
+  kg:  { family: 'MASS', factor: 1 },
+  g:   { family: 'MASS', factor: 0.001 },
+  gm:  { family: 'MASS', factor: 0.001 },
+  gms: { family: 'MASS', factor: 0.001 },
+  mg:  { family: 'MASS', factor: 0.000001 },
+  // micro/nanogram — used for the friendly issue-entry unit on trace lines
+  // (mirrors the mcg/ng display tiers in measurement.config.js).
+  mcg: { family: 'MASS', factor: 0.000000001 },
+  ug:  { family: 'MASS', factor: 0.000000001 },
+  'µg': { family: 'MASS', factor: 0.000000001 },
+  ng:  { family: 'MASS', factor: 0.000000000001 },
+  mt:  { family: 'MASS', factor: 1000 },
 
   // ── Volume -> L ──
-  l:  { family: 'VOLUME', factor: 1 },
-  lt: { family: 'VOLUME', factor: 1 },
-  ltr:{ family: 'VOLUME', factor: 1 },
-  ml: { family: 'VOLUME', factor: 0.001 },
+  l:   { family: 'VOLUME', factor: 1 },
+  lt:  { family: 'VOLUME', factor: 1 },
+  ltr: { family: 'VOLUME', factor: 1 },
+  ml:  { family: 'VOLUME', factor: 0.001 },
+  mcl: { family: 'VOLUME', factor: 0.000001 },
+  ul:  { family: 'VOLUME', factor: 0.000001 },
+  'µl': { family: 'VOLUME', factor: 0.000001 },
+  nl:  { family: 'VOLUME', factor: 0.000000001 },
 
   // ── Count -> NOS ──
   // "bag"/"drum" have no fixed weight — tracked as a plain count, same as

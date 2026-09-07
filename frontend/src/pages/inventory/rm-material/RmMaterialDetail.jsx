@@ -8,13 +8,7 @@ import RmDetailTable     from './components/rm-detail-table/RmDetailTable.jsx'
 import { groupPacks, groupStatus } from './components/rmDetailHelpers.js'
 import { RefreshCw, History } from 'lucide-react'
 import { toTitleCase } from '../../../utils/textDisplay.js'
-
-function fmtQty(n) {
-  if (n == null) return '—'
-  const v = Number(n)
-  if (isNaN(v)) return '—'
-  return v % 1 === 0 ? v.toLocaleString('en-IN') : v.toLocaleString('en-IN', { maximumFractionDigits: 3 })
-}
+import { humanQty } from '../../../utils/qty.js'
 
 export default function RmMaterialDetail() {
   const { itemCode } = useParams()
@@ -111,18 +105,18 @@ export default function RmMaterialDetail() {
           <div className="grid grid-cols-4 gap-4 mb-6">
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4">
               <div className="text-xs font-medium text-gray-400 mb-1.5">Total Received</div>
-              <div className="text-2xl font-bold text-gray-900">{fmtQty(totalQtyReceived)}</div>
-              <div className="text-xs text-gray-400 mt-0.5">{rm?.inventoryUom?.toUpperCase()} · {packs.length} bags</div>
+              <div className="text-2xl font-bold text-gray-900">{humanQty(totalQtyReceived, rm?.inventoryUom)}</div>
+              <div className="text-xs text-gray-400 mt-0.5">{packs.length} bags</div>
             </div>
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4">
               <div className="text-xs font-medium text-gray-400 mb-1.5">Currently Available</div>
-              <div className="text-2xl font-bold text-emerald-600">{fmtQty(totalRemaining)}</div>
-              <div className="text-xs text-gray-400 mt-0.5">{rm?.inventoryUom?.toUpperCase()} remaining</div>
+              <div className="text-2xl font-bold text-emerald-600">{humanQty(totalRemaining, rm?.inventoryUom)}</div>
+              <div className="text-xs text-gray-400 mt-0.5">remaining</div>
             </div>
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4">
               <div className="text-xs font-medium text-gray-400 mb-1.5">Total Consumed</div>
-              <div className="text-2xl font-bold text-gray-700">{fmtQty(totalUsed)}</div>
-              <div className="text-xs text-gray-400 mt-0.5">{rm?.inventoryUom?.toUpperCase()} used</div>
+              <div className="text-2xl font-bold text-gray-700">{humanQty(totalUsed, rm?.inventoryUom)}</div>
+              <div className="text-xs text-gray-400 mt-0.5">used</div>
             </div>
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4">
               <div className="text-xs font-medium text-gray-400 mb-2">Overall Usage</div>

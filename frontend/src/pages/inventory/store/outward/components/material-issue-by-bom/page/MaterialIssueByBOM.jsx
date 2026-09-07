@@ -3,8 +3,10 @@ import { outwardApi, containerApi, rmApi } from '../../../../../../../api/invent
 import { recipeApi, productApi } from '../../../../../../../api/masters.js'
 import { planTasksApi } from '../../../../../../../api/production.js'
 import { useIsMobile } from '../../../../../../../hooks/useIsMobile.js'
-import { convertByDensity } from '../../../../../../../utils/uom.js'
-import { QTY_EPS, roundQty } from '../../../../../../../utils/qty.js'
+import { convertByDensity, toCanonical } from '../../../../../../../utils/uom.js'
+import { pickTier } from '../../../../../../../utils/measurement/convertMeasurement.js'
+import { CANONICAL_UNIT_TO_CATEGORY } from '../../../../../../../utils/measurement/measurement.config.js'
+import { isCovered, roundQty, humanQty } from '../../../../../../../utils/qty.js'
 import SelectStep from '../components/SelectStep.jsx'
 import BomChecklistStep from '../components/BomChecklistStep.jsx'
 import './MaterialIssueByBOM.css'
@@ -156,6 +158,29 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
     catch { return lineQty }
   }, [rmByCode, entryUomFor])
 
+  // The unit the operator TYPES the issue qty in — a friendly tier
+  // (mg / mcg / g / kg  ·  ml / mcl / L) picked for `refQtyInEntryUom` so a
+  // trace line reads "12 MG" to key in, not "0.000012 KG". Same family as
+  // the item's Operational/Inventory UOM; NOS / unknown units are untouched.
+  const displayUomFor = useCallback((line, refQtyInEntryUom) => {
+    const entryUom = entryUomFor(line)
+    try {
+      const { qty: canonical, uom: canonicalUom } = toCanonical(Math.abs(Number(refQtyInEntryUom)) || 0, entryUom)
+      const category = CANONICAL_UNIT_TO_CATEGORY[canonicalUom]
+      if (!category || category === 'count') return entryUom
+      const tier = pickTier(category, canonical)
+      return tier ? tier.unit.toUpperCase() : entryUom
+    } catch { return entryUom }
+  }, [entryUomFor])
+
+  // entryUom qty → the operator-facing display unit (best-effort; the real
+  // conversion for the deduction happens server-side).
+  const toDisplayQty = useCallback((line, displayUom, entryQty) => {
+    const rm = rmByCode.get(line.rmCode)
+    try { return convertByDensity(entryQty, entryUomFor(line), displayUom, rm?.density).qty }
+    catch { return entryQty }
+  }, [rmByCode, entryUomFor])
+
   // Load production tasks
   useEffect(() => {
     setLoadingTasks(true)
@@ -185,7 +210,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
       .map(s => {
         const active = (s.bomLines || []).filter(l => !l.orphaned)
         const total  = active.length
-        const done   = active.filter(l => l.issued >= l.required - QTY_EPS).length
+        const done   = active.filter(l => isCovered(l.required, l.issued)).length
         const task   = s.planTaskId ? taskById.get(s.planTaskId) : null
         return {
           ...s,
@@ -282,7 +307,15 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
     setBatchUom(s.batchUom || 'KG')
     setBatchRef(s.batchRef || '')
     setDiNo(s.diNo || '')
-    setBomLines(s.bomLines)
+    // `required` is derived (qtyPerUnit × batch) — recompute it at full
+    // precision on resume so sessions saved before the rounding fix (which
+    // floored trace lines like 0.00001 kg/unit to "0") self-heal.
+    const batch = parseFloat(s.batchQty) || 0
+    setBomLines((s.bomLines || []).map(l => (
+      l.qtyPerUnit != null && batch
+        ? { ...l, required: roundQty(l.qtyPerUnit * batch) }
+        : l
+    )))
     setSessionId(s.id)
     setSelTaskId(null)
     // Recipe identity isn't stored on the session — recover it from the linked
@@ -373,7 +406,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
     // issued and the only drift was a since-removed, never-issued line) —
     // there's no manual Delete button on the history page anymore, so a
     // session left "fully issued" here would otherwise sit stuck forever.
-    if (merged.every(l => l.issued >= l.required - QTY_EPS)) outwardApi.bomSessions.delete(sessionId).catch(() => {})
+    if (merged.every(l => isCovered(l.required, l.issued))) outwardApi.bomSessions.delete(sessionId).catch(() => {})
   }
 
   // ─── Load packs + containers silently (for scan matching only) ───────────
@@ -423,16 +456,19 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
     const remainingInEntryUom = lineUomToEntryQty(line, remaining)
 
     const entryUom = entryUomFor(line)
+    // Friendly unit the operator will type into "Qty to Issue".
+    const displayUom = displayUomFor(line, remainingInEntryUom)
 
     // Container QR encodes "CONT:{containerId}"
     if (val.startsWith('CONT:')) {
       const containerId = val.slice(5)
       const cont = containers.find(c => c.containerId === containerId)
       if (cont) {
-        const maxEntryQty = Math.min(remainingInEntryUom, toEntryQty(line, cont.currentQty))
+        const maxEntryQty   = Math.min(remainingInEntryUom, toEntryQty(line, cont.currentQty))
+        const maxDisplayQty = toDisplayQty(line, displayUom, maxEntryQty)
         const rm = rmByCode.get(line.rmCode)
-        setFoundSource({ type: 'container', id: cont.containerId, availableQty: cont.currentQty, uom: rm?.inventoryUom || cont.uom || line.uom, entryUom, maxEntryQty, itemName: cont.itemName })
-        setIssueQty(String(roundQty(maxEntryQty)))
+        setFoundSource({ type: 'container', id: cont.containerId, availableQty: cont.currentQty, uom: rm?.inventoryUom || cont.uom || line.uom, entryUom, maxEntryQty, displayUom, maxDisplayQty, itemName: cont.itemName })
+        setIssueQty(String(roundQty(maxDisplayQty)))
       } else {
         setScanErr(`Container "${containerId}" has no stock for ${toTitleCase(line.rmName)}. Check the container or inward stock first.`)
       }
@@ -442,32 +478,42 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
     // Pack QR encodes raw packId
     const pack = packs.find(p => p.packId === val)
     if (pack) {
-      const maxEntryQty = Math.min(remainingInEntryUom, toEntryQty(line, pack.remainingQty))
+      const maxEntryQty   = Math.min(remainingInEntryUom, toEntryQty(line, pack.remainingQty))
+      const maxDisplayQty = toDisplayQty(line, displayUom, maxEntryQty)
       // pack.remainingQty is always tracked in the item's Inventory UOM —
       // labeling it with line.uom (the recipe's own declared unit, which
       // can differ, e.g. "L" for a KG-tracked item) showed a real stock
       // number under the wrong unit. rmByCode carries the RM's actual
       // inventoryUom for the correct label.
       const rm = rmByCode.get(line.rmCode)
-      setFoundSource({ type: 'pack', id: pack.packId, availableQty: pack.remainingQty, uom: rm?.inventoryUom || line.uom, entryUom, maxEntryQty, lotNo: pack.lotNo, bagNo: pack.bagNo, supplier: pack.supplier })
-      setIssueQty(String(roundQty(maxEntryQty)))
+      setFoundSource({ type: 'pack', id: pack.packId, availableQty: pack.remainingQty, uom: rm?.inventoryUom || line.uom, entryUom, maxEntryQty, displayUom, maxDisplayQty, lotNo: pack.lotNo, bagNo: pack.bagNo, supplier: pack.supplier })
+      setIssueQty(String(roundQty(maxDisplayQty)))
       return
     }
 
     setScanErr(`"${val}" not found for ${toTitleCase(line.rmName)}. Scan the correct pack or container QR code.`)
-  }, [bomLines, activeIdx, packs, containers, entryUomFor, toEntryQty, lineUomToEntryQty, rmByCode])
+  }, [bomLines, activeIdx, packs, containers, entryUomFor, toEntryQty, lineUomToEntryQty, displayUomFor, toDisplayQty, rmByCode])
 
   // ─── Submit issue ────────────────────────────────────────────────────────
   const submitIssue = async () => {
     const line = bomLines[activeIdx]
-    const qty  = parseFloat(issueQty)
+    const displayQty = parseFloat(issueQty)   // in foundSource.displayUom
     if (!foundSource) { setIssueError('Scan a pack or container QR code first'); return }
-    if (!qty || qty <= 0) { setIssueError('Enter a valid quantity'); return }
-    // Best-effort client-side check only (entered qty is Operational UOM,
+    if (!displayQty || displayQty <= 0) { setIssueError('Enter a valid quantity'); return }
+
+    // Convert what the operator typed (a friendly unit like MG / MCL) back to
+    // the item's Operational UOM — that's what the server's resolveIssueQty
+    // expects. Falls through unchanged when displayUom === entryUom.
+    const rm = rmByCode.get(line.rmCode)
+    let qty = displayQty
+    try { qty = roundQty(convertByDensity(displayQty, foundSource.displayUom || foundSource.entryUom, foundSource.entryUom, rm?.density).qty) }
+    catch { qty = displayQty }
+
+    // Best-effort client-side check only (qty is Operational UOM,
     // availableQty is Inventory UOM) — the server re-derives and validates
     // the real conversion before deducting stock.
     if (toInventoryQty(line, qty) > foundSource.availableQty) {
-      setIssueError(`Qty exceeds available stock (${foundSource.availableQty} ${(foundSource.uom || '').toUpperCase()})`); return
+      setIssueError(`Qty exceeds available stock (${humanQty(foundSource.availableQty, foundSource.uom)})`); return
     }
 
     setIssuing(true); setIssueError('')
@@ -497,7 +543,6 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
       // already matches inventoryUom then, so convertByDensity passes the
       // number straight through).
       const deducted = res.issued
-      const rm = rmByCode.get(line.rmCode)
       let deductedInLineUom = deducted
       if (rm) {
         try { deductedInLineUom = convertByDensity(deducted, rm.inventoryUom, line.uom, rm.density).qty }
@@ -510,17 +555,16 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
       setBomLines(updatedLines)
       setLineMsg(prev => ({
         ...prev,
-        [activeIdx]: `Issued ${qty} ${entryUomFor(line)}${deducted !== deductedInLineUom ? ` (${deducted} ${(rm?.inventoryUom || line.uom || '').toUpperCase()} deducted)` : ''} from ${foundSource.type === 'pack' ? 'Pack' : 'Container'}: ${foundSource.id}`,
+        [activeIdx]: `Issued ${roundQty(displayQty)} ${(foundSource.displayUom || foundSource.entryUom || line.uom || '').toUpperCase()}${deducted !== deductedInLineUom ? ` (${humanQty(deducted, rm?.inventoryUom || line.uom)} deducted)` : ''} from ${foundSource.type === 'pack' ? 'Pack' : 'Container'}: ${foundSource.id}`,
       }))
 
-      const remaining = roundQty(line.required - newIssued)
-      if (remaining <= QTY_EPS) {
+      if (isCovered(line.required, newIssued)) {
         setActiveIdx(null)
-        if (updatedLines.filter(l => !l.orphaned).every(l => l.issued >= l.required - QTY_EPS)) outwardApi.bomSessions.delete(sessionId).catch(() => {})
+        if (updatedLines.filter(l => !l.orphaned).every(l => isCovered(l.required, l.issued))) outwardApi.bomSessions.delete(sessionId).catch(() => {})
       } else {
-        // More qty needed — reset scan, keep panel open. `remaining` is in
-        // line.uom; the issue field is in entryUom, so convert before pre-filling.
-        setFoundSource(null); setScanErr(''); setIssueQty(String(roundQty(lineUomToEntryQty(line, remaining))))
+        // More qty still needed — reset the scan; the next scan recomputes
+        // the friendly unit + pre-fill from what's now remaining.
+        setFoundSource(null); setScanErr(''); setIssueQty('')
         await loadResources(line.rmCode)
       }
     } catch (e) { setIssueError(e.message) }
@@ -532,7 +576,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
   // count toward progress — they're no longer part of what's required.
   const activeLines   = bomLines.filter(l => !l.orphaned)
   const totalRequired = activeLines.length
-  const totalDone     = activeLines.filter(l => l.issued >= l.required - QTY_EPS).length
+  const totalDone     = activeLines.filter(l => isCovered(l.required, l.issued)).length
   const progress      = totalRequired > 0 ? Math.round((totalDone / totalRequired) * 100) : 0
 
   if (step === 'select') {

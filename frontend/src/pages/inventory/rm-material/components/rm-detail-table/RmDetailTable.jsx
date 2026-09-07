@@ -1,10 +1,19 @@
 ﻿import { Fragment } from 'react'
 import './RmDetailTable.css'
 import Pagination from '../../../../../components/pagination/Pagination.jsx'
-import { fmtQty, fmtDate, statusMeta, groupStatus, distinctActors } from '../rmDetailHelpers.js'
+import { fmtDate, statusMeta, groupStatus, distinctActors } from '../rmDetailHelpers.js'
 import { Button } from '../../../../../components/ui'
 import { toTitleCase } from '../../../../../utils/textDisplay.js'
+import { humanQty } from '../../../../../utils/qty.js'
 import { useUserDisplayNames } from '../../../../../hooks/masters/useUserDisplayNames.js'
+
+// "0%" when truly nothing used, "<1%" when a real-but-tiny amount was
+// consumed (a 12 mg issue against a 30 kg bag), the rounded percent otherwise.
+function pctUsedLabel(used, total) {
+  if (!(total > 0) || used <= 0) return '0%'
+  const pct = (used / total) * 100
+  return pct < 1 ? '<1%' : `${Math.round(pct)}%`
+}
 
 export default function RmDetailTable({ loading, filteredGroups, paginatedGroups, allGroups, hasFilters, expanded, onToggle, onExpandAll, onCollapseAll, totalBags, uom, page, limit, onPageChange, onLimitChange }) {
   const displayName = useUserDisplayNames()
@@ -87,12 +96,12 @@ export default function RmDetailTable({ loading, filteredGroups, paginatedGroups
                         <span className="bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-0.5 rounded-full">{g.bags.length}</span>
                       </td>
                       <td className="px-3 py-3 text-right font-semibold text-gray-800 tabular-nums">
-                        {fmtQty(totalQty)} <span className="text-xs text-gray-400 font-normal">{g.uom?.toUpperCase()}</span>
+                        {humanQty(totalQty, g.uom || uom)}
                       </td>
                       <td className="px-3 py-3 text-right tabular-nums">
-                        <span className={`font-semibold ${remQty > 0 ? 'text-emerald-600' : 'text-gray-400'}`}>{fmtQty(remQty)}</span>
+                        <span className={`font-semibold ${remQty > 0 ? 'text-emerald-600' : 'text-gray-400'}`}>{humanQty(remQty, g.uom || uom)}</span>
                         {totalQty > 0 && (
-                          <div className="text-[10px] text-gray-400">{Math.round(((totalQty - remQty) / totalQty) * 100)}% used</div>
+                          <div className="text-[10px] text-gray-400">{pctUsedLabel(totalQty - remQty, totalQty)} used</div>
                         )}
                       </td>
                       <td className="px-3 py-3 text-sm text-gray-500">{fmtDate(g.receivedDate)}</td>
@@ -135,8 +144,7 @@ export default function RmDetailTable({ loading, filteredGroups, paginatedGroups
                           <td className="px-3 py-2.5 text-xs text-gray-400">{toTitleCase(bag.supplier) || '—'}</td>
                           <td className="px-3 py-2.5" />
                           <td className="px-3 py-2.5 text-right tabular-nums">
-                            <span className="text-xs font-semibold text-gray-700">{fmtQty(bTotal)}</span>
-                            <span className="text-xs text-gray-400 ml-1">{bag.uom?.toUpperCase()}</span>
+                            <span className="text-xs font-semibold text-gray-700">{humanQty(bTotal, bag.uom || uom)}</span>
                           </td>
                           <td className="px-3 py-2.5" colSpan={1}>
                             <div className="flex flex-col gap-1 min-w-36">
@@ -144,11 +152,11 @@ export default function RmDetailTable({ loading, filteredGroups, paginatedGroups
                                 <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
                                   <div className={`h-full rounded-full transition-all duration-500 ${barCls}`} style={{ width: `${bPct}%` }} />
                                 </div>
-                                <span className="text-[10px] text-gray-500 tabular-nums w-8 text-right flex-shrink-0">{Math.round(bPct)}%</span>
+                                <span className="text-[10px] text-gray-500 tabular-nums w-10 text-right flex-shrink-0">{pctUsedLabel(bUsed, bTotal)}</span>
                               </div>
                               <div className="flex justify-between text-[10px] text-gray-400">
-                                <span>Used: {fmtQty(bUsed)}</span>
-                                <span className="text-emerald-600 font-medium">{fmtQty(bRem)} left</span>
+                                <span>Used: {humanQty(bUsed, bag.uom || uom)}</span>
+                                <span className="text-emerald-600 font-medium">{humanQty(bRem, bag.uom || uom)} left</span>
                               </div>
                             </div>
                           </td>

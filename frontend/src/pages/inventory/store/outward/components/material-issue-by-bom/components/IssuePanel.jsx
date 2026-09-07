@@ -2,7 +2,7 @@ import ScannerPanel from '../../../../../../../components/ScannerPanel/ScannerPa
 import StockShortageBanner from './StockShortageBanner.jsx'
 import { Can } from '../../../../../../../components/common/Can.jsx'
 import { convertByDensity } from '../../../../../../../utils/uom.js'
-import { QTY_EPS, fmtQty } from '../../../../../../../utils/qty.js'
+import { fmtQty, humanQty } from '../../../../../../../utils/qty.js'
 
 import { toTitleCase } from '../../../../../../../utils/textDisplay.js'
 export default function IssuePanel({
@@ -31,7 +31,7 @@ export default function IssuePanel({
     catch { totalAvailableInLineUom = totalAvailable }
   }
   const noStock          = !loadingRes && packs.length === 0 && containers.length === 0
-  const insufficientStock = !loadingRes && !noStock && totalAvailableInLineUom < remaining - QTY_EPS
+  const insufficientStock = !loadingRes && !noStock && totalAvailableInLineUom < remaining - Math.abs(remaining) * 1e-9
 
   const rescan = () => { setFoundSource(null); setScanErr(''); setIssueQty('') }
 
@@ -54,7 +54,7 @@ export default function IssuePanel({
             <StockShortageBanner
               theme="orange"
               title={`Stock insufficient for ${toTitleCase(line.rmName)}`}
-              message={<>Only <strong>{fmtQty(totalAvailable)} {inventoryUom}</strong> available but <strong>{fmtQty(remaining)} {line.uom?.toUpperCase()}</strong> still needed. You can issue what's available now.</>}
+              message={<>Only <strong>{humanQty(totalAvailable, inventoryUom)}</strong> available but <strong>{humanQty(remaining, line.uom)}</strong> still needed. You can issue what's available now.</>}
             />
           )}
 
@@ -112,11 +112,11 @@ export default function IssuePanel({
                   </div>
                   <div>
                     <span className="text-gray-400">Available: </span>
-                    <span className="font-bold text-green-700">{fmtQty(foundSource.availableQty)} {foundSource.uom?.toUpperCase()}</span>
+                    <span className="font-bold text-green-700">{humanQty(foundSource.availableQty, foundSource.uom)}</span>
                   </div>
                   <div>
                     <span className="text-gray-400">Total Qty: </span>
-                    <span className="font-bold text-gray-800">{fmtQty(totalAvailable)} {inventoryUom}</span>
+                    <span className="font-bold text-gray-800">{humanQty(totalAvailable, inventoryUom)}</span>
                   </div>
                   {rm?.conversionRequired && (
                     <div>
@@ -132,7 +132,7 @@ export default function IssuePanel({
                   )}
                   <div>
                     <span className="text-gray-400">Still needed: </span>
-                    <span className="font-bold text-red-600">{fmtQty(remaining)} {line.uom?.toUpperCase()}</span>
+                    <span className="font-bold text-red-600">{humanQty(remaining, line.uom)}</span>
                   </div>
                 </div>
               </div>
@@ -140,25 +140,34 @@ export default function IssuePanel({
               <div className="px-4 py-3 bg-white">
                 <div className="flex items-end gap-3">
                   <div className="flex-1">
-                    <label className="text-xs font-semibold text-gray-700 mb-1 block">
-                      Qty to Issue ({(foundSource.entryUom || line.uom || '').toUpperCase()})
-                    </label>
-                    <input type="number" min="0" step="any"
-                      max={foundSource.maxEntryQty ?? Math.min(foundSource.availableQty, remaining)}
-                      value={issueQty}
-                      onChange={e => setIssueQty(e.target.value)}
-                      className={`w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 ${
-                        foundSource.type === 'pack'
-                          ? 'border-indigo-200 focus:ring-indigo-400'
-                          : 'border-orange-200 focus:ring-orange-400'
-                      }`}
-                    />
-                    <p className="text-xs text-gray-400 mt-1">
-                      Max: {fmtQty(foundSource.maxEntryQty ?? Math.min(foundSource.availableQty, remaining))} {(foundSource.entryUom || line.uom || '').toUpperCase()}
-                      {foundSource.entryUom && foundSource.entryUom !== inventoryUom && (
-                        <> (stock tracked in {inventoryUom})</>
-                      )}
-                    </p>
+                    {(() => {
+                      // The operator types in this friendly unit (12 MG, 4.32 MCL, …);
+                      // MaterialIssueByBOM converts it back for the server.
+                      const unitLabel = (foundSource.displayUom || foundSource.entryUom || line.uom || '').toUpperCase()
+                      const maxVal    = foundSource.maxDisplayQty ?? foundSource.maxEntryQty ?? Math.min(foundSource.availableQty, remaining)
+                      return (
+                        <>
+                          <label className="text-xs font-semibold text-gray-700 mb-1 block">
+                            Qty to Issue ({unitLabel})
+                          </label>
+                          <input type="number" min="0" step="any" max={maxVal}
+                            value={issueQty}
+                            onChange={e => setIssueQty(e.target.value)}
+                            className={`w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 ${
+                              foundSource.type === 'pack'
+                                ? 'border-indigo-200 focus:ring-indigo-400'
+                                : 'border-orange-200 focus:ring-orange-400'
+                            }`}
+                          />
+                          <p className="text-xs text-gray-400 mt-1">
+                            Max: {fmtQty(maxVal)} {unitLabel}
+                            {foundSource.entryUom && foundSource.entryUom !== inventoryUom && (
+                              <> (stock tracked in {inventoryUom})</>
+                            )}
+                          </p>
+                        </>
+                      )
+                    })()}
                   </div>
                   <Can permission="inventory.outward.create">
                     <button type="button"
