@@ -216,51 +216,88 @@ export default function NewIndentForm({ editIndent, onSaved, onCancelEdit }) {
 
       {/* Items — top card, fills the page width */}
       <section className="bg-white border border-gray-200 rounded-xl mb-4">
-        <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between flex-wrap gap-2">
+        <div className="px-4 py-3 border-b border-gray-100">
           <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide">Requested Materials</h2>
-          <span className="text-xs text-gray-400">Unit fills in from the Item Master · your department is taken from your account</span>
         </div>
         <div className="p-4">
           {loadingItems ? (
             <div className="py-8 text-center text-gray-400 text-sm"><Loader2 className="animate-spin mx-auto mb-2" size={20} />Loading Item Master…</div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-200">
-                    <th className="text-left font-bold py-2 w-8">#</th>
-                    <th className="text-left font-bold py-2 w-[45%]">Item</th>
-                    <th className="text-left font-bold py-2 w-24">Unit</th>
-                    <th className="text-left font-bold py-2 w-36">Required Qty</th>
-                    <th className="text-left font-bold py-2">Remarks</th>
-                    <th className="w-10" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((r, idx) => (
-                    <tr key={r.rowId} className="border-b border-gray-50 align-top">
-                      <td className="py-2 text-gray-400 text-xs pt-4">{idx + 1}</td>
-                      <td className="py-2 pr-3">
-                        <ItemCell row={r} allItems={allItems} takenCodes={takenCodes} onPick={pickItem} />
-                      </td>
-                      <td className="py-2 pr-3"><input className={`${FIELD_CLS} bg-gray-50`} readOnly value={r.uom} /></td>
-                      <td className="py-2 pr-3">
-                        <input type="number" min="0" step="any" className={FIELD_CLS} value={r.qty}
-                          onChange={e => patchRow(r.rowId, { qty: e.target.value })} placeholder="0" />
-                      </td>
-                      <td className="py-2 pr-3">
-                        <input className={FIELD_CLS} value={r.remarks} onChange={e => patchRow(r.rowId, { remarks: e.target.value })} placeholder="Optional" />
-                      </td>
-                      <td className="py-2 text-center">
-                        <button type="button" onClick={() => removeRow(r.rowId)} className="text-gray-300 hover:text-red-500 p-1" title="Remove row">
-                          <X size={16} />
-                        </button>
-                      </td>
+            <>
+              {/* Mobile: one stacked card per line — the desktop table is far too
+                  cramped on a phone. */}
+              <div className="space-y-3 md:hidden">
+                {rows.map((r, idx) => (
+                  <div key={r.rowId} className="rounded-xl border border-gray-200 bg-gray-50/40 p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[11px] font-bold uppercase tracking-wide text-gray-400">Item {idx + 1}</span>
+                      <button type="button" onClick={() => removeRow(r.rowId)}
+                        className="text-gray-300 hover:text-red-500 p-1 -mr-1" title="Remove row">
+                        <X size={16} />
+                      </button>
+                    </div>
+                    <div className="space-y-2.5">
+                      <ItemCell row={r} allItems={allItems} takenCodes={takenCodes} onPick={pickItem} />
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className={LABEL_CLS}>Unit</label>
+                          <input className={`${FIELD_CLS} bg-gray-100`} readOnly value={r.uom} placeholder="—" />
+                        </div>
+                        <div>
+                          <label className={LABEL_CLS}>Required Qty</label>
+                          <input type="number" min="0" step="any" inputMode="decimal" className={FIELD_CLS} value={r.qty}
+                            onChange={e => patchRow(r.rowId, { qty: e.target.value })} placeholder="0" />
+                        </div>
+                      </div>
+                      <div>
+                        <label className={LABEL_CLS}>Remarks</label>
+                        <input className={FIELD_CLS} value={r.remarks}
+                          onChange={e => patchRow(r.rowId, { remarks: e.target.value })} placeholder="Optional" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop: compact table */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-200">
+                      <th className="text-left font-bold py-2 w-8">#</th>
+                      <th className="text-left font-bold py-2 w-[45%]">Item</th>
+                      <th className="text-left font-bold py-2 w-24">Unit</th>
+                      <th className="text-left font-bold py-2 w-36">Required Qty</th>
+                      <th className="text-left font-bold py-2">Remarks</th>
+                      <th className="w-10" />
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {rows.map((r, idx) => (
+                      <tr key={r.rowId} className="border-b border-gray-50 align-top">
+                        <td className="py-2 text-gray-400 text-xs pt-4">{idx + 1}</td>
+                        <td className="py-2 pr-3">
+                          <ItemCell row={r} allItems={allItems} takenCodes={takenCodes} onPick={pickItem} />
+                        </td>
+                        <td className="py-2 pr-3"><input className={`${FIELD_CLS} bg-gray-50`} readOnly value={r.uom} /></td>
+                        <td className="py-2 pr-3">
+                          <input type="number" min="0" step="any" className={FIELD_CLS} value={r.qty}
+                            onChange={e => patchRow(r.rowId, { qty: e.target.value })} placeholder="0" />
+                        </td>
+                        <td className="py-2 pr-3">
+                          <input className={FIELD_CLS} value={r.remarks} onChange={e => patchRow(r.rowId, { remarks: e.target.value })} placeholder="Optional" />
+                        </td>
+                        <td className="py-2 text-center">
+                          <button type="button" onClick={() => removeRow(r.rowId)} className="text-gray-300 hover:text-red-500 p-1" title="Remove row">
+                            <X size={16} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
           <div className="mt-3 flex items-center justify-between">
             <Button variant="secondary" size="sm" icon={Plus} onClick={addRow}>Add Row</Button>
@@ -295,9 +332,9 @@ export default function NewIndentForm({ editIndent, onSaved, onCancelEdit }) {
         </div>
       </section>
 
-      <div className="flex items-center justify-end gap-2 mt-4">
-        <Button variant="outline-gray" onClick={() => save(false)} loading={busy}>Save Draft</Button>
-        <Button variant="primary" onClick={() => { setError(''); const v = validate(); if (v) setError(v); else setConfirmOpen(true) }}>
+      <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2 mt-4">
+        <Button variant="outline-gray" fullWidth className="sm:w-auto" onClick={() => save(false)} loading={busy}>Save Draft</Button>
+        <Button variant="primary" fullWidth className="sm:w-auto" onClick={() => { setError(''); const v = validate(); if (v) setError(v); else setConfirmOpen(true) }}>
           Submit Indent
         </Button>
       </div>

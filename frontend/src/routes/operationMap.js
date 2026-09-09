@@ -65,35 +65,11 @@ export function permissionForPath(pathname) {
   return hit?.permission || null
 }
 
-// Where to land a user after login / at "/". Checked in order — the first
-// permission the user holds wins. Broad admin-type accounts (which hold
-// every permission, including the narrow ones below) are matched first so
-// they keep landing on the general Stock dashboard rather than the first,
-// most-specific rule (Gate) that would otherwise match.
-const DEFAULT_PATH_RULES = [
-  { permission: 'admin.panel.access',      path: '/stock' },
-  { permission: 'gate.inward.view',        path: '/gate' },
-  { permission: 'inventory.inward.view',   path: '/inward' },
-  { permission: 'planning.plan.view',      path: '/planning' },
-  { permission: 'production.batch.view',   path: '/production' },
-  { permission: 'sales.order.view',        path: '/sales-orders' },
-  { permission: 'inventory.stock.view',    path: '/stock' },
-]
-
-export function defaultPathForUser(user) {
-  const perms = new Set(user?.permissions || [])
-  for (const rule of DEFAULT_PATH_RULES) {
-    if (perms.has(rule.permission)) return rule.path
-  }
-  // No dashboard-type permission at all (e.g. a plant account that only
-  // raises Material Indents) — land them on the always-accessible /home
-  // welcome page instead of a page they'll be bounced off of.
+// Where to land after login / at "/" / on any unknown route — the same
+// /home welcome page for EVERY account, admins included. /home is always
+// accessible (no entry in PERMISSION_ROUTES, so permissionForPath('/home')
+// is null); from there each account uses the sidebar / the page's own
+// quick-launch cards to reach whatever it has permission for.
+export function defaultPathForUser() {
   return '/home'
-}
-
-// True when the account has any of the "landing dashboard" permissions above —
-// i.e. defaultPathForUser returns a real dashboard, not the /home fallback.
-export function hasLandingDashboard(user) {
-  const perms = new Set(user?.permissions || [])
-  return DEFAULT_PATH_RULES.some((rule) => perms.has(rule.permission))
 }
