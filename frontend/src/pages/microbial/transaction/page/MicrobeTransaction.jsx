@@ -46,11 +46,15 @@ export default function MicrobeTransaction() {
               <Button variant="outline-gray" size="md" icon={ClipboardList} onClick={() => setTab('history')}>
                 Transaction History
               </Button>
-              {/* Viewing Outward History has its own dedicated "Back to
-                  Outward" control point — Back here does exactly that
-                  instead of leaving the page, so there's no separate button
-                  duplicating it below. */}
-              <BackButton onClick={outwardView === 'history' ? () => setOutwardView(null) : (outwardBack || undefined)} />
+              {/* Single Back control for the whole page. It steps out of
+                  whichever sub-view is open — Stock Loss Adjustment, its
+                  records list, Outward History, or an open microbe issuance —
+                  instead of a separate Back button living next to each. */}
+              <BackButton onClick={
+                adjustView ? () => setAdjustView(null)
+                : outwardView === 'history' ? () => setOutwardView(null)
+                : (outwardBack || undefined)
+              } />
             </>
           )}
         </>}
@@ -90,9 +94,6 @@ export default function MicrobeTransaction() {
           {tab === 'outward' && (
             adjustView ? (
               <div className="flex gap-3">
-                <Button variant="outline-gray" icon={ArrowLeft} onClick={() => setAdjustView(null)}>
-                  Back
-                </Button>
                 {adjustView === 'form' ? (
                   <Button variant="outline-gray" icon={List} onClick={() => setAdjustView('records')}>
                     Adjustment Records

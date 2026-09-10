@@ -58,7 +58,7 @@ async function findOrCreateImportGateInward(supplier, invoiceNo, receivedDate) {
   const supplierName = supplier || 'Unknown Supplier'
   const dayRange = receivedDate ? {
     gte: new Date(receivedDate.getFullYear(), receivedDate.getMonth(), receivedDate.getDate()),
-    lt:  new Date(receivedDate.getFullYear(), receivedDate.getMonth(), receivedDate.getDate() + 1),
+    lt: new Date(receivedDate.getFullYear(), receivedDate.getMonth(), receivedDate.getDate() + 1),
   } : undefined
 
   // supplierName is stored lowercase (RULES.LOWER) but Excel import rows
@@ -90,24 +90,24 @@ function parseDate(val) {
 function normalizeEquipSection(loc) {
   if (!loc) return ''
   const l = String(loc).toLowerCase().trim()
-  if (l.includes('botanical'))                              return 'BOTANICAL'
-  if (l.includes('liquid'))                                 return 'LIQUID'
-  if (l.includes('granule'))                                return 'GRANULES'
-  if (l.includes('microbial') || l.includes('production'))  return 'MICROBIAL'
-  if (l === 'nano' || l.includes('nano'))                   return 'NANO'
-  if (l.includes('powder') || l.includes('formulation'))    return 'POWDER'
+  if (l.includes('botanical')) return 'BOTANICAL'
+  if (l.includes('liquid')) return 'LIQUID'
+  if (l.includes('granule')) return 'GRANULES'
+  if (l.includes('microbial') || l.includes('production')) return 'MICROBIAL'
+  if (l === 'nano' || l.includes('nano')) return 'NANO'
+  if (l.includes('powder') || l.includes('formulation')) return 'POWDER'
   return String(loc).toUpperCase().trim()
 }
 
 function normalizeRecipePlant(plant) {
   if (!plant) return ''
   const p = String(plant).toUpperCase().trim()
-  if (p.startsWith('MPFU'))       return 'POWDER'
-  if (p === 'BOTANICAL')          return 'BOTANICAL'
-  if (p === 'NANO')               return 'NANO'
-  if (p === 'LIQUID')             return 'LIQUID'
-  if (p === 'GRANULES')           return 'GRANULES'
-  if (p === 'POWDER')             return 'POWDER'
+  if (p.startsWith('MPFU')) return 'POWDER'
+  if (p === 'BOTANICAL') return 'BOTANICAL'
+  if (p === 'NANO') return 'NANO'
+  if (p === 'LIQUID') return 'LIQUID'
+  if (p === 'GRANULES') return 'GRANULES'
+  if (p === 'POWDER') return 'POWDER'
   return p
 }
 
@@ -382,7 +382,7 @@ export const executeImport = async (req, res) => {
             })
           } else {
             // equip_code is never read from the sheet — backend assigns it
-            // (EP00001-style), same convention as the Add Equipment UI.
+            // (EP00001-style), Same Convention As The Add Equipment UI.
             nextEquipNum++
             await prisma.equipmentMaster.create({
               data: { equipCode: formatEquipCode(nextEquipNum), equipName, plant, workingVolume, workingUnit, operation, designatedProduct }
@@ -392,7 +392,7 @@ export const executeImport = async (req, res) => {
         } catch (e) { results.errors.push(`Equipment row: ${e.message}`) }
       }
     } else {
-      results.errors.push('ℹ️ No Equipment sheet found — sheet tab must contain "equipment" or "equip".')
+      results.errors.push('No Equipment sheet found — sheet tab must contain "equipment" or "equip".')
     }
 
     // ── RM MASTER ─────────────────────────────────────────────────────────
@@ -478,8 +478,8 @@ export const executeImport = async (req, res) => {
           if (!rows.length) return false
           const hdrs = Object.keys(rows[0]).map(k => k.toLowerCase().replace(/[^a-z0-9]/g, ''))
           return hdrs.some(h => h.includes('product')) &&
-                 hdrs.some(h => h === 'rawmaterial' || (h.includes('raw') && h.includes('material')) || h.includes('ingredient') || h.includes('recipeitem')) &&
-                 hdrs.some(h => h.includes('qty') || h.includes('quantity'))
+            hdrs.some(h => h === 'rawmaterial' || (h.includes('raw') && h.includes('material')) || h.includes('ingredient') || h.includes('recipeitem')) &&
+            hdrs.some(h => h.includes('qty') || h.includes('quantity'))
         })
         if (recipeSheet) results.errors.push(`ℹ️ BOM sheet auto-detected from filename: "${recipeSheet}" (tip: name the sheet tab "BOM" next time)`)
       }
@@ -493,8 +493,8 @@ export const executeImport = async (req, res) => {
         if (!rows.length) return false
         const hdrs = Object.keys(rows[0]).map(k => k.toLowerCase().replace(/[^a-z0-9]/g, ''))
         return hdrs.some(h => h.includes('product')) &&
-               hdrs.some(h => h === 'rawmaterial' || (h.includes('raw') && h.includes('material')) || h.includes('ingredient') || h.includes('recipeitem')) &&
-               hdrs.some(h => h.includes('qty') || h.includes('quantity'))
+          hdrs.some(h => h === 'rawmaterial' || (h.includes('raw') && h.includes('material')) || h.includes('ingredient') || h.includes('recipeitem')) &&
+          hdrs.some(h => h.includes('qty') || h.includes('quantity'))
       })
       if (recipeSheet) results.errors.push(`ℹ️ BOM sheet auto-detected by columns: "${recipeSheet}" (tip: name the sheet tab "BOM" next time)`)
     }
@@ -736,16 +736,16 @@ export const executeImport = async (req, res) => {
 
       for (const row of rows) {
         try {
-          const packId   = col(row, 'pack id', 'packid', 'pack_id')
+          const packId = col(row, 'pack id', 'packid', 'pack_id')
           const itemCode = col(row, 'item code', 'itemcode', 'item_code')
           const itemName = col(row, 'item name', 'itemname', 'item_name')
-          const lotNo    = col(row, 'lot no', 'lotno', 'lot_no', 'batch code', 'batchcode') || '2025-001'
-          const bagNo    = parseInt(col(row, 'bag no', 'bagno', 'bag_no', 'bag number') || '1') || 1
-          const packQty  = safeNum(col(row, 'pack qty', 'packqty', 'pack_qty', 'qty per bag', 'quantity'))
-          const uom      = col(row, 'uom', 'unit') || 'KG'
+          const lotNo = col(row, 'lot no', 'lotno', 'lot_no', 'batch code', 'batchcode') || '2025-001'
+          const bagNo = parseInt(col(row, 'bag no', 'bagno', 'bag_no', 'bag number') || '1') || 1
+          const packQty = safeNum(col(row, 'pack qty', 'packqty', 'pack_qty', 'qty per bag', 'quantity'))
+          const uom = col(row, 'uom', 'unit') || 'KG'
           const supplier = col(row, 'supplier', 'vendor', 'supplier name')
           const invoiceNo = col(row, 'invoice no', 'invoiceno', 'invoice_no', 'invoice number')
-          const rdRaw    = col(row, 'received date', 'receiveddate', 'receipt date', 'date received')
+          const rdRaw = col(row, 'received date', 'receiveddate', 'receipt date', 'date received')
           const receivedDate = parseDate(rdRaw)
           if (!packId || !itemCode) continue
 
@@ -795,9 +795,9 @@ export const executeImport = async (req, res) => {
       const rows = XLSX.utils.sheet_to_json(wb.Sheets[inSheet], { defval: '' })
       for (const row of rows) {
         try {
-          const packId    = col(row, 'pack id', 'packid', 'pack_id', 'scan')
+          const packId = col(row, 'pack id', 'packid', 'pack_id', 'scan')
           const warehouse = col(row, 'warehouse', 'ware house', 'location', 'store') || 'Main Store'
-          const dateRaw   = col(row, 'date of inward', 'inward date', 'date', 'received date')
+          const dateRaw = col(row, 'date of inward', 'inward date', 'date', 'received date')
           const inwardTime = parseDate(dateRaw) || new Date()
           if (!packId) continue
           const pack = await prisma.packDetail.findUnique({ where: { packId } })
@@ -819,16 +819,16 @@ export const executeImport = async (req, res) => {
       const rows = XLSX.utils.sheet_to_json(wb.Sheets[outSheet], { defval: '' })
       for (const row of rows) {
         try {
-          const sourceId   = col(row, 'source id', 'sourceid', 'pack id', 'packid', 'scan')
-          const txType     = col(row, 'transaction type', 'type', 'tx type') || 'BOM_ISSUANCE'
-          const issuedQty  = safeNum(col(row, 'issued qty', 'issuedqty', 'qty', 'quantity issued'))
-          const bomNo      = col(row, 'bom no', 'bomno', 'indent', 'indent id')
-          const issuedTo   = col(row, 'issued to', 'issuedto', 'department', 'plant', 'dept')
-          const remarks    = col(row, 'remarks', 'remark', 'notes')
-          const txBy       = col(row, 'transaction made by', 'transacted by', 'done by', 'operator')
-          const dateRaw    = col(row, 'date of issue', 'issue date', 'date')
-          const timestamp  = parseDate(dateRaw) || new Date()
-          const rmCode     = col(row, 'item code', 'itemcode', 'rm code')
+          const sourceId = col(row, 'source id', 'sourceid', 'pack id', 'packid', 'scan')
+          const txType = col(row, 'transaction type', 'type', 'tx type') || 'BOM_ISSUANCE'
+          const issuedQty = safeNum(col(row, 'issued qty', 'issuedqty', 'qty', 'quantity issued'))
+          const bomNo = col(row, 'bom no', 'bomno', 'indent', 'indent id')
+          const issuedTo = col(row, 'issued to', 'issuedto', 'department', 'plant', 'dept')
+          const remarks = col(row, 'remarks', 'remark', 'notes')
+          const txBy = col(row, 'transaction made by', 'transacted by', 'done by', 'operator')
+          const dateRaw = col(row, 'date of issue', 'issue date', 'date')
+          const timestamp = parseDate(dateRaw) || new Date()
+          const rmCode = col(row, 'item code', 'itemcode', 'rm code')
           if (!sourceId || issuedQty <= 0) continue
           const txMap = {
             'issued to production': 'BOM_ISSUANCE', 'bom': 'BOM_ISSUANCE',
@@ -909,15 +909,15 @@ export const executeImport = async (req, res) => {
         if (!name) continue
         const displayName = name.trim() // stored/looked-up value — case preserved, business name never case-changed
         const key = displayName.toUpperCase() // grouping key only, never stored
-        const co  = col(row, 'company', 'co', 'firm') || ''
-        const ot  = col(row, 'order type', 'ordertype', 'type') || 'DOMESTIC'
+        const co = col(row, 'company', 'co', 'firm') || ''
+        const ot = col(row, 'order type', 'ordertype', 'type') || 'DOMESTIC'
         if (!profileMap[key]) profileMap[key] = { displayName, co: {}, ot: {} }
         profileMap[key].co[co] = (profileMap[key].co[co] || 0) + 1
         profileMap[key].ot[ot] = (profileMap[key].ot[ot] || 0) + 1
       }
       for (const { displayName, co, ot } of Object.values(profileMap)) {
         try {
-          const company   = Object.entries(co).sort((a, b) => b[1] - a[1])[0]?.[0] || ''
+          const company = Object.entries(co).sort((a, b) => b[1] - a[1])[0]?.[0] || ''
           const orderType = Object.entries(ot).sort((a, b) => b[1] - a[1])[0]?.[0] || 'DOMESTIC'
           const orderCount = Object.values(co).reduce((a, b) => a + b, 0)
           const existing = await prisma.customerProfile.findFirst({ where: { customerName: { equals: displayName, mode: 'insensitive' } } })

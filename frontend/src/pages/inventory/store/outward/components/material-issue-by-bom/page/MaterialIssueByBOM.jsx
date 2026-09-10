@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, forwardRef, useImperativeHandle } from 'react'
 import { outwardApi, containerApi, rmApi } from '../../../../../../../api/inventory.js'
 import { recipeApi, productApi } from '../../../../../../../api/masters.js'
 import { planTasksApi } from '../../../../../../../api/production.js'
@@ -37,7 +37,7 @@ function pickRecipeRows(rows, recipeNo) {
   return all.filter(r => Number(r.recipeNo) === first)
 }
 
-export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
+function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }, ref) {
   const isMobile = useIsMobile()
 
   // ─── Step / product selection ──────────────────────────────────────────
@@ -238,6 +238,19 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
   }
 
   const clearSelection = () => { setSelProduct(null); setBatchQty(''); setBatchUom('KG'); setBatchRef(''); setDiNo(''); setSelTaskId(null); setSelRecipeNo(null) }
+
+  const backToSelect = useCallback(() => { setStep('select'); setActiveIdx(null); clearSelection() }, [])
+
+  // The Outward panel's single header "Back" button calls this first: step out
+  // of the checklist back to the product picker when we're on it, and report
+  // that it was handled. Returns false from the picker so the panel then does
+  // the page-level "Back to Outward".
+  useImperativeHandle(ref, () => ({
+    handleBack: () => {
+      if (step === 'bom') { backToSelect(); return true }
+      return false
+    },
+  }), [step, backToSelect])
 
   // Auto-save on every bomLines change — persisted server-side (not just this
   // browser) so the same in-progress session is visible from any device/login.
@@ -609,7 +622,6 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
       progress={progress}
       recipeDrift={recipeDrift}
       onSyncRecipe={syncToCurrentRecipe}
-      onBack={() => { setStep('select'); setActiveIdx(null); clearSelection() }}
       onOpenIssuePanel={openIssuePanel}
       onIssueAnother={() => { setStep('select'); setActiveIdx(null); setBomLines([]); clearSelection() }}
       lineMsg={lineMsg}
@@ -630,3 +642,5 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
     />
   )
 }
+
+export default forwardRef(MaterialIssueByBOM)

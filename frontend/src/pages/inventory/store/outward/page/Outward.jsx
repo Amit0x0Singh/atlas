@@ -83,8 +83,9 @@ function Panel({ mode, onBack, actions, children }) {
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {actions}
-          {/* Single "Back" — one step back: from the BOM Issued view to the
-              BOM Issue picker, otherwise out to the Outward mode selection. */}
+          {/* Single "Back" for the whole panel — one step back: out of the
+              BOM checklist / BOM Issued view / Open Indents sub-flow first,
+              otherwise out to the Outward mode selection. */}
           <BackButton onClick={onBack} size="sm" />
         </div>
       </div>
@@ -102,6 +103,7 @@ export default function Outward() {
   const [histPage,  setHistPage]  = useState(1)
   const [histTotal, setHistTotal] = useState(0)
   const indentIssueRef            = useRef(null)
+  const bomIssueRef               = useRef(null)
   const LIMIT = 15
 
   useEffect(() => { loadHistory() }, [histPage])
@@ -128,10 +130,12 @@ export default function Outward() {
       </Button>
     )
 
-    // Open Indents owns its own list ↔ checklist ↔ detail navigation; give its
-    // header Back button first crack at stepping back inside that flow, and
-    // only fall through to leaving the Outward mode once it's back at the list.
+    // Open Indents / Material Issue by BOM each own an internal list ↔ checklist
+    // flow; give the header Back button first crack at stepping back inside that
+    // flow, and only fall through to leaving the Outward mode once it's back at
+    // the list / picker.
     const indentBack = () => { if (!indentIssueRef.current?.handleBack()) goBack() }
+    const bomBack    = () => { if (!bomIssueRef.current?.handleBack())   goBack() }
 
     return (
       <Panel
@@ -139,6 +143,7 @@ export default function Outward() {
         onBack={
           mode === 'indent-issue' ? indentBack
           : isBomHistory          ? () => setBomView('select')
+          : mode === 'bom-issue'  ? bomBack
           : goBack
         }
         actions={bomActions}
@@ -146,7 +151,7 @@ export default function Outward() {
         mode === 'bom-issue' ? (
           bomView === 'history'
             ? <BomIssuedHistory />
-            : <MaterialIssueByBOM resumeSessionId={resumeId} onAutoResumed={() => setResumeId(null)} />
+            : <MaterialIssueByBOM ref={bomIssueRef} resumeSessionId={resumeId} onAutoResumed={() => setResumeId(null)} />
         ) :
         mode === 'wh-wh'        ? <WarehouseToWarehouse /> :
         mode === 'wh-cont'      ? <WarehouseToContainer /> :

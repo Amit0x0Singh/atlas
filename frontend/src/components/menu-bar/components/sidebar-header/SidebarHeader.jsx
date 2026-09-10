@@ -28,7 +28,9 @@ export default function SidebarHeader({ sidebarOpen, onCollapse, onExpand }) {
             </div>
             <div className="sh-brand-text">
               <div className="sh-brand-name">Atlas</div>
-              <div className="sh-brand-sub">MANUFACTURING</div>
+
+              { /* <div className="sh-brand-sub">MANUFACTURING</div> */}
+
             </div>
           </div>
           <CollapseBtn onClick={onCollapse} />

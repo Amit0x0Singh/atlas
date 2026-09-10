@@ -1,4 +1,4 @@
-import { Button, BackButton } from '../../../../../../../components/ui'
+import { Button } from '../../../../../../../components/ui'
 import IssuePanel from './IssuePanel.jsx'
 
 import { toTitleCase } from '../../../../../../../utils/textDisplay.js'
@@ -6,7 +6,7 @@ import { isCovered, roundQty, humanQty } from '../../../../../../../utils/qty.js
 export default function BomChecklistStep({
   selProduct, batchQty, batchUom, batchRef, diNo,
   bomLines, activeIdx, totalDone, totalRequired, progress,
-  recipeDrift, onSyncRecipe, onBack, onOpenIssuePanel, onIssueAnother,
+  recipeDrift, onSyncRecipe, onOpenIssuePanel, onIssueAnother,
   lineMsg, rmByCode,
   packs, containers, loadingRes,
   scanErr, setScanErr,
@@ -16,27 +16,26 @@ export default function BomChecklistStep({
   return (
     <>
       <div className="p-4 md:p-6">
-        {/* Header */}
-        <div className="flex items-start justify-between mb-4 flex-wrap gap-3">
-          <div>
-            <div className="flex items-center gap-3 flex-wrap">
-              <h2 className="text-lg font-bold text-gray-900">{toTitleCase(selProduct?.productName)}</h2>
-              <span className="bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-1 rounded-lg">
-                {batchQty} {batchUom?.toUpperCase()}
-              </span>
-              {batchRef && (
-                <span className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-lg font-mono">{batchRef}</span>
-              )}
-            </div>
-            <p className="text-sm text-gray-500 mt-1">
-              {totalDone}/{totalRequired} materials issued
-              {progress === 100
-                ? <span className="text-green-600 font-bold ml-2">— All Done!</span>
-                : <span className="text-gray-400 ml-2">· Progress auto-saved</span>
-              }
-            </p>
+        {/* Header — the page-level "Back" (in the Outward panel header) steps
+            out of this checklist back to the product picker; there's no
+            separate Back button duplicating it here. */}
+        <div className="mb-4">
+          <div className="flex items-center gap-3 flex-wrap">
+            <h2 className="text-lg font-bold text-gray-900">{toTitleCase(selProduct?.productName)}</h2>
+            <span className="bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-1 rounded-lg">
+              {batchQty} {batchUom?.toUpperCase()}
+            </span>
+            {batchRef && (
+              <span className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-lg font-mono">{batchRef}</span>
+            )}
           </div>
-          <BackButton onClick={onBack} size="sm" label="Back" />
+          <p className="text-sm text-gray-500 mt-1">
+            {totalDone}/{totalRequired} materials issued
+            {progress === 100
+              ? <span className="text-green-600 font-bold ml-2">— All Done!</span>
+              : <span className="text-gray-400 ml-2">· Progress auto-saved</span>
+            }
+          </p>
         </div>
 
         {/* Progress bar */}
