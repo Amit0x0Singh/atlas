@@ -69,13 +69,14 @@ export const resources = [
       field('state', 'State', 'select', { options: [
         { value: 'solid', label: 'Solid' }, { value: 'liquid', label: 'Liquid' }, { value: 'gas', label: 'Gas' },
       ] }),
-      // Density only matters once conversion is actually required — if
-      // Inventory UOM and Operational UOM are the same, there's nothing to
-      // convert, so the field is hidden (and cleared) until the user flips
-      // Conversion Required to true. See DataFormModal.jsx's visibleIf/
-      // isBooleanSelect handling.
+      // The Conversion Factor (Inventory UOM per one Operation UOM — KG/L for a
+      // liquid, KG/NOS for a packing item) only matters once conversion is
+      // actually required — if Inventory UOM and Operational UOM are the same
+      // there's nothing to convert, so the field is hidden (and cleared) until
+      // the user flips Conversion Required to true. See DataFormModal.jsx's
+      // visibleIf/isBooleanSelect handling.
       field('conversionRequired', 'Conversion Required', 'select', { options: ['false', 'true'] }),
-      field('density', 'Density (kg/L)', 'number', { visibleIf: (form) => form.conversionRequired === 'true' }),
+      field('conversionFactor', 'Conversion Factor', 'number', { visibleIf: (form) => form.conversionRequired === 'true' }),
       field('lowStockLevel', 'Low Stock Level', 'number'),
       field('highStockLevel', 'High Stock Level', 'number'),
       field('createdAt', 'Created At', 'datetime-local', { readOnly: true }),

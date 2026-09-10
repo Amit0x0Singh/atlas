@@ -73,7 +73,7 @@ export default function RmTableRow({ item, columnVisibility, onEdit, onDelete, o
       )}
       {columnVisibility.conFactor && (
         <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
-          {item.density ?? '—'}
+          {item.conversionFactor ?? '—'}
         </td>
       )}
       {columnVisibility.reorderLevel && (

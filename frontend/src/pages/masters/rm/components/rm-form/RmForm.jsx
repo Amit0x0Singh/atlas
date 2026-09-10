@@ -20,12 +20,12 @@ function SectionHeading({ icon: Icon, tone, children }) {
 }
 
 export default function RmForm({ editing, form, onChange, saving, msg, onSave, onClose, categories = [], subCategories = [] }) {
-  // Mirrors the backend guard exactly (rm-master.controller.js) — density is
-  // only actually required once the two UOMs genuinely differ, regardless of
-  // physical State (that field is just classification, not what drives the
-  // conversion requirement).
-  const needsDensity = !!form.operationalUom && form.operationalUom !== form.inventoryUom
-  const densityMissing = needsDensity && (form.density === '' || form.density == null)
+  // Mirrors the backend guard exactly (rm-master.controller.js) — the
+  // Conversion Factor is only actually required once the two UOMs genuinely
+  // differ, regardless of physical State (that field is just classification,
+  // not what drives the conversion requirement).
+  const needsFactor = !!form.operationalUom && form.operationalUom !== form.inventoryUom
+  const factorMissing = needsFactor && (form.conversionFactor === '' || form.conversionFactor == null)
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -124,26 +124,27 @@ export default function RmForm({ editing, form, onChange, saving, msg, onSave, o
               </div>
               {/* Conversion Required isn't a separate manual input — it's
                   purely derived from whether the two UOMs differ (see
-                  RmMaster.jsx's save()), so this slot shows Density instead,
-                  only once it's actually needed. */}
-              {needsDensity && (
+                  RmMaster.jsx's save()), so this slot shows the Conversion
+                  Factor instead, only once it's actually needed. */}
+              {needsFactor && (
                 <div>
-                  <label className={`${LABEL} ${densityMissing ? 'text-red-600' : ''}`}>
-                    Density (kg/L) *
+                  <label className={`${LABEL} ${factorMissing ? 'text-red-600' : ''}`}>
+                    Conversion Factor ({form.inventoryUom?.toUpperCase()}/{form.operationalUom?.toUpperCase()}) *
                   </label>
                   <input
                     type="number" step="any"
-                    value={form.density ?? ''}
-                    onChange={e => onChange('density', e.target.value)}
-                    placeholder="e.g. 0.91"
-                    className={`${FIELD} ${densityMissing ? 'border-red-300 focus:border-red-500 focus:ring-red-500/30' : ''}`}
+                    value={form.conversionFactor ?? ''}
+                    onChange={e => onChange('conversionFactor', e.target.value)}
+                    placeholder="e.g. 0.003571"
+                    className={`${FIELD} ${factorMissing ? 'border-red-300 focus:border-red-500 focus:ring-red-500/30' : ''}`}
                   />
                 </div>
               )}
             </div>
-            {needsDensity && (
-              <p className={`mt-2 text-[11px] ${densityMissing ? 'text-red-500 font-medium' : 'text-gray-400'}`}>
-                Density converts between Inventory UOM ({form.inventoryUom?.toUpperCase()}) and Operational UOM ({form.operationalUom?.toUpperCase()}) when this item is issued.
+            {needsFactor && (
+              <p className={`mt-2 text-[11px] ${factorMissing ? 'text-red-500 font-medium' : 'text-gray-400'}`}>
+                {form.inventoryUom?.toUpperCase()} of stock per one {form.operationalUom?.toUpperCase()} issued — e.g. a liquid stored in KG but issued in L (KG/L = density),
+                or a pouch stored in KG but issued in NOS (weight of one pouch). Operation → Inventory multiplies by this; Inventory → Operation divides.
               </p>
             )}
           </div>

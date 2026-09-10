@@ -81,7 +81,7 @@ const SHEETS = [
       { name: 'Conversion Required', kind: 'Optional' },
       { name: 'Conversion Factor', kind: 'Optional' },
     ],
-    behavior: 'Item Name and Item Code are the only required fields; Item Code is used exactly as given — not auto-padded. Everything else defaults instead of failing: blank Category/Sub-Category become "None", blank Inventory/Operational UOM become "NOS", blank Conversion Required becomes "No", and blank Conversion Factor becomes 0. Conversion Factor is the item’s density (kg/L) — the same value used elsewhere to convert a liquid between KG and L at issuance.',
+    behavior: 'Item Name and Item Code are the only required fields; Item Code is used exactly as given — not auto-padded. Everything else defaults instead of failing: blank Category/Sub-Category become "None", blank Inventory/Operational UOM become "NOS", blank Conversion Required becomes "No", and blank Conversion Factor becomes 0. Conversion Factor is how much Inventory UOM makes up one Operation UOM (KG per L for a liquid issued in L — numerically its density; KG per pouch for a packing item issued in NOS) — the same value used to convert between the two units at issuance.',
     note: 'State (Solid/Liquid/Gas) isn’t read from the sheet — set it afterward in Item Master.',
   },
   {

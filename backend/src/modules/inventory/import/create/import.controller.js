@@ -445,18 +445,18 @@ export const executeImport = async (req, res) => {
           const operationalUom = operationalUomRaw || 'NOS'
           const conversionRequiredRaw = col(row, 'conversion required', 'conversionrequired')
           const conversionRequired = /^(y|yes|true|1)$/i.test((conversionRequiredRaw || 'no').trim())
-          // "Conversion Factor" on this sheet IS density (kg per liter) — the
-          // same field the RM Master UI already exposes, used to convert a
-          // liquid item between KG and L at issuance. Not a separate concept.
-          const density = safeNum(col(row, 'conversion factor', 'conversionfactor'))
+          // "Conversion Factor" — the generic Inventory-UOM-per-one-Operation-UOM
+          // factor the RM Master UI exposes (KG per L for a liquid issued in L,
+          // KG per pouch for a packing item issued in NOS, …). Not density-specific.
+          const conversionFactor = safeNum(col(row, 'conversion factor', 'conversionfactor'))
           if (!itemCode || !itemName) {
             results.errors.push(`⛔ Skipped row — missing ${!itemName ? 'Item Name' : ''}${!itemName && !itemCode ? ' and ' : ''}${!itemCode ? 'Item Code' : ''} (name: "${itemName || ''}", code: "${itemCode || ''}")`)
             continue
           }
           await prisma.rmMaster.upsert({
             where: { itemCode },
-            create: { itemCode, itemName, inventoryUom, operationalUom, category, subCategory, conversionRequired, density },
-            update: { itemName, inventoryUom, operationalUom, category, subCategory, conversionRequired, density }
+            create: { itemCode, itemName, inventoryUom, operationalUom, category, subCategory, conversionRequired, conversionFactor },
+            update: { itemName, inventoryUom, operationalUom, category, subCategory, conversionRequired, conversionFactor }
           })
           results.rmMaster++
         } catch (e) { results.errors.push(`RM row: ${e.message}`) }

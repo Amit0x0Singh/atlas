@@ -1,21 +1,28 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Loader2, RotateCcw } from 'lucide-react'
 import { Button } from '../../../../../../components/ui'
 import ScannerPanel from '../../../../../../components/ScannerPanel/ScannerPanel.jsx'
 import { outwardApi, containerApi } from '../../../../../../api/inventory.js'
 import { toTitleCase } from '../../../../../../utils/textDisplay.js'
-import { convertByDensity } from '../../../../../../utils/uom.js'
+import { convertQty } from '../../../../../../utils/uom.js'
 import { humanQty, roundQty, pickDisplayUnit } from '../../../../../../utils/qty.js'
 
 // Inline issue panel for one Material Indent line — mirrors Material Issue by
 // BOM's IssuePanel: scan a pack / container QR, key a qty in a friendly unit,
-// submit. `line` carries the item's RM-Master UOM/density (attached by the
+// submit. `line` carries the item's RM-Master UOM/Conversion Factor (attached by the
 // backend), so pack/container stock (Inventory UOM) is reconciled with what
 // the operator types (Operational UOM) exactly the way the store issues.
 export default function IndentIssuePanel({ line, onIssue }) {
   const entryUom = (line.operationalUom || line.inventoryUom || line.uom || '').toUpperCase()
   const invUom   = (line.inventoryUom || line.uom || '').toUpperCase()
-  const density  = line.density
+  // The item shape convertQty() needs — RM-Master UOMs + Conversion Factor,
+  // attached to the line by the backend (shared.js attachRmUom).
+  const conv = useMemo(() => ({
+    inventoryUom:      line.inventoryUom || line.uom,
+    operationalUom:    line.operationalUom || line.inventoryUom || line.uom,
+    conversionRequired: line.conversionRequired,
+    conversionFactor:  line.conversionFactor,
+  }), [line.inventoryUom, line.operationalUom, line.conversionRequired, line.conversionFactor, line.uom])
   // requestedQty / issuedQty are both in the line's UOM (== entryUom).
   const remaining = Math.max(0, roundQty(line.requestedQty - line.issuedQty))
 
@@ -48,14 +55,14 @@ export default function IndentIssuePanel({ line, onIssue }) {
   // Inventory-UOM qty → Operational (entry) UOM. Best-effort; the server
   // re-derives and validates the real conversion before deducting stock.
   const invToEntry = useCallback((n) => {
-    try { return convertByDensity(n, invUom, entryUom, density).qty } catch { return n }
-  }, [invUom, entryUom, density])
+    try { return convertQty(n, invUom, entryUom, conv).qty } catch { return n }
+  }, [invUom, entryUom, conv])
 
   const buildFound = (base, availInv) => {
     const maxEntry   = Math.min(remaining, invToEntry(availInv))
     const displayUom = pickDisplayUnit(maxEntry, entryUom)
     let maxDisplay = maxEntry
-    try { maxDisplay = convertByDensity(maxEntry, entryUom, displayUom, density).qty } catch { /* keep */ }
+    try { maxDisplay = convertQty(maxEntry, entryUom, displayUom, conv).qty } catch { /* keep */ }
     setFound({ ...base, availInv, displayUom, maxDisplay: roundQty(maxDisplay) })
     setQty(String(roundQty(maxDisplay)))
   }
@@ -84,12 +91,12 @@ export default function IndentIssuePanel({ line, onIssue }) {
     // Convert what the operator typed (friendly unit) → Operational UOM,
     // which is what the server's resolveIssueQty expects.
     let entryQty = displayQty
-    try { entryQty = roundQty(convertByDensity(displayQty, found.displayUom, entryUom, density).qty) } catch { entryQty = displayQty }
+    try { entryQty = roundQty(convertQty(displayQty, found.displayUom, entryUom, conv).qty) } catch { entryQty = displayQty }
 
     // Best-effort ceiling check — entryQty vs the source's stock, both in
     // Inventory UOM. The server re-validates before deducting.
     let entryInInv = entryQty
-    try { entryInInv = convertByDensity(entryQty, entryUom, invUom, density).qty } catch { /* same unit */ }
+    try { entryInInv = convertQty(entryQty, entryUom, invUom, conv).qty } catch { /* same unit */ }
     if (entryInInv > found.availInv + 1e-9) {
       setErr(`Qty exceeds available stock (${humanQty(found.availInv, invUom)}).`); return
     }

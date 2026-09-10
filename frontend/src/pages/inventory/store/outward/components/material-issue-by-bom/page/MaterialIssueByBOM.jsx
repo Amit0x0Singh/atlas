@@ -3,7 +3,7 @@ import { outwardApi, containerApi, rmApi } from '../../../../../../../api/invent
 import { recipeApi, productApi } from '../../../../../../../api/masters.js'
 import { planTasksApi } from '../../../../../../../api/production.js'
 import { useIsMobile } from '../../../../../../../hooks/useIsMobile.js'
-import { convertByDensity } from '../../../../../../../utils/uom.js'
+import { convertQty } from '../../../../../../../utils/uom.js'
 import { isCovered, roundQty, humanQty, pickDisplayUnit } from '../../../../../../../utils/qty.js'
 import SelectStep from '../components/SelectStep.jsx'
 import BomChecklistStep from '../components/BomChecklistStep.jsx'
@@ -107,8 +107,8 @@ function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }, ref) {
     productApi.search().then(r => setProducts(r.data || [])).catch(() => {})
   }, [])
 
-  // RM master lookup — used only to know each line's Operational UOM/density
-  // for display and default-qty conversion; the server always re-derives and
+  // RM master lookup — used only to know each line's Operational UOM/Conversion
+  // Factor for display and default-qty conversion; the server always re-derives and
   // validates the actual conversion before deducting stock.
   const [rmByCode, setRmByCode] = useState(new Map())
   useEffect(() => {
@@ -126,19 +126,19 @@ function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }, ref) {
 
   // Best-effort conversions for display/default-qty purposes only — fall
   // back to the raw qty unchanged when conversion isn't possible (same
-  // unit, RM not found, or missing density). The server always re-derives
+  // unit, RM not found, or missing Conversion Factor). The server always re-derives
   // and validates the real conversion before deducting stock.
   const toEntryQty = useCallback((line, inventoryQty) => {
     const rm = rmByCode.get(line.rmCode)
     if (!rm) return inventoryQty
-    try { return convertByDensity(inventoryQty, rm.inventoryUom, entryUomFor(line), rm.density).qty }
+    try { return convertQty(inventoryQty, rm.inventoryUom, entryUomFor(line), rm).qty }
     catch { return inventoryQty }
   }, [rmByCode, entryUomFor])
 
   const toInventoryQty = useCallback((line, entryQty) => {
     const rm = rmByCode.get(line.rmCode)
     if (!rm) return entryQty
-    try { return convertByDensity(entryQty, entryUomFor(line), rm.inventoryUom, rm.density).qty }
+    try { return convertQty(entryQty, entryUomFor(line), rm.inventoryUom, rm).qty }
     catch { return entryQty }
   }, [rmByCode, entryUomFor])
 
@@ -152,7 +152,7 @@ function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }, ref) {
   const lineUomToEntryQty = useCallback((line, lineQty) => {
     const rm = rmByCode.get(line.rmCode)
     if (!rm) return lineQty
-    try { return convertByDensity(lineQty, line.uom, entryUomFor(line), rm.density).qty }
+    try { return convertQty(lineQty, line.uom, entryUomFor(line), rm).qty }
     catch { return lineQty }
   }, [rmByCode, entryUomFor])
 
@@ -168,7 +168,7 @@ function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }, ref) {
   // conversion for the deduction happens server-side).
   const toDisplayQty = useCallback((line, displayUom, entryQty) => {
     const rm = rmByCode.get(line.rmCode)
-    try { return convertByDensity(entryQty, entryUomFor(line), displayUom, rm?.density).qty }
+    try { return convertQty(entryQty, entryUomFor(line), displayUom, rm).qty }
     catch { return entryQty }
   }, [rmByCode, entryUomFor])
 
@@ -510,7 +510,7 @@ function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }, ref) {
     // expects. Falls through unchanged when displayUom === entryUom.
     const rm = rmByCode.get(line.rmCode)
     let qty = displayQty
-    try { qty = roundQty(convertByDensity(displayQty, foundSource.displayUom || foundSource.entryUom, foundSource.entryUom, rm?.density).qty) }
+    try { qty = roundQty(convertQty(displayQty, foundSource.displayUom || foundSource.entryUom, foundSource.entryUom, rm).qty) }
     catch { qty = displayQty }
 
     // Best-effort client-side check only (qty is Operational UOM,
@@ -544,12 +544,12 @@ function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }, ref) {
       // silently mixed units. Converting the deducted qty into line.uom
       // here keeps Required/Issued/Remaining in one consistent unit
       // throughout — a no-op when conversionRequired is false (line.uom
-      // already matches inventoryUom then, so convertByDensity passes the
+      // already matches inventoryUom then, so convertQty passes the
       // number straight through).
       const deducted = res.issued
       let deductedInLineUom = deducted
       if (rm) {
-        try { deductedInLineUom = convertByDensity(deducted, rm.inventoryUom, line.uom, rm.density).qty }
+        try { deductedInLineUom = convertQty(deducted, rm.inventoryUom, line.uom, rm).qty }
         catch { deductedInLineUom = deducted }
       }
       const newIssued  = roundQty(line.issued + deductedInLineUom)

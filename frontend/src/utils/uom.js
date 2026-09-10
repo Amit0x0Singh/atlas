@@ -133,25 +133,67 @@ export function formatQty(canonicalQty, canonicalUom, decimals = 3) {
 }
 
 /**
- * Converts a quantity between two units — mirrors backend/src/utils/uom.js's
- * convertByDensity. Handles BOTH:
- *   • sub-unit scale within one family (g <-> kg, mg <-> g, ml <-> L) using
- *     the alias factors — density is NOT needed for these; and
- *   • cross-family mass <-> volume, pivoting through the canonical KG<->L via
- *     `density` (kg per litre).
- * Used for client-side display / default-qty only; the server always
- * re-derives and validates the real conversion before deducting stock.
- * Genuinely identical units pass through untouched. NOS / special units
- * can't be scaled — only a same-unit passthrough is allowed for those.
+ * ─── Conversion Factor — GENERIC Inventory-UOM ⇄ Operation-UOM conversion ───
+ * Mirrors backend/src/utils/uom.js — keep in sync.
+ *
+ * `conversionFactor` is NOT specifically density. It is how much Inventory UOM
+ * makes up ONE Operation UOM:
+ *   • liquid stored in KG, issued in L   → KG per L   (numerically its density)
+ *   • pouch  stored in KG, issued in NOS → KG per pouch (unit weight, e.g. 0.003571)
+ *
+ *   Operation → Inventory :  inventoryQty = operationQty × conversionFactor
+ *   Inventory → Operation :  operationQty = inventoryQty ÷ conversionFactor
+ *
+ * `item` carries { inventoryUom, operationalUom, conversionRequired, conversionFactor }.
+ * These client-side helpers are for display / default-qty only; the server always
+ * re-derives and validates the real conversion before moving stock.
  */
-export function convertByDensity(qty, fromUom, toUom, density) {
+
+// Is a real Inventory⇄Operation conversion in force for this item?
+export function conversionActive(item) {
+  if (!item || !item.conversionRequired) return false
+  const inv = normalizeUom(item.inventoryUom)
+  const op  = normalizeUom(item.operationalUom || item.inventoryUom)
+  return !!inv && !!op && inv !== op
+}
+
+export function conversionFactorOf(item) {
+  const f = Number(item?.conversionFactor)
+  if (!Number.isFinite(f) || f <= 0)
+    throw new Error(
+      `Conversion Factor is missing or invalid for ${item?.itemCode || item?.itemName || 'this item'} — ` +
+      `set a positive Conversion Factor in Item Master`,
+    )
+  return f
+}
+
+export function convertOperationToInventory(operationQty, item) {
+  const n = Number(operationQty)
+  if (!conversionActive(item)) return n
+  return n * conversionFactorOf(item)
+}
+
+export function convertInventoryToOperation(inventoryQty, item) {
+  const n = Number(inventoryQty)
+  if (!conversionActive(item)) return n
+  return n / conversionFactorOf(item)
+}
+
+/**
+ * General quantity conversion between any two units for a given item. Handles
+ * same-unit passthrough, sub-unit scale within one family (g↔kg, ml↔L) via the
+ * alias factors, and Inventory UOM ⇄ Operation UOM (any families, incl. NOS)
+ * via the item's Conversion Factor. Throws when a cross-unit pair is not the
+ * item's configured Inventory/Operation pair. Replaces the former
+ * density-only `convertByDensity`.
+ */
+export function convertQty(qty, fromUom, toUom, item) {
   // Tolerate dirty unit strings seen in older recipe data ("gms.", "KG ").
   const clean   = (u) => String(u || '').trim().toLowerCase().replace(/\.+$/, '').trim()
   const fromKey = clean(fromUom)
   const toKey   = clean(toUom)
   const n = Number(qty)
 
-  // Special units (potency / ratio) — never rescaled.
   if (SPECIAL_UNITS.has(fromKey) || SPECIAL_UNITS.has(toKey)) {
     if (fromKey === toKey) return { qty: n, converted: false }
     throw new Error(`Cannot convert "${fromUom}" to "${toUom}"`)
@@ -161,22 +203,30 @@ export function convertByDensity(qty, fromUom, toUom, density) {
   const b = ALIASES[toKey]
   if (!a || !b) throw new Error(`Unknown unit — cannot convert "${fromUom}" to "${toUom}"`)
 
-  // Same unit (or two spellings / equal-factor aliases of it) — nothing to do.
   if (fromKey === toKey || (a.family === b.family && a.factor === b.factor))
     return { qty: n, converted: false }
 
-  if (a.family === 'COUNT' || b.family === 'COUNT')
-    throw new Error(`Cannot convert between ${fromUom} and ${toUom} — NOS is a plain count`)
-
-  // Within one family: pure scale factor (e.g. 150 g -> kg = 150 * 0.001 / 1).
+  // Pure sub-unit rescale within one family — never needs a Conversion Factor.
   if (a.family === b.family)
     return { qty: n * a.factor / b.factor, converted: true }
 
-  // Cross-family mass <-> volume: pivot through canonical KG <-> L via density.
-  if (!density || density <= 0)
-    throw new Error('Density is required to convert between mass and volume for this item')
-  const canonicalFrom = n * a.factor                                   // KG if MASS, L if VOLUME
-  const kg = a.family === 'MASS' ? canonicalFrom : canonicalFrom * density
-  const canonicalTo = b.family === 'MASS' ? kg : kg / density          // KG or L
-  return { qty: canonicalTo / b.factor, converted: true }
+  // Cross-unit (incl. anything involving NOS): only valid along the item's own
+  // Inventory ⇄ Operation axis, bridged by its Conversion Factor.
+  if (!conversionActive(item))
+    throw new Error(
+      `Cannot convert between "${fromUom}" and "${toUom}" — this item has no Inventory/Operation UOM conversion configured`,
+    )
+  const inv    = normalizeUom(item.inventoryUom)
+  const op     = normalizeUom(item.operationalUom || item.inventoryUom)
+  const factor = conversionFactorOf(item)
+  const fromCanon = CANONICAL[a.family]
+  const toCanon   = CANONICAL[b.family]
+  const nInFromCanon = n * a.factor
+
+  let resultInToCanon
+  if (fromCanon === op && toCanon === inv)      resultInToCanon = nInFromCanon * factor
+  else if (fromCanon === inv && toCanon === op) resultInToCanon = nInFromCanon / factor
+  else throw new Error(`Cannot convert between "${fromUom}" and "${toUom}" for this item`)
+
+  return { qty: resultInToCanon / b.factor, converted: true }
 }

@@ -153,7 +153,7 @@ export default function RmTable({
                     )}
                     {columnVisibility.convFactor && (
                       <td style={{ width: columnWidths.convFactor }} className="px-4 py-3 text-right tabular-nums overflow-hidden">
-                        <span className="text-gray-600">{it.density != null ? fmt(it.density, 4) : '—'}</span>
+                        <span className="text-gray-600">{it.conversionFactor != null ? fmt(it.conversionFactor, 6) : '—'}</span>
                       </td>
                     )}
                     {columnVisibility.inPack && (

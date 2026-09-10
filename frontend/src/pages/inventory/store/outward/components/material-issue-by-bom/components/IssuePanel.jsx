@@ -1,7 +1,7 @@
 import ScannerPanel from '../../../../../../../components/ScannerPanel/ScannerPanel.jsx'
 import StockShortageBanner from './StockShortageBanner.jsx'
 import { Can } from '../../../../../../../components/common/Can.jsx'
-import { convertByDensity } from '../../../../../../../utils/uom.js'
+import { convertQty } from '../../../../../../../utils/uom.js'
 import { fmtQty, humanQty } from '../../../../../../../utils/qty.js'
 
 import { toTitleCase } from '../../../../../../../utils/textDisplay.js'
@@ -27,7 +27,7 @@ export default function IssuePanel({
   // below don't compare mismatched units for a conversion-required item.
   let totalAvailableInLineUom = totalAvailable
   if (rm) {
-    try { totalAvailableInLineUom = convertByDensity(totalAvailable, rm.inventoryUom, line.uom, rm.density).qty }
+    try { totalAvailableInLineUom = convertQty(totalAvailable, rm.inventoryUom, line.uom, rm).qty }
     catch { totalAvailableInLineUom = totalAvailable }
   }
   const noStock          = !loadingRes && packs.length === 0 && containers.length === 0
@@ -120,8 +120,10 @@ export default function IssuePanel({
                   </div>
                   {rm?.conversionRequired && (
                     <div>
-                      <span className="text-gray-400">Density: </span>
-                      <span className="font-semibold text-gray-700">{rm.density} kg/L</span>
+                      <span className="text-gray-400">Conversion Factor: </span>
+                      <span className="font-semibold text-gray-700">
+                        {rm.conversionFactor} {(rm.inventoryUom || '').toUpperCase()}/{(rm.operationalUom || rm.inventoryUom || '').toUpperCase()}
+                      </span>
                     </div>
                   )}
                   {foundSource.itemName && (

@@ -3,7 +3,7 @@ import { outwardApi, packsApi, rmApi, containerApi } from '../../../../../../api
 import { Button, IconButton } from '../../../../../../components/ui'
 import { Can } from '../../../../../../components/common/Can.jsx'
 import ScannerPanel from '../../../../../../components/ScannerPanel/ScannerPanel.jsx'
-import { convertByDensity } from '../../../../../../utils/uom.js'
+import { convertQty } from '../../../../../../utils/uom.js'
 import { X } from 'lucide-react'
 import './StockLossAdjustment.css'
 
@@ -24,7 +24,7 @@ export default function StockLossAdjustment() {
   // doesn't need to branch on type except where the label actually differs.
   const [target,     setTarget]     = useState(null)
   // RM Master row for the scanned item — carries inventoryUom /
-  // operationalUom / density, so a loss measured on the shop floor in the
+  // operationalUom / conversionFactor, so a loss measured on the shop floor in the
   // operational unit (e.g. 2 L spilled) can be entered as-measured even
   // though stock is tracked in KG. null when the item isn't in RM Master.
   const [rm,         setRm]         = useState(null)
@@ -38,7 +38,7 @@ export default function StockLossAdjustment() {
 
   const clearEntry = () => { setTarget(null); setRm(null); setLossQty(''); setReason(''); setCustomReason('') }
 
-  // The scanned item's RM Master row (operationalUom / density /
+  // The scanned item's RM Master row (operationalUom / conversionFactor /
   // conversionRequired) — needed so the operator can enter the loss in the
   // unit they actually measured it in. Uses the auth-only /rm/search lookup
   // rather than GET /rm/:code (which is gated by `masters.rm.view`), so a
@@ -133,16 +133,16 @@ export default function StockLossAdjustment() {
   const entryUom     = rm?.operationalUom || inventoryUom
   const converts     = Boolean(entryUom && inventoryUom && entryUom !== inventoryUom)
   // Same rule the server enforces in resolveIssueQty — two different units
-  // with no Conversion Required flag (or no density) can't be converted, so
-  // say so here instead of letting the operator type a qty that will be
-  // rejected on submit.
-  const misconfigured = converts && (!rm?.conversionRequired || !rm?.density)
+  // with no Conversion Required flag (or no Conversion Factor) can't be
+  // converted, so say so here instead of letting the operator type a qty that
+  // will be rejected on submit.
+  const misconfigured = converts && (!rm?.conversionRequired || !(Number(rm?.conversionFactor) > 0))
 
   // Falls back to the qty unchanged when conversion isn't possible (same
-  // unit, no RM row, or missing density) — the server re-derives and
-  // validates the real conversion before deducting stock.
+  // unit, no RM row, or missing Conversion Factor) — the server re-derives
+  // and validates the real conversion before deducting stock.
   const convert = (qty, from, to) => {
-    try { return convertByDensity(qty, from, to, rm?.density).qty }
+    try { return convertQty(qty, from, to, rm).qty }
     catch { return qty }
   }
   const toInventory = (entryQty) => convert(entryQty, entryUom, inventoryUom)
@@ -172,7 +172,7 @@ export default function StockLossAdjustment() {
     setSub(true); setError(''); setSuccess('')
     try {
       // lossQty is sent in the item's Operational UOM — the server converts
-      // it through density and returns what it actually deducted.
+      // it through the Conversion Factor and returns what it actually deducted.
       const r = isContainer
         ? await outwardApi.containerLossAdjustment({ containerId: target.id, lossQty: loss, reason: finalReason })
         : await outwardApi.lossAdjustment({ packId: target.id, lossQty: loss, reason: finalReason })
@@ -267,19 +267,19 @@ export default function StockLossAdjustment() {
           </div>
 
           {/* Conversion notice — the operator types in the operational unit
-              but stock moves in the inventory unit; state the density that
-              bridges them rather than converting silently. */}
+              but stock moves in the inventory unit; state the Conversion Factor
+              that bridges them rather than converting silently. */}
           {converts && !misconfigured && (
             <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-800">
               This item is stocked in <strong>{inventoryUom}</strong> but issued in <strong>{entryUom}</strong>.
-              Enter the loss in <strong>{entryUom}</strong> — converted at <strong>{rm.density} kg/L</strong>.
+              Enter the loss in <strong>{entryUom}</strong> — converted at <strong>{rm.conversionFactor} {inventoryUom}/{entryUom}</strong>.
             </div>
           )}
           {misconfigured && (
             <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-xs text-red-700">
               <strong>{rm?.itemName || target.itemName}</strong> is stocked in <strong>{inventoryUom}</strong> but
               issued in <strong>{entryUom}</strong>, and can't be converted:{' '}
-              {!rm?.conversionRequired ? 'it is not flagged "Conversion Required"' : 'no density is set'} in
+              {!rm?.conversionRequired ? 'it is not flagged "Conversion Required"' : 'no Conversion Factor is set'} in
               RM Master. Fix the item there before recording a loss against it.
             </div>
           )}

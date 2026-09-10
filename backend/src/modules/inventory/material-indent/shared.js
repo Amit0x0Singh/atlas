@@ -61,15 +61,16 @@ export function decorateIndent(indent) {
   }
 }
 
-// Attaches each line's RM Master UOM/density so the Open Indents issue panel
-// can convert between Inventory UOM (packs/containers) and Operational UOM
-// (what the operator types) — same reconciliation Material Issue by BOM does.
+// Attaches each line's RM Master UOM + Conversion Factor so the Open Indents
+// issue panel can convert between Inventory UOM (packs/containers) and
+// Operational UOM (what the operator types) — same reconciliation Material
+// Issue by BOM does.
 export async function attachRmUom(indent) {
   if (!indent?.items?.length) return indent
   const codes = [...new Set(indent.items.map(i => i.itemCode))]
   const rms = await prisma.rmMaster.findMany({
     where: { itemCode: { in: codes } },
-    select: { itemCode: true, inventoryUom: true, operationalUom: true, density: true, conversionRequired: true },
+    select: { itemCode: true, inventoryUom: true, operationalUom: true, conversionFactor: true, conversionRequired: true },
   })
   const byCode = new Map(rms.map(r => [r.itemCode, r]))
   return {
@@ -77,7 +78,7 @@ export async function attachRmUom(indent) {
     items: indent.items.map(it => {
       const rm = byCode.get(it.itemCode)
       return rm
-        ? { ...it, inventoryUom: rm.inventoryUom, operationalUom: rm.operationalUom, density: rm.density, conversionRequired: rm.conversionRequired }
+        ? { ...it, inventoryUom: rm.inventoryUom, operationalUom: rm.operationalUom, conversionFactor: rm.conversionFactor, conversionRequired: rm.conversionRequired }
         : it
     }),
   }

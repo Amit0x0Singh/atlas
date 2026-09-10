@@ -7,7 +7,11 @@ model RmMaster {
   category           String?  @map("category")
   subCategory        String?  @map("sub_category")
   state              String?  @map("physical_state")
-  density            Float?   @map("density")
+  // Generic Inventory-UOM-per-one-Operation-UOM factor (NOT specifically
+  // density): KG per L for a liquid issued in L, KG per pouch for a packing
+  // item issued in NOS, etc. DB column kept as "density" so no data migration
+  // is needed — existing liquid values (kg/L) are already exactly this factor.
+  conversionFactor   Float?   @map("density")
   conversionRequired Boolean  @default(false) @map("conversion_required")
   lowStockLevel      Float?   @map("low_stock_level")
   highStockLevel     Float?   @map("high_stock_level")

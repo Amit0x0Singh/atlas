@@ -39,7 +39,9 @@ export default function RmDetailModal({ item, onClose }) {
   if (!item) return null
   const trackingColor = TRACKING_BADGE[item.trackingType || 'PACK']
   const stateColor = STATE_BADGE[(item.state || '').toLowerCase()] || 'bg-gray-100 text-gray-600 ring-gray-200'
-  const density = item.density != null && item.density !== '' ? `${item.density} kg/L` : null
+  const conversionFactor = item.conversionFactor != null && item.conversionFactor !== ''
+    ? `${item.conversionFactor} ${(item.inventoryUom || '').toUpperCase()}/${(item.operationalUom || item.inventoryUom || '').toUpperCase()}`
+    : null
   const lowStock = item.lowStockLevel != null && item.lowStockLevel !== '' ? `${item.lowStockLevel} ${(item.inventoryUom || '').toUpperCase()}` : null
   const highStock = item.highStockLevel != null && item.highStockLevel !== '' ? `${item.highStockLevel} ${(item.inventoryUom || '').toUpperCase()}` : null
 
@@ -79,7 +81,7 @@ export default function RmDetailModal({ item, onClose }) {
           <StatCard icon={Beaker}        label="Inventory UOM"      value={item.inventoryUom?.toUpperCase()} />
           <StatCard icon={ArrowLeftRight} label="Operational UOM"   value={item.operationalUom?.toUpperCase()} empty={!item.operationalUom} />
           <StatCard icon={ArrowLeftRight} label="Conversion Required" value={item.conversionRequired ? 'Yes' : 'No'} />
-          <StatCard icon={Droplets}      label="Density"            value={density} empty={density == null} />
+          <StatCard icon={Droplets}      label="Conversion Factor"  value={conversionFactor} empty={conversionFactor == null} />
           <StatCard icon={Layers}        label="Category"           value={toTitleCase(item.category)}    empty={!item.category} />
           <StatCard icon={Layers}        label="Sub Category"       value={toTitleCase(item.subCategory)} empty={!item.subCategory} />
           <StatCard icon={TrendingDown}  label="Low Stock Level"    value={lowStock}  empty={lowStock == null} />

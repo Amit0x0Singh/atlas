@@ -87,7 +87,7 @@ export default function DataFormModal({ mode, resource, record, onClose, onSubmi
   }, [editableFields, record]);
 
   // A field can declare `visibleIf(form)` to only show up once some other
-  // field's value makes it relevant — e.g. RmMaster's `density` only
+  // field's value makes it relevant — e.g. RmMaster's `conversionFactor` only
   // matters once `conversionRequired` is true (see resources.js). Hidden
   // fields are still cleared to null on submit rather than left out of the
   // payload, so switching a record back to "not applicable" actually wipes

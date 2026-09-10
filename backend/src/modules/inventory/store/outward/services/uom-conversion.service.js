@@ -1,5 +1,9 @@
 import prisma from '../../../../../db.js'
-import { convertByDensity } from '../../../../../utils/uom.js'
+import {
+  conversionActive,
+  convertOperationToInventory,
+  convertInventoryToOperation,
+} from '../../../../../utils/uom.js'
 
 // Resolves how much to actually deduct from inventory when a store person
 // issues `enteredQty` of `rmCode` to production. The operator always enters
@@ -7,7 +11,8 @@ import { convertByDensity } from '../../../../../utils/uom.js'
 // unset — same unit, no conversion) — this is the server-side authority for
 // that conversion, never trusting a client-computed figure. Throws a plain
 // Error (caller wraps as VALIDATION_ERROR) when conversion is needed but the
-// item isn't configured for it.
+// item isn't configured for it (differing UOMs with no Conversion Required
+// flag, or a missing/invalid Conversion Factor).
 export async function resolveIssueQty(rmCode, enteredQty) {
   const rm = await prisma.rmMaster.findUnique({ where: { itemCode: rmCode } })
   if (!rm) throw new Error(`RM item ${rmCode} not found`)
@@ -16,7 +21,8 @@ export async function resolveIssueQty(rmCode, enteredQty) {
   if (operationalUom !== rm.inventoryUom && !rm.conversionRequired)
     throw new Error(`Item ${rmCode} has different Inventory/Operational UOM but is not flagged Conversion Required`)
 
-  const { qty: inventoryQty } = convertByDensity(enteredQty, operationalUom, rm.inventoryUom, rm.density)
+  // operation → inventory : × conversionFactor (validated > 0 by the helper).
+  const inventoryQty = convertOperationToInventory(enteredQty, rm)
   return { rm, inventoryQty, operationalQty: Number(enteredQty), operationalUom }
 }
 
@@ -26,6 +32,10 @@ export async function resolveIssueQty(rmCode, enteredQty) {
 // display fields.
 export function toOperationalDisplay(rm, inventoryQty) {
   const operationalUom = rm.operationalUom || rm.inventoryUom
-  const { qty: operationalQty } = convertByDensity(inventoryQty, rm.inventoryUom, operationalUom, rm.density)
+  // inventory → operation : ÷ conversionFactor.
+  const operationalQty = convertInventoryToOperation(inventoryQty, rm)
   return { operationalQty, operationalUom }
 }
+
+// Re-export so callers that only need the predicate don't reach into utils.
+export { conversionActive }

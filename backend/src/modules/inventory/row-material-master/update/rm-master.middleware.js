@@ -14,7 +14,7 @@ export const validateUpdateRm = preprocess({
     category:     { maxLength: 100 },
     subCategory:  { maxLength: 100 },
     state:        { enum: ['SOLID', 'LIQUID', 'GAS'] },
-    density:      { positive: true },
+    conversionFactor: { positive: true },
     lowStockLevel:  { positive: true },
     highStockLevel: { positive: true },
   },

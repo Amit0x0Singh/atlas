@@ -6,7 +6,7 @@ import { toSafeErrorMessage } from '../../../../utils/safe-error.js';
 
 export const createRm = async (req, res) => {
   try {
-    const { itemName, inventoryUom, operationalUom, trackingType, category, subCategory, state, density, conversionRequired, lowStockLevel, highStockLevel } = req.body
+    const { itemName, inventoryUom, operationalUom, trackingType, category, subCategory, state, conversionFactor, conversionRequired, lowStockLevel, highStockLevel } = req.body
     const rawItemCode = req.body.itemCode
     const itemCode = rawItemCode ? padItemCode(rawItemCode) : rawItemCode
     if (!itemCode || !itemName || !inventoryUom)
@@ -24,13 +24,14 @@ export const createRm = async (req, res) => {
         return res.status(400).json({ success: false, error: `operationalUom must convert to one of ${CANONICAL_UNITS.join(', ')} — got "${operationalUom}"`, code: 'VALIDATION_ERROR' })
     }
     const isConversionRequired = conversionRequired === true
-    // Density is only meaningful (and only required) when the two UOMs
-    // actually differ — same-unit items never need a conversion factor.
+    // The Conversion Factor (Inventory UOM per one Operation UOM) is only
+    // meaningful — and only required — when the two UOMs actually differ;
+    // same-unit items never need one.
     if (canonicalOperationalUom && canonicalOperationalUom !== canonicalInventoryUom) {
       if (!isConversionRequired)
         return res.status(400).json({ success: false, error: 'Conversion Required must be set to Yes when Inventory UOM and Operational UOM differ', code: 'VALIDATION_ERROR' })
-      if (!density || parseFloat(density) <= 0)
-        return res.status(400).json({ success: false, error: 'Density is required when Inventory UOM and Operational UOM differ', code: 'VALIDATION_ERROR' })
+      if (!conversionFactor || parseFloat(conversionFactor) <= 0)
+        return res.status(400).json({ success: false, error: 'Conversion Factor is required when Inventory UOM and Operational UOM differ', code: 'VALIDATION_ERROR' })
     }
     // Check both the padded and as-typed form — a pre-existing legacy row
     // saved before this padding rule (e.g. unpadded "177822") must still be
@@ -47,7 +48,7 @@ export const createRm = async (req, res) => {
         category: category || null,
         subCategory: subCategory || null,
         state: state || null,
-        density: density ? parseFloat(density) : null,
+        conversionFactor: conversionFactor ? parseFloat(conversionFactor) : null,
         conversionRequired: isConversionRequired,
         lowStockLevel: lowStockLevel ? parseFloat(lowStockLevel) : null,
         highStockLevel: highStockLevel ? parseFloat(highStockLevel) : null,

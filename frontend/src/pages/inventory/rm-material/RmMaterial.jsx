@@ -78,14 +78,14 @@ export default function RmMaterial() {
     if (!filtered.length) { alert('No items to export — adjust your filters.'); return }
     const headers = [
       'Item Code', 'Item Name', 'UOM', 'In Pack', 'In Container', 'Total Qty', 'Status',
-      'Category', 'Sub Category', 'State', 'Inventory UOM', 'Operation UOM', 'Conversion Factor (Density)',
+      'Category', 'Sub Category', 'State', 'Inventory UOM', 'Operation UOM', 'Conversion Factor',
     ]
     const rows = filtered.map(it => [
       it.itemCode, it.itemName, it.uom || '',
       it.stockInPacks ?? 0, it.stockInContainer ?? 0, it.totalStock ?? 0,
       (it.totalStock || 0) > 0 ? 'In Stock' : 'Out of Stock',
       it.category || '', it.subCategory || '', it.state || '',
-      it.inventoryUom || '', it.operationalUom || '', it.density ?? '',
+      it.inventoryUom || '', it.operationalUom || '', it.conversionFactor ?? '',
     ].map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','))
     const csv = [headers.join(','), ...rows].join('\n')
     const a = document.createElement('a')

@@ -5,7 +5,7 @@ import { toSafeErrorMessage } from '../../../../utils/safe-error.js';
 
 export const updateRm = async (req, res) => {
   try {
-    const { itemName, inventoryUom, operationalUom, trackingType, category, subCategory, state, density, conversionRequired, lowStockLevel, highStockLevel } = req.body
+    const { itemName, inventoryUom, operationalUom, trackingType, category, subCategory, state, conversionFactor, conversionRequired, lowStockLevel, highStockLevel } = req.body
     let canonicalInventoryUom = inventoryUom
     if (inventoryUom) {
       canonicalInventoryUom = normalizeUom(inventoryUom)
@@ -27,23 +27,23 @@ export const updateRm = async (req, res) => {
     if (category !== undefined) data.category = category || null
     if (subCategory !== undefined) data.subCategory = subCategory || null
     if (state !== undefined) data.state = state || null
-    if (density !== undefined) data.density = density ? parseFloat(density) : null
+    if (conversionFactor !== undefined) data.conversionFactor = conversionFactor ? parseFloat(conversionFactor) : null
     if (conversionRequired !== undefined) data.conversionRequired = conversionRequired === true
 
-    // Density is only required when the two UOMs actually differ — validate
-    // against the resulting row (existing values where this request didn't
-    // touch a field), not just the fields present on this request.
+    // The Conversion Factor is only required when the two UOMs actually differ
+    // — validate against the resulting row (existing values where this request
+    // didn't touch a field), not just the fields present on this request.
     const existing = await prisma.rmMaster.findUnique({ where: { itemCode: req.params.itemCode } })
     if (!existing) return res.status(404).json({ success: false, error: 'RM item not found', code: 'NOT_FOUND' })
     const finalInventoryUom = data.inventoryUom ?? existing.inventoryUom
     const finalOperationalUom = canonicalOperationalUom !== undefined ? canonicalOperationalUom : existing.operationalUom
     const finalConversionRequired = data.conversionRequired ?? existing.conversionRequired
-    const finalDensity = data.density !== undefined ? data.density : existing.density
+    const finalConversionFactor = data.conversionFactor !== undefined ? data.conversionFactor : existing.conversionFactor
     if (finalOperationalUom && finalOperationalUom !== finalInventoryUom) {
       if (!finalConversionRequired)
         return res.status(400).json({ success: false, error: 'Conversion Required must be set to Yes when Inventory UOM and Operational UOM differ', code: 'VALIDATION_ERROR' })
-      if (!finalDensity || finalDensity <= 0)
-        return res.status(400).json({ success: false, error: 'Density is required when Inventory UOM and Operational UOM differ', code: 'VALIDATION_ERROR' })
+      if (!finalConversionFactor || finalConversionFactor <= 0)
+        return res.status(400).json({ success: false, error: 'Conversion Factor is required when Inventory UOM and Operational UOM differ', code: 'VALIDATION_ERROR' })
     }
 
     if (lowStockLevel !== undefined) data.lowStockLevel = lowStockLevel ? parseFloat(lowStockLevel) : null

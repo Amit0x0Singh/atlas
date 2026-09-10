@@ -19,7 +19,7 @@ export default function RmMaster() {
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing]   = useState(null)
   const [viewing, setViewing]   = useState(null)
-  const [form, setForm]         = useState({ itemCode: '', itemName: '', inventoryUom: 'KG', operationalUom: '', trackingType: 'PACK', category: '', subCategory: '', state: '', density: '', conversionRequired: false, lowStockLevel: '', highStockLevel: '' })
+  const [form, setForm]         = useState({ itemCode: '', itemName: '', inventoryUom: 'KG', operationalUom: '', trackingType: 'PACK', category: '', subCategory: '', state: '', conversionFactor: '', conversionRequired: false, lowStockLevel: '', highStockLevel: '' })
   const [msg, setMsg]           = useState('')
   const [page, setPage]         = useState(1)
   const [limit, setLimit]       = useState(15)
@@ -47,7 +47,7 @@ export default function RmMaster() {
 
   const openAdd = () => {
     setEditing(null)
-    setForm({ itemCode: '', itemName: '', inventoryUom: 'KG', operationalUom: '', trackingType: 'PACK', category: '', subCategory: '', state: '', density: '', conversionRequired: false, lowStockLevel: '', highStockLevel: '' })
+    setForm({ itemCode: '', itemName: '', inventoryUom: 'KG', operationalUom: '', trackingType: 'PACK', category: '', subCategory: '', state: '', conversionFactor: '', conversionRequired: false, lowStockLevel: '', highStockLevel: '' })
     setShowForm(true); setMsg('')
   }
   const openEdit = (item) => {
@@ -63,7 +63,7 @@ export default function RmMaster() {
       inventoryUom: normalizeUom(item.inventoryUom) || item.inventoryUom,
       operationalUom: item.operationalUom ? (normalizeUom(item.operationalUom) || item.operationalUom) : '',
       trackingType: item.trackingType || 'PACK',
-      category: toTitleCase(item.category) || '', subCategory: toTitleCase(item.subCategory) || '', state: (item.state || '').toUpperCase(), density: item.density ?? '',
+      category: toTitleCase(item.category) || '', subCategory: toTitleCase(item.subCategory) || '', state: (item.state || '').toUpperCase(), conversionFactor: item.conversionFactor ?? '',
       conversionRequired: !!item.conversionRequired,
       lowStockLevel: item.lowStockLevel ?? '', highStockLevel: item.highStockLevel ?? '',
     })
@@ -82,7 +82,7 @@ export default function RmMaster() {
     const data = {
       itemName: form.itemName, inventoryUom: form.inventoryUom, operationalUom: form.operationalUom || '', trackingType: form.trackingType,
       category: form.category, subCategory: form.subCategory, state: form.state,
-      density: needsConversion ? form.density : '',
+      conversionFactor: needsConversion ? form.conversionFactor : '',
       conversionRequired: needsConversion,
       lowStockLevel: form.lowStockLevel, highStockLevel: form.highStockLevel,
     }
@@ -127,11 +127,11 @@ export default function RmMaster() {
 
   function exportRmMasterCsv() {
     if (!visibleItems.length) { alert('No items to export — adjust your filters.'); return }
-    const headers = ['Item Code', 'Item Name', 'Inventory UOM', 'Operational UOM', 'Tracking Type', 'Category', 'Sub Category', 'State', 'Conversion Required', 'Density', 'Low Stock Level', 'High Stock Level']
+    const headers = ['Item Code', 'Item Name', 'Inventory UOM', 'Operational UOM', 'Tracking Type', 'Category', 'Sub Category', 'State', 'Conversion Required', 'Conversion Factor', 'Low Stock Level', 'High Stock Level']
     const rows = visibleItems.map(i => [
       i.itemCode, toTitleCase(i.itemName), i.inventoryUom || '', i.operationalUom || '', i.trackingType || 'PACK',
       toTitleCase(i.category) || '', toTitleCase(i.subCategory) || '', i.state || '',
-      i.conversionRequired ? 'Yes' : 'No', i.density ?? '', i.lowStockLevel ?? '', i.highStockLevel ?? '',
+      i.conversionRequired ? 'Yes' : 'No', i.conversionFactor ?? '', i.lowStockLevel ?? '', i.highStockLevel ?? '',
     ].map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','))
     const csv = [headers.join(','), ...rows].join('\n')
     const a = document.createElement('a')
