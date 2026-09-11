@@ -5,23 +5,23 @@ import { PageHeader } from '../../../../components/ui'
 // (the alias tables every screen's actual conversion math runs on). Keep in
 // sync if a unit is ever added/changed there.
 const MASS_UNITS = [
-  { unit: 'MT',  name: 'Metric Tonne', toKg: '1,000',        note: 'Bulk receipts — 1 MT = 1,000 KG' },
-  { unit: 'KG',  name: 'Kilogram',     toKg: '1',             note: 'Canonical mass unit — every mass quantity is stored as KG', canon: true },
-  { unit: 'GM / GMS', name: 'Gram',    toKg: '0.001',         note: '1,000 g = 1 KG' },
-  { unit: 'MG',  name: 'Milligram',    toKg: '0.000001',      note: 'Trace/recipe-line dosages — 1,000,000 mg = 1 KG' },
+  { unit: 'MT', name: 'Metric Tonne', toKg: '1,000', note: 'Bulk receipts — 1 MT = 1,000 KG' },
+  { unit: 'KG', name: 'Kilogram', toKg: '1', note: 'Canonical mass unit — every mass quantity is stored as KG', canon: true },
+  { unit: 'GM / GMS', name: 'Gram', toKg: '0.001', note: '1,000 g = 1 KG' },
+  { unit: 'MG', name: 'Milligram', toKg: '0.000001', note: 'Trace/recipe-line dosages — 1,000,000 mg = 1 KG' },
   { unit: 'MCG / UG', name: 'Microgram', toKg: '0.000000001', note: 'Very small dosages (e.g. microbial/chemical trace additives) — 1,000 mcg = 1 mg' },
-  { unit: 'NG',  name: 'Nanogram',     toKg: '0.000000000001', note: 'Smallest display tier — 1,000 ng = 1 mcg' },
+  { unit: 'NG', name: 'Nanogram', toKg: '0.000000000001', note: 'Smallest display tier — 1,000 ng = 1 mcg' },
 ]
 const VOLUME_UNITS = [
-  { unit: 'L / LT / LTR', name: 'Litre',   toL: '1',            note: 'Canonical volume unit — every volume quantity is stored as L', canon: true },
-  { unit: 'ML',  name: 'Millilitre',   toL: '0.001',           note: '1,000 ml = 1 L' },
-  { unit: 'MCL / UL', name: 'Microlitre', toL: '0.000001',     note: '1,000 mcl = 1 ml' },
-  { unit: 'NL',  name: 'Nanolitre',    toL: '0.000000001',     note: 'Smallest display tier — 1,000 nl = 1 mcl' },
+  { unit: 'L / LT / LTR', name: 'Litre', toL: '1', note: 'Canonical volume unit — every volume quantity is stored as L', canon: true },
+  { unit: 'ML', name: 'Millilitre', toL: '0.001', note: '1,000 ml = 1 L' },
+  { unit: 'MCL / UL', name: 'Microlitre', toL: '0.000001', note: '1,000 mcl = 1 ml' },
+  { unit: 'NL', name: 'Nanolitre', toL: '0.000000001', note: 'Smallest display tier — 1,000 nl = 1 mcl' },
 ]
 const COUNT_UNITS = [
   { unit: 'NOS', name: 'Numbers (count)', note: 'Canonical count unit — pouches, bottles, boxes, labels — a plain piece count', canon: true },
-  { unit: 'PCS', name: 'Pieces',        note: 'Same as NOS — an alternate spelling some suppliers/invoices use' },
-  { unit: 'BAG / BAGS', name: 'Bag',    note: 'Tracked as a count, same as NOS — a bag has no fixed weight of its own' },
+  { unit: 'PCS', name: 'Pieces', note: 'Same as NOS — an alternate spelling some suppliers/invoices use' },
+  { unit: 'BAG / BAGS', name: 'Bag', note: 'Tracked as a count, same as NOS — a bag has no fixed weight of its own' },
   { unit: 'DRUM / DRUMS', name: 'Drum', note: 'Tracked as a count, same as NOS' },
 ]
 const SPECIAL_UNITS = [
@@ -40,10 +40,10 @@ const SPECIAL_UNITS = [
 ]
 
 const SECTIONS = [
-  { id: 'mass',       label: 'Mass',              tone: 'text-blue-600 hover:bg-blue-50' },
-  { id: 'volume',     label: 'Volume',            tone: 'text-cyan-600 hover:bg-cyan-50' },
-  { id: 'count',      label: 'Count',             tone: 'text-amber-600 hover:bg-amber-50' },
-  { id: 'special',    label: 'Microbial & Ratios', tone: 'text-rose-600 hover:bg-rose-50' },
+  { id: 'mass', label: 'Mass', tone: 'text-blue-600 hover:bg-blue-50' },
+  { id: 'volume', label: 'Volume', tone: 'text-cyan-600 hover:bg-cyan-50' },
+  { id: 'count', label: 'Count', tone: 'text-amber-600 hover:bg-amber-50' },
+  { id: 'special', label: 'Microbial & Ratios', tone: 'text-rose-600 hover:bg-rose-50' },
   { id: 'conversion', label: 'Conversion Factor', tone: 'text-indigo-600 hover:bg-indigo-50' },
 ]
 
@@ -85,9 +85,8 @@ function UnitTable({ rows, factorHeader }) {
           {rows.map(r => (
             <tr key={r.unit} className={`border-b border-gray-50 last:border-0 transition-colors hover:bg-gray-50/80 ${r.canon ? 'bg-indigo-50/40' : ''}`}>
               <td className="px-1 py-2.5">
-                <span className={`inline-flex items-center gap-1 font-mono font-semibold text-xs px-2 py-1 rounded-md ${
-                  r.canon ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-700'
-                }`}>
+                <span className={`inline-flex items-center gap-1 font-mono font-semibold text-xs px-2 py-1 rounded-md ${r.canon ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-700'
+                  }`}>
                   {r.unit}
                 </span>
               </td>
@@ -170,7 +169,7 @@ export default function UomDocs() {
         <div className="rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white p-5 md:p-8">
           <div className="flex flex-col lg:flex-row lg:items-center gap-6">
             <div className="flex-1">
-              <h1 className="text-lg md:text-xl font-bold">One place to store, another to issue</h1>
+              <h1 className="text-lg md:text-xl font-bold">How a database translates your stock units into floor units using a conversion factor.</h1>
               <p className="mt-2 text-sm text-white/90 max-w-2xl">
                 Every item in Item Master has an <strong>Inventory UOM</strong> (how it's stocked/weighed) and an{' '}
                 <strong>Operation UOM</strong> (how it's issued/consumed on the floor). The database only ever stores

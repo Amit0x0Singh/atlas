@@ -69,21 +69,6 @@ export default function HomePage() {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   })
 
-  // Roles + plant names as one row of chips, de-duplicated case-insensitively
-  // (a role is often named after the plant, e.g. role "Nano plant" + plant
-  // "Nano" — don't show near-identical chips twice).
-  const chips = useMemo(() => {
-    const seen = new Set()
-    const out = []
-    for (const label of [...(user?.roles || []), ...(user?.plants || [])]) {
-      const key = String(label).trim().toLowerCase().replace(/\s+(plant|plants)$/, '')
-      if (!label || seen.has(key)) continue
-      seen.add(key)
-      out.push(label)
-    }
-    return out
-  }, [user])
-
   // The pages this account can actually open — same permission check the
   // sidebar uses — shown as quick-launch cards.
   const shortcuts = useMemo(() => {
@@ -113,14 +98,6 @@ export default function HomePage() {
                 {greeting(now)}, {firstName}.
               </h1>
               <p className="mt-2 text-sm md:text-base text-slate-600 max-w-xl">{note}</p>
-
-              {chips.length > 0 && (
-                <div className="mt-5 flex flex-wrap items-center gap-2">
-                  {chips.map((c) => (
-                    <span key={c} className="rounded-full bg-white/60 backdrop-blur-sm ring-1 ring-white/60 text-slate-700 px-2.5 py-1 text-xs font-semibold">{c}</span>
-                  ))}
-                </div>
-              )}
             </div>
 
             <DigitalClock />
