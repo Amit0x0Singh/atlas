@@ -1,7 +1,7 @@
 import './menu-bar.css'
 import { useState, useEffect, useMemo } from 'react'
 import { useLocation } from 'react-router-dom'
-import { PanelLeftOpen, Home } from 'lucide-react'
+import { PanelLeftOpen, Home, BookOpen } from 'lucide-react'
 import { APP_NAV } from '../data/navData.js'
 import { permissionForPath } from '../../../routes/operationMap.js'
 import { useApp } from '../../../context/context.jsx'
@@ -12,8 +12,16 @@ import SidebarFooter  from '../components/sidebar-footer/SidebarFooter.jsx'
 const INITIALLY_OPEN = new Set(['DASHBOARD', 'HOME'])
 
 // Every account lands on /home after login, so the sidebar always carries a
-// Home link back to it (see defaultPathForUser in operationMap.js).
-const HOME_GROUP = { group: 'HOME', items: [{ to: '/home', label: 'Home', Icon: Home }] }
+// Home link back to it (see defaultPathForUser in operationMap.js). Docs
+// lives alongside it — a UOM/Conversion Factor reference every role can open
+// regardless of permissions (no entry in operationMap.js).
+const HOME_GROUP = {
+  group: 'HOME',
+  items: [
+    { to: '/home',     label: 'Home', Icon: Home },
+    { to: '/docs/uom', label: 'Docs', Icon: BookOpen },
+  ],
+}
 
 const Sidebar = () => {
 

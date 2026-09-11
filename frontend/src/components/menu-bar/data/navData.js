@@ -7,6 +7,7 @@ import {
   ShoppingBag,
   Factory, CalendarDays, Beaker, Activity, Cog, TestTube2,
   ScanLine, FileBarChart, BarChart3, Upload, UserCog, Settings, ShieldAlert,
+  BookOpen,
 } from 'lucide-react'
 
 export const APP_NAV = [

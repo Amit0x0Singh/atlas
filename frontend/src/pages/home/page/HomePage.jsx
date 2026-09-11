@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, UserRound } from 'lucide-react'
 import { useApp } from '../../../context/context.jsx'
@@ -27,6 +27,37 @@ function greeting(d = new Date()) {
 
 const titleCase = (s) =>
   String(s || '').toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase())
+
+// A live, LCD-style digital clock — ticks every second, colon blinks with
+// it. Kept local to this page since nothing else needs a live clock.
+function DigitalClock() {
+  const [now, setNow] = useState(() => new Date())
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000)
+    return () => clearInterval(id)
+  }, [])
+
+  const h24  = now.getHours()
+  const hh   = String(((h24 + 11) % 12) + 1).padStart(2, '0')
+  const mm   = String(now.getMinutes()).padStart(2, '0')
+  const ss   = String(now.getSeconds()).padStart(2, '0')
+  const ampm = h24 < 12 ? 'AM' : 'PM'
+  const blink = now.getSeconds() % 2 === 0
+
+  return (
+    <div className="shrink-0 w-full sm:w-auto bg-slate-900 rounded-2xl px-4 py-2.5 sm:px-4 sm:py-3 ring-1 ring-white/10 shadow-lg shadow-slate-900/20">
+      <div className="flex items-baseline justify-center sm:justify-start gap-0.5 font-mono tabular-nums text-white text-xl sm:text-2xl font-bold tracking-wide"
+        style={{ textShadow: '0 0 10px rgba(255,255,255,0.5)' }}>
+        <span>{hh}</span>
+        <span className={`transition-opacity ${blink ? 'opacity-100' : 'opacity-25'}`}>:</span>
+        <span>{mm}</span>
+        <span className={`transition-opacity ${blink ? 'opacity-100' : 'opacity-25'}`}>:</span>
+        <span>{ss}</span>
+        <span className="ml-1.5 self-start mt-0.5 text-[10px] font-sans font-bold text-white/70">{ampm}</span>
+      </div>
+    </div>
+  )
+}
 
 export default function HomePage() {
   const { user, hasPermission } = useApp()
@@ -69,29 +100,38 @@ export default function HomePage() {
 
   return (
     <div className="min-h-full bg-gray-50">
-      <div className="mx-auto max-w-5xl px-4 md:px-6 py-8 md:py-12">
+      <div className="w-full px-4 md:px-8 py-8 md:py-12">
         {/* Welcome card */}
-        <div className="rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white p-6 md:p-9 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wider text-white/70">{dateLine}</p>
-          <h1 className="mt-2 text-2xl md:text-3xl font-bold">
-            {greeting(now)}, {firstName}.
-          </h1>
-          <p className="mt-2 text-sm md:text-base text-white/90 max-w-xl">{note}</p>
+        <div
+          className="rounded-2xl p-6 md:p-9 shadow-sm"
+          style={{ backgroundImage: 'linear-gradient(120deg, #a1c4fd 0%, #c2e9fb 100%)' }}
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-600/80">{dateLine}</p>
+              <h1 className="mt-2 text-2xl md:text-3xl font-bold text-slate-800">
+                {greeting(now)}, {firstName}.
+              </h1>
+              <p className="mt-2 text-sm md:text-base text-slate-600 max-w-xl">{note}</p>
 
-          {chips.length > 0 && (
-            <div className="mt-5 flex flex-wrap items-center gap-2">
-              {chips.map((c) => (
-                <span key={c} className="rounded-full bg-white/15 px-2.5 py-1 text-xs font-semibold">{c}</span>
-              ))}
+              {chips.length > 0 && (
+                <div className="mt-5 flex flex-wrap items-center gap-2">
+                  {chips.map((c) => (
+                    <span key={c} className="rounded-full bg-white/60 backdrop-blur-sm ring-1 ring-white/60 text-slate-700 px-2.5 py-1 text-xs font-semibold">{c}</span>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
+
+            <DigitalClock />
+          </div>
         </div>
 
         {/* Quick links */}
         <div className="mt-8">
           <h2 className="text-sm font-bold uppercase tracking-wide text-gray-400">Jump back in</h2>
           {shortcuts.length > 0 ? (
-            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
               {shortcuts.map(({ to, label, Icon }) => (
                 <Link
                   key={to}

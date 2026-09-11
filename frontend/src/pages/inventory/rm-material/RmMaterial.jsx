@@ -7,6 +7,23 @@ import RmStatsBar    from './components/rm-stats-bar/RmStatsBar.jsx'
 import RmTable       from './components/rm-table/RmTable.jsx'
 import { EMPTY_RM_FILTERS } from './components/rm-table/RmToolbar.jsx'
 import { DEFAULT_RM_SORT } from './components/rm-table/RmSortModal.jsx'
+import { conversionActive, convertInventoryToOperation } from '../../../utils/uom.js'
+
+// Source data has inconsistent casing for these free-text fields ("Packing
+// Material" vs "packing material") — a plain Set dedupes by exact string, so
+// both variants show up as separate-looking rows in a filter dropdown even
+// though the filter itself already matches case-insensitively. Collapse to
+// one representative per case-insensitive value instead.
+function dedupeCi(values) {
+  const byKey = new Map()
+  for (const raw of values) {
+    const v = (raw || '').trim()
+    if (!v) continue
+    const key = v.toLowerCase()
+    if (!byKey.has(key)) byKey.set(key, v)
+  }
+  return [...byKey.values()].sort((a, b) => a.localeCompare(b))
+}
 
 export default function RmMaterial() {
   const [items,       setItems]       = useState([])
@@ -29,10 +46,10 @@ export default function RmMaterial() {
     finally { setLoading(false) }
   }
 
-  const uomOptions = useMemo(() => [...new Set(items.map(it => it.uom).filter(Boolean))].sort(), [items])
-  const categoryOptions = useMemo(() => [...new Set(items.map(it => it.category).filter(Boolean))].sort(), [items])
-  const subCategoryOptions = useMemo(() => [...new Set(items.map(it => it.subCategory).filter(Boolean))].sort(), [items])
-  const stateOptions = useMemo(() => [...new Set(items.map(it => it.state).filter(Boolean))].sort(), [items])
+  const uomOptions = useMemo(() => dedupeCi(items.map(it => it.uom)), [items])
+  const categoryOptions = useMemo(() => dedupeCi(items.map(it => it.category)), [items])
+  const subCategoryOptions = useMemo(() => dedupeCi(items.map(it => it.subCategory)), [items])
+  const stateOptions = useMemo(() => dedupeCi(items.map(it => it.state)), [items])
 
   const filtered = useMemo(() => {
     let list = items.filter(it => {
@@ -77,16 +94,22 @@ export default function RmMaterial() {
   function exportRmCsv() {
     if (!filtered.length) { alert('No items to export — adjust your filters.'); return }
     const headers = [
-      'Item Code', 'Item Name', 'UOM', 'In Pack', 'In Container', 'Total Qty', 'Status',
+      'Item Code', 'Item Name', 'UOM', 'In Pack', 'In Container', 'Total Qty', 'Total Qty (Operation UOM)', 'Status',
       'Category', 'Sub Category', 'State', 'Inventory UOM', 'Operation UOM', 'Conversion Factor',
     ]
-    const rows = filtered.map(it => [
-      it.itemCode, it.itemName, it.uom || '',
-      it.stockInPacks ?? 0, it.stockInContainer ?? 0, it.totalStock ?? 0,
-      (it.totalStock || 0) > 0 ? 'In Stock' : 'Out of Stock',
-      it.category || '', it.subCategory || '', it.state || '',
-      it.inventoryUom || '', it.operationalUom || '', it.conversionFactor ?? '',
-    ].map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','))
+    const rows = filtered.map(it => {
+      const opTotal = conversionActive(it)
+        ? (() => { try { return convertInventoryToOperation(it.totalStock ?? 0, it) } catch { return '' } })()
+        : ''
+      return [
+        it.itemCode, it.itemName, it.uom || '',
+        it.stockInPacks ?? 0, it.stockInContainer ?? 0, it.totalStock ?? 0,
+        opTotal === '' ? '' : Number(opTotal),
+        (it.totalStock || 0) > 0 ? 'In Stock' : 'Out of Stock',
+        it.category || '', it.subCategory || '', it.state || '',
+        it.inventoryUom || '', it.operationalUom || '', it.conversionFactor ?? '',
+      ].map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')
+    })
     const csv = [headers.join(','), ...rows].join('\n')
     const a = document.createElement('a')
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }))

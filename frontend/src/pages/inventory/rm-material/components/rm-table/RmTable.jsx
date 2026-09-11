@@ -7,6 +7,16 @@ import RmToolbar from './RmToolbar.jsx'
 import { useColumnPreferences } from '../../../../../hooks/useColumnPreferences.js'
 
 import { toTitleCase } from '../../../../../utils/textDisplay.js'
+import { conversionActive, convertInventoryToOperation } from '../../../../../utils/uom.js'
+
+// Same stock, expressed in the item's Operation UOM — only when a real
+// Inventory⇄Operation conversion is configured (e.g. a pouch stocked in KG,
+// issued in NOS). Returns null otherwise so the column just shows the
+// Inventory-UOM figure alone.
+function operationalTotal(it) {
+  if (!conversionActive(it)) return null
+  try { return convertInventoryToOperation(it.totalStock, it) } catch { return null }
+}
 
 // Resizable columns — same drag-handle mechanism as UsersTable.jsx. "Details"
 // stays a fixed width since it only ever holds one button.
@@ -20,7 +30,7 @@ const COLUMN_DEFS = [
   { key: 'convFactor', label: 'Conv. Factor', align: 'right', defaultWidth: 150 },
   { key: 'inPack',    label: 'In Pack',       align: 'right',  defaultWidth: 130 },
   { key: 'inContainer', label: 'In Container', align: 'right', defaultWidth: 130 },
-  { key: 'totalQty',  label: 'Total Qty',     align: 'right',  defaultWidth: 150 },
+  { key: 'totalQty',  label: 'Total Qty',     align: 'right',  defaultWidth: 175 },
 ]
 const DETAILS_COL_WIDTH = 150
 // Tailwind's JIT scans for literal class strings, so `text-${align}` would
@@ -117,6 +127,8 @@ export default function RmTable({
             ) : (
               paginated.map((it, idx) => {
                 const hasStock = it.totalStock > 0
+                const opTotal  = operationalTotal(it)
+                const opUom    = (it.operationalUom || '').toUpperCase()
                 return (
                   <tr key={it.itemCode} className="border-t border-gray-100 hover:bg-gray-50 transition-colors group">
                     {columnVisibility.idx && <td style={{ width: columnWidths.idx }} className="px-4 py-3 text-xs text-gray-400 tabular-nums overflow-hidden">{idx + 1}</td>}
@@ -174,6 +186,16 @@ export default function RmTable({
                         <div className={`text-base font-bold tabular-nums ${hasStock ? 'text-gray-900' : 'text-red-400'}`}>
                           {fmt(it.totalStock)}{it.uom && <span className="text-xs font-medium text-gray-400 ml-1">{it.uom.toUpperCase()}</span>}
                         </div>
+                        {/* Same stock in Operation UOM — indigo to read as a
+                            derived/secondary figure, not another stock number. */}
+                        {opTotal != null && (
+                          <div
+                            className="text-xs font-semibold text-indigo-600 tabular-nums mt-0.5"
+                            title={`Converted from ${fmt(it.totalStock)} ${it.uom?.toUpperCase()} at ${fmt(it.conversionFactor, 6)} ${it.uom?.toUpperCase()}/${opUom}`}
+                          >
+                            ≈ {fmt(opTotal, 2)} <span className="text-[10px] font-medium text-indigo-400">{opUom}</span>
+                          </div>
+                        )}
                         {!hasStock && <div className="text-[10px] text-red-400 font-medium">OUT OF STOCK</div>}
                       </td>
                     )}

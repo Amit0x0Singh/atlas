@@ -4,7 +4,7 @@ import { Button } from '../../../../../../components/ui'
 import ScannerPanel from '../../../../../../components/ScannerPanel/ScannerPanel.jsx'
 import { outwardApi, containerApi } from '../../../../../../api/inventory.js'
 import { toTitleCase } from '../../../../../../utils/textDisplay.js'
-import { convertQty } from '../../../../../../utils/uom.js'
+import { convertQty, conversionActive } from '../../../../../../utils/uom.js'
 import { humanQty, roundQty, pickDisplayUnit } from '../../../../../../utils/qty.js'
 
 // Inline issue panel for one Material Indent line — mirrors Material Issue by
@@ -23,6 +23,9 @@ export default function IndentIssuePanel({ line, onIssue }) {
     conversionRequired: line.conversionRequired,
     conversionFactor:  line.conversionFactor,
   }), [line.inventoryUom, line.operationalUom, line.conversionRequired, line.conversionFactor, line.uom])
+  // Whether a real Inventory⇄Operation conversion applies here — drives the
+  // "Conversion Factor" line in the Pack/Container Found card below.
+  const converts = conversionActive(conv)
   // requestedQty / issuedQty are both in the line's UOM (== entryUom).
   const remaining = Math.max(0, roundQty(line.requestedQty - line.issuedQty))
 
@@ -133,7 +136,10 @@ export default function IndentIssuePanel({ line, onIssue }) {
           {!found && (
             <div>
               <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Scan Pack or Container QR Code</label>
-              <ScannerPanel accent="indigo" onScan={handleScan} scanHint="Point camera at pack or container QR" allowManualEntry />
+              {/* Issuing must always come from an actual scan — no manual ID
+                  entry — so a store person can't key in the wrong pack/
+                  container by hand. */}
+              <ScannerPanel accent="indigo" onScan={handleScan} scanHint="Point camera at pack or container QR" allowManualEntry={false} />
               <p className="text-xs text-gray-400 mt-1.5">Container QR must start with <span className="font-mono">CONT:</span></p>
             </div>
           )}
@@ -154,7 +160,13 @@ export default function IndentIssuePanel({ line, onIssue }) {
                   <div><span className="text-gray-400">ID: </span><span className="font-mono font-semibold text-gray-900">{found.id}</span></div>
                   <div><span className="text-gray-400">Available: </span><span className="font-bold text-green-700">{humanQty(found.availInv, invUom)}</span></div>
                   {found.lotNo && <div><span className="text-gray-400">Lot: </span><span className="text-gray-800">{found.lotNo}</span></div>}
-                  {found.supplier && <div><span className="text-gray-400">Supplier: </span><span className="text-gray-800">{found.supplier}</span></div>}
+                  {found.supplier && <div><span className="text-gray-400">Supplier: </span><span className="text-gray-800">{toTitleCase(found.supplier)}</span></div>}
+                  {converts && (
+                    <div>
+                      <span className="text-gray-400">Conversion Factor: </span>
+                      <span className="font-semibold text-gray-800">{line.conversionFactor} {invUom}/{entryUom}</span>
+                    </div>
+                  )}
                   <div><span className="text-gray-400">Still needed: </span><span className="font-bold text-red-600">{humanQty(remaining, entryUom)}</span></div>
                 </div>
               </div>

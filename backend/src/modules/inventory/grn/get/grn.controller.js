@@ -63,7 +63,15 @@ const listGrn = async (req, res) => {
       .filter(g => g.hasReceivedBags)
       .map(({ hasReceivedBags, ...g }) => ({ ...g, items: [...g.items], uniqueItems: g.items.size }))
 
-    result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    // Newest first, day-wise: order by the date goods were actually received
+    // (Gate Inward entry time) — the date the UI shows — not by when the pack
+    // labels happened to be printed. Print time only breaks ties within the
+    // same received date.
+    result.sort((a, b) => {
+      const byReceived = new Date(b.receivedDate || b.createdAt) - new Date(a.receivedDate || a.createdAt)
+      if (byReceived !== 0) return byReceived
+      return new Date(b.createdAt) - new Date(a.createdAt)
+    })
     return res.json({ success: true, data: result })
 
   } catch (err) {

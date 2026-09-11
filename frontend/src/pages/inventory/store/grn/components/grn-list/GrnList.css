@@ -1,1 +1,18 @@
-﻿
+/* Slim, unobtrusive scrollbar for the GRN sidebar list. */
+.grn-list-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db transparent;
+}
+
+.grn-list-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.grn-list-scroll::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+.grn-list-scroll::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
