@@ -37,10 +37,10 @@ function DigitalClock() {
     return () => clearInterval(id)
   }, [])
 
-  const h24  = now.getHours()
-  const hh   = String(((h24 + 11) % 12) + 1).padStart(2, '0')
-  const mm   = String(now.getMinutes()).padStart(2, '0')
-  const ss   = String(now.getSeconds()).padStart(2, '0')
+  const h24 = now.getHours()
+  const hh = String(((h24 + 11) % 12) + 1).padStart(2, '0')
+  const mm = String(now.getMinutes()).padStart(2, '0')
+  const ss = String(now.getSeconds()).padStart(2, '0')
   const ampm = h24 < 12 ? 'AM' : 'PM'
   const blink = now.getSeconds() % 2 === 0
 
@@ -109,7 +109,7 @@ export default function HomePage() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
             <div className="min-w-0">
               <p className="text-xs font-semibold uppercase tracking-wider text-slate-600/80">{dateLine}</p>
-              <h1 className="mt-2 text-2xl md:text-3xl font-bold text-slate-800">
+              <h1 className="mt-2 text-2xl md:text-3xl font-bold text-slate-800 capitalize">
                 {greeting(now)}, {firstName}.
               </h1>
               <p className="mt-2 text-sm md:text-base text-slate-600 max-w-xl">{note}</p>
