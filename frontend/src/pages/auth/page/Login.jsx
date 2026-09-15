@@ -1,5 +1,6 @@
 /**
- * ERP Login Page — email + password
+ * ERP Login Page — username or phone + password. Email is not a login
+ * identifier (see backend/src/modules/user/login/login.controller.js).
  */
 import { useState } from 'react'
 import { useAuth } from '../../../components/auth/AuthContext.jsx'
@@ -14,7 +15,7 @@ export default function Login({ onLogin }) {
 
   const handleLogin = async (e) => {
     e.preventDefault()
-    if (!form.email || !form.password) { setError('Email and password required'); return }
+    if (!form.email || !form.password) { setError('Username/phone and password required'); return }
     setError('')
     try {
       const user = await login(normalizeEmailInput(form.email), form.password)
@@ -41,7 +42,7 @@ export default function Login({ onLogin }) {
               type="text"
               value={form.email}
               onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-              placeholder="username, phone, or email"
+              placeholder="username or phone"
               autoFocus
               className="login-input"
             />

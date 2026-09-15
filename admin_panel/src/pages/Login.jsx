@@ -41,8 +41,8 @@ export default function Login() {
 
           <form onSubmit={handleSubmit} className="space-y-3">
             <Input
-              label="Email"
-              type="email"
+              label="Username or Phone"
+              type="text"
               autoComplete="username"
               value={email}
               onChange={(e) => setEmail(e.target.value)}

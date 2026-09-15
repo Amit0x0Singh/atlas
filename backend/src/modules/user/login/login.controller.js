@@ -6,28 +6,32 @@ import { resolveEffectivePermissions } from "../../../services/permission-resolv
 import { normalizePhone } from "../../../utils/text-normalize.js";
 
 // Dummy hash compared against when no account matches, so a nonexistent
-// email takes roughly the same time as a wrong-password attempt on a real
-// account — mitigates trivial email-enumeration via response timing.
+// account takes roughly the same time as a wrong-password attempt on a real
+// one — mitigates trivial account-enumeration via response timing.
 const DUMMY_HASH = "$2a$12$CwTycUXWue0Thq9StjUM0uJ8Q4dLB0MgIS4rMdXOZLUqfNlt5xB0S";
 
 // Database-backed login (Prisma `User`, bcrypt-hashed passwords). Same
-// generic "Invalid credentials" message for unknown email, wrong password,
-// and a disabled account — deliberately not distinguishing them, to avoid
-// account-enumeration.
+// generic "Invalid credentials" message for an unknown username/phone,
+// wrong password, and a disabled account — deliberately not distinguishing
+// them, to avoid account-enumeration.
+//
+// Email is deliberately NOT a login identifier — only username or phone.
+// The request body field is still named `email` for wire-compatibility with
+// existing frontend callers, but it's matched against username/phone only.
 export const login = async (req, res) => {
   const { email, password } = req.body;
-  // Relies on User.email/username's write-time lowercase normalization
-  // (Prisma Client Extension, see config/db.js) plus the ci_users_*_idx
-  // functional indexes — pre-lowercasing the input keeps this a plain
+  // Relies on User.username's write-time lowercase normalization (Prisma
+  // Client Extension, see config/db.js) plus the ci_users_username_idx
+  // functional index — pre-lowercasing the input keeps this a plain
   // equality match instead of a case-insensitive scan. The same raw input
   // is also tried as a phone number (same normalizePhone() the write path
-  // uses), so one field accepts username, phone, or email.
+  // uses), so one field accepts either username or phone.
   const needle = String(email || "").trim().toLowerCase();
   const phoneNeedle = normalizePhone(String(email || "").trim());
   const user = await prisma.user.findFirst({
     where: {
       isActive: true,
-      OR: [{ email: needle }, { username: needle }, ...(phoneNeedle ? [{ phone: phoneNeedle }] : [])],
+      OR: [{ username: needle }, ...(phoneNeedle ? [{ phone: phoneNeedle }] : [])],
     },
   });
   const ok = await bcrypt.compare(password || "", user?.passwordHash ?? DUMMY_HASH);

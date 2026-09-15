@@ -83,7 +83,7 @@ export default function UserFormPage() {
   const goBack = () => navigate('/user-roles')
 
   const save = async () => {
-    if (!form.fullName.trim() || !form.username.trim() || !form.phone.trim() || !form.email.trim() || (!editing && !form.password)) {
+    if (!form.fullName.trim() || !form.username.trim() || !form.phone.trim() || (!editing && !form.password)) {
       setMsg('Fill all required fields'); return
     }
     if (!editing && form.password !== form.confirmPassword) {
@@ -93,10 +93,10 @@ export default function UserFormPage() {
     const plants = plantsForRoles(form.roleIds, roles)
     try {
       if (editing) {
-        await updateUser.mutateAsync({ userId, data: { username: form.username, email: form.email, fullName: form.fullName, phone: form.phone, plants, department: form.department || null } })
+        await updateUser.mutateAsync({ userId, data: { username: form.username, email: form.email.trim() || null, fullName: form.fullName, phone: form.phone, plants, department: form.department || null } })
         await setUserRoles.mutateAsync({ userId, roleIds: form.roleIds })
       } else {
-        await createUser.mutateAsync({ username: form.username, email: form.email, fullName: form.fullName, phone: form.phone, password: form.password, plants, department: form.department || null, roleIds: form.roleIds })
+        await createUser.mutateAsync({ username: form.username, email: form.email.trim() || null, fullName: form.fullName, phone: form.phone, password: form.password, plants, department: form.department || null, roleIds: form.roleIds })
       }
       goBack()
     } catch (e) { setMsg(e.message) }
@@ -136,9 +136,9 @@ export default function UserFormPage() {
                   onChange={e => onChange('username', e.target.value)} className={FIELD} placeholder="e.g. asingh" />
               </div>
               <div>
-                <label className={LABEL}>Email *</label>
+                <label className={LABEL}>Email</label>
                 <input type="email" value={form.email}
-                  onChange={e => onChange('email', e.target.value)} className={FIELD} placeholder="name@agrilife.com" />
+                  onChange={e => onChange('email', e.target.value)} className={FIELD} placeholder="name@agrilife.com (optional)" />
               </div>
               <div>
                 <label className={LABEL}>Full Name *</label>

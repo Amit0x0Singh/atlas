@@ -3,8 +3,11 @@ import { authOrigin, TOKEN_KEY } from './http.js';
 
 // Reuses the same backend accounts/JWT as the main ERP app (backend/access.js,
 // POST /api/auth/login) — no separate credential store for the admin panel.
-export async function login(email, password) {
-  const { data } = await axios.post(`${authOrigin}/auth/login`, { email, password });
+// The `email` param name is only the wire field the backend expects; it
+// actually matches against username or phone (email is not a login
+// identifier — see backend/src/modules/user/login/login.controller.js).
+export async function login(identifier, password) {
+  const { data } = await axios.post(`${authOrigin}/auth/login`, { email: identifier, password });
   return data;
 }
 
