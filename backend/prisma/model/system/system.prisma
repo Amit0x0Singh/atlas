@@ -4,7 +4,13 @@ model User {
   email        String?  @unique @db.VarChar(200)
   passwordHash String   @map("password_hash") @db.VarChar(255)
   fullName     String   @map("full_name") @db.VarChar(200)
-  phone        String?  @db.VarChar(20)
+  // Becoming the primary actor identifier for createdBy/updatedBy stamping
+  // (see utils/prisma-audit-extension.js) going forward — required + locked
+  // once set by the New/Edit User form, but the column itself stays
+  // nullable+unique (not NOT NULL) since most existing accounts predate this
+  // and have no phone on file yet; Postgres allows any number of NULLs under
+  // a unique constraint, so this doesn't block those rows.
+  phone        String?  @unique @db.VarChar(20)
   pinHash      String?  @map("pin_hash") @db.VarChar(255)
   role         String   @default("") @db.VarChar(50)
   plants       String[] @default([]) @map("plants")
@@ -14,6 +20,14 @@ model User {
   department   String?  @map("department") @db.VarChar(50)
   employeeId   String?  @unique @map("employee_id")
   isActive     Boolean  @default(true) @map("is_active")
+  // Soft-delete: a deleted account keeps its row (and every FK reference to
+  // it) but is filtered out of rbac.service.js's listUsers() — it no longer
+  // appears on the main app's User Roles page or (via isActive being forced
+  // false alongside this) can log in. It stays fully visible/editable in
+  // admin_panel's generic Users resource, which applies no such filter —
+  // that's the only place a deleted account can be restored from.
+  isDeleted    Boolean  @default(false) @map("is_deleted")
+  deletedAt    DateTime? @map("deleted_at")
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
 

@@ -116,6 +116,7 @@ export async function listPermissions({ module } = {}) {
 // same redaction principle as the Admin Panel's REDACT map.
 export async function listUsers() {
   const users = await prisma.user.findMany({
+    where: { isDeleted: false },
     select: {
       userId: true, email: true, username: true, fullName: true, phone: true,
       plants: true, department: true, isActive: true, createdAt: true,
@@ -126,13 +127,14 @@ export async function listUsers() {
   return users.map((u) => ({ ...u, roles: u.roles.map((r) => r.role) }))
 }
 
-export async function createUser({ email, username, fullName, password, plants = [], department = null, roleIds = [] }, actor) {
+export async function createUser({ email, username, fullName, phone, password, plants = [], department = null, roleIds = [] }, actor) {
   const passwordHash = await bcrypt.hash(password, 10)
   const user = await prisma.user.create({
     data: {
       email,
       username: username || email,
       fullName,
+      phone,
       passwordHash,
       plants,
       department: department || null,
@@ -140,12 +142,20 @@ export async function createUser({ email, username, fullName, password, plants =
       roles: { create: roleIds.map((roleId) => ({ roleId })) },
     },
   })
-  await writeAudit({ ...actor, action: 'CREATE', tableName: 'users', recordId: user.userId, newValue: { email, fullName, plants, department, roleIds } })
+  await writeAudit({ ...actor, action: 'CREATE', tableName: 'users', recordId: user.userId, newValue: { email, fullName, phone, plants, department, roleIds } })
   return user
 }
 
-export async function updateUser(userId, { fullName, phone, plants, department }, actor) {
+// phone is now the immutable identity reference (locked once set by the
+// New/Edit User form — see UserFormPage.jsx) since it's what createdBy/
+// updatedBy stamp with going forward (utils/prisma-audit-extension.js);
+// email is freely editable here. Both stay unique + normalized at the DB
+// layer either way, so nothing stops a direct API caller from changing
+// phone after the fact — the lock is UI-only, same as email's used to be.
+export async function updateUser(userId, { username, email, fullName, phone, plants, department }, actor) {
   const data = { fullName, phone, plants }
+  if (username !== undefined) data.username = username
+  if (email !== undefined) data.email = email
   if (department !== undefined) data.department = department || null
   const user = await prisma.user.update({ where: { userId }, data })
   await writeAudit({ ...actor, action: 'UPDATE', tableName: 'users', recordId: userId, newValue: data })
@@ -157,6 +167,20 @@ export async function setUserActive(userId, isActive, actor) {
   const user = await prisma.user.update({ where: { userId }, data: { isActive } })
   await writeAudit({ ...actor, action: isActive ? 'ENABLE' : 'DISABLE', tableName: 'users', recordId: userId, newValue: { isActive } })
   invalidateUser(userId) // a disable takes effect on this user's very next request
+  return user
+}
+
+// Soft-delete: the row stays in Postgres (every FK reference stays intact)
+// but is hidden from listUsers() above and can no longer log in — full
+// restore only happens from admin_panel's generic Users resource, which
+// applies no such filter. See the isDeleted comment on the schema.
+export async function deleteUser(userId, actor) {
+  const user = await prisma.user.update({
+    where: { userId },
+    data: { isDeleted: true, deletedAt: new Date(), isActive: false },
+  })
+  await writeAudit({ ...actor, action: 'DELETE', tableName: 'users', recordId: userId })
+  invalidateUser(userId) // kicks any live session immediately, same as a disable
   return user
 }
 

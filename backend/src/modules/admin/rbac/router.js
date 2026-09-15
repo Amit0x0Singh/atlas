@@ -39,6 +39,7 @@ RbacRouter.get('/users', authorize('admin.users.view'), wrap(() => rbac.listUser
 RbacRouter.post('/users', authorize('admin.users.create'), wrap((req) => rbac.createUser(req.body, auditUser(req))))
 RbacRouter.put('/users/:userId', authorize('admin.users.update'), wrap((req) => rbac.updateUser(req.params.userId, req.body, auditUser(req))))
 RbacRouter.patch('/users/:userId/active', authorize('admin.users.disable'), wrap((req) => rbac.setUserActive(req.params.userId, !!req.body.isActive, auditUser(req))))
+RbacRouter.delete('/users/:userId', authorize('admin.users.delete'), wrap((req) => rbac.deleteUser(req.params.userId, auditUser(req))))
 RbacRouter.post('/users/:userId/reset-password', authorize('admin.users.update'), wrap((req) => rbac.resetUserPassword(req.params.userId, req.body.password, auditUser(req))))
 RbacRouter.put('/users/:userId/roles', authorize('admin.users.assign-role'), wrap((req) => rbac.setUserRoles(req.params.userId, req.body.roleIds || [], auditUser(req))))
 RbacRouter.post('/users/:userId/roles/:roleId', authorize('admin.users.assign-role'), wrap((req) => rbac.assignRoleToUser(req.params.userId, req.params.roleId, auditUser(req))))

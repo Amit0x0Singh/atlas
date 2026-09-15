@@ -1337,7 +1337,7 @@ export const resources = [
     key: 'user', group: 'system',
     title: 'Users', model: 'User', path: 'users',
     idField: 'userId',
-    description: 'App users. Role/permission assignment now lives in Role -> UserRole -> RolePermissionMap -> Permission (see the User Roles page in the main app, backed by /api/admin/rbac) — manage that there, not here. This raw table is for the login row itself: identity, plant scope, active flag.',
+    description: 'App users. Role/permission assignment now lives in Role -> UserRole -> RolePermissionMap -> Permission (see the User Roles page in the main app, backed by /api/admin/rbac) — manage that there, not here. This raw table is for the login row itself: identity, plant scope, active flag. It is also the only place to see and restore a deleted account — the main app hides any row with Deleted = true.',
     fields: [
       field('userId', 'User ID', 'text', { readOnly: true }),
       field('username', 'Username'),
@@ -1356,6 +1356,12 @@ export const resources = [
       field('department', 'Department'),
       field('employeeId', 'Employee ID (HR link)'),
       field('isActive', 'Active', 'select', { options: ['true', 'false'] }),
+      // Soft-delete flag set by the main app's Delete button on the User
+      // Roles page — that page hides deleted rows entirely, so this raw
+      // table is the only place left to see them and restore one (flip back
+      // to false, and Active back to true to re-enable login).
+      field('isDeleted', 'Deleted', 'select', { options: ['false', 'true'] }),
+      field('deletedAt', 'Deleted At', 'datetime-local', { readOnly: true }),
       field('createdAt', 'Created At', 'datetime-local', { readOnly: true }),
       field('updatedAt', 'Updated At', 'datetime-local', { readOnly: true }),
     ],

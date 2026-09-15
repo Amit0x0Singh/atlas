@@ -5,6 +5,13 @@
 // per-controller wiring — mirrors prisma-normalize-extension.js's approach
 // for the text-normalization standard.
 //
+// Stamps with the actor's phone number, falling back to email when the
+// account has no phone on file yet (most pre-existing accounts, since phone
+// only recently became required for new/edited users — see User.phone in
+// system.prisma). Historical rows already carry an email in these columns;
+// useUserDisplayNames.js resolves both phone- and email-stamped values back
+// to a display name, so old and new data both render correctly.
+//
 // createdAt/updatedAt are NOT handled here — every in-scope model declares
 // them with Prisma's own `@default(now())` / `@updatedAt`, which Prisma
 // already populates natively without any extension involvement.
@@ -24,7 +31,13 @@
 // stamp incorrectly.
 
 import { Prisma } from '@prisma/client'
-import { getCurrentUserEmail } from './request-context.js'
+import { getCurrentUserEmail, getCurrentUserPhone } from './request-context.js'
+
+// Phone is the primary actor identifier now; email is only a fallback for
+// accounts that don't have a phone on file yet.
+function getCurrentActor() {
+  return getCurrentUserPhone() || getCurrentUserEmail()
+}
 
 const modelByName = new Map(Prisma.dmmf.datamodel.models.map((m) => [m.name, m]))
 
@@ -44,11 +57,11 @@ function hasField(modelName, fieldName) {
 
 function stampCreate(model, data) {
   if (data === null || typeof data !== 'object') return data
-  const email = getCurrentUserEmail()
-  if (!email) return data
+  const actor = getCurrentActor()
+  if (!actor) return data
   const out = { ...data }
-  if (hasField(model, 'createdBy') && out.createdBy === undefined) out.createdBy = email
-  if (hasField(model, 'updatedBy') && out.updatedBy === undefined) out.updatedBy = email
+  if (hasField(model, 'createdBy') && out.createdBy === undefined) out.createdBy = actor
+  if (hasField(model, 'updatedBy') && out.updatedBy === undefined) out.updatedBy = actor
   return out
 }
 
@@ -60,9 +73,9 @@ function stampUpdate(model, data) {
   if (data === null || typeof data !== 'object') return data
   if (!hasField(model, 'updatedBy')) return data
   if (data.updatedBy !== undefined) return data
-  const email = getCurrentUserEmail()
-  if (!email) return data
-  return { ...data, updatedBy: email }
+  const actor = getCurrentActor()
+  if (!actor) return data
+  return { ...data, updatedBy: actor }
 }
 
 export const auditStampExtension = {

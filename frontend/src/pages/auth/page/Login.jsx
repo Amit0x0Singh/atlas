@@ -38,10 +38,10 @@ export default function Login({ onLogin }) {
           <div className="login-field">
             <label className="login-label">Username</label>
             <input
-              type="email"
+              type="text"
               value={form.email}
               onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-              placeholder="e.g. gate@agrilife.com"
+              placeholder="username, phone, or email"
               autoFocus
               className="login-input"
             />

@@ -1,4 +1,4 @@
-import { ChevronUp, ChevronDown, ChevronsUpDown, Pencil, KeyRound, Power } from 'lucide-react'
+import { ChevronUp, ChevronDown, ChevronsUpDown, Pencil, KeyRound, Power, Trash2 } from 'lucide-react'
 import { IconButton, ColumnsMenu } from '../../../../components/ui'
 import { Can } from '../../../../components/common/Can.jsx'
 import { useColumnPreferences } from '../../../../hooks/useColumnPreferences.js'
@@ -9,6 +9,7 @@ import { toTitleCase } from '../../../../utils/textDisplay.js'
 // starting width for the resize handle.
 const COLUMN_DEFS = [
   { key: 'user',       label: 'User',        sortField: 'name',       defaultWidth: 260 },
+  { key: 'username',   label: 'Username',    sortField: 'username',   defaultWidth: 180 },
   { key: 'roles',      label: 'Roles',       sortField: 'role',       defaultWidth: 220 },
   { key: 'plantScope', label: 'Plant Scope', sortField: 'plantScope', defaultWidth: 160 },
   { key: 'status',     label: 'Status',      sortField: 'status',     defaultWidth: 120 },
@@ -27,7 +28,7 @@ function SortCaret({ active, direction }) {
  * light header restyle (was a dark slate-700 bar) with clickable sort carets
  * that write into the same `sort` state the Sort-by popup uses.
  */
-export default function UsersTable({ users, loading, empty, emptyMessage, sort, onSortChange, onEdit, onResetPassword, onToggleActive }) {
+export default function UsersTable({ users, loading, empty, emptyMessage, sort, onSortChange, onEdit, onResetPassword, onToggleActive, onDelete }) {
   const { columnWidths, columnVisibility, visibleColumns, startResize, toggleColumn } = useColumnPreferences('user-roles-users', COLUMN_DEFS)
 
   const colCount = visibleColumns.length + 1 // + Actions
@@ -90,6 +91,11 @@ export default function UsersTable({ users, loading, empty, emptyMessage, sort, 
                     <div className="text-xs text-gray-400 truncate">{u.email}</div>
                   </td>
                 )}
+                {columnVisibility.username && (
+                  <td style={{ width: columnWidths.username }} className="px-4 py-3 text-xs text-gray-600 truncate">
+                    {u.username}
+                  </td>
+                )}
                 {columnVisibility.roles && (
                   <td style={{ width: columnWidths.roles }} className="px-4 py-3 overflow-hidden">
                     <div className="flex flex-wrap gap-1">
@@ -123,6 +129,9 @@ export default function UsersTable({ users, loading, empty, emptyMessage, sort, 
                     </Can>
                     <Can permission="admin.users.disable">
                       <IconButton icon={Power} variant={u.isActive ? 'danger' : 'success'} tooltip={u.isActive ? 'Disable' : 'Re-enable'} onClick={() => onToggleActive(u)} />
+                    </Can>
+                    <Can permission="admin.users.delete">
+                      <IconButton icon={Trash2} variant="danger" tooltip="Delete" onClick={() => onDelete(u)} />
                     </Can>
                   </div>
                 </td>

@@ -3,6 +3,7 @@ import prisma from "../../../db.js";
 import { signJwt } from "../../../middleware/auth.js";
 import { writeAudit } from "../../../middleware/audit.js";
 import { resolveEffectivePermissions } from "../../../services/permission-resolver.js";
+import { normalizePhone } from "../../../utils/text-normalize.js";
 
 // Dummy hash compared against when no account matches, so a nonexistent
 // email takes roughly the same time as a wrong-password attempt on a real
@@ -15,12 +16,20 @@ const DUMMY_HASH = "$2a$12$CwTycUXWue0Thq9StjUM0uJ8Q4dLB0MgIS4rMdXOZLUqfNlt5xB0S
 // account-enumeration.
 export const login = async (req, res) => {
   const { email, password } = req.body;
-  // Relies on User.email's write-time lowercase normalization (Prisma
-  // Client Extension, see config/db.js) plus the ci_users_email_idx
-  // functional index — pre-lowercasing the input keeps this a plain
-  // equality match instead of a case-insensitive scan.
+  // Relies on User.email/username's write-time lowercase normalization
+  // (Prisma Client Extension, see config/db.js) plus the ci_users_*_idx
+  // functional indexes — pre-lowercasing the input keeps this a plain
+  // equality match instead of a case-insensitive scan. The same raw input
+  // is also tried as a phone number (same normalizePhone() the write path
+  // uses), so one field accepts username, phone, or email.
   const needle = String(email || "").trim().toLowerCase();
-  const user = await prisma.user.findFirst({ where: { email: needle, isActive: true } });
+  const phoneNeedle = normalizePhone(String(email || "").trim());
+  const user = await prisma.user.findFirst({
+    where: {
+      isActive: true,
+      OR: [{ email: needle }, { username: needle }, ...(phoneNeedle ? [{ phone: phoneNeedle }] : [])],
+    },
+  });
   const ok = await bcrypt.compare(password || "", user?.passwordHash ?? DUMMY_HASH);
 
   if (!user || !ok) {

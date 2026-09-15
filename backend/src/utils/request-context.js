@@ -25,3 +25,7 @@ export function runWithRequestContext(context, fn) {
 export function getCurrentUserEmail() {
   return requestContext.getStore()?.userEmail ?? null
 }
+
+export function getCurrentUserPhone() {
+  return requestContext.getStore()?.userPhone ?? null
+}

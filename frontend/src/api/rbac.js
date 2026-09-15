@@ -19,6 +19,7 @@ export const rbacApi = {
   createUser:      (data)           => api.post('/admin/rbac/users', data),
   updateUser:      (userId, data)   => api.put(`/admin/rbac/users/${userId}`, data),
   setUserActive:   (userId, isActive) => api.patch(`/admin/rbac/users/${userId}/active`, { isActive }),
+  deleteUser:      (userId)           => api.delete(`/admin/rbac/users/${userId}`),
   resetPassword:   (userId, password) => api.post(`/admin/rbac/users/${userId}/reset-password`, { password }),
   setUserRoles:    (userId, roleIds) => api.put(`/admin/rbac/users/${userId}/roles`, { roleIds }),
 }

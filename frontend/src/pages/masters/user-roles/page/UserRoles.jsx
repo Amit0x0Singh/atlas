@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { UserCog, Plus, Pencil, Users2, ShieldCheck, Trash2, Lock } from 'lucide-react'
 import {
-  useUsers, useRoles, useSetUserActive, useResetPassword, useDeleteRole,
+  useUsers, useRoles, useSetUserActive, useResetPassword, useDeleteRole, useDeleteUser,
 } from '../../../../hooks/masters/useUserRoles.js'
 import { Button, BackButton, IconButton, PageHeader } from '../../../../components/ui'
 import { Can } from '../../../../components/common/Can.jsx'
@@ -78,6 +78,13 @@ export default function UserRoles() {
     catch (e) { alert(e.message) }
   }
 
+  const deleteUser = useDeleteUser()
+  const doDeleteUser = async (u) => {
+    if (!confirm(`Delete ${u.fullName}'s account? Their data is kept, but they'll no longer be able to log in or appear in this list.`)) return
+    try { await deleteUser.mutateAsync(u.userId) }
+    catch (e) { alert(e.message) }
+  }
+
   const deleteRole = useDeleteRole()
   const doDeleteRole = async (r) => {
     if (!confirm(`Delete role "${r.name}"? This only works if no user currently holds it.`)) return
@@ -98,11 +105,11 @@ export default function UserRoles() {
 
     let list = users.filter(u => {
       if (q) {
-        const haystack = `${u.fullName} ${u.email} ${u.phone || ''}`.toLowerCase()
+        const haystack = `${u.fullName} ${u.username} ${u.email} ${u.phone || ''}`.toLowerCase()
         if (!haystack.includes(q)) return false
       }
       if (kw) {
-        const haystack = `${u.fullName} ${u.email} ${u.phone || ''}`.toLowerCase()
+        const haystack = `${u.fullName} ${u.username} ${u.email} ${u.phone || ''}`.toLowerCase()
         if (!haystack.includes(kw)) return false
       }
       const signupDate = u.createdAt?.slice(0, 10) || ''
@@ -118,6 +125,7 @@ export default function UserRoles() {
     const dir = sort.direction === 'asc' ? 1 : -1
     list = [...list].sort((a, b) => {
       if (sort.field === 'signupDate') return dir * a.createdAt.localeCompare(b.createdAt)
+      if (sort.field === 'username') return dir * (a.username || '').localeCompare(b.username || '')
       if (sort.field === 'role') return dir * (a.roles[0]?.name || '').localeCompare(b.roles[0]?.name || '')
       if (sort.field === 'plantScope') return dir * (a.plants?.[0] || '').localeCompare(b.plants?.[0] || '')
       if (sort.field === 'status') return dir * (Number(a.isActive) - Number(b.isActive))
@@ -210,6 +218,7 @@ export default function UserRoles() {
               onEdit={openEditUser}
               onResetPassword={doResetPassword}
               onToggleActive={toggleActive}
+              onDelete={doDeleteUser}
             />
           </div>
         )}

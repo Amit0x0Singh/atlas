@@ -100,6 +100,14 @@ export function useSetUserActive() {
   })
 }
 
+export function useDeleteUser() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (userId) => rbacApi.deleteUser(userId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.rbac.users() }),
+  })
+}
+
 export function useResetPassword() {
   return useMutation({
     mutationFn: ({ userId, password }) => rbacApi.resetPassword(userId, password),

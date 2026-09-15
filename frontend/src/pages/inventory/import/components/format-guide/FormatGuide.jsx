@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Building, Microscope, FlaskConical, Wrench, Layers, GitBranch, Printer, ArrowDownToLine, Info, ChevronDown, Package } from 'lucide-react'
+import { Building, Microscope, FlaskConical, Wrench, Layers, GitBranch, Printer, ArrowDownToLine, Info, ChevronDown, Package, UserCog } from 'lucide-react'
 
 const BADGE = {
   Required:  'bg-red-50 text-red-600 ring-red-100',
@@ -141,6 +141,23 @@ const SHEETS = [
       { name: 'Date', kind: 'Optional' },
     ],
     behavior: 'Pack ID must already exist in Print Master.',
+  },
+  {
+    sheet: 'Users',
+    icon: UserCog,
+    color: 'bg-cyan-50 text-cyan-600',
+    match: 'Sheet name contains "user", "employee login", or "login access"',
+    cols: [
+      { name: 'Username', kind: 'Required' },
+      { name: 'Email', kind: 'Required' },
+      { name: 'Full Name', kind: 'Required' },
+      { name: 'Password', kind: 'Required (new accounts only)' },
+      { name: 'Phone', kind: 'Required (new accounts only)' },
+      { name: 'Department', kind: 'Optional' },
+      { name: 'Plants', kind: 'Optional' },
+    ],
+    behavior: 'Existing accounts are matched by Email (case-insensitive) — Username, Full Name, Plants and Department are refreshed, but Password and Phone are never overwritten once an account already has them (Phone is now the permanent, one-time identity used to stamp everything that account creates/edits — it\'s only filled in here if the existing account doesn\'t have one yet). Password and Phone are only required the first time an account is created.',
+    note: 'Roles are never assigned by this import — set them afterward on the User Roles page.',
   },
 ]
 

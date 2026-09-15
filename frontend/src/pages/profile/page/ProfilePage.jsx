@@ -2,6 +2,7 @@ import { UserRound } from 'lucide-react'
 import { PageHeader, BackButton } from '../../../components/ui'
 import { useApp } from '../../../context/context.jsx'
 import { summarizePermissionKeys } from '../../../constants/permissionMatrix.js'
+import { useOptionValues } from '../../../hooks/useOptionValues.js'
 
 const titleCase = (s) =>
   String(s || '')
@@ -19,6 +20,7 @@ function Field({ label, value }) {
 
 export default function ProfilePage() {
   const { user } = useApp()
+  const { data: departments = [] } = useOptionValues('MATERIAL_INDENT_DEPARTMENT')
 
   if (!user) return null
 
@@ -26,6 +28,7 @@ export default function ProfilePage() {
   const initials = (user.fullName || user.username || user.email || '?')
     .split(/\s+/).map((s) => s[0]).slice(0, 2).join('').toUpperCase()
   const access = summarizePermissionKeys(user.permissions)
+  const departmentLabel = departments.find(d => d.code === user.department)?.label || user.department
 
   return (
     <div className="flex flex-col h-full">
@@ -53,7 +56,7 @@ export default function ProfilePage() {
             <Field label="Username" value={user.username} />
             <Field label="Email" value={user.email} />
             <Field label="Phone" value={user.phone} />
-            <Field label="Department" value={user.department} />
+            <Field label="Department" value={departmentLabel} />
             <Field label="Plants" value={(user.plants || []).join(', ')} />
           </div>
 

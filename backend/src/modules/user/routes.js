@@ -52,15 +52,17 @@ UserRouter.get("/me", authenticate, async (req, res) => {
 
 UserRouter.post("/verify-password", authLimiter, authenticate, verifyPassword);
 
-// Lightweight staff directory — id / username / email / full name only, no
-// roles, permissions, or contact details. Any authenticated user may read it:
-// audit-stamp columns (createdBy / updatedBy / raisedBy …) across the app
-// store the actor's email, and every list/detail view wants to render a
-// readable name instead. This is the non-admin counterpart to
-// GET /admin/rbac/users (which stays gated by admin.users.view).
+// Lightweight staff directory — id / username / email / phone / full name
+// only, no roles, permissions, or other contact details. Any authenticated
+// user may read it: audit-stamp columns (createdBy / updatedBy / raisedBy …)
+// across the app store the actor's phone (or email, for accounts with no
+// phone on file — see utils/prisma-audit-extension.js), and every
+// list/detail view wants to render a readable name instead. This is the
+// non-admin counterpart to GET /admin/rbac/users (which stays gated by
+// admin.users.view).
 UserRouter.get("/directory", authenticate, async (_req, res) => {
   const users = await prisma.user.findMany({
-    select: { userId: true, username: true, email: true, fullName: true },
+    select: { userId: true, username: true, email: true, phone: true, fullName: true },
     orderBy: { fullName: "asc" },
   });
   res.json({ success: true, data: users });

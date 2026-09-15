@@ -7,7 +7,7 @@ import { useUsers, useRoles, useCreateUser, useUpdateUser, useSetUserRoles } fro
 import { useOptionValues } from '../../../../hooks/useOptionValues.js'
 import { rolePlantLabels } from '../../../../constants/permissionMatrix.js'
 
-const EMPTY_FORM = { email: '', fullName: '', phone: '', department: '', password: '', confirmPassword: '', roleIds: [] }
+const EMPTY_FORM = { username: '', email: '', fullName: '', phone: '', department: '', password: '', confirmPassword: '', roleIds: [] }
 
 /** Union of every plant a set of roles' own permissions cover — plant access is entirely role-driven, set on the Roles page, never picked per-user. */
 function plantsForRoles(roleIds, roles) {
@@ -60,7 +60,7 @@ export default function UserFormPage() {
   useEffect(() => {
     if (editing && existing && !loaded) {
       setForm({
-        email: existing.email || '', fullName: existing.fullName || '', phone: existing.phone || '',
+        username: existing.username || '', email: existing.email || '', fullName: existing.fullName || '', phone: existing.phone || '',
         department: existing.department || '',
         password: '', roleIds: existing.roles.map(r => r.roleId),
       })
@@ -83,7 +83,7 @@ export default function UserFormPage() {
   const goBack = () => navigate('/user-roles')
 
   const save = async () => {
-    if (!form.fullName.trim() || (!editing && (!form.email.trim() || !form.password))) {
+    if (!form.fullName.trim() || !form.username.trim() || !form.phone.trim() || !form.email.trim() || (!editing && !form.password)) {
       setMsg('Fill all required fields'); return
     }
     if (!editing && form.password !== form.confirmPassword) {
@@ -93,10 +93,10 @@ export default function UserFormPage() {
     const plants = plantsForRoles(form.roleIds, roles)
     try {
       if (editing) {
-        await updateUser.mutateAsync({ userId, data: { fullName: form.fullName, phone: form.phone || null, plants, department: form.department || null } })
+        await updateUser.mutateAsync({ userId, data: { username: form.username, email: form.email, fullName: form.fullName, phone: form.phone, plants, department: form.department || null } })
         await setUserRoles.mutateAsync({ userId, roleIds: form.roleIds })
       } else {
-        await createUser.mutateAsync({ email: form.email, fullName: form.fullName, password: form.password, plants, department: form.department || null, roleIds: form.roleIds })
+        await createUser.mutateAsync({ username: form.username, email: form.email, fullName: form.fullName, phone: form.phone, password: form.password, plants, department: form.department || null, roleIds: form.roleIds })
       }
       goBack()
     } catch (e) { setMsg(e.message) }
@@ -131,8 +131,13 @@ export default function UserFormPage() {
             <SectionHeading icon={UserCog} tone="bg-blue-50 text-blue-600">Identity</SectionHeading>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <div>
+                <label className={LABEL}>Username *</label>
+                <input value={form.username}
+                  onChange={e => onChange('username', e.target.value)} className={FIELD} placeholder="e.g. asingh" />
+              </div>
+              <div>
                 <label className={LABEL}>Email *</label>
-                <input type="email" value={form.email} disabled={editing}
+                <input type="email" value={form.email}
                   onChange={e => onChange('email', e.target.value)} className={FIELD} placeholder="name@agrilife.com" />
               </div>
               <div>
@@ -140,8 +145,12 @@ export default function UserFormPage() {
                 <input value={form.fullName} onChange={e => onChange('fullName', e.target.value)} className={FIELD} />
               </div>
               <div>
-                <label className={LABEL}>Phone</label>
-                <input value={form.phone} onChange={e => onChange('phone', e.target.value)} className={FIELD} />
+                <label className={LABEL}>Phone *</label>
+                <input value={form.phone} disabled={editing && !!existing?.phone}
+                  onChange={e => onChange('phone', e.target.value)} className={FIELD} placeholder="e.g. 9876543210" />
+                <p className="text-[11px] text-gray-400 mt-1">
+                  {editing && existing?.phone ? "Locked — this is now the account's transaction identity, set once and never changed." : 'Required — this becomes the account\'s permanent identity once saved (used to log in and to stamp every record they create/edit).'}
+                </p>
               </div>
               <div>
                 <label className={LABEL}>Department / Section</label>

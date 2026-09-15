@@ -11,9 +11,10 @@
  * protected route.
  *
  * Every authenticated request also runs inside a request-context (see
- * utils/request-context.js) carrying the caller's email, so the
+ * utils/request-context.js) carrying the caller's phone and email, so the
  * audit-stamp Prisma Client Extension (utils/prisma-audit-extension.js) can
- * auto-populate createdBy/updatedBy on any write made during that request
+ * auto-populate createdBy/updatedBy (phone first, email fallback for
+ * accounts with no phone on file yet) on any write made during that request
  * with zero per-controller wiring.
  */
 import { createHmac } from "crypto";
@@ -127,8 +128,8 @@ async function getOrCreateDevUser() {
 // or a disabled account — this is also how a just-disabled account gets
 // force-logged-out on its very next request, with no session store needed.
 // Runs the rest of the middleware/controller chain inside a request-context
-// carrying req.user.email, so the audit-stamp Prisma extension can attribute
-// any write made during this request to this account.
+// carrying req.user.phone/email, so the audit-stamp Prisma extension can
+// attribute any write made during this request to this account.
 
 export async function authenticate(req, res, next) {
   try {
@@ -159,7 +160,7 @@ export async function authenticate(req, res, next) {
 
     const effective = await resolveEffectivePermissions(user.userId);
     req.user = toReqUser(user, effective);
-    return runWithRequestContext({ userEmail: req.user.email }, next);
+    return runWithRequestContext({ userEmail: req.user.email, userPhone: req.user.phone }, next);
   } catch (err) {
     return res
       .status(401)

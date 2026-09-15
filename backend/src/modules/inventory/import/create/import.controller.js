@@ -1,5 +1,6 @@
 import prisma from '../../../../db.js'
 import * as XLSX from 'xlsx'
+import bcrypt from 'bcryptjs'
 import { normalizePlant } from '../../../../utils/plant.js'
 import { syncTotalRecipe } from '../../../production/recipe/recipe-utils.js'
 import { normalizeUom, CANONICAL_UNITS } from '../../../../utils/uom.js'
@@ -166,6 +167,7 @@ export const previewImport = async (req, res) => {
       else if (/print|pack.?master/i.test(n)) detectedAs[name] = 'Print Master'
       else if (/inward|goods.?received|grn|receipt/i.test(n)) detectedAs[name] = 'Inward'
       else if (/outward|issuance|issue|dispatch/i.test(n)) detectedAs[name] = 'Outward'
+      else if (/^users?$|employee.?login|user.?master|login.?access/i.test(n)) detectedAs[name] = 'Users'
       else {
         // Column-based BOM detection (product + raw material + qty)
         const hasProd = headers.some(h => h.includes('product'))
@@ -179,6 +181,8 @@ export const previewImport = async (req, res) => {
           detectedAs[name] = 'Equipment Master (auto-detected by columns)'
         } else if (headers.some(h => h.includes('microbename')) || headers.includes('microbe')) {
           detectedAs[name] = 'Microbe Master (auto-detected by columns)'
+        } else if (headers.some(h => h.includes('username')) && headers.some(h => h.includes('password') || h.includes('email'))) {
+          detectedAs[name] = 'Users (auto-detected by columns)'
         } else if (
           headers.some(h => h.includes('name') || h.includes('description') || h.includes('packing')) &&
           headers.some(h => h === 'type' || h === 'packtype' || h.includes('packtype'))
@@ -210,7 +214,7 @@ export const executeImport = async (req, res) => {
       rmMaster: 0, productMaster: 0, equipmentMaster: 0, supplierMaster: 0,
       microbeMaster: 0,
       recipeBom: 0, printMaster: 0, inward: 0, outward: 0,
-      packingItems: 0,
+      packingItems: 0, users: 0,
       unmatchedRm: 0,
       errors: []
     }
@@ -899,6 +903,61 @@ export const executeImport = async (req, res) => {
       }
     }
 
+    // ── USERS ──────────────────────────────────────────────────────────────
+    // Bulk-creates/updates login accounts only. Deliberately never touches
+    // Role/UserRole — role assignment stays a manual, per-user task on the
+    // User Roles page (backend/src/modules/admin/rbac/router.js).
+    let usersSheet = wb.SheetNames.find(s => /^users?$|employee.?login|user.?master|login.?access/i.test(s))
+    if (!usersSheet) {
+      usersSheet = wb.SheetNames.find(s => {
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets[s], { defval: '' })
+        if (!rows.length) return false
+        const headers = Object.keys(rows[0]).map(k => k.toLowerCase().replace(/[^a-z0-9]/g, ''))
+        return headers.some(h => h.includes('username')) && headers.some(h => h.includes('password') || h.includes('email'))
+      })
+    }
+    if (usersSheet && !req.user.permissions.has('admin.users.create')) {
+      results.errors.push('⛔ Users sheet skipped — you do not have permission to create user accounts')
+    } else if (usersSheet) {
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[usersSheet], { defval: '' })
+      const departmentOptions = await prisma.optionValue.findMany({
+        where: { group: { groupCode: 'MATERIAL_INDENT_DEPARTMENT' } }, select: { code: true, label: true },
+      })
+      for (const row of rows) {
+        try {
+          const username = col(row, 'username', 'user name', 'login')
+          const email = col(row, 'email', 'email id', 'e-mail')
+          const fullName = col(row, 'fullname', 'full name', 'name', 'employee name')
+          const phone = col(row, 'phone', 'mobile', 'contact') || null
+          const password = col(row, 'password', 'temp password', 'default password')
+          const plants = normalizePlant(col(row, 'plants', 'plant', 'location'))
+          const deptRaw = col(row, 'department', 'section')
+          const deptMatch = deptRaw && departmentOptions.find(d =>
+            d.code.toLowerCase() === deptRaw.toLowerCase() || d.label.toLowerCase() === deptRaw.toLowerCase())
+          const department = deptMatch ? deptMatch.code : null
+
+          if (!username || !email || !fullName) {
+            results.errors.push(`User row skipped — missing ${!username ? 'Username ' : ''}${!email ? 'Email ' : ''}${!fullName ? 'Full Name' : ''} (row: "${email || username || '?'}")`)
+            continue
+          }
+          const existing = await prisma.user.findFirst({ where: { email: { equals: email, mode: 'insensitive' } } })
+          if (existing) {
+            // Phone is locked once set (see UserFormPage.jsx) — only fill it
+            // in here if the account doesn't already have one.
+            const data = { username, fullName, plants, department }
+            if (!existing.phone && phone) data.phone = phone
+            await prisma.user.update({ where: { userId: existing.userId }, data })
+          } else {
+            if (!password) { results.errors.push(`New user "${email}" skipped — Password is required to create a new account`); continue }
+            if (!phone) { results.errors.push(`New user "${email}" skipped — Phone is required to create a new account`); continue }
+            const passwordHash = await bcrypt.hash(password, 10)
+            await prisma.user.create({ data: { username, email, fullName, phone, passwordHash, plants, department, isActive: true } })
+          }
+          results.users++
+        } catch (e) { results.errors.push(`User row: ${e.message}`) }
+      }
+    }
+
     // ── CUSTOMER PROFILE ───────────────────────────────────────────────────
     const cpSheet = wb.SheetNames.find(s => /customer.?profile|customer.?master|client.?list|customers/i.test(s))
     if (cpSheet) {
@@ -942,7 +1001,7 @@ export const executeImport = async (req, res) => {
     return res.json({
       success: true,
       data: results,
-      message: `Import complete — Suppliers: ${results.supplierMaster}, Microbes: ${results.microbeMaster}, Products: ${results.productMaster}, Equipment: ${results.equipmentMaster}, RM: ${results.rmMaster}, Recipe/BOM: ${results.recipeBom}, Packing Items: ${results.packingItems}, Customer Profiles: ${results.customerProfiles || 0}, Packs: ${results.printMaster}, Inward: ${results.inward}, Outward: ${results.outward}`
+      message: `Import complete — Suppliers: ${results.supplierMaster}, Microbes: ${results.microbeMaster}, Products: ${results.productMaster}, Equipment: ${results.equipmentMaster}, RM: ${results.rmMaster}, Recipe/BOM: ${results.recipeBom}, Packing Items: ${results.packingItems}, Users: ${results.users}, Customer Profiles: ${results.customerProfiles || 0}, Packs: ${results.printMaster}, Inward: ${results.inward}, Outward: ${results.outward}`
     })
   } catch (e) {
     console.error(e)
