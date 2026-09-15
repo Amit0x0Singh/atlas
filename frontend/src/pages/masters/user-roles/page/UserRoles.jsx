@@ -126,6 +126,7 @@ export default function UserRoles() {
     list = [...list].sort((a, b) => {
       if (sort.field === 'signupDate') return dir * a.createdAt.localeCompare(b.createdAt)
       if (sort.field === 'username') return dir * (a.username || '').localeCompare(b.username || '')
+      if (sort.field === 'phone') return dir * (a.phone || '').localeCompare(b.phone || '')
       if (sort.field === 'role') return dir * (a.roles[0]?.name || '').localeCompare(b.roles[0]?.name || '')
       if (sort.field === 'plantScope') return dir * (a.plants?.[0] || '').localeCompare(b.plants?.[0] || '')
       if (sort.field === 'status') return dir * (Number(a.isActive) - Number(b.isActive))
@@ -141,7 +142,7 @@ export default function UserRoles() {
     const rows = visibleUsers.map(u => [
       u.userId, u.fullName, u.email, u.phone || '',
       u.roles.map(r => r.name).join('; '),
-      u.plants?.length ? u.plants.join('; ') : 'All plants',
+      u.plants?.length ? u.plants.join('; ') : 'No access',
       u.isActive ? 'Active' : 'Disabled',
       u.createdAt?.slice(0, 10) || '',
     ].map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','))

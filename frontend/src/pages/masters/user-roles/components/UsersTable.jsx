@@ -10,6 +10,7 @@ import { toTitleCase } from '../../../../utils/textDisplay.js'
 const COLUMN_DEFS = [
   { key: 'user',       label: 'User',        sortField: 'name',       defaultWidth: 260 },
   { key: 'username',   label: 'Username',    sortField: 'username',   defaultWidth: 180 },
+  { key: 'phone',      label: 'Phone',       sortField: 'phone',      defaultWidth: 140 },
   { key: 'roles',      label: 'Roles',       sortField: 'role',       defaultWidth: 220 },
   { key: 'plantScope', label: 'Plant Scope', sortField: 'plantScope', defaultWidth: 160 },
   { key: 'status',     label: 'Status',      sortField: 'status',     defaultWidth: 120 },
@@ -96,6 +97,11 @@ export default function UsersTable({ users, loading, empty, emptyMessage, sort, 
                     {u.username}
                   </td>
                 )}
+                {columnVisibility.phone && (
+                  <td style={{ width: columnWidths.phone }} className="px-4 py-3 text-xs text-gray-600 truncate">
+                    {u.phone || <span className="text-gray-400">—</span>}
+                  </td>
+                )}
                 {columnVisibility.roles && (
                   <td style={{ width: columnWidths.roles }} className="px-4 py-3 overflow-hidden">
                     <div className="flex flex-wrap gap-1">
@@ -109,7 +115,16 @@ export default function UsersTable({ users, loading, empty, emptyMessage, sort, 
                 )}
                 {columnVisibility.plantScope && (
                   <td style={{ width: columnWidths.plantScope }} className="px-4 py-3 text-xs text-gray-600 truncate">
-                    {u.plants?.length > 0 ? u.plants.join(', ') : <span className="text-gray-400">All plants</span>}
+                    {u.plants?.length > 0
+                      ? u.plants.join(', ')
+                      // plants[] is auto-computed as the union of every plant module a
+                      // user's role(s) grant (see plantsForRoles() in UserFormPage.jsx) —
+                      // a role touching ALL plants (e.g. Super Admin) ends up with an
+                      // explicit full list, not an empty array. So an empty array here
+                      // never means "unrestricted" in practice; it means none of this
+                      // user's role(s) grant access to any plant module at all (true for
+                      // no role, and equally true for non-plant roles like Gate/Stores).
+                      : <span className="text-red-400">No access</span>}
                   </td>
                 )}
                 {columnVisibility.status && (
