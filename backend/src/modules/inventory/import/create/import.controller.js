@@ -926,7 +926,7 @@ export const executeImport = async (req, res) => {
       for (const row of rows) {
         try {
           const username = col(row, 'username', 'user name', 'login')
-          const email = col(row, 'email', 'email id', 'e-mail')
+          const email = col(row, 'email', 'email id', 'e-mail') || null
           const fullName = col(row, 'fullname', 'full name', 'name', 'employee name')
           const phone = col(row, 'phone', 'mobile', 'contact') || null
           const password = col(row, 'password', 'temp password', 'default password')
@@ -936,20 +936,25 @@ export const executeImport = async (req, res) => {
             d.code.toLowerCase() === deptRaw.toLowerCase() || d.label.toLowerCase() === deptRaw.toLowerCase())
           const department = deptMatch ? deptMatch.code : null
 
-          if (!username || !email || !fullName) {
-            results.errors.push(`User row skipped — missing ${!username ? 'Username ' : ''}${!email ? 'Email ' : ''}${!fullName ? 'Full Name' : ''} (row: "${email || username || '?'}")`)
+          if (!username || !fullName) {
+            results.errors.push(`User row skipped — missing ${!username ? 'Username ' : ''}${!fullName ? 'Full Name' : ''} (row: "${username || email || '?'}")`)
             continue
           }
-          const existing = await prisma.user.findFirst({ where: { email: { equals: email, mode: 'insensitive' } } })
+          // Username is the natural key — always required and unique, unlike
+          // Email (optional now that email isn't a login identifier; see
+          // UserFormPage.jsx).
+          const existing = await prisma.user.findFirst({ where: { username: { equals: username, mode: 'insensitive' } } })
           if (existing) {
-            // Phone is locked once set (see UserFormPage.jsx) — only fill it
-            // in here if the account doesn't already have one.
-            const data = { username, fullName, plants, department }
+            // Phone is locked once set — only fill it in here if the account
+            // doesn't already have one. Email isn't locked, but a blank cell
+            // shouldn't erase an existing value, so it only overwrites when
+            // the sheet actually provides one.
+            const data = { email: email ?? existing.email, fullName, plants, department }
             if (!existing.phone && phone) data.phone = phone
             await prisma.user.update({ where: { userId: existing.userId }, data })
           } else {
-            if (!password) { results.errors.push(`New user "${email}" skipped — Password is required to create a new account`); continue }
-            if (!phone) { results.errors.push(`New user "${email}" skipped — Phone is required to create a new account`); continue }
+            if (!password) { results.errors.push(`New user "${username}" skipped — Password is required to create a new account`); continue }
+            if (!phone) { results.errors.push(`New user "${username}" skipped — Phone is required to create a new account`); continue }
             const passwordHash = await bcrypt.hash(password, 10)
             await prisma.user.create({ data: { username, email, fullName, phone, passwordHash, plants, department, isActive: true } })
           }

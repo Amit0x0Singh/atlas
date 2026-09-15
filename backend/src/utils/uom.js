@@ -135,18 +135,29 @@ export function conversionFactorOf(item) {
   return f
 }
 
+// A quantity landing in NOS (packing material — pouches, bags, boxes) is
+// rounded to a whole number: the store physically can't issue "3.4 pouches",
+// unlike a liquid converted to KG/L, which is genuinely fractional and must
+// stay exact. Only the destination unit's family matters here — MASS/VOLUME
+// results are returned untouched.
+function roundForDestination(qty, canonicalUnit) {
+  return canonicalUnit === CANONICAL.COUNT ? Math.round(qty) : qty
+}
+
 // Operation UOM qty → Inventory UOM qty (what actually leaves/enters stock).
 export function convertOperationToInventory(operationQty, item) {
   const n = Number(operationQty)
   if (!conversionActive(item)) return n
-  return n * conversionFactorOf(item)
+  const result = n * conversionFactorOf(item)
+  return roundForDestination(result, normalizeUom(item.inventoryUom))
 }
 
 // Inventory UOM qty → Operation UOM qty (for display / echoing back what was issued).
 export function convertInventoryToOperation(inventoryQty, item) {
   const n = Number(inventoryQty)
   if (!conversionActive(item)) return n
-  return n / conversionFactorOf(item)
+  const result = n / conversionFactorOf(item)
+  return roundForDestination(result, normalizeUom(item.operationalUom || item.inventoryUom))
 }
 
 /**
@@ -203,5 +214,5 @@ export function convertQty(qty, fromUom, toUom, item) {
   else if (fromCanon === inv && toCanon === op) resultInToCanon = nInFromCanon / factor
   else throw new Error(`Cannot convert between "${fromUom}" and "${toUom}" for this item`)
 
-  return { qty: resultInToCanon / b.factor, converted: true }
+  return { qty: roundForDestination(resultInToCanon / b.factor, toCanon), converted: true }
 }

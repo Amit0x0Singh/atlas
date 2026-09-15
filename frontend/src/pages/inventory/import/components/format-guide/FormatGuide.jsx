@@ -149,14 +149,14 @@ const SHEETS = [
     match: 'Sheet name contains "user", "employee login", or "login access"',
     cols: [
       { name: 'Username', kind: 'Required' },
-      { name: 'Email', kind: 'Required' },
+      { name: 'Email', kind: 'Optional' },
       { name: 'Full Name', kind: 'Required' },
       { name: 'Password', kind: 'Required (new accounts only)' },
       { name: 'Phone', kind: 'Required (new accounts only)' },
       { name: 'Department', kind: 'Optional' },
       { name: 'Plants', kind: 'Optional' },
     ],
-    behavior: 'Existing accounts are matched by Email (case-insensitive) — Username, Full Name, Plants and Department are refreshed, but Password and Phone are never overwritten once an account already has them (Phone is now the permanent, one-time identity used to stamp everything that account creates/edits — it\'s only filled in here if the existing account doesn\'t have one yet). Password and Phone are only required the first time an account is created.',
+    behavior: 'Existing accounts are matched by Username (case-insensitive) — Email, Full Name, Plants and Department are refreshed (a blank Email cell never erases one an account already has), but Password and Phone are never overwritten once an account already has them (Phone is now the permanent, one-time identity used to stamp everything that account creates/edits — it\'s only filled in here if the existing account doesn\'t have one yet). Password and Phone are only required the first time an account is created; Email is optional since it\'s no longer a login identifier — Username or Phone is.',
     note: 'Roles are never assigned by this import — set them afterward on the User Roles page.',
   },
 ]
